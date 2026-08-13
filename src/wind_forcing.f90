@@ -7,7 +7,7 @@ contains
 
     subroutine wind1()
         ! Локальные переменные
-        integer :: i, j, k, k2, nom, jj, j1, j2
+        integer :: i, j, k, k2, nom
         real :: bll, x0, y0, fii, dll, dx_int, dy_int, ab
         real :: an1_wind, an2_wind, an3_wind, an4_wind
         real :: px, py, vx, vy, v_wind, q_wind, au, u_wind, cof, a, b

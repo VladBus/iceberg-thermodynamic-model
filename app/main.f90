@@ -14,6 +14,7 @@ program main
     use tide_forcing
     use shallow_water
     use grid_coupling
+    use netcdf_output
 
     implicit none
 
@@ -29,8 +30,8 @@ program main
     real :: ri2j, rij, ri2j2, rij2, slapu, slapv, auu, avv
     real :: ck1, ck2, ww1, ww2, ww
 
-    integer :: mmmm, lll, kkk, iii, jjj, ii, ij
-    integer :: i, j, k, i1, i2, j1, j2, k1, k2, ki, ki1, ki2
+    integer :: mmmm, lll, kkk, iii, jjj
+    integer :: i, j, k, i1, i2, j1, j2, k1, k2, ki
     integer :: ix1, ix2, iy1, iy2
     integer :: nday, nday1, ikkk, ios
 
@@ -402,5 +403,8 @@ program main
     end do ! Конец цикла лет MMMM
 
     print *, "Integration completed successfully!"
+
+    ! Вызов вывода результатов в папку data/output/
+    call write_nc('data/output/results_test.nc')
 
 end program main

@@ -27,6 +27,7 @@
 # Fortran module files
 *.mod
 *.smod
+*.a
 
 # Compiled Static libraries
 *.lai
@@ -67,3 +68,16 @@ vcpkg_installed/
 # test output & cache
 Testing/
 .cache/
+
+# Настройки локального редактора VS Code
+.vscode/
+
+# Выходные данные модели
+*.nc
+*.vtk
+*.dat
+
+# Временные и системные файлы
+*~
+.DS_Store
+Thumbs.db

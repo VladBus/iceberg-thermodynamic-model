@@ -11,20 +11,396 @@ program main
     use smooth_filter
     use advection_3d_s
     use advection_3d_t
+    use tide_forcing
+    use shallow_water
+    use grid_coupling
+
     implicit none
 
-    print *, "Iceberg Thermodynamic Model - Started!"
-    print *, "Grid size IS=", is, " JS=", js, " KS=", ks
-    print *, "Module advection_2d is successfully linked!"
-    print *, "Module thermodynamics is successfully linked!"
-    print *, "Module wind_forcing is successfully linked!"
-    print *, "Module barotropic_dynamics is successfully linked!"
-    print *, "Module ice_stress is successfully linked!"
-    print *, "Module grid_masks is successfully linked!"
-    print *, "Module ice_deform is successfully linked!"
-    print *, "Module ice_redis is successfully linked!"
-    print *, "Module smooth_filter is successfully linked!"
-    print *, "Module advection_3d_s is successfully linked!"
-    print *, "Module advection_3d_t is successfully linked!"
+    ! --- Локальные переменные ---
+    real :: god, mes, den, hour
+    integer :: kl1, nom, mm1, mm2, mm3, mm4, mm5, kkb, kcc
+    real :: dt1, dt, dx, ah, aht, ahs, g, roc, cp
+    real :: c1, c2, c3, c4, c5, c8, c9, c10, c11, c12, c15, c16, c17
+    real :: sas, a, b, a1, b1, a2, b2, a3, b3, a4, b4, cc_val
+    real :: hht, uij, vij, fix, fiy, aa, au, av, sl, du, ff, ff1
+    real :: dzz, dzzz, dz1z, bb, sum, sum1, asa1, asa, ymm, hh1, hh2
+    real :: tt0, ss0, tt1, ss1, tt2, ss2, tt3, ss3, tt4, ss4, yyy, uu, vv
+    real :: ri2j, rij, ri2j2, rij2, slapu, slapv, auu, avv
+    real :: ck1, ck2, ww1, ww2, ww
+
+    integer :: mmmm, lll, kkk, iii, jjj, ii, ij
+    integer :: i, j, k, i1, i2, j1, j2, k1, k2, ki, ki1, ki2
+    integer :: ix1, ix2, iy1, iy2
+    integer :: nday, nday1, ikkk, ios
+
+    real :: ecc = 0.0, ess = 0.0
+    character(len=20) :: nam_file
+
+    print *, "================================================="
+    print *, "   AARI Iceberg Thermodynamic & Dynamics Model   "
+    print *, "================================================="
+
+    ! --- Инициализация времени и параметров ---
+    god = 1998.0        ! Начальный год моделирования (Гринвич)
+    mes = 4.0           ! Начальный месяц моделирования (апрель)
+    den = 16.0          ! Начальный день месяца
+    hour = 0.0          ! Начальный час суток
+
+    nat(1) = int(god)
+    nat(2) = int(mes)
+    nat(3) = int(den)
+    nat(4) = int(hour)
+
+    kl1 = 0             ! Флаг чтения климатических данных (0 - нет, 1 - да)
+    nom = 1             ! Идентификатор чтения начальных данных
+
+    ! --- Временные и пространственные шаги сетки ---
+    dt1 = 120.0         ! Шаг баротропной моды (сек)
+    dt = 3600.0         ! Шаг бароклинной моды и термодинамики (сек)
+    mm1 = 60            ! Количество циклов моделирования в месяце (дни)
+    mm2 = 12            ! Количество шагов с термодинамическим шагом (DT) за сутки
+    mm3 = 30            ! Количество баротропных микрошагов за бароклинный шаг (DT/DT1)
+    mm4 = 1             ! Количество расчетных месяцев
+    mm5 = 1             ! Количество расчетных лет
+    dx = 1389000.0      ! Пространственный шаг сетки (см), ~13.8 км
+    kkb = 1             ! Начальный индекс метеоданных
+    kcc = 0             ! Счетчик шагов для вызова термодинамики
+    ikkk = 0            ! Счетчик диагностических записей
+    nday = 0            ! Счетчик дней внутри месяца
+    nday1 = 0           ! Общий счетчик дней модельного времени
+
+    ! --- Физические константы модели ---
+    ah = 7.5e6          ! Коэффициент горизонтальной турбулентной диффузии импульса
+    aht = 7.5e6         ! Коэффициент горизонтальной диффузии тепла
+    ahs = 7.5e6         ! Коэффициент горизонтальной диффузии солености
+    g = 981.0           ! Ускорение силы тяжести (см/с²)
+    roc = 1.0           ! Характерная плотность воды (г/см³)
+    cp = 0.958          ! Удельная теплоемкость / эмпирический коэффициент
+
+    ! --- Расчетные вспомогательные константы ---
+    c1 = g/roc
+    c2 = dt/dx
+    c3 = ah/(dx*dx)
+    c4 = aht/(dx*dx)*dt
+    c5 = ahs/(dx*dx)*dt
+    c8 = 0.25/dx
+    c9 = 0.5/dx
+    c10 = dt1/dx
+    c11 = g/dx*0.005
+    c12 = 1.0/dx
+    c15 = cos(15.0/57.3)
+    c16 = sin(15.0/57.3)
+    c17 = 0.0055*1000.0/910.0
+
+    ! --- Чтение приливных гармоник (с защитой iostat) ---
+    open (3, file='GRM2', status='old', iostat=ios)
+    if (ios .eq. 0) then
+        read (3, *) (amp1(i, 1), i=1, 133)
+        read (3, *) (faz1(i, 1), i=1, 133)
+        read (3, *) (amp2(i, 1), i=1, 105)
+        read (3, *) (faz2(i, 1), i=1, 105)
+        read (3, *) (amp3(i, 1), i=1, 133)
+        read (3, *) (faz3(i, 1), i=1, 133)
+        close (3)
+    else
+        print *, "WARNING: GRM2 missing, using defaults"
+    end if
+
+    ! Инициализация частот приливных гармоник (M2, S2, K1, O1)
+    qq(1) = 28.9841042
+    qq(2) = 30.0
+    qq(3) = 15.041069
+    qq(4) = 13.943036
+
+    call datte()
+
+    q(1:4) = qq(1:4)*dt1/3600.0/57.2958
+
+    ! --- Вызов модулей инициализации сетки и геометрии ---
+    print *, "Calling grid_coupling..."
+    call coup1()
+
+    print *, "Calling grid_masks (IKUV)..."
+    call ikuv()
+
+    ! --- Чтение метеоданных и стартовых полей льда ---
+    open (1, file='DAV4_5.98', status='old', iostat=ios)
+    if (ios .eq. 0) then
+        read (1, *) mm1
+        do j = 1, mm1 + 1
+            read (1, *)
+            do i = 1, 1420
+                read (1, *) a, a, a, p(i, j)
+            end do
+        end do
+        close (1)
+    end if
+
+    ! Чтение начальных толщин категорий льда
+    do k = 2, 6
+        write (nam_file, '(A,I1,A)') '1_', k - 1, '.ice'
+        open (1, file=trim(nam_file), status='old', iostat=ios)
+        if (ios .eq. 0) then
+            do i = 1, is1
+                read (1, *) (an1(i, j, k), j=1, js1)
+            end do
+            close (1)
+        end if
+    end do
+
+    ! Первичная очистка и нормировка ледовых массивов
+    do j = 1, js1
+        do i = 1, is1
+            sas = 0.0
+            do k = 2, ngr1
+                if (abs(an1(i, j, k) - 9.99) .lt. 1e-8) an1(i, j, k) = 0.0
+                if (an1(i, j, k) .ge. 1.0) an1(i, j, k) = 1.0
+                sas = sas + an1(i, j, k)
+            end do
+            ! Безопасное сравнение вещественного числа с нулем устраняет предупреждение -Wcompare-reals
+            if (abs(sas) .lt. 1e-8) an1(i, j, 1) = 1.0
+
+            wice1(i, j, 1) = 0.20*an1(i, j, 2)
+            wice1(i, j, 2) = 0.40*an1(i, j, 3)
+            wice1(i, j, 3) = 0.95*an1(i, j, 4)
+            wice1(i, j, 4) = 1.60*an1(i, j, 5)
+            wice1(i, j, 5) = 2.50*an1(i, j, 6)
+        end do
+    end do
+
+    call redis()
+
+    ! ====================================================================
+    !                    ГЛАВНЫЙ ЦИКЛ ПО ВРЕМЕНИ
+    ! ====================================================================
+    print *, "Starting Main Integration Loop..."
+
+    pp(:) = p(:, kkb)
+    call wind1()
+
+    do mmmm = 1, mm5
+        nday = 0
+        do lll = 1, mm4
+            do kkk = kkb, mm1
+                nday = nday + 1
+                nday1 = nday1 + 1
+
+                if (nday1 .eq. 42) exit
+
+                ess = euu - ecc
+                print *, "Day:", kkk, " Month:", lll, " Kin.Energy(EUU)=", euu
+                ecc = euu
+                euu = 0.0
+
+                dpx(:, :) = dpx1(:, :)
+                dpy(:, :) = dpy1(:, :)
+                windx(:, :) = windx1(:, :)
+                windy(:, :) = windy1(:, :)
+                tx(:, :) = tx1(:, :)
+                ty(:, :) = ty1(:, :)
+
+                pp(:) = p(:, kkk + 1)
+                call wind1()
+
+                do iii = 1, mm2
+                    ! 1. Временная интерполяция ветровых напряжений
+                    if (iii .ne. 1) then
+                        b = real(mm2 - iii + 2)
+                        tx = tx + (tx1 - tx)/b
+                        ty = ty + (ty1 - ty)/b
+                        dpx = dpx + (dpx1 - dpx)/b
+                        dpy = dpy + (dpy1 - dpy)/b
+                        windx = windx + (windx1 - windx)/b
+                        windy = windy + (windy1 - windy)/b
+                    end if
+
+                    t1 = t2
+                    s1 = s2
+                    v1 = v2
+                    u1 = u2
+
+                    ! 2. Вызов блока термодинамики (каждые 80 шагов)
+                    kcc = kcc + 1
+                    if (kcc .eq. 80) then
+                        kcc = 0
+                        call heat(dt, nday, lll)
+                    end if
+
+                    ! 3. Динамика льда (баротропные подциклы)
+                    do jjj = 1, mm3
+                        u0 = u
+                        v0 = v
+                        txic = 0.0
+                        tyic = 0.0
+
+                        call stress()
+
+                        do j = 2, js
+                            j1 = j + 1
+                            j2 = j - 1
+                            do i = 2, is
+                                i1 = i + 1
+                                i2 = i - 1
+                                if (kk1(i, j) .eq. 0) cycle
+
+                              hht = 0.25*(hices(i, j) + hices(i, j2) + hices(i2, j) + hices(i2, j2))
+                                if (hht .lt. 0.01) then
+                                    u(i, j) = 0.0
+                                    v(i, j) = 0.0
+                                    cycle
+                                end if
+
+                                uij = u0(i, j)
+                                vij = v0(i, j)
+                                a1 = u2(i, j, 1)/100.0
+                                b1 = v2(i, j, 1)/100.0
+                                a = a1 - uij
+                                b = b1 - vij
+                                a = c17*sqrt(b*b + a*a)/hht
+
+                                txic(i, j) = a*(a1*c15 - b1*c16)
+                                tyic(i, j) = a*(b1*c15 + a1*c16)
+
+                                a3 = 0.25*(ans(i, j) + ans(i, j2) + ans(i2, j) + ans(i2, j2))
+                                if (a3 .gt. 2.0) cycle
+
+                                a4 = sxy(i2, j) - sxy(i, j2)
+                                b4 = sxy(i, j) - sxy(i2, j2)
+                             fix = (sxx(i2, j) + sxx(i, j) - sxx(i2, j2) - sxx(i, j2) + a4 - b4)*c12
+                             fiy = (syy(i2, j2) + syy(i2, j) - syy(i, j2) - syy(i, j) + a4 + b4)*c12
+
+                                b3 = hht*9100.0
+                                a2 = uij + dt1*(tx(i, j)/b3 + txic(i, j)*a3 + fku(i, j)*vij - &
+                                c11*(ym2(i2, j) - ym2(i2, j2) + ym2(i, j) - ym2(i, j2)) + fix/910.0)
+                                b2 = vij + dt1*(ty(i, j)/b3 + tyic(i, j)*a3 - fku(i, j)*uij - &
+                                c11*(ym2(i2, j2) - ym2(i, j2) + ym2(i2, j) - ym2(i, j)) + fiy/910.0)
+
+                                b1 = dt1*a*c16
+                                a1 = 1.0 + dt1*a*c15
+                                aa = a1*a1 + b1*b1
+                                u(i, j) = (a1*a2 + b1*b2)/aa
+                                v(i, j) = (a1*b2 - b1*a2)/aa
+
+                                if (jjj .eq. mm3) then
+                                    b3 = hht*9100.0
+                                    txic(i, j) = -(txic(i, j) - a*(u(i, j)*c15 - v(i, j)*c16))*b3
+                                    tyic(i, j) = -(tyic(i, j) - a*(v(i, j)*c15 + u(i, j)*c16))*b3
+                                end if
+                            end do
+                        end do
+
+                        ! Граничные условия ледового блока
+                        u(:, 1) = u(:, 2)
+                        v(:, 1) = v(:, 2)
+                        u(:, js1) = u(:, js)
+                        v(:, js1) = v(:, js)
+                        u(1, :) = u(2, :)
+                        v(1, :) = v(2, :)
+                    end do
+
+                    ! 4. Адвекция сплошности и массы льда
+                    do k = 1, ngr
+                        k1 = k + 1
+                        an3(:, :) = an1(:, :, k1)
+                        call adv2d(dt, dx, c2)
+                        an3(:, js) = an1(:, js, k1)
+                        an3(1, :) = an1(1, :, k1)
+                        an1(:, :, k1) = an3(:, :)
+
+                        an3(:, :) = wice1(:, :, k)
+                        call adv2d(dt, dx, c2)
+                        an3(:, js) = wice1(:, js, k)
+                        an3(1, :) = wice1(1, :, k)
+                        wice1(:, :, k) = an3(:, :)
+                    end do
+                    call redis()
+
+                    ! 5. Расчет вертикальной составляющей скорости течений (W)
+                    do j = 2, js
+                        j1 = j + 1
+                        j2 = j - 1
+                        ix2 = idx(1, j1)
+                        do i = 2, is
+                            i1 = i + 1
+                            i2 = i - 1
+                            ix1 = idx(i, 1)
+                            ix2 = idx(i, j1)
+                            ki = kt1(i, j)
+                            if (ki .eq. 0) cycle
+
+                            iy1 = idy(i, j)
+                            iy2 = idy(i1, j)
+
+                            do k = 1, ki
+                                k1 = k + 1
+                                a = u1(i, j, k) + u1(i1, j, k)
+                                aa = u1(i, j1, k) + u1(i1, j1, k)
+                                if (k .eq. 1) au = a + aa
+                                if (ix1 .lt. k .or. ix2 .lt. k) then
+                                    tt(k) = 0.0
+                                else
+                                    tt(k) = aa - a
+                                end if
+
+                                b = v1(i, j, k) + v1(i, j1, k)
+                                bb = v1(i1, j, k) + v1(i1, j1, k)
+                                if (k .eq. 1) av = b + bb
+                                if (iy1 .lt. k .or. iy2 .lt. k) then
+                                    ss(k) = 0.0
+                                else
+                                    ss(k) = b - bb
+                                end if
+                            end do
+
+                            ymm = ym2(i, j)
+                            if (ix1 .eq. 0 .and. ix2 .ne. 0) then
+                                hh1 = ymm - ym2(i, j2)
+                            else if (ix1 .ne. 0 .and. ix2 .eq. 0) then
+                                hh1 = ym2(i, j1) - ymm
+                            else if (ix1 .ne. 0 .and. ix2 .ne. 0) then
+                                hh1 = 0.5*(ym2(i, j1) - ym2(i, j2))
+                            else
+                                hh1 = 0.0
+                            end if
+
+                            if (iy1 .eq. 0 .and. iy2 .ne. 0) then
+                                hh2 = ymm - ym2(i1, j)
+                            else if (iy1 .ne. 0 .and. iy2 .eq. 0) then
+                                hh2 = ym2(i2, j) - ymm
+                            else if (iy1 .ne. 0 .and. iy2 .ne. 0) then
+                                hh2 = 0.5*(ym2(i2, j) - ym2(i1, j))
+                            else
+                                hh2 = 0.0
+                            end if
+
+                            a = -(ymm - ym1(i, j))/dt - (hh1*au + hh2*av)*c8
+                            w(i, j, 1) = a
+                            ym1(i, j) = ymm
+
+                            if (ki .ge. 2) then
+                                do k = 2, ki
+                                    k2 = k - 1
+                                    a = a - (tt(k2) + ss(k2))*dz1(k2)*c9
+                                    w(i, j, k) = a
+                                end do
+                            end if
+                            ix1 = ix2
+                        end do
+                    end do
+
+                    ! 6. Адвекция солености и температуры в океане
+                    call advs(dt, c2)
+                    call advt(dt, c2)
+
+                    ! 7. Баротропный расчет мелкой воды и уровня моря
+                    call shal()
+
+                end do ! Конец суточного цикла III
+            end do ! Конец цикла дней KKK
+        end do ! Конец цикла месяцев LLL
+    end do ! Конец цикла лет MMMM
+
+    print *, "Integration completed successfully!"
 
 end program main

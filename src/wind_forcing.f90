@@ -1,5 +1,6 @@
 module wind_forcing
     use param
+    use smooth_filter    ! Подключаем модуль сглаживания
     implicit none
 
 contains
@@ -61,8 +62,8 @@ contains
             end do
         end do
 
-        ! TODO: В будущем добавить модуль гладкого фильтра
-        ! call gladw()
+        ! Активируем сглаживание поля давления
+        call gladw()
 
         do j = 1, js1
             do i = 1, is1

@@ -1,0 +1,59 @@
+module ice_deform
+    use param
+    implicit none
+
+contains
+
+    subroutine deform(kl, dx, dt1)
+        ! Входные параметры
+        integer, intent(in) :: kl       ! Компонента тензора (1, 2 или 3)
+        real, intent(in) :: dx, dt1     ! Шаги по пространству и времени
+
+        ! Локальные переменные
+        integer :: i, j, i1, j1
+        real :: a, b, a1, a2, b1, v11, v22, v3, v4
+
+        do j = 1, js
+            j1 = j + 1
+            do i = 1, is
+                ! Пропуск суши
+                if (kt1(i, j) .eq. 0) cycle
+
+                i1 = i + 1
+                v11 = v(i, j)
+                v22 = v(i, j1)
+                v3 = v(i1, j)
+                v4 = v(i1, j1)
+
+                ! Эквивалент старого арифметического IF(KL-2) 2,3,4
+                if (kl .eq. 1) then
+                    cd2(i, j) = 50.0*(u(i, j1) + u(i1, j1) - u(i, j) - u(i1, j))/dx
+                else if (kl .eq. 2) then
+                    cd2(i, j) = 50.0*(v11 + v22 - v3 - v4)/dx
+                else
+               cd2(i, j) = 25.0*(u(i, j) + u(i, j1) - u(i1, j) - u(i1, j1) + v22 + v4 - v11 - v3)/dx
+                end if
+
+                b = 0.25*(v11 + v22 + v3 + v4)
+                b1 = 0.25*(u(i, j) + u(i, j1) + u(i1, j1) + u(i1, j))
+                a = epr(i1, j1)
+
+                if (b1 .ge. 0.0) then
+                    a1 = b1*(a - epr(i1, j))
+                else
+                    a1 = b1*(epr(i1, min(js3, j + 2)) - a)
+                end if
+
+                if (b .ge. 0.0) then
+                    a2 = b*(a - epr(min(is3, i + 2), j))
+                else
+                    a2 = b*(epr(i, j1) - a)
+                end if
+
+                epr(i1, j1) = a - dt1*(100.0/dx*(a1 + a2) - cd2(i, j))
+            end do
+        end do
+
+    end subroutine deform
+
+end module ice_deform

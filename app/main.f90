@@ -7,6 +7,10 @@ program main
     use ice_stress
     use grid_masks
     use ice_deform
+    use ice_redis
+    use smooth_filter
+    use advection_3d_s
+    use advection_3d_t
     implicit none
 
     print *, "Iceberg Thermodynamic Model - Started!"
@@ -18,5 +22,9 @@ program main
     print *, "Module ice_stress is successfully linked!"
     print *, "Module grid_masks is successfully linked!"
     print *, "Module ice_deform is successfully linked!"
+    print *, "Module ice_redis is successfully linked!"
+    print *, "Module smooth_filter is successfully linked!"
+    print *, "Module advection_3d_s is successfully linked!"
+    print *, "Module advection_3d_t is successfully linked!"
 
 end program main

@@ -1,0 +1,45 @@
+module smooth_filter
+    use param
+    implicit none
+
+contains
+
+    subroutine gladw()
+        ! Локальные переменные
+        integer :: i, j, jj
+        real :: dt, a_coeff, dx, factor
+
+        ! Инициализация констант (из оригинального кода)
+        dt = 3600.0
+        a_coeff = 7.e7
+        dx = 1389000.0
+
+        ! Коэффициент сглаживания
+        factor = a_coeff*dt/(dx*dx)
+
+        ! Первичное копирование массива
+        pp2(:, :) = pp1(:, :)
+
+        ! Основной цикл сглаживания (48 итераций)
+        do jj = 1, 48
+
+            ! Применение оператора Лапласа ко внутренним точкам сетки
+            ! Границы циклов is3 и js3 соответствуют 134 и 106 из старого кода
+            do j = 2, js3
+                do i = 2, is3
+                    pp1(i, j) = pp2(i, j) + factor* &
+                     (pp2(i - 1, j) + pp2(i + 1, j) + pp2(i, j + 1) + pp2(i, j - 1) - 4.0*pp2(i, j))
+                end do
+            end do
+
+            ! Обновление внутренней области рабочего массива PP2
+            pp2(2:is3, 2:js3) = pp1(2:is3, 2:js3)
+
+        end do
+
+        ! Возврат сглаженного поля в исходный массив
+        pp1(:, :) = pp2(:, :)
+
+    end subroutine gladw
+
+end module smooth_filter

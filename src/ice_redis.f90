@@ -1,12 +1,16 @@
 ! ==============================================================================
 ! Модуль: ice_redis (redis)
 ! Назначение: Перераспределение массы льда по категориям толщины.
-! Физика: Реализует эволюцию функции распределения толщины льда 
-!         (Ice Thickness Distribution), предложенную Торндайком. Термодинамика смещает 
-!         лед между категориями толщины, в то время как динамическая конвергенция 
-!         (торошение) трансформирует площади тонких льдов в меньшие площади толстых 
+! Физика: Реализует эволюцию функции распределения толщины льда
+!         (Ice Thickness Distribution), предложенную Торндайком. Термодинамика смещает
+!         лед между категориями толщины, в то время как динамическая конвергенция
+!         (торошение) трансформирует площади тонких льдов в меньшие площади толстых
 !         торосов, строго сохраняя общий объем льда в ячейке.
-! Ответственность: Формирование сил сопротивления сжатию и сдвигу, передача 
+!         Уравнение: ∂A_k/∂t + ∇·(A_k·U) = f_k(термодинамика, торошение).
+!         При слиянии категорий: A_new = A_1 + A_2; h_new = (A_1·h_1 + A_2·h_2)/A_new.
+!         Снег сохраняется по объему: h_s_new = (A_1·h_s1 + A_2·h_s2)/A_new.
+! Единицы: A [доли единицы], h [м], wice [м³/м²], hsnow [м].
+! Ответственность: Формирование сил сопротивления сжатию и сдвигу, передача
 !                  информации о торошении в модуль перераспределения массы.
 ! ==============================================================================
 
@@ -44,9 +48,13 @@ contains
                     if (abs(wicpr(k)) .gt. 1e-8) then
                         if (abs(anpr(k)) .lt. 1e-8) anpr(k) = wicpr(k)/hst(k)
                         if (wicpr(k)/anpr(k) .gt. hmax(k)) then
-                            anpr(k1) = anpr(k1) + anpr(k)
+                            ! hsnow - толщина [м]: при слиянии сохраняем A*h_s.
+                            a = anpr(k1) + anpr(k)
+                            if (a .gt. 1.0e-8) then
+                                hsnp(k1) = (anpr(k1)*hsnp(k1) + anpr(k)*hsnp(k))/a
+                            end if
+                            anpr(k1) = a
                             wicpr(k1) = wicpr(k1) + wicpr(k)
-                            hsnp(k1) = hsnp(k1) + hsnp(k)
                             wicpr(k) = 0.0
                             anpr(k) = 0.0
                             hsnp(k) = 0.0
@@ -59,10 +67,15 @@ contains
                     if (wicpr(k) .gt. 0.0) then
                         k2 = k - 1
                         if (wicpr(k)/anpr(k) .lt. hmax(k2)) then
+                            a = anpr(k2) + anpr(k)
+                            if (a .gt. 1.0e-8) then
+                                hsnp(k2) = (anpr(k2)*hsnp(k2) + anpr(k)*hsnp(k))/a
+                            end if
                             wicpr(k2) = wicpr(k2) + wicpr(k)
-                            anpr(k2) = anpr(k2) + anpr(k)
+                            anpr(k2) = a
                             wicpr(k) = 0.0
                             anpr(k) = 0.0
+                            hsnp(k) = 0.0
                         end if
                     end if
                 end do
@@ -103,15 +116,20 @@ contains
 
                         if (abs(anpr(k1)) .lt. 1e-8) then
                             if (dd .lt. anpr(k)) then
+                                ! При сжатии площадь уменьшается, снеговой объем остается с льдом.
+                                a = anpr(k)
                                 anpr(k) = anpr(k) - dd
+                                hsnp(k) = hsnp(k)*a/anpr(k)
                                 exit redistribution_loop
                             else
                                 wicpr(k1) = wicpr(k)
                                 anpr(k1) = wicpr(k)/hst(k1)
                                 hpr(k1) = wicpr(k1)/anpr(k1)
+                                hsnp(k1) = hsnp(k)*anpr(k)/anpr(k1)
                                 wicpr(k) = 0.0
                                 anpr(k) = 0.0
                                 hpr(k) = 0.0
+                                hsnp(k) = 0.0
                             end if
                             ! Пересчет сначала (эквивалент GOTO 319)
                             cycle redistribution_loop
@@ -131,6 +149,8 @@ contains
                         else
                             anpr(k) = b2
                             anpr(k1) = a2
+                            wicpr(k) = hpr(k)*b2
+                            wicpr(k1) = hpr(k1)*a2
                             exit redistribution_loop
                         end if
                     end do inner_loop
@@ -159,6 +179,10 @@ contains
                     if (hice(i, j, k) .lt. hmax(k2)) then
                         k1 = k + 1
                         a = an1(i, j, k) + an1(i, j, k1)
+                        if (a .gt. 1.0e-8) then
+                            hsnow(i, j, k2) = (an1(i, j, k)*hsnow(i, j, k2) + &
+                                               an1(i, j, k1)*hsnow(i, j, k))/a
+                        end if
                         an1(i, j, k) = a
                         b = wice1(i, j, k2) + wice1(i, j, k)
                         wice1(i, j, k2) = b
@@ -166,6 +190,7 @@ contains
                         an1(i, j, k1) = 0.0
                         wice1(i, j, k) = 0.0
                         hice(i, j, k) = 0.0
+                        hsnow(i, j, k) = 0.0
                     end if
                 end do
 

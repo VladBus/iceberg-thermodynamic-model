@@ -3,7 +3,7 @@
 ! Назначение: Чтение и интерполяция метеорологических данных (форсинга).
 ! Физика: Преобразует поля атмосферного давления в градиенты для вычисления
 !         скорости геострофического ветра. Вычисляет поверхностные касательные
-!         напряжения (tx, ty) по квадратичному закону аэродинамического трения.
+!         напряжения (tx1, ty1) по квадратичному закону аэродинамического трения.
 ! Ответственность: Ассимиляция внешних данных, пространственная интерполяция
 !                  метеополей на узлы гидродинамической сетки.
 ! ==============================================================================
@@ -28,6 +28,19 @@ contains
         ep = 'ep.dat'
         evet = 'evet.dat'
         ewin = 'ewin.dat'
+
+        ! По умолчанию отсутствующий внешний форсинг означает нулевое поле.
+        fi1 = 0.0
+        dl1 = 0.0
+        pp1 = 0.0
+        wind = 0.0
+        alf = 0.0
+        dpx1 = 0.0
+        dpy1 = 0.0
+        windx1 = 0.0
+        windy1 = 0.0
+        tx1 = 0.0
+        ty1 = 0.0
 
         ! Чтение старых файлов сетки (если они есть в папке)
         open (1, file='FI1DL1.DAT', status='old', iostat=ios)
@@ -57,6 +70,7 @@ contains
                     dx_int = (dll - x0)/2.5
                     dy_int = (fii - y0)/2.5
 
+                    ccc = 0.0
                     do k = 1, 4
                         k2 = np1(nom, k)
                         if (k2 .gt. 0) ccc(k) = pp(k2)
@@ -95,8 +109,8 @@ contains
                 else
                     vx = -py*bll
                     vy = px*bll
-                    dpx(i, j) = px*1.e3/dxx
-                    dpy(i, j) = py*1.e3/dxx
+                    dpx1(i, j) = px*1.e3/dxx
+                    dpy1(i, j) = py*1.e3/dxx
                     v_wind = sqrt(vx*vx + vy*vy)
 
                     q_wind = 0.8
@@ -116,18 +130,30 @@ contains
                 alf(i, j) = u_wind
                 a = sin(u_wind/57.3)
                 b = cos(u_wind/57.3)
-                windx(i, j) = v_wind*a
-                windy(i, j) = v_wind*b
+                windx1(i, j) = v_wind*a
+                windy1(i, j) = v_wind*b
 
                 cof = (1.1 + 0.04*v_wind*1.e-2)*v_wind*v_wind*1.29e-6
-                ty(i, j) = cof*b
-                tx(i, j) = cof*a
+                ty1(i, j) = cof*b
+                tx1(i, j) = cof*a
             end do
         end do
 
         ! Краевые условия
         wind(:, js1) = wind(:, js)
         wind(is1, :) = wind(is, :)
+        dpx1(:, js1) = dpx1(:, js)
+        dpy1(:, js1) = dpy1(:, js)
+        windx1(:, js1) = windx1(:, js)
+        windy1(:, js1) = windy1(:, js)
+        tx1(:, js1) = tx1(:, js)
+        ty1(:, js1) = ty1(:, js)
+        dpx1(is1, :) = dpx1(is, :)
+        dpy1(is1, :) = dpy1(is, :)
+        windx1(is1, :) = windx1(is, :)
+        windy1(is1, :) = windy1(is, :)
+        tx1(is1, :) = tx1(is, :)
+        ty1(is1, :) = ty1(is, :)
 
         call surfw()
 

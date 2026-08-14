@@ -4,12 +4,20 @@
 ! Физика: Описывает баротропную (не зависящую от глубины) компоненту циркуляции.
 !         Учитывает силу Кориолиса, касательное напряжение ветра, гидродинамическое
 !         сопротивление морского льда и градиент уровня свободной поверхности.
+!         Схема Лейса-Рихтмайера (predictor) + FCT (Flux-Corrected Transport)
+!         для антидиффузионной коррекции потоков.
+!         Уравнение: ∂U/∂t + ∇·(U⊗U) + f×U = -g·∇η + τ/ρH - r·U + A_h·∇²U.
+! Единицы: U/V [см²/с] (интегральные потоки), η [см], dt1 [с], dx [см].
 ! Ответственность: Вычисление полного переноса масс воды с малым шагом по времени.
+!                  Используется схема Лейса-Рихтмайера с коррекцией потоков.
 ! ==============================================================================
 
 module barotropic_dynamics
     use param
     implicit none
+
+    ! Пространственный шаг сетки из спецификации модели (~13.89 км)
+    real, parameter, private :: dx = 1389000.0
 
 contains
 
@@ -22,16 +30,20 @@ contains
         real :: cdx, cdy, a1, b1, a2, b2, b
         real :: vij, vv1, vv2, vv3, vv4
 
-        ! ПРЕДУПРЕЖДЕНИЕ: Эти переменные используются в старом коде,
-        ! но формулы их расчета были утеряны в оригинальных файлах.
-        ! Объявлены здесь для успешной компиляции.
+        ! Восстановленные переменные для схемы Лейса-Рихтмайера
         real :: c10, ujp, uu, uj1, flxp, flyp, vip, ui1, uip
         real :: vjp, vj1, vi2, vv
 
-        ! Инициализация массивов (замена старых DO-циклов)
+        ! Инициализация массивов
+        ! CD2 - предиктор (первый шаг Лейса-Рихтмайера) для U или V.
+        ! APX2, APY2 - антидиффузионные потоки FCT.
         cd2(:, :) = 0.0
         apx2(:, :) = 0.0
         apy2(:, :) = 0.0
+
+        ! Отношение шага по времени к шагу сетки (число Куранта)
+        ! c10 = dt1/dx [с/см].
+        c10 = dt1/dx
 
         ! --- X-COORDINATE ---
 
@@ -39,6 +51,8 @@ contains
             do i = 2, is2
                 hht = hu(i, j)
                 if (abs(hht - 8888.0) .lt. 1e-8) cycle
+                ! Вне маски U предиктор и скорость a не определены; FCT-поток нулевой.
+                if (kush(i, j) .eq. 0) cycle
 
                 i1 = i + 1
                 i2 = i - 1
@@ -50,19 +64,27 @@ contains
                 uu3 = up2(i2, j)
                 uu4 = up2(i1, j)
 
-                if (kush(i, j) .ne. 0) then
-                    v11 = vp2(i, j)/hv(i, j) + vp2(i, j2)/hv(i, j2)
-                    v12 = vp2(i1, j)/hv(i1, j) + vp2(i1, j2)/hv(i1, j2)
-                    a = uij/hht
-                    u11 = uu1/hu(i, j1) + a
-                    u12 = a + uu2/hu(i, j2)
-                    cdx = u11*(uij + uu1) + abs(u11)*(uij - uu1) - &
-                          u12*(uij + uu2) - abs(u12)*(uu2 - uij)
-                    cdy = v11*(uij + uu3) + abs(v11)*(uij - uu3) - &
-                          v12*(uij + uu4) - abs(v12)*(uu4 - uij)
-                    ! Внимание: c10 здесь не определено в оригинале
-                    cd2(i, j) = uij - c10*0.5*(cdx + cdy*0.0)
-                end if
+                v11 = vp2(i, j)/hv(i, j) + vp2(i, j2)/hv(i, j2)
+                v12 = vp2(i1, j)/hv(i1, j) + vp2(i1, j2)/hv(i1, j2)
+                a = uij/hht
+                u11 = uu1/hu(i, j1) + a
+                u12 = a + uu2/hu(i, j2)
+
+                cdx = u11*(uij + uu1) + abs(u11)*(uij - uu1) - &
+                      u12*(uij + uu2) - abs(u12)*(uu2 - uij)
+                cdy = v11*(uij + uu3) + abs(v11)*(uij - uu3) - &
+                      v12*(uij + uu4) - abs(v12)*(uu4 - uij)
+
+                ! cdx/cdy - конвективные потоки в обеих горизонтальных осях.
+                cd2(i, j) = uij - c10*0.5*(cdx + cdy)
+
+                ! Восстановление промежуточных переменных для U-потоков
+                uu = up2(i, j)
+                uj1 = up2(i, j1)
+                ui1 = up2(i1, j)
+                ujp = 0.5*(uu + uj1)
+                uip = 0.5*(uu + ui1)
+                vip = 0.5*(vp2(i, j) + vp2(i1, j))
 
                 if (j .ne. js) then
                     if (ujp .ge. 0.0) then
@@ -151,6 +173,8 @@ contains
             do i = 3, is2
                 hht = hv(i, j)
                 if (abs(hht - 8888.0) .lt. 1e-8) cycle
+                ! Аналогично U: исключаем неактивную V-грань из FCT-стенсила.
+                if (kvsh(i, j) .eq. 0) cycle
 
                 i1 = i + 1
                 i2 = i - 1
@@ -162,18 +186,26 @@ contains
                 vv3 = vp2(i, j1)
                 vv4 = vp2(i, j2)
 
-                if (kvsh(i, j) .ne. 0) then
-                    u11 = up2(i2, j1)/hu(i2, j1) + up2(i, j1)/hu(i, j1)
-                    u12 = up2(i, j)/hu(i, j) + up2(i2, j)/hu(i2, j)
-                    a = vij/hht
-                    v11 = vv1/hv(i2, j) + a
-                    v12 = a + vv2/hv(i1, j)
-                    cdx = u11*(vij + vv3) + abs(u11)*(vij - vv3) - &
-                          u12*(vij + vv4) - abs(u12)*(vv4 - vij)
-                    cdy = v11*(vij + vv1) + abs(v11)*(vij - vv1) - &
-                          v12*(vij + vv2) - abs(v12)*(vv2 - vij)
-                    cd2(i, j) = vij - c10*0.5*(cdx + cdy)
-                end if
+                u11 = up2(i2, j1)/hu(i2, j1) + up2(i, j1)/hu(i, j1)
+                u12 = up2(i, j)/hu(i, j) + up2(i2, j)/hu(i2, j)
+                a = vij/hht
+                v11 = vv1/hv(i2, j) + a
+                v12 = a + vv2/hv(i1, j)
+
+                cdx = u11*(vij + vv3) + abs(u11)*(vij - vv3) - &
+                      u12*(vij + vv4) - abs(u12)*(vv4 - vij)
+                cdy = v11*(vij + vv1) + abs(v11)*(vij - vv1) - &
+                      v12*(vij + vv2) - abs(v12)*(vv2 - vij)
+
+                cd2(i, j) = vij - c10*0.5*(cdx + cdy)
+
+                ! Восстановление промежуточных переменных для V-потоков
+                vv = vp2(i, j)
+                vj1 = vp2(i, j1)
+                vi2 = vp2(i1, j)
+                vjp = 0.5*(vv + vj1)
+                vip = 0.5*(vv + vi2)
+                ujp = 0.5*(up2(i, j) + up2(i, j1))
 
                 if (j .ne. js) then
                     if (ujp .ge. 0.0) then

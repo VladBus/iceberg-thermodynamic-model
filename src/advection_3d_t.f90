@@ -3,6 +3,13 @@
 ! Назначение: Пространственная адвекция скалярных субстанций (температуры) в 3D.
 ! Физика: Решает уравнение конвекции-диффузии. Для предотвращения численной
 !         дисперсии и осцилляций используется алгоритм Flux-Corrected Transport (FCT).
+!         Схема:
+!           1. Предиктор по горизонтали (X,Y) — направленные разности.
+!           2. Предиктор по вертикали (Z) — неявная схема Томаса (трехдиагональная).
+!           3. Антидиффузионные потоки FCT по X, Y, Z.
+!           4. FCT-лимитер (Zalesak) для каждого направления.
+!           5. Коррекция — обновление поля температуры.
+! Единицы: T [°C]; U/V [см/с]; W [см/с]; dx [см]; dz [см]; dt [с]; c2 = dt/dx.
 ! Ответственность: Транспортировка субстанций течениями с гарантиями сохранения
 !                  строгой положительности концентрации и массы. Исключает
 !                  возникновение нефизичных отрицательных значений толщины льда.
@@ -111,7 +118,7 @@ contains
                 j2 = max(1, j - 1)
 
                 do k = 1, ki
-                    a1 = adx(i, j1, k)*(cd(i, j1, k) - cd(i, j, k))
+                    a1 = adx(i, j, k)*(cd(i, j, k) - cd(i, j2, k))
                     b1 = adx(i, j2, k)*(cd(i, j2, k) - cd(i, max(1, j - 2), k))
                     a = apx(i, j, k)
                     b = sign(1.0, a)
@@ -140,8 +147,8 @@ contains
                 if (ki .eq. 0) cycle
 
                 do k = 1, ki
-                    a1 = ady(i1, j, k)*(cd(i, j, k) - cd(i1, j, k))
-                    b1 = ady(i2, j, k)*(cd(max(1, i - 2), j, k) - cd(i2, j, k))
+                    a1 = ady(i, j, k)*(cd(i, j, k) - cd(i2, j, k))
+                    b1 = ady(i2, j, k)*(cd(i2, j, k) - cd(max(1, i - 2), j, k))
                     a = apy(i, j, k)
                     b = sign(1.0, a)
                     apy(i, j, k) = b*max(0.0, min(abs(a), b*a1, b*b1))
@@ -167,14 +174,14 @@ contains
                 if (ki .eq. 0) cycle
 
                 if (ki .ge. 3) then
-                    b1 = (cd(i, j, 3) - cd(i, j, 2))*dz1(2)/dt
+                    a1 = (cd(i, j, 2) - cd(i, j, 1))*dz1(2)/dt
                     a = apz(i, j, 2)
                     b = sign(1.0, a)
-                    apz(i, j, 2) = b*max(0.0, min(abs(a), b*b1))
+                    apz(i, j, 2) = b*max(0.0, min(abs(a), b*a1))
 
                     do k = 3, ki - 1
-                        a1 = (cd(i, j, k - 1) - cd(i, j, k - 2))*dz1(k - 1)/dt
-                        b1 = (cd(i, j, k + 1) - cd(i, j, k))*dz1(k)/dt
+                        a1 = (cd(i, j, k) - cd(i, j, k - 1))*dz1(k)/dt
+                        b1 = (cd(i, j, k - 1) - cd(i, j, k - 2))*dz1(k - 1)/dt
                         a = apz(i, j, k)
                         b = sign(1.0, a)
                         apz(i, j, k) = b*max(0.0, min(abs(a), b*a1, b*b1))
@@ -182,10 +189,11 @@ contains
                 end if
 
                 if (ki .ge. 2) then
-                    a1 = (cd(i, j, ki - 1) - cd(i, j, max(1, ki - 2)))*dz1(ki - 1)/dt
+                    a1 = (cd(i, j, ki) - cd(i, j, ki - 1))*dz1(ki)/dt
+                    b1 = (cd(i, j, ki - 1) - cd(i, j, max(1, ki - 2)))*dz1(ki - 1)/dt
                     a = apz(i, j, ki)
                     b = sign(1.0, a)
-                    apz(i, j, ki) = b*max(0.0, min(abs(a), b*a1))
+                    apz(i, j, ki) = b*max(0.0, min(abs(a), b*a1, b*b1))
                 end if
             end do
         end do

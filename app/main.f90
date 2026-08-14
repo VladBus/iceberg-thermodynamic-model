@@ -15,7 +15,6 @@ program main
     use advection_2d
     use thermodynamics
     use wind_forcing
-    use barotropic_dynamics
     use ice_stress
     use grid_masks
     use ice_deform
@@ -24,7 +23,7 @@ program main
     use advection_3d_s
     use advection_3d_t
     use tide_forcing
-    use shallow_water
+    use shallow_water, only: shal, jjq, euu
     use grid_coupling
     use netcdf_output
     use initial_conditions
@@ -33,7 +32,7 @@ program main
 
     ! --- Локальные переменные ---
     real :: god, mes, den, hour
-    integer :: kl1, nom, mm1, mm2, mm3, mm4, mm5, kkb, kcc
+    integer :: kl1, nom, mm1, mm2, mm3, mm4, mm5, kkb
     real :: dt1, dt, dx, ah, aht, ahs, g, roc, cp
     real :: c1, c2, c3, c4, c5, c8, c9, c10, c11, c12, c15, c16, c17
     real :: sas, a, b, a1, b1, a2, b2, a3, b3, a4, b4, cc_val
@@ -79,7 +78,6 @@ program main
     mm5 = 1             ! Количество расчетных лет
     dx = 1389000.0      ! Пространственный шаг сетки (см), ~13.8 км
     kkb = 1             ! Начальный индекс метеоданных
-    kcc = 0             ! Счетчик шагов для вызова термодинамики
     ikkk = 0            ! Счетчик диагностических записей
     nday = 0            ! Счетчик дней внутри месяца
     nday1 = 0           ! Общий счетчик дней модельного времени
@@ -108,6 +106,12 @@ program main
     c17 = 0.0055*1000.0/910.0
 
     ! --- Чтение приливных гармоник (с защитой iostat) ---
+    amp1 = 0.0
+    amp2 = 0.0
+    amp3 = 0.0
+    faz1 = 0.0
+    faz2 = 0.0
+    faz3 = 0.0
     open (3, file='GRM2', status='old', iostat=ios)
     if (ios .eq. 0) then
         read (3, *) (amp1(i, 1), i=1, 133)
@@ -139,6 +143,7 @@ program main
     call ikuv()
 
     ! --- Чтение метеоданных и стартовых полей льда ---
+    p = 0.0
     open (1, file='DAV4_5.98', status='old', iostat=ios)
     if (ios .eq. 0) then
         read (1, *) mm1
@@ -152,6 +157,20 @@ program main
     end if
 
     ! Чтение начальных толщин категорий льда
+    an1 = 0.0
+    wice1 = 0.0
+    hsnow = 0.0
+    u = 0.0
+    v = 0.0
+    u0 = 0.0
+    v0 = 0.0
+    exx = 0.0
+    eyy = 0.0
+    exy = 0.0
+    epr = 0.0
+    sxx = 0.0
+    syy = 0.0
+    sxy = 0.0
     do k = 2, 6
         write (nam_file, '(A,I1,A)') '1_', k - 1, '.ice'
         open (1, file=trim(nam_file), status='old', iostat=ios)
@@ -235,16 +254,20 @@ program main
                         windy = windy + (windy1 - windy)/b
                     end if
 
+                    ! windx/windy хранят см/с, а heat использует модуль скорости в м/с.
+                    wind = sqrt(windx*windx + windy*windy)*1.0e-2
+
                     t1 = t2
                     s1 = s2
                     v1 = v2
                     u1 = u2
 
-                    ! 2. Вызов блока термодинамики (каждые 80 шагов)
-                    kcc = kcc + 1
-                    if (kcc .eq. 80) then
-                        kcc = 0
+                    ! Термодинамика должна идти с тем же шагом, что и океан.
+                    ! Без ERA5-полей (kl1=0) вызов дал бы деление на patm=0.
+                    if (kl1 .eq. 1) then
                         call heat(dt, nday, lll)
+                        ! heat меняет категории; динамике льда нужны новые A и h.
+                        call redis()
                     end if
 
                     ! 3. Динамика льда (баротропные подциклы)
@@ -340,11 +363,10 @@ program main
                     do j = 2, js
                         j1 = j + 1
                         j2 = j - 1
-                        ix2 = idx(1, j1)
                         do i = 2, is
                             i1 = i + 1
                             i2 = i - 1
-                            ix1 = idx(i, 1)
+                            ix1 = idx(i, j)
                             ix2 = idx(i, j1)
                             ki = kt1(i, j)
                             if (ki .eq. 0) cycle
@@ -353,7 +375,6 @@ program main
                             iy2 = idy(i1, j)
 
                             do k = 1, ki
-                                k1 = k + 1
                                 a = u1(i, j, k) + u1(i1, j, k)
                                 aa = u1(i, j1, k) + u1(i1, j1, k)
                                 if (k .eq. 1) au = a + aa
@@ -405,7 +426,6 @@ program main
                                     w(i, j, k) = a
                                 end do
                             end if
-                            ix1 = ix2
                         end do
                     end do
 

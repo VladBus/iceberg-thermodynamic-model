@@ -107,6 +107,11 @@ Thumbs.db
 *.userosscache
 *.sln.docstates
 
+# AI
+.opencode/
+AGENTS.md
+opencode.jsonc
+
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
 

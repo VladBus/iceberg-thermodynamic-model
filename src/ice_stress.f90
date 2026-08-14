@@ -5,6 +5,9 @@
 !         Вычисляет инварианты тензора скоростей деформации. Напряжения возникают
 !         только при сплошности льда, превышающей 95%. Критерий разрушения
 !         базируется на эллиптической кривой текучести (yield curve).
+!         Уравнение: σ_ij = η_eff·ε_ij - P/2·δ_ij; P = p*·h·exp(-C(1-A)).
+!         η_eff = P/(2·Δ), где Δ = sqrt(ε_1² + ε_2² + ε_1·ε_2·(1-e²)/e²).
+! Единицы: ε [1/с], σ [дина/см²], h [м], A [доли единицы].
 ! Ответственность: Формирование сил сопротивления сжатию и сдвигу, передача
 !                  информации о торошении в модуль перераспределения массы.
 ! ==============================================================================
@@ -24,6 +27,9 @@ contains
         real, parameter :: dt1_val = 120.0
 
         ! --- БЛОК ПОДГОТОВКИ ПОЛЕЙ С ВЫЗОВОМ DEFORM ---
+        ! Вызываем deform() трижды для компонентов EXX, EYY, EXY тензора деформации.
+        ! EPR - рабочий массив [is3, js3] для тензоров деформации (с halo).
+        ! После каждого вызова deform копируем результат из EPR в EXX/EYY/EXY.
 
         do j = 1, js
             do i = 1, is
@@ -31,6 +37,11 @@ contains
                 epr(i1, j + 1) = exx(i, j)
             end do
         end do
+        ! deform читает halo при отрицательной скорости: задаем нулевой градиент.
+        epr(1, :) = epr(2, :)
+        epr(is3, :) = epr(is1, :)
+        epr(:, 1) = epr(:, 2)
+        epr(:, js3) = epr(:, js1)
 
         call deform(1, dx_val, dt1_val)
 
@@ -42,6 +53,10 @@ contains
                 epr(i1, j1) = eyy(i, j)
             end do
         end do
+        epr(1, :) = epr(2, :)
+        epr(is3, :) = epr(is1, :)
+        epr(:, 1) = epr(:, 2)
+        epr(:, js3) = epr(:, js1)
 
         call deform(2, dx_val, dt1_val)
 
@@ -53,6 +68,10 @@ contains
                 epr(i1, j1) = exy(i, j)
             end do
         end do
+        epr(1, :) = epr(2, :)
+        epr(is3, :) = epr(is1, :)
+        epr(:, 1) = epr(:, 2)
+        epr(:, js3) = epr(:, js1)
 
         call deform(3, dx_val, dt1_val)
 
@@ -66,7 +85,12 @@ contains
         ! --- ОСНОВНОЙ ЦИКЛ РАСЧЕТА НАПРЯЖЕНИЙ ---
         do j = 1, js
             do i = 1, is
-                if (kt1(i, j) .eq. 0) cycle
+                if (kt1(i, j) .eq. 0) then
+                    ! Не позволяем старым напряжениям суши войти в соседний stencil.
+                    exx(i, j) = 0.0; eyy(i, j) = 0.0; exy(i, j) = 0.0
+                    sxx(i, j) = 0.0; syy(i, j) = 0.0; sxy(i, j) = 0.0
+                    cycle
+                end if
 
                 if (ans(i, j) .lt. 0.95) then
                     exx(i, j) = 0.0; eyy(i, j) = 0.0; exy(i, j) = 0.0
@@ -93,8 +117,8 @@ contains
                 a1 = a + b2
                 a2 = a - b2
 
-                k_crit = 2
-                do k = 2, ngr
+                k_crit = 1
+                do k = 1, ngr
                     if (an1(i, j, k + 1) .gt. 0.05) then
                         k_crit = k
                         exit

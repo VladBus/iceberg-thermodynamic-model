@@ -6,6 +6,11 @@
 !         Ньютона-Рафсона. Рассчитывает скорости нарастания и таяния льда
 !         (базируется на термодинамических постулатах Зубова и Стефана).
 !         Включает блок разрушения айсбергов волновой и конвективной эрозией.
+!         Уравнения: Q_sw = SW·(1-α); Q_lw = ε·σ·T⁴; Q_sh = ρ_a·c_p·C_h·V·(T_a-T_s);
+!         Q_lh = ρ_a·L·C_e·V·(q_a-q_s); T_f = -54·S (точка замерзания).
+!         Скрытая теплота: L_f = 3.34e5 Дж/кг; ρ_i·L_f = 302e6 Дж/м³ (лед);
+!         ρ_s·L_f = 110e6 Дж/м³ (снег).
+! Единицы: T [degC или K], S [массовая доля], dt [с], h [м], A [доли единицы].
 ! Ответственность: Энергетический баланс системы, изменение толщины и сплошности
 !                  ледяного покрова за счет тепловых процессов.
 ! ==============================================================================
@@ -21,7 +26,7 @@ contains
         integer, intent(in) :: nday, lll
 
         ! Локальные переменные
-        integer :: i, j, k, k1
+        integer :: i, j, k, k1, n_iter
         real :: dzz, dtz, ttac, tta, ppatm, ratm, twac, twa, hhum, ww, cclo
         real :: a, a1, a2, a3, b, b1, b2, b3, b4, cz, e_vap, sw, wl
         real :: hfirst, ann1, ann2, sh1, el1, aaa, qn, dhsn, dhic1, dhic
@@ -65,7 +70,9 @@ contains
 
                 ansum = ans(i, j)
                 tfr = -54.0*spar(1)
-                fw = 1028.0*4.1868e3*skt(i, j)*(t1(i, j, 1) - tfr)/dz(1)
+                ! skt [м2/с], dz [см]: переводим толщину первого слоя в метры.
+                ! fw [Вт/м2] - турбулентный поток тепла между водой и льдом.
+                fw = 1028.0*4.1868e3*skt(i, j)*(t1(i, j, 1) - tfr)/(dz(1)*1.0e-2)
                 if (fw .le. 0.0) fw = 0.0
                 tfr = tfr + 273.15
 
@@ -128,7 +135,9 @@ contains
                         b = 2.04*hhic1
                         err = 100.0
                         err1 = 100.0
-                        do while (err .ge. 0.25)
+                        n_iter = 0
+                        do while (err .ge. 0.25 .and. n_iter .lt. 100)
+                            n_iter = n_iter + 1
                             sh = b3*(tta - tts)
                             a = 5.4999e-8*tts**3
                             a1 = sh + el + 0.466*sw + 0.97*wl
@@ -139,7 +148,7 @@ contains
                             if (err .ge. err1) exit
                             tts = a_tmp
                         end do
-                        if (err .ge. err1) tts = tta
+                        if (err .ge. err1 .or. n_iter .eq. 100) tts = tta
 
                         if (tts .le. 273.15) then
                             dhsn = dt*sfal(lll)
@@ -152,7 +161,7 @@ contains
                         end if
 
                         dhic = -dt/302.e6*(fw - b*(tfr - tts))
-                        hicp(k) = hicp(k) + dhic + dhic1
+                        hicp(k) = hicp(k) + dhic
                         if (hicp(k) .lt. 0.01) then
                             hicp(k) = 0.0
                             hsnp(k) = 0.0
@@ -166,7 +175,9 @@ contains
                         b = 0.6324/b4
                         err = 100.0
                         err1 = 100.0
-                        do while (err .ge. 0.25)
+                        n_iter = 0
+                        do while (err .ge. 0.25 .and. n_iter .lt. 100)
+                            n_iter = n_iter + 1
                             sh = b3*(tta - tts)
                             a = 5.6133e-8*tts**3
                             a1 = sh + el + (1.0 - alsn(lll))*sw + 0.99*wl
@@ -177,7 +188,7 @@ contains
                             if (err .ge. err1) exit
                             tts = a_tmp
                         end do
-                        if (err .ge. err1) tts = tta
+                        if (err .ge. err1 .or. n_iter .eq. 100) tts = tta
 
                         if (tts .le. 273.15) then
                             dhsn = sfal(lll)*dt
@@ -240,7 +251,8 @@ contains
                     do k = 1, ngr
                         if (abs(hicp(k)) .gt. 1e-8) then
                             k1 = k + 1
-                            danp(k) = anp(k)*a_tmp/(302.e6*hicp(k) + 110.e6*hsnp(k))
+                            ! Площадь не может стать отрицательной за один шаг таяния.
+                            danp(k) = min(anp(k), anp(k)*a_tmp/(302.e6*hicp(k) + 110.e6*hsnp(k)))
                             anp(k) = anp(k) - danp(k)
                             b_tmp = b_tmp + danp(k)
                             a3_tmp = a3_tmp + anp(k)*tpar(k1)

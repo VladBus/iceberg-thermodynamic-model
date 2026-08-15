@@ -27,6 +27,7 @@ program main
     use grid_coupling
     use netcdf_output
     use initial_conditions
+    use netcdf_input
 
     implicit none
 
@@ -67,6 +68,8 @@ program main
 
     kl1 = 0             ! Флаг чтения климатических данных (0 - нет, 1 - да)
     nom = 1             ! Идентификатор чтения начальных данных
+    ! Временный переключатель для отладки ERA5 input (этап 2/3).
+    forcing_mode = forcing_mode_era5
 
     ! --- Временные и пространственные шаги сетки ---
     dt1 = 120.0         ! Шаг баротропной моды (сек)
@@ -209,6 +212,23 @@ program main
 
     ! Записываем состояние океана ДО начала расчета (День 0)
     call write_nc('data/output/results_day_00.nc')
+
+    ! ====================================================================
+    !              ЧТЕНИЕ АТМОСФЕРНОГО ФОРСИНГА ERA5 (NetCDF)
+    ! ====================================================================
+    ! Этап 2/3: чтение и диагностика. Принудительно открываем тестовый
+    ! файл era5_test.nc. Пока это только проверка канала ввода; подключение
+    ! к физике (wind/tx/ty/dpx/dpy/tatm/patm) выполняется на следующих этапах.
+    ! При ошибке чтения модель продолжает работу в legacy-режиме (без ERA5).
+    if (forcing_mode .eq. forcing_mode_era5) then
+        call era5_open('data/input/era5_test.nc', ios)
+        if (ios .eq. 0) then
+            call era5_diag()
+        else
+            print *, "WARNING: ERA5 input failed, falling back to legacy forcing."
+            forcing_mode = forcing_mode_legacy
+        end if
+    end if
 
     ! ====================================================================
     !                    ГЛАВНЫЙ ЦИКЛ ПО ВРЕМЕНИ

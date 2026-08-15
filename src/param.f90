@@ -152,6 +152,20 @@ module param
     real :: fff(li)
     integer :: mmm(12)
 
+    ! Режимы внешнего форсинга.
+    ! forcing_mode_legacy - старый путь: DAV4_5.98 -> p -> геострофический ветер.
+    ! forcing_mode_era5  - новый путь: NetCDF (u10/v10/msl/t2m) -> интерполяция.
+    integer, parameter :: forcing_mode_legacy = 0
+    integer, parameter :: forcing_mode_era5 = 1
+    integer :: forcing_mode = forcing_mode_legacy
+
+    ! Режим модельной сетки координат.
+    ! grid_mode_real - координаты FI/DL читаются из KOORD.DAT (REAL grid).
+    ! grid_mode_test  - синтетическая сетка TEST ONLY (KOORD.DAT отсутствует).
+    integer, parameter :: grid_mode_real = 0
+    integer, parameter :: grid_mode_test = 1
+    integer :: grid_mode = grid_mode_test
+
     ! Инициализация данных (блок DATA)
     ! Z - глубины центров 18 Z-уровней [см].
     data z/250., 500., 1000., 1500., 2000., 2500., 3000., 4000., &

@@ -27,6 +27,7 @@ program main
     use grid_coupling
     use netcdf_output
     use initial_conditions
+    use netcdf_input
 
     implicit none
 
@@ -49,6 +50,8 @@ program main
 
     real :: ecc = 0.0, ess = 0.0
     character(len=20) :: nam_file
+    real(8) :: start_sec
+    integer :: nperday
 
     print *, "================================================="
     print *, "   AARI Iceberg Thermodynamic & Dynamics Model   "
@@ -67,6 +70,8 @@ program main
 
     kl1 = 0             ! Флаг чтения климатических данных (0 - нет, 1 - да)
     nom = 1             ! Идентификатор чтения начальных данных
+    ! Временный переключатель для отладки ERA5 input (этап 2/3).
+    forcing_mode = forcing_mode_era5
 
     ! --- Временные и пространственные шаги сетки ---
     dt1 = 120.0         ! Шаг баротропной моды (сек)
@@ -211,12 +216,45 @@ program main
     call write_nc('data/output/results_day_00.nc')
 
     ! ====================================================================
+    !              ЧТЕНИЕ АТМОСФЕРНОГО ФОРСИНГА ERA5 (NetCDF)
+    ! ====================================================================
+    ! Этап 2/3: чтение и диагностика. Принудительно открываем тестовый
+    ! файл era5_test.nc. Пока это только проверка канала ввода; подключение
+    ! к физике (wind/tx/ty/dpx/dpy/tatm/patm) выполняется на следующих этапах.
+    ! При ошибке чтения модель продолжает работу в legacy-режиме (без ERA5).
+    if (forcing_mode .eq. forcing_mode_era5) then
+        call era5_open('data/input/era5_test.nc', ios)
+        if (ios .eq. 0) then
+            call era5_diag()
+
+            ! Временной интерфейс: модельные сутки привязываются к первому
+            ! ERA5-срезу (nearest-time, документированное допущение первого
+            ! этапа). start_sec = время первого среза в секундах с эпохи.
+            start_sec = era5_time(1)
+
+            ! Ограничиваем прогон числом суток, покрытых ERA5-данными,
+            ! чтобы модель не выходила за пределы входных данных.
+            nperday = nint(86400.0_8/max(era5_time(2) - era5_time(1), 1.0_8))
+            mm1 = min(mm1, (era5_ntime - 1)/max(nperday, 1))
+            print *, "ERA5: run limited to ", mm1, " days (", era5_ntime, &
+                     " time steps, ", nperday, " steps/day)"
+        else
+            print *, "WARNING: ERA5 input failed, falling back to legacy forcing."
+            forcing_mode = forcing_mode_legacy
+        end if
+    end if
+
+    ! ====================================================================
     !                    ГЛАВНЫЙ ЦИКЛ ПО ВРЕМЕНИ
     ! ====================================================================
     print *, "Starting Main Integration Loop..."
 
     pp(:) = p(:, kkb)
-    call wind1()
+    if (forcing_mode .eq. forcing_mode_era5) then
+        call era5_wind(start_sec)
+    else
+        call wind1()
+    end if
 
     do mmmm = 1, mm5
         nday = 0
@@ -240,7 +278,11 @@ program main
                 ty(:, :) = ty1(:, :)
 
                 pp(:) = p(:, kkk + 1)
-                call wind1()
+                if (forcing_mode .eq. forcing_mode_era5) then
+                    call era5_wind(start_sec + real(kkk, 8)*86400.0_8)
+                else
+                    call wind1()
+                end if
 
                 do iii = 1, mm2
                     ! 1. Временная интерполяция ветровых напряжений

@@ -372,15 +372,42 @@ contains
             end do
         end do
 
-        ! Инициализация широты FI (в градусах) для параметра Кориолиса и
-        ! расчёта солнечной радиации. Ранее массив FI нигде не заполнялся,
-        ! что давало нулевую силу Кориолиса и экваториальную радиацию.
-        ! Широта линейно растёт с индексом J от 66N (юг) до 82N (север).
-        do j = 1, js1
-            do i = 1, is1
-                fi(i, j) = 66.0 + 16.0*real(j - 1)/real(js1 - 1)
+        ! Инициализация широты FI и долготы DL (в градусах) для параметра
+        ! Кориолиса, расчёта солнечной радиации и пространственной интерполяции
+        ! атмосферного форсинга ERA5.
+        !
+        ! ИСТОРИЧЕСКИ: FI/DL читались из KOORD.DAT (полные поля координат).
+        ! Файл отсутствует в рабочей копии, поэтому:
+        !   grid_mode=REAL -> попытка прочитать KOORD.DAT; при неудаче - STOP.
+        !   grid_mode=TEST  -> синтетическая сетка TEST ONLY с явным warning.
+        !
+        ! TEST ONLY: широта линейно растёт с индексом J от 66N (юг) до 82N (север);
+        ! долгота линейно растёт с индексом I от 30E до 63E (в пределах ERA5-окна).
+        ! Эти координаты НЕ являются реальной областью модели и НЕ должны
+        ! использоваться в production-расчётах.
+        if (grid_mode .eq. grid_mode_real) then
+            open (1, file='KOORD.DAT', status='old', iostat=ios)
+            if (ios .eq. 0) then
+                read (1, *) fi
+                read (1, *) dl
+                close (1)
+                print *, "KOORD.DAT loaded: FI/DL read from file (REAL grid)."
+            else
+                print *, "FATAL: grid_mode=REAL but KOORD.DAT is missing."
+                print *, "  Cannot use synthetic coordinates in production mode."
+                print *, "  Provide KOORD.DAT or set grid_mode=TEST explicitly."
+                stop
+            end if
+        else
+            print *, "WARNING: TEST ONLY synthetic grid (grid_mode=TEST)."
+            print *, "  KOORD.DAT is absent; FI/DL are synthetic and NOT a real basin."
+            do j = 1, js1
+                do i = 1, is1
+                    fi(i, j) = 66.0 + 16.0*real(j - 1)/real(js1 - 1)
+                    dl(i, j) = 30.0 + 33.0*real(i - 1)/real(is1 - 1)
+                end do
             end do
-        end do
+        end if
 
         ! Вычисление параметров Кориолиса
         omega = 2.0*7.29e-5

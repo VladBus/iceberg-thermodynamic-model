@@ -111,6 +111,7 @@ Thumbs.db
 .opencode/
 AGENTS.md
 opencode.jsonc
+promt.md
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs

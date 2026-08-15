@@ -271,6 +271,173 @@ contains
     end subroutine era5_diag
 
     ! ==========================================================================
+    ! Временной интерфейс.
+    ! Стратегия первого этапа: nearest-time (документированное допущение).
+    !   model seconds (с 1970-01-01, proleptic Gregorian)
+    !         -> ближайший ERA5 time index.
+    ! При выходе за диапазон данных idx прижимается к границе и выводится
+    ! однократное предупреждение (никакого молчаливого экстраполирования).
+    ! ==========================================================================
+
+    ! Перевод календарной даты (proleptic Gregorian) в секунды с 1970-01-01.
+    subroutine era5_calendar_to_seconds(y, mo, d, h, sec)
+        integer, intent(in) :: y, mo, d, h
+        real(8), intent(out) :: sec
+
+        integer(8) :: yd, era, yoe, doy, doe, days
+
+        ! days_from_civil (Howard Hinnant): дни от 1970-01-01.
+        yd = y
+        if (mo .lt. 3) yd = yd - 1
+        era = yd/400
+        yoe = yd - era*400
+        if (mo .gt. 2) then
+            doy = (153*(mo - 3) + 2)/5 + d - 1
+        else
+            doy = (153*(mo + 9) + 2)/5 + d - 1
+        end if
+        doe = yoe*365 + yoe/4 - yoe/100 + doy
+        days = era*146097 + doe - 719468
+
+        sec = real(days, 8)*86400.0_8 + real(h, 8)*3600.0_8
+    end subroutine era5_calendar_to_seconds
+
+    ! Поиск ближайшего (nearest) ERA5 time index для заданных секунд.
+    subroutine era5_find_time_index(sec, idx)
+        real(8), intent(in) :: sec
+        integer, intent(out) :: idx
+
+        integer :: lo, hi, mid
+
+        if (.not. era5_is_open) then
+            print *, "ERA5 ERROR: no open file, cannot map time"
+            idx = 1
+            return
+        end if
+
+        if (sec .le. era5_time(1)) then
+            idx = 1
+            return
+        end if
+        if (sec .ge. era5_time(era5_ntime)) then
+            idx = era5_ntime
+            return
+        end if
+
+        ! Бинарный поиск по возрастающему времени.
+        lo = 1
+        hi = era5_ntime
+        do while (hi - lo .gt. 1)
+            mid = (lo + hi)/2
+            if (era5_time(mid) .le. sec) then
+                lo = mid
+            else
+                hi = mid
+            end if
+        end do
+
+        if (sec - era5_time(lo) .le. era5_time(hi) - sec) then
+            idx = lo
+        else
+            idx = hi
+        end if
+    end subroutine era5_find_time_index
+
+    ! ==========================================================================
+    ! Пространственная интерполяция.
+    ! Билинейная интерполяция значения 2D-поля (срез на фиксированный момент
+    ! времени) в заданной точке (lat, lon).
+    !  - ERA5 longitude считается циклической: точка за 179.75°E переходит на
+    !    -180°E (dateline), поэтому индекс узла справа оборачивается.
+    !  - latitude предполагается монотонно возрастающей (мы её перевернули).
+    !  - Индексы узлов ищутся бинарным поиском (шаг сетки может отличаться
+    !    от 0.25°, хардкод запрещён).
+    !  - Функция возвращает .false., если точка вне диапазона latitude.
+    ! ==========================================================================
+    function era5_bilinear2d(field, lat, lon, value) result(ok)
+        real(4), intent(in) :: field(:, :)  ! (nlat, nlon) срез на момент времени
+        real(8), intent(in) :: lat, lon
+        real(8), intent(out) :: value
+        logical :: ok
+
+        integer :: ilat, jlon, ilat1, jlon1, lo, hi, mid
+        real(8) :: lat0, lat1, lon0, lon1
+        real(8) :: wlat, wlon, lon_wrap
+
+        ok = .false.
+        value = 0.0_8
+
+        ! Вне диапазона широты — не интерполируем.
+        if (lat .lt. era5_lat(1) .or. lat .gt. era5_lat(era5_nlat)) return
+
+        ! Бинарный поиск нижнего индекса по latitude.
+        ilat = 1
+        lo = 1
+        hi = era5_nlat
+        do while (hi - lo .gt. 1)
+            mid = (lo + hi)/2
+            if (era5_lat(mid) .le. lat) then
+                lo = mid
+            else
+                hi = mid
+            end if
+        end do
+        ilat = lo
+        ilat1 = min(ilat + 1, era5_nlat)
+
+        ! Поиск по longitude. Если lon вне диапазона файла — нормализуем
+        ! сдвигом на 360° в допустимый диапазон (циклическая долгота).
+        lon_wrap = lon
+        do while (lon_wrap .lt. era5_lon(1))
+            lon_wrap = lon_wrap + 360.0_8
+        end do
+        do while (lon_wrap .gt. era5_lon(era5_nlon))
+            lon_wrap = lon_wrap - 360.0_8
+        end do
+
+        lo = 1
+        hi = era5_nlon
+        do while (hi - lo .gt. 1)
+            mid = (lo + hi)/2
+            if (era5_lon(mid) .le. lon_wrap) then
+                lo = mid
+            else
+                hi = mid
+            end if
+        end do
+        jlon = lo
+
+        ! Правый сосед по долготе с циклическим переносом через ±180°.
+        jlon1 = jlon + 1
+        if (jlon1 .gt. era5_nlon) jlon1 = 1
+
+        lat0 = era5_lat(ilat)
+        lat1 = era5_lat(ilat1)
+        lon0 = era5_lon(jlon)
+        lon1 = era5_lon(jlon1)
+
+        if (ilat1 .gt. ilat) then
+            wlat = (lat - lat0)/(lat1 - lat0)
+        else
+            wlat = 0.0_8
+        end if
+
+        ! Вес по долготе. Для циклического узла используем +360° правой границы.
+        if (lon1 .gt. lon0) then
+            wlon = (lon_wrap - lon0)/(lon1 - lon0)
+        else
+            wlon = (lon_wrap - lon0)/(lon1 + 360.0_8 - lon0)
+        end if
+        wlon = min(max(wlon, 0.0_8), 1.0_8)
+
+        value = (1.0_8 - wlat)*(1.0_8 - wlon)*field(ilat, jlon) &
+              + wlat*(1.0_8 - wlon)*field(ilat1, jlon) &
+              + (1.0_8 - wlat)*wlon*field(ilat, jlon1) &
+              + wlat*wlon*field(ilat1, jlon1)
+        ok = .true.
+    end function era5_bilinear2d
+
+    ! ==========================================================================
     ! Проверка кода возврата NetCDF. Вместо тихих ошибок печатает контекст.
     ! ==========================================================================
     logical function nc_input_ok(nf_status, operation, filename, variable)

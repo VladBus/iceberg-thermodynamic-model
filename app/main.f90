@@ -50,6 +50,8 @@ program main
 
     real :: ecc = 0.0, ess = 0.0
     character(len=20) :: nam_file
+    real(8) :: start_sec
+    integer :: nperday
 
     print *, "================================================="
     print *, "   AARI Iceberg Thermodynamic & Dynamics Model   "
@@ -224,6 +226,18 @@ program main
         call era5_open('data/input/era5_test.nc', ios)
         if (ios .eq. 0) then
             call era5_diag()
+
+            ! Временной интерфейс: модельные сутки привязываются к первому
+            ! ERA5-срезу (nearest-time, документированное допущение первого
+            ! этапа). start_sec = время первого среза в секундах с эпохи.
+            start_sec = era5_time(1)
+
+            ! Ограничиваем прогон числом суток, покрытых ERA5-данными,
+            ! чтобы модель не выходила за пределы входных данных.
+            nperday = nint(86400.0_8/max(era5_time(2) - era5_time(1), 1.0_8))
+            mm1 = min(mm1, (era5_ntime - 1)/max(nperday, 1))
+            print *, "ERA5: run limited to ", mm1, " days (", era5_ntime, &
+                     " time steps, ", nperday, " steps/day)"
         else
             print *, "WARNING: ERA5 input failed, falling back to legacy forcing."
             forcing_mode = forcing_mode_legacy
@@ -236,7 +250,11 @@ program main
     print *, "Starting Main Integration Loop..."
 
     pp(:) = p(:, kkb)
-    call wind1()
+    if (forcing_mode .eq. forcing_mode_era5) then
+        call era5_wind(start_sec)
+    else
+        call wind1()
+    end if
 
     do mmmm = 1, mm5
         nday = 0
@@ -260,7 +278,11 @@ program main
                 ty(:, :) = ty1(:, :)
 
                 pp(:) = p(:, kkk + 1)
-                call wind1()
+                if (forcing_mode .eq. forcing_mode_era5) then
+                    call era5_wind(start_sec + real(kkk, 8)*86400.0_8)
+                else
+                    call wind1()
+                end if
 
                 do iii = 1, mm2
                     ! 1. Временная интерполяция ветровых напряжений

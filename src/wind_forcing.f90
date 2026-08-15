@@ -11,6 +11,8 @@
 module wind_forcing
     use param
     use smooth_filter    ! Подключаем модуль сглаживания
+    use netcdf_input, only: era5_find_time_index, era5_bilinear2d, &
+                            era5_u10, era5_v10, era5_t2m, era5_msl, era5_is_open
     implicit none
 
 contains
@@ -165,6 +167,135 @@ contains
         end do
 
     end subroutine wind1
+
+    ! ==========================================================================
+    ! ERA5-ветвь форсинга: заполняет модельные массивы полями, интерполированными
+    ! с регулярной ERA5-сетки билинейно в точках FI(i,j)/DL(i,j).
+    ! Условные секунды itime_sec используются для выбора временного среза
+    ! (nearest-time, документированное допущение первого этапа).
+    !
+    ! Единицы (СГС/смешанная система модели):
+    !   ERA5 u10/v10 [m/s] -> windx1/windy1 [cm/s]  (x100)
+    !   wind             [m/s] (модуль, для heat)
+    !   tx1/ty1          [г/см/с2 = дин/см2] по квадратичному закону,
+    !                    идентичному legacy (cof), НО по фактическому u10/v10,
+    !                    а не по геострофическому ветру.
+    !   msl  [Pa] -> p1 [гПа] (x0.01); dpx1/dpy1 [гПа/км] — независимая ветвь.
+    !   t2m  [K]  -> tatm [degC] (минус 273.15)
+    !   msl  [Pa] -> patm [гПа] (x0.01) для термодинамики.
+    ! ==========================================================================
+    subroutine era5_wind(itime_sec)
+        real(8), intent(in) :: itime_sec
+        integer :: i, j, idx
+        integer :: nbad
+        real(8) :: lat, lon, u10v, v10v, t2mv, mslv
+        real(8) :: spd, cof8, u_cm, v_cm
+        real, parameter :: dxx = 13.89e5 ! Горизонтальный шаг сетки (см)
+        logical :: ok
+
+        if (.not. era5_is_open) then
+            print *, "ERA5 WIND: ERA5 dataset is not open; using zeros."
+            windx1 = 0.0
+            windy1 = 0.0
+            wind = 0.0
+            tx1 = 0.0
+            ty1 = 0.0
+            p1 = 0.0
+            dpx1 = 0.0
+            dpy1 = 0.0
+            tatm = 0.0
+            patm = 0.0
+            return
+        end if
+
+        call era5_find_time_index(itime_sec, idx)
+        nbad = 0
+        print *, "ERA5 WIND: idx=", idx, " sec=", itime_sec
+
+        ! Интерполяция во ВСЕ узлы модельной сетки. Точки суши затем
+        ! маскируются ниже (wind=1.70141e38), как в legacy.
+        do j = 1, js1
+            do i = 1, is1
+                lat = real(fi(i, j), 8)
+                lon = real(dl(i, j), 8)
+
+                ok = era5_bilinear2d(era5_u10(:, :, idx), lat, lon, u10v)
+                if (.not. ok) then
+                    nbad = nbad + 1
+                    cycle
+                end if
+                ok = era5_bilinear2d(era5_v10(:, :, idx), lat, lon, v10v)
+                ok = era5_bilinear2d(era5_t2m(:, :, idx), lat, lon, t2mv)
+                ok = era5_bilinear2d(era5_msl(:, :, idx), lat, lon, mslv)
+
+                ! Ветер: м/с -> см/с (СГС).
+                u_cm = u10v*100.0_8
+                v_cm = v10v*100.0_8
+                spd = sqrt(u_cm*u_cm + v_cm*v_cm)
+
+                ! Квадратичный закон сопротивления (идентичен legacy-wind1):
+                !   cof = (1.1 + 0.04*V_cm*1e-2) * V_cm^2 * 1.29e-6   [дин/см2 при V в см/с]
+                ! Направление берётся из фактического ветра (u/v), а не из угла.
+                if (spd .gt. 1.0e-6) then
+                    cof8 = (1.1_8 + 0.04_8*(spd*1.0e-2_8))*spd*spd*1.29e-6_8
+                    tx1(i, j) = real(cof8*(u_cm/spd), 4)
+                    ty1(i, j) = real(cof8*(v_cm/spd), 4)
+                else
+                    tx1(i, j) = 0.0
+                    ty1(i, j) = 0.0
+                end if
+
+                windx1(i, j) = real(u_cm, 4)
+                windy1(i, j) = real(v_cm, 4)
+                wind(i, j) = real(spd*1.0e-2, 4)          ! м/с
+
+                p1(i, j) = real(mslv*0.01, 4)             ! гПа
+                tatm(i, j) = real(t2mv - 273.15_8, 4)     ! degC
+                patm(i, j) = real(mslv*0.01, 4)           ! гПа
+            end do
+        end do
+
+        if (nbad .gt. 0) then
+            print *, "ERA5 WIND WARNING: ", nbad, &
+                     " model points outside ERA5 latitude range (zeroed)."
+        end if
+
+        ! Градиент атмосферного давления (независимая ветвь от ветра).
+        ! Та же формула, что в legacy: px = p1(i,j+1)-p1(i,j); py = p1(i,j)-p1(i+1,j)
+        ! dpx1 = px*1e3/dxx  -> единицы гПа/км.
+        do j = 1, js
+            do i = 1, is
+                dpx1(i, j) = (p1(i, j + 1) - p1(i, j))*1.e3/dxx
+                dpy1(i, j) = (p1(i, j) - p1(i + 1, j))*1.e3/dxx
+            end do
+        end do
+
+        ! Краевые условия (как в legacy-wind1).
+        wind(:, js1) = wind(:, js)
+        wind(is1, :) = wind(is, :)
+        dpx1(:, js1) = dpx1(:, js)
+        dpy1(:, js1) = dpy1(:, js)
+        windx1(:, js1) = windx1(:, js)
+        windy1(:, js1) = windy1(:, js)
+        tx1(:, js1) = tx1(:, js)
+        ty1(:, js1) = ty1(:, js)
+        dpx1(is1, :) = dpx1(is, :)
+        dpy1(is1, :) = dpy1(is, :)
+        windx1(is1, :) = windx1(is, :)
+        windy1(is1, :) = windy1(is, :)
+        tx1(is1, :) = tx1(is, :)
+        ty1(is1, :) = ty1(is, :)
+
+        ! Маскирование суши (в оригинале 8888. - суша)
+        do j = 1, js1
+            do i = 1, is1
+                if (abs(ht(i, j) - 8888.0) .lt. 1e-8) wind(i, j) = 1.70141e38
+            end do
+        end do
+        print *, "ERA5 WIND ranges: windx[", minval(windx1), ",", maxval(windx1), &
+                 "] p1[", minval(p1), ",", maxval(p1), "] tx[", minval(tx1), &
+                 ",", maxval(tx1), "] dpx[", minval(dpx1), ",", maxval(dpx1), "]"
+    end subroutine era5_wind
 
     ! Внутренняя подпрограмма (была вынесена отдельно, теперь живет внутри модуля)
     subroutine surfw()

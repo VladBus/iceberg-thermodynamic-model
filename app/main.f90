@@ -478,6 +478,39 @@ program main
                     ! 7. Баротропный расчет мелкой воды и уровня моря
                     call shal()
 
+                    ! 8. Возврат баротропной компоненты в 3D-поле скоростей.
+                    !    Интегральные потоки UP2/VP2 [см²/с] из баротропной моды
+                    !    делятся на глубину HU/HV [см] и возвращаются в 3D-скорости
+                    !    U2/V2 [см/с] на всех уровнях столбца. Схема расщепления
+                    !    не меняется: баротропная мода решается независимо,
+                    !    связь добавлена только на выходе (этап 1).
+                    !    Единицы: U2/V2 [см/с] = UP2/VP2 [см²/с] / HU/HV [см].
+                    do j = 2, js
+                        do i = 2, is
+                            hht = hu(i, j)
+                            if (abs(hht - 8888.0) .lt. 1e-8) cycle
+                            ki = kt1(i, j)
+                            if (ki .eq. 0) cycle
+                            hht = up2(i, j)/hu(i, j)
+                            do k = 1, ki
+                                u2(i, j, k) = hht
+                            end do
+                        end do
+                    end do
+
+                    do j = 2, js
+                        do i = 2, is
+                            hht = hv(i, j)
+                            if (abs(hht - 8888.0) .lt. 1e-8) cycle
+                            ki = kt1(i, j)
+                            if (ki .eq. 0) cycle
+                            hht = vp2(i, j)/hv(i, j)
+                            do k = 1, ki
+                                v2(i, j, k) = hht
+                            end do
+                        end do
+                    end do
+
                 end do ! Конец суточного цикла III
             end do ! Конец цикла дней KKK
         end do ! Конец цикла месяцев LLL

@@ -29,6 +29,7 @@ program main
     use initial_conditions
     use netcdf_input
     use equation_of_state
+    use convective_adjustment
 
     implicit none
 
@@ -479,6 +480,11 @@ program main
                     ! 6. Адвекция солености и температуры в океане
                     call advs(dt, c2)
                     call advt(dt, c2)
+
+                    ! Конвективная коррекция плотностной стратификации (этап 3.2):
+                    ! историческая схема перемешивания при RR(K)-RR(K1) > 0.9E-7.
+                    ! RO пока НЕ используется в уравнениях движения (этапы 3.1-3.2).
+                    call conv_adj()
 
                     ! 7. Баротропный расчет мелкой воды и уровня моря
                     call shal()

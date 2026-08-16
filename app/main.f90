@@ -237,7 +237,7 @@ program main
             nperday = nint(86400.0_8/max(era5_time(2) - era5_time(1), 1.0_8))
             mm1 = min(mm1, (era5_ntime - 1)/max(nperday, 1))
             print *, "ERA5: run limited to ", mm1, " days (", era5_ntime, &
-                     " time steps, ", nperday, " steps/day)"
+                " time steps, ", nperday, " steps/day)"
         else
             print *, "WARNING: ERA5 input failed, falling back to legacy forcing."
             forcing_mode = forcing_mode_legacy

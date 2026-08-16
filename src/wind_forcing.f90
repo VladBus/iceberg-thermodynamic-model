@@ -257,7 +257,7 @@ contains
 
         if (nbad .gt. 0) then
             print *, "ERA5 WIND WARNING: ", nbad, &
-                     " model points outside ERA5 latitude range (zeroed)."
+                " model points outside ERA5 latitude range (zeroed)."
         end if
 
         ! Градиент атмосферного давления (независимая ветвь от ветра).
@@ -293,8 +293,8 @@ contains
             end do
         end do
         print *, "ERA5 WIND ranges: windx[", minval(windx1), ",", maxval(windx1), &
-                 "] p1[", minval(p1), ",", maxval(p1), "] tx[", minval(tx1), &
-                 ",", maxval(tx1), "] dpx[", minval(dpx1), ",", maxval(dpx1), "]"
+            "] p1[", minval(p1), ",", maxval(p1), "] tx[", minval(tx1), &
+            ",", maxval(tx1), "] dpx[", minval(dpx1), ",", maxval(dpx1), "]"
     end subroutine era5_wind
 
     ! Внутренняя подпрограмма (была вынесена отдельно, теперь живет внутри модуля)

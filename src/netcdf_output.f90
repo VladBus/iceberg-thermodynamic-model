@@ -91,15 +91,15 @@ contains
         end if
 
         ! Океанические переменные
-        status = nf90_def_var(ncid, 'water_column_levels', nf90_int, (/x_dimid, y_dimid/), level_varid)
+     status = nf90_def_var(ncid, 'water_column_levels', nf90_int, (/x_dimid, y_dimid/), level_varid)
         if (.not. nc_ok(status, 'define water mask')) then
             status = nf90_close(ncid); return
         end if
-        status = nf90_def_var(ncid, 'temperature', nf90_real, (/x_dimid, y_dimid, z_dimid/), temp_varid)
+    status = nf90_def_var(ncid, 'temperature', nf90_real, (/x_dimid, y_dimid, z_dimid/), temp_varid)
         if (.not. nc_ok(status, 'define temperature')) then
             status = nf90_close(ncid); return
         end if
-        status = nf90_def_var(ncid, 'salinity', nf90_real, (/x_dimid, y_dimid, z_dimid/), salt_varid)
+       status = nf90_def_var(ncid, 'salinity', nf90_real, (/x_dimid, y_dimid, z_dimid/), salt_varid)
         if (.not. nc_ok(status, 'define salinity')) then
             status = nf90_close(ncid); return
         end if
@@ -296,7 +296,7 @@ contains
         character(len=*), intent(in) :: operation
 
         nc_ok = status .eq. nf90_noerr
-        if (.not. nc_ok) print *, 'NetCDF error in ', trim(operation), ': ', trim(nf90_strerror(status))
+    if (.not. nc_ok) print *, 'NetCDF error in ', trim(operation), ': ', trim(nf90_strerror(status))
     end function nc_ok
 
 end module netcdf_output

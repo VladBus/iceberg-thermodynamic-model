@@ -94,7 +94,7 @@ contains
 
         if (ntime .le. 0 .or. nlat .le. 0 .or. nlon .le. 0) then
             print *, "NetCDF ERROR: file = ", trim(filename), &
-                     " has non-positive dimensions: ", ntime, nlat, nlon
+                " has non-positive dimensions: ", ntime, nlat, nlon
             status = 1
             goto 999
         end if
@@ -191,7 +191,7 @@ contains
 
         deallocate (lat_tmp, lon_tmp)
         print *, "ERA5 OK: ", trim(filename), " ntime=", era5_ntime, &
-                 " nlat=", era5_nlat, " nlon=", era5_nlon
+            " nlat=", era5_nlat, " nlon=", era5_nlon
         return
 
 999     continue
@@ -221,8 +221,8 @@ contains
         nf_status = nf90_inq_varid(ncid, varname, varid)
         if (nf_status .ne. nf90_noerr) then
             print *, "NetCDF ERROR: file = ", trim(filename), &
-                     ", variable = ", trim(varname), &
-                     ", status = ", trim(nf90_strerror(nf_status))
+                ", variable = ", trim(varname), &
+                ", status = ", trim(nf90_strerror(nf_status))
             status = 1
             return
         end if
@@ -260,7 +260,7 @@ contains
         print *, "--- ERA5 diagnostic ---"
         print *, "time   min/max [s]:", minval(era5_time), maxval(era5_time)
         print *, "lat    min/max [degN]:", minval(era5_lat), maxval(era5_lat), &
-                 " (decreasing=", era5_lat_decreasing, ")"
+            " (decreasing=", era5_lat_decreasing, ")"
         print *, "lon    min/max [degE]:", minval(era5_lon), maxval(era5_lon)
         print *, "u10 min/max [m s-1]:", minval(era5_u10), maxval(era5_u10)
         print *, "v10 min/max [m s-1]:", minval(era5_v10), maxval(era5_v10)
@@ -431,9 +431,9 @@ contains
         wlon = min(max(wlon, 0.0_8), 1.0_8)
 
         value = (1.0_8 - wlat)*(1.0_8 - wlon)*field(ilat, jlon) &
-              + wlat*(1.0_8 - wlon)*field(ilat1, jlon) &
-              + (1.0_8 - wlat)*wlon*field(ilat, jlon1) &
-              + wlat*wlon*field(ilat1, jlon1)
+                + wlat*(1.0_8 - wlon)*field(ilat1, jlon) &
+                + (1.0_8 - wlat)*wlon*field(ilat, jlon1) &
+                + wlat*wlon*field(ilat1, jlon1)
         ok = .true.
     end function era5_bilinear2d
 

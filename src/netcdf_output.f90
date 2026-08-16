@@ -1,10 +1,18 @@
 ! ==============================================================================
 ! Модуль: netcdf_output
 ! Назначение: Самодостаточный экспорт диагностических полей модели в NetCDF.
-! Физика: Сохраняет T [degC], S [массовая доля], геометрию Z-сетки, маску воды
-!         и диагностические поля атмосферного форсинга (ветер, напряжения,
-!         градиенты давления, температура воздуха).
+! Физика: Сохраняет T [degC], S [массовая доля], 3D-течения U/V/W [см/с],
+!         геометрию Z-сетки, маску воды и диагностические поля атмосферного
+!         форсинга (ветер, напряжения, градиенты давления, температура воздуха).
 ! Ответственность: Формирует метаданные в стандарте CF-1.10.
+!
+! Соглашение об осях (модельная B-сетка Аракавы):
+!   Индексы массивов: (i, j, k). Первый индекс i - первый размер массива.
+!   Модельная ось X <-> индекс j <-> u-компонента; ось Y <-> индекс i <-> v-компонента.
+!   В NetCDF размерности объявляются как (/x, y, depth/): переменные записываются
+!   напрямую из (i,j)-массивов, поэтому NetCDF-ось x <-> индекс i, ось y <-> индекс j.
+!   Точная география задается 2D-координатами latitude/longitude (fi(i,j)/dl(i,j)),
+!   поэтому для визуализации имена осей x/y не критичны.
 ! ==============================================================================
 
 module netcdf_output
@@ -16,15 +24,16 @@ contains
 
     subroutine write_nc(filename)
         character(len=*), intent(in) :: filename
-        integer :: ncid, x_dimid, y_dimid, z_dimid
-        integer :: x_varid, y_varid, z_varid, level_varid, temp_varid, salt_varid
+        integer :: ncid, x_dimid, y_dimid, z_dimid, zw_dimid
+        integer :: x_varid, y_varid, z_varid, zw_varid, level_varid, temp_varid, salt_varid
+        integer :: u_varid, v_varid, w_varid
         integer :: lat_varid, lon_varid
         integer :: wind_varid, windx_varid, windy_varid
         integer :: tx_varid, ty_varid
         integer :: dpx_varid, dpy_varid
         integer :: tatm_varid, patm_varid
-        integer :: status, i
-        real :: x_coord(is1), y_coord(js1), depth(ks)
+        integer :: status, i, k
+        real :: x_coord(is1), y_coord(js1), depth(ks), depth_w(ks1)
 
         ! x/y - индексы регулярной сетки в км; dx в модели задан в сантиметрах.
         do i = 1, is1
@@ -33,7 +42,15 @@ contains
         do i = 1, js1
             y_coord(i) = real(i - 1)*13.89
         end do
-        depth = z*1.0e-2 ! z [см] -> глубина центра уровня [м].
+        ! depth = центры Z-уровней (реальный массив z из param.f90) [см] -> [м].
+        depth = z*1.0e-2
+        ! depth_w = границы Z-уровней (для W на ks1 узлах): поверхность 0,
+        ! середина между соседними центрами z, дно - экстраполяция нижней границы.
+        depth_w(1) = 0.0
+        do k = 2, ks
+            depth_w(k) = 0.5*(z(k - 1) + z(k))*1.0e-2
+        end do
+        depth_w(ks1) = z(ks)*1.0e-2 + 0.5*(z(ks) - z(ks - 1))*1.0e-2
 
         status = nf90_create(trim(filename), nf90_clobber, ncid)
         if (.not. nc_ok(status, 'create '//trim(filename))) return
@@ -65,6 +82,10 @@ contains
         if (.not. nc_ok(status, 'define depth dimension')) then
             status = nf90_close(ncid); return
         end if
+        status = nf90_def_dim(ncid, 'depth_w', ks1, zw_dimid)
+        if (.not. nc_ok(status, 'define depth_w dimension')) then
+            status = nf90_close(ncid); return
+        end if
 
         ! Координатные переменные
         status = nf90_def_var(ncid, 'x', nf90_real, (/x_dimid/), x_varid)
@@ -77,6 +98,10 @@ contains
         end if
         status = nf90_def_var(ncid, 'depth', nf90_real, (/z_dimid/), z_varid)
         if (.not. nc_ok(status, 'define depth coordinate')) then
+            status = nf90_close(ncid); return
+        end if
+        status = nf90_def_var(ncid, 'depth_w', nf90_real, (/zw_dimid/), zw_varid)
+        if (.not. nc_ok(status, 'define depth_w coordinate')) then
             status = nf90_close(ncid); return
         end if
 
@@ -101,6 +126,20 @@ contains
         end if
        status = nf90_def_var(ncid, 'salinity', nf90_real, (/x_dimid, y_dimid, z_dimid/), salt_varid)
         if (.not. nc_ok(status, 'define salinity')) then
+            status = nf90_close(ncid); return
+        end if
+
+        ! 3D-течения океана [см/с]
+        status = nf90_def_var(ncid, 'u_velocity', nf90_real, (/x_dimid, y_dimid, z_dimid/), u_varid)
+        if (.not. nc_ok(status, 'define u_velocity')) then
+            status = nf90_close(ncid); return
+        end if
+        status = nf90_def_var(ncid, 'v_velocity', nf90_real, (/x_dimid, y_dimid, z_dimid/), v_varid)
+        if (.not. nc_ok(status, 'define v_velocity')) then
+            status = nf90_close(ncid); return
+        end if
+        status = nf90_def_var(ncid, 'w_velocity', nf90_real, (/x_dimid, y_dimid, zw_dimid/), w_varid)
+        if (.not. nc_ok(status, 'define w_velocity')) then
             status = nf90_close(ncid); return
         end if
 
@@ -153,6 +192,10 @@ contains
         call set_att(ncid, z_varid, 'standard_name', 'depth')
         call set_att(ncid, z_varid, 'positive', 'down')
 
+        call set_att(ncid, zw_varid, 'units', 'm')
+        call set_att(ncid, zw_varid, 'long_name', 'depth of W-level boundaries')
+        call set_att(ncid, zw_varid, 'positive', 'down')
+
         call set_att(ncid, lat_varid, 'units', 'degrees_north')
         call set_att(ncid, lat_varid, 'standard_name', 'latitude')
 
@@ -168,6 +211,20 @@ contains
         call set_att(ncid, salt_varid, 'units', '1')
         call set_att(ncid, salt_varid, 'standard_name', 'sea_water_salinity')
         call set_att(ncid, salt_varid, 'comment', 'mass fraction; 0.033 is approximately 33 PSU')
+
+        call set_att(ncid, u_varid, 'units', 'cm s-1')
+        call set_att(ncid, u_varid, 'long_name', 'x-component of ocean velocity (along model X axis = j index)')
+        call set_att(ncid, u_varid, 'comment', 'Model-grid component, NOT geographic eastward. '// &
+                     'NetCDF y-axis <-> model j <-> u; NetCDF x-axis <-> model i <-> v.')
+
+        call set_att(ncid, v_varid, 'units', 'cm s-1')
+        call set_att(ncid, v_varid, 'long_name', 'y-component of ocean velocity (along model Y axis = i index)')
+        call set_att(ncid, v_varid, 'comment', 'Model-grid component, NOT geographic northward. '// &
+                     'NetCDF y-axis <-> model j <-> u; NetCDF x-axis <-> model i <-> v.')
+
+        call set_att(ncid, w_varid, 'units', 'cm s-1')
+        call set_att(ncid, w_varid, 'standard_name', 'upward_sea_water_velocity')
+        call set_att(ncid, w_varid, 'long_name', 'vertical ocean velocity')
 
         call set_att(ncid, wind_varid, 'units', 'm s-1')
         call set_att(ncid, wind_varid, 'standard_name', 'wind_speed')
@@ -214,6 +271,10 @@ contains
         if (.not. nc_ok(status, 'write depth coordinate')) then
             status = nf90_close(ncid); return
         end if
+        status = nf90_put_var(ncid, zw_varid, depth_w)
+        if (.not. nc_ok(status, 'write depth_w coordinate')) then
+            status = nf90_close(ncid); return
+        end if
 
         status = nf90_put_var(ncid, lat_varid, fi)
         if (.not. nc_ok(status, 'write latitude')) then
@@ -234,6 +295,19 @@ contains
         end if
         status = nf90_put_var(ncid, salt_varid, s2)
         if (.not. nc_ok(status, 'write salinity')) then
+            status = nf90_close(ncid); return
+        end if
+
+        status = nf90_put_var(ncid, u_varid, u2)
+        if (.not. nc_ok(status, 'write u_velocity')) then
+            status = nf90_close(ncid); return
+        end if
+        status = nf90_put_var(ncid, v_varid, v2)
+        if (.not. nc_ok(status, 'write v_velocity')) then
+            status = nf90_close(ncid); return
+        end if
+        status = nf90_put_var(ncid, w_varid, w)
+        if (.not. nc_ok(status, 'write w_velocity')) then
             status = nf90_close(ncid); return
         end if
 

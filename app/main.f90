@@ -28,6 +28,7 @@ program main
     use netcdf_output
     use initial_conditions
     use netcdf_input
+    use equation_of_state
 
     implicit none
 
@@ -211,6 +212,10 @@ program main
 
     ! --- Инициализация синтетических полей ---
     call init_ocean()
+
+    ! Диагностика уравнения состояния (этап 3.1): расчет RO из T2/S2
+    ! в диагностическом режиме. Пока НЕ используется в уравнениях движения.
+    call eos_diag()
 
     ! Записываем состояние океана ДО начала расчета (День 0)
     call write_nc('data/output/results_day_00.nc')
@@ -517,6 +522,9 @@ program main
     end do ! Конец цикла лет MMMM
 
     print *, "Integration completed successfully!"
+
+    ! Диагностика уравнения состояния после 5 дней (этап 3.1)
+    call eos_diag()
 
     ! Записываем состояние океана ПОСЛЕ 5 дней расчета
     call write_nc('data/output/results_day_05.nc')

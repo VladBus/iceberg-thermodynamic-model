@@ -40,13 +40,13 @@ program main
     real :: c1, c2, c3, c4, c5, c8, c9, c10, c11, c12, c15, c16, c17
     real :: sas, a, b, a1, b1, a2, b2, a3, b3, a4, b4, cc_val
     real :: hht, uij, vij, fix, fiy, aa, au, av, sl, du, ff, ff1
-    real :: dzz, dzzz, dz1z, bb, sum, sum1, asa1, asa, ymm, hh1, hh2
+    real :: dzz, dzzz, dzz1, dz1z, bb, sum, sum1, asa1, asa, ymm, hh1, hh2
     real :: tt0, ss0, tt1, ss1, tt2, ss2, tt3, ss3, tt4, ss4, yyy, uu, vv
     real :: ri2j, rij, ri2j2, rij2, slapu, slapv, auu, avv
     real :: ck1, ck2, ww1, ww2, ww
 
     integer :: mmmm, lll, kkk, iii, jjj
-    integer :: i, j, k, i1, i2, j1, j2, k1, k2, ki
+    integer :: i, j, k, i1, i2, j1, j2, k1, k2, ki, kk, ki1, ki2
     integer :: ix1, ix2, iy1, iy2
     integer :: nday, nday1, ikkk, ios
 
@@ -391,6 +391,8 @@ program main
                     end do
 
                     ! 4. Адвекция сплошности и массы льда
+
+                    ! 4. Адвекция сплошности и массы льда
                     do k = 1, ngr
                         k1 = k + 1
                         an3(:, :) = an1(:, :, k1)
@@ -486,41 +488,213 @@ program main
                     ! RO пока НЕ используется в уравнениях движения (этапы 3.1-3.2).
                     call conv_adj()
 
+                    ! 6b. 3D-импульс (этап 3.3): исторический block 200.
+                    !    U2/V2 из U1/V1 (предыдущий бароклинный шаг) с учётом:
+                    !    - Coriolis (FKU);
+                    !    - баротропно-баротроклинного интеграла плотности SUM/SUM1;
+                    !    - градиента атмосферного давления DPX/DPY;
+                    !    - горизонтальной диффузии импульса (SLAPU/SLAPV).
+                    !    Источник: Coupl1.f90:880-940 (идентичен Nesterov_last).
+                    !    Единицы: U2/V2 [см/с], RO [г/см3], DPX/DPY [см/с2].
+                    do j = 2, js
+                        do i = 2, is
+                            ki = kk1(i, j)
+                            if (ki .eq. 0) cycle
+                            i1 = i + 1
+                            i2 = i - 1
+                            j1 = j + 1
+                            j2 = j - 1
+                            hht = map1(i, j)
+                            if (abs(hht - 8888.0) .lt. 1e-8) cycle
+                            sum = 0.0
+                            sum1 = 0.0
+                            asa1 = fku(i, j)*0.5*dt
+                            asa = 1.0 + asa1*asa1
+                            ri2j = ro(i2, j, 1)
+                            rij = ro(i, j, 1)
+                            ri2j2 = ro(i2, j2, 1)
+                            rij2 = ro(i, j2, 1)
+                            a = ri2j + rij - ri2j2 - rij2
+                            b = ri2j2 + ri2j - rij2 - rij
+                            dzz = dz(1)
+                            do k = 1, ki
+                                if (abs(hht - z(k)) .lt. 1e-6) then
+                                    u2(i, j, k) = 0.0
+                                    v2(i, j, k) = 0.0
+                                    cycle
+                                end if
+                                k1 = k + 1
+                                dzz1 = dz(k1)
+                                uij = u1(i, j, k)
+                                vij = v1(i, j, k)
+                                ri2j = ro(i2, j, k)
+                                rij2 = ro(i, j2, k)
+                                rij = ro(i, j, k)
+                                ri2j2 = ro(i2, j2, k)
+                                a1 = ri2j + rij - ri2j2 - rij2
+                                b1 = ri2j2 + ri2j - rij2 - rij
+                                cc_val = c8*dzz
+                                sum = sum + (a + a1)*cc_val
+                                sum1 = sum1 + (b + b1)*cc_val
+                                slapu = u1(i, j2, k) + u1(i, j1, k) + u1(i2, j, k) + u1(i1, j, k) - 4.0*uij
+                                slapv = v1(i1, j, k) + v1(i2, j, k) + v1(i, j1, k) + v1(i, j2, k) - 4.0*vij
+                                auu = uij + asa1*vij + dt*(-c1*sum - dpx(i, j) + c3*slapu)
+                                avv = vij - asa1*uij + dt*(-c1*sum1 - dpy(i, j) + c3*slapv)
+                                u2(i, j, k) = (auu + avv*asa1)/asa
+                                v2(i, j, k) = (avv - auu*asa1)/asa
+                                a = a1
+                                b = b1
+                                dzz = dzz1
+                            end do
+                        end do
+                    end do
+
+                    ! 6c. Вертикальная вязкость (этап 3.3): исторический block 210.
+                    !    Коэффициенты NU = L*L*|dU/dz|, решение трёхдиагональной
+                    !    системы (прямой/обратный ход Томаса). Поверхностное
+                    !    условие: (1-A1)*TX + A1*TXIC (взвешивание по сплочённости).
+                    !    Источник: Coupl1.f90:942-1020 (идентичен Nesterov_last).
+                    do j = 2, js
+                        do i = 2, is
+                            ki = kk1(i, j)
+                            if (ki .eq. 0) cycle
+                            i2 = i - 1
+                            j2 = j - 1
+                            hht = map1(i, j)
+                            if (abs(hht - 8888.0) .lt. 1e-8) cycle
+                            ki1 = ki + 1
+                            ki2 = ki - 1
+                            yyy = 0.25*(ym2(i2, j2) + ym2(i, j2) + ym2(i2, j) + ym2(i, j))
+                            uij = u2(i, j, 1)
+                            vij = v2(i, j, 1)
+                            aa = sqrt(uij*uij + vij*vij)
+                            do k = 1, ki
+                                k1 = min(k + 1, ks)
+                                uij = u2(i, j, k1)
+                                vij = v2(i, j, k1)
+                                bb = sqrt(uij*uij + vij*vij)
+                                ff = hht - z(k) + 2.0
+                                ff1 = z(k) - yyy - 2.0
+                                sl = 0.4/hht*ff*ff1*(1.0 - 1.2*ff*ff1/hht/hht)/(4.0*ff1/5000.0 + 1.0)
+                                if (k .ne. ki) then
+                                    rr(k) = sl*sl*abs(bb - aa)/dz(k1)
+                                else
+                                    rr(k) = sl*sl*abs(bb - aa)/(hht - z(ki) + 50.0)
+                                end if
+                                aa = bb
+                            end do
+                            skz(i, j) = rr(1)
+                            if (ki .ne. 1) then
+                                dzz = dz1(1)
+                                dzzz = dz(2)
+                            else
+                                dzz = hht
+                                dzzz = hht - z(1) + 50.0
+                            end if
+                            b = dt/dzz/dzzz*rr(1)
+                            a = 1.0 + b
+                            uca(1) = b/a
+                            a1 = 0.25*(ans(i, j) + ans(i, j2) + ans(i2, j) + ans(i2, j2))
+                            unu(1) = (u2(i, j, 1) + dt/dzz*((1.0 - a1)*tx(i, j) + a1*txic(i, j)))/a
+                            vca(1) = uca(1)
+                            vnu(1) = (v2(i, j, 1) + dt/dzz*((1.0 - a1)*ty(i, j) + a1*tyic(i, j)))/a
+                            if (ki .eq. 1) then
+                                u2(i, j, ki) = uca(ki)*u2(i, j, ki1) + unu(ki)
+                                v2(i, j, ki) = vca(ki)*v2(i, j, ki1) + vnu(ki)
+                            else if (ki .ge. 2) then
+                                if (ki .ge. 3) then
+                                    do k = 2, ki2
+                                        k2 = k - 1
+                                        aa = dt/dz1(k)
+                                        a = -aa/dz(k)*rr(k2)
+                                        b = -aa/dz(k + 1)*rr(k)
+                                        a1 = -1.0 + a + b
+                                        aa = a1 - uca(k2)*a
+                                        uca(k) = b/aa
+                                        unu(k) = (a*unu(k2) - u2(i, j, k))/aa
+                                        aa = a1 - vca(k2)*a
+                                        vca(k) = b/aa
+                                        vnu(k) = (a*vnu(k2) - v2(i, j, k))/aa
+                                    end do
+                                end if
+                                dzz = hht - 0.5*(z(ki) + z(ki2))
+                                dzzz = hht - z(ki) + 50.0
+                                b = dt/dzz/dz(ki)*rr(ki2)
+                                a = 1.0 + b + dt/dzz/dzzz*rr(ki)
+                                bb = b/a
+                                u2(i, j, ki) = (u2(i, j, ki)/a + bb*unu(ki2))/(1.0 - bb*uca(ki2))
+                                v2(i, j, ki) = (v2(i, j, ki)/a + bb*vnu(ki2))/(1.0 - bb*vca(ki2))
+                                do k = 1, ki2
+                                    kk = ki - k
+                                    k1 = kk + 1
+                                    u2(i, j, kk) = uca(kk)*u2(i, j, k1) + unu(kk)
+                                    v2(i, j, kk) = vca(kk)*v2(i, j, k1) + vnu(kk)
+                                end do
+                            end if
+                        end do
+                    end do
+
                     ! 7. Баротропный расчет мелкой воды и уровня моря
                     call shal()
 
-                    ! 8. Возврат баротропной компоненты в 3D-поле скоростей.
-                    !    Интегральные потоки UP2/VP2 [см²/с] из баротропной моды
-                    !    делятся на глубину HU/HV [см] и возвращаются в 3D-скорости
-                    !    U2/V2 [см/с] на всех уровнях столбца. Схема расщепления
-                    !    не меняется: баротропная мода решается независимо,
-                    !    связь добавлена только на выходе (этап 1).
-                    !    Единицы: U2/V2 [см/с] = UP2/VP2 [см²/с] / HU/HV [см].
+                    ! 8. Возврат баротропной компоненты в 3D-поле скоростей
+                    !    (этап 3.3): исторический block 280.
+                    !    Обнуляет вертикальное среднее баротроклинной части U':
+                    !    SUM = -SUM_U2*DZZ/HHT + 0.5*(UP2+UP2)/HHT,
+                    !    U2 = U2 + SUM. Источник: Coupl1.f90:1031-1058.
                     do j = 2, js
                         do i = 2, is
-                            hht = hu(i, j)
-                            if (abs(hht - 8888.0) .lt. 1e-8) cycle
-                            ki = kt1(i, j)
+                            ki = kk1(i, j)
                             if (ki .eq. 0) cycle
-                            hht = up2(i, j)/hu(i, j)
+                            i2 = i - 1
+                            j2 = j - 1
+                            hht = map1(i, j)
+                            if (abs(hht - 8888.0) .lt. 1e-8) cycle
+                            sum = 0.0
+                            sum1 = 0.0
                             do k = 1, ki
-                                u2(i, j, k) = hht
+                                k1 = k + 1
+                                if (k .eq. ki) then
+                                    if (ki .ne. 1) then
+                                        dzz = hht - 0.5*(z(ki) + z(ki - 1))
+                                    else
+                                        dzz = hht
+                                    end if
+                                else
+                                    dzz = dz1(k)
+                                end if
+                                sum = u2(i, j, k)*dzz + sum
+                                sum1 = v2(i, j, k)*dzz + sum1
+                            end do
+                            sum = (-sum + 0.5*(up2(i, j) + up2(i2, j)))/hht
+                            sum1 = (-sum1 + 0.5*(vp2(i, j) + vp2(i, j2)))/hht
+                            do k = 1, ki
+                                u2(i, j, k) = u2(i, j, k) + sum
+                                v2(i, j, k) = v2(i, j, k) + sum1
                             end do
                         end do
                     end do
 
-                    do j = 2, js
-                        do i = 2, is
-                            hht = hv(i, j)
-                            if (abs(hht - 8888.0) .lt. 1e-8) cycle
-                            ki = kt1(i, j)
-                            if (ki .eq. 0) cycle
-                            hht = vp2(i, j)/hv(i, j)
-                            do k = 1, ki
-                                v2(i, j, k) = hht
+                    ! Диагностика 3D-скоростей (этап 3.3): min/max U2,V2 после всех блоков
+                    if (kkk .le. 2) then
+                        uu = 0.0
+                        vv = 0.0
+                        aa = 0.0
+                        do j = 2, js
+                            do i = 2, is
+                                if (kk1(i, j) .eq. 0) cycle
+                                do k = 1, kt1(i, j)
+                                    if (u2(i, j, k) .ne. u2(i, j, k)) aa = 1.0
+                                    if (v2(i, j, k) .ne. v2(i, j, k)) aa = 1.0
+                                    uu = max(uu, abs(u2(i, j, k)))
+                                    vv = max(vv, abs(v2(i, j, k)))
+                                end do
                             end do
                         end do
-                    end do
+                        print '(A,I1,A,I3,A,E12.4,A,E12.4,A,E12.4)', &
+                            "B3.3 d=", kkk, " III=", iii, " maxU2=", uu, &
+                            " maxV2=", vv, " NaNflag=", aa
+                    end if
 
                 end do ! Конец суточного цикла III
             end do ! Конец цикла дней KKK

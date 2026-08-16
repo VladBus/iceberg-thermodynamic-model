@@ -84,16 +84,18 @@ vcpkg_installed/
 Testing/
 .cache/
 
-# Настройки локального редактора VS Code
+# IDEs
 .vscode/
+.idea/
 
-# Выходные данные модели
+# Scientific data
+data/
 *.nc
 *.vtk
 *.dat
-
-# Данные модели
-data/
+*.grib
+*.grib1
+*.grib2
 
 # Временные и системные файлы
 *~
@@ -214,7 +216,15 @@ paket-files/
 
 # Python Tools for Visual Studio (PTVS)
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+ENV/
+.env
 
 # Cake - Uncomment if you are using it
 # tools/**

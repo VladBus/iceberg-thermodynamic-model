@@ -46,6 +46,7 @@ contains
         real :: cr(ks)
         real :: dzz, dzz1, dz1z, a
         integer :: k, k1, ki2, a1
+        integer :: iter_count
 
         nmix = 0
         if (ki .le. 0) return
@@ -58,7 +59,9 @@ contains
         if (ki .eq. 1) return
 
         ! Внешний проход: повторяется, пока было хотя бы одно смешивание.
+        iter_count = 0
         do
+            iter_count = iter_count + 1
             dzz = cdz1(1)
             ki2 = ki - 1
             a1 = 0
@@ -84,6 +87,11 @@ contains
             end do
             nmix = nmix + a1
             if (a1 .eq. 0) exit
+            ! Защита от бесконечного цикла: исторический алгоритм должен
+            ! сходиться за ~20 итераций. >1000 = баг/несходимость.
+            if (iter_count > 1000) then
+                exit
+            end if
         end do
     end subroutine convect_column
 

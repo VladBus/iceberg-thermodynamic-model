@@ -237,8 +237,8 @@ contains
                 ! Точка росы: e_vap = hhum * e_sat(tta)
                 ! по определению: e_vap = e_sat(d2m), hhum = e_sat(d2m)/e_sat(t2m)
                 ! относительная влажность: RH = e_sat(d2m)/e_sat(t2m)
-                humid(i, j) = (610.78 * 10.0**((8.61503*(d2mv - 273.15))/d2mv)) / &
-                       (610.78 * 10.0**((8.61503*(t2mv - 273.15))/t2mv))
+                humid(i, j) = (610.78*10.0**((8.61503*(d2mv - 273.15))/d2mv))/ &
+                              (610.78*10.0**((8.61503*(t2mv - 273.15))/t2mv))
                 ! Облачность: ERA5 tcc [0,1] -> model cloud [0,1]
                 cloud(i, j) = tccv
                 era5_snowfall_rate(i, j) = real(snowfallv, 4)

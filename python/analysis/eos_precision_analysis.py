@@ -46,10 +46,14 @@ def eos32(t, s):
     """Exact float32 reproduction of density_anomaly (equation_of_state.f90)."""
     t = F32(t)
     s = F32(s)
-    aa = F32(F32(F32(1779.5) + F32(F32(F32(11.25) - F32(F32(0.0745) * t)) * t)) -
-            F32(F32(F32(3800.0) + F32(F32(10.0) * t)) * s))
-    bb = F32(F32(F32(5891.0) + F32(F32(3000.0) * s)) +
-             F32(F32(F32(38.0) - F32(F32(0.375) * t)) * t))
+    aa = F32(
+        F32(F32(1779.5) + F32(F32(F32(11.25) - F32(F32(0.0745) * t)) * t))
+        - F32(F32(F32(3800.0) + F32(F32(10.0) * t)) * s)
+    )
+    bb = F32(
+        F32(F32(5891.0) + F32(F32(3000.0) * s))
+        + F32(F32(F32(38.0) - F32(F32(0.375) * t)) * t)
+    )
     return F32(F32(1.0) / F32(F32(0.698) + F32(aa / bb)) - F32(1.02))
 
 
@@ -57,10 +61,14 @@ def x32(t, s):
     """Intermediate X = 1/(0.698 + aa/bb), float32 (in [1,2) for physical T/S)."""
     t = F32(t)
     s = F32(s)
-    aa = F32(F32(F32(1779.5) + F32(F32(F32(11.25) - F32(F32(0.0745) * t)) * t)) -
-            F32(F32(F32(3800.0) + F32(F32(10.0) * t)) * s))
-    bb = F32(F32(F32(5891.0) + F32(F32(3000.0) * s)) +
-             F32(F32(F32(38.0) - F32(F32(0.375) * t)) * t))
+    aa = F32(
+        F32(F32(1779.5) + F32(F32(F32(11.25) - F32(F32(0.0745) * t)) * t))
+        - F32(F32(F32(3800.0) + F32(F32(10.0) * t)) * s)
+    )
+    bb = F32(
+        F32(F32(5891.0) + F32(F32(3000.0) * s))
+        + F32(F32(F32(38.0) - F32(F32(0.375) * t)) * t)
+    )
     return F32(F32(1.0) / F32(F32(0.698) + F32(aa / bb)))
 
 
@@ -125,9 +133,7 @@ def random_reachability(rng_seed=42, n=2_000_000):
         "min_nonzero_diff": float(d.min()),
         "min_nonzero_diff_ulps": float(d.min() / U23),
         "nonzero_below_thresh": int(below.sum()),
-        "frac_mult_of_u23": float(
-            np.mean(np.abs(d / U23 - np.round(d / U23)) < 1e-6)
-        ),
+        "frac_mult_of_u23": float(np.mean(np.abs(d / U23 - np.round(d / U23)) < 1e-6)),
     }
 
 
@@ -207,11 +213,15 @@ def guard_event_rows(events_csv, prof_glob):
             "resid_inv_logged": float(e["resid_inv"]),
             "n_pos_interfaces": int((resid > 0).sum()),
             "max_pos_resid": float(resid_pos.max()) if len(resid_pos) else 0.0,
-            "max_pos_resid_ulps": float(resid_pos.max() / U23) if len(resid_pos) else 0.0,
+            "max_pos_resid_ulps": (
+                float(resid_pos.max() / U23) if len(resid_pos) else 0.0
+            ),
             "all_ro_mult_u23": bool(np.all(is_multiple_of_u23(ro))),
-            "resid_mult_u23": bool(
-                np.all(is_multiple_of_u23(resid[resid != 0]))
-            ) if (resid != 0).any() else True,
+            "resid_mult_u23": (
+                bool(np.all(is_multiple_of_u23(resid[resid != 0])))
+                if (resid != 0).any()
+                else True
+            ),
         }
         rows.append(row)
     return rows
@@ -245,30 +255,40 @@ def main():
     p("2. REPRESENTATIVE EOS VALUES (float32 vs float64)")
     rows = representative_rows()
     for r in rows:
-        p(f"  {r['case']:<18s} RO32={r['RO32']:.9g} RO64={r['RO64']:.9g} "
-          f"diff={r['RO64-RO32']:.3g} RO32 mult 2^-23={r['RO32 mult of 2^-23']}")
+        p(
+            f"  {r['case']:<18s} RO32={r['RO32']:.9g} RO64={r['RO64']:.9g} "
+            f"diff={r['RO64-RO32']:.3g} RO32 mult 2^-23={r['RO32 mult of 2^-23']}"
+        )
 
     p()
     p("3. SPACING")
     for r in rows:
-        p(f"  {r['case']:<18s} spacing(RO32)~={r['spacing(RO32) [down]']:.4g} "
-          f"(note: NOT 2^-23; RO magnitude is ~2^-8..2^-9, ulp 2^-31/2^-32)")
+        p(
+            f"  {r['case']:<18s} spacing(RO32)~={r['spacing(RO32) [down]']:.4g} "
+            f"(note: NOT 2^-23; RO magnitude is ~2^-8..2^-9, ulp 2^-31/2^-32)"
+        )
 
     p()
     p("4. BIT-LEVEL")
     for t, s in REPR:
         b = bit_evidence(t, s)
-        p(f"  {b['case']:<18s} X={b['X_bits']} X+1ulp={b['X_next_bits']} "
-          f"gap={b['X_ulp_gap']:.4g} = {b['X_ulp_gap_ulps']:.1f} ulp(2^-23)")
-        p(f"  {'':18s} RO={b['RO_bits']} RO+1ulp={b['RO_next_bits']} "
-          f"gap={b['RO_ulp_gap']:.4g} = {b['RO_ulp_gap_in_2^-23_units']:.4f} ulp(2^-23)")
+        p(
+            f"  {b['case']:<18s} X={b['X_bits']} X+1ulp={b['X_next_bits']} "
+            f"gap={b['X_ulp_gap']:.4g} = {b['X_ulp_gap_ulps']:.1f} ulp(2^-23)"
+        )
+        p(
+            f"  {'':18s} RO={b['RO_bits']} RO+1ulp={b['RO_next_bits']} "
+            f"gap={b['RO_ulp_gap']:.4g} = {b['RO_ulp_gap_in_2^-23_units']:.4f} ulp(2^-23)"
+        )
 
     p()
     p("5. DENSE GRID ENUMERATION (T -2..26 step 0.01, S 0.033..0.035 step 0.0001)")
     g = grid_enumeration()
     p(f"  distinct RO32 values: {g['distinct_ro32']} / {g['grid_points']}")
-    p(f"  min nonzero |ROa-ROb| (float32): {g['min_gap_ro32']:.9g} "
-      f"= {g['min_gap_ro32_ulps']:.6f} ulp(2^-23)")
+    p(
+        f"  min nonzero |ROa-ROb| (float32): {g['min_gap_ro32']:.9g} "
+        f"= {g['min_gap_ro32_ulps']:.6f} ulp(2^-23)"
+    )
     p(f"  pairs with 0 < diff <= 0.9e-7 (float32): {g['gap_below_thresh_ro32']}")
     p(f"  min nonzero |RO64a-RO64b| (float64, same grid): {g['min_gap_ro64']:.9g}")
     p("  -> threshold 0.9e-7 IS reachable in float64, NOT in float32")
@@ -277,10 +297,14 @@ def main():
     p("6. RANDOM PAIR REACHABILITY (2e6 float32 T/S pairs)")
     r = random_reachability()
     p(f"  nonzero pairs: {r['pairs']}")
-    p(f"  min nonzero |ROa-ROb|: {r['min_nonzero_diff']:.9g} "
-      f"= {r['min_nonzero_diff_ulps']:.9f} ulp(2^-23)")
+    p(
+        f"  min nonzero |ROa-ROb|: {r['min_nonzero_diff']:.9g} "
+        f"= {r['min_nonzero_diff_ulps']:.9f} ulp(2^-23)"
+    )
     p(f"  nonzero diffs <= 0.9e-7: {r['nonzero_below_thresh']}")
-    p(f"  fraction of diffs that are exact multiples of 2^-23: {r['frac_mult_of_u23']:.6f}")
+    p(
+        f"  fraction of diffs that are exact multiples of 2^-23: {r['frac_mult_of_u23']:.6f}"
+    )
 
     p()
     p("7. PRODUCTION GUARD EVENTS (from CSV + daily NetCDF)")
@@ -288,12 +312,18 @@ def main():
     if ev_rows:
         df = pd.DataFrame(ev_rows)
         p(f"  events reconstructed: {len(df)}")
-        p(f"  all columns' RO are exact multiples of 2^-23: "
-          f"{bool(df['all_ro_mult_u23'].all())}")
-        p(f"  all nonzero residuals are exact multiples of 2^-23: "
-          f"{bool(df['resid_mult_u23'].all())}")
-        p(f"  logged resid_inv: min={df['resid_inv_logged'].min():.8g} "
-          f"max={df['resid_inv_logged'].max():.8g}")
+        p(
+            f"  all columns' RO are exact multiples of 2^-23: "
+            f"{bool(df['all_ro_mult_u23'].all())}"
+        )
+        p(
+            f"  all nonzero residuals are exact multiples of 2^-23: "
+            f"{bool(df['resid_mult_u23'].all())}"
+        )
+        p(
+            f"  logged resid_inv: min={df['resid_inv_logged'].min():.8g} "
+            f"max={df['resid_inv_logged'].max():.8g}"
+        )
     else:
         p("  (no event CSV / profiles found; skipped)")
 

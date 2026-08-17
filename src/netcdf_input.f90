@@ -289,7 +289,7 @@ contains
         print *, "msl min/max [Pa]:  ", minval(era5_msl), maxval(era5_msl)
         print *, "d2m min/max [K]:   ", minval(era5_d2m), maxval(era5_d2m)
         print *, "tcc min/max [1]:   ", minval(era5_tcc), maxval(era5_tcc)
-        print *, "snowfall (sf) min/max [m water eq.]: ", minval(era5_snowfall), maxval(era5_snowfall)
+      print *, "snowfall (sf) min/max [m water eq.]: ", minval(era5_snowfall), maxval(era5_snowfall)
         print *, "fill value (assumed):", era5_fill
         print *, "--- end ERA5 diagnostic ---"
     end subroutine era5_diag

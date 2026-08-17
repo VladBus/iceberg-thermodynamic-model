@@ -51,7 +51,7 @@ program cold_ice_snow_test
         call heat(dt, day, lll)
 
         ! Diagnostics every 5 days
-        if (mod(day, 5) == 0) then
+        if (mod(day, 5) .eq. 0) then
             call print_diagnostics(day)
         end if
     end do
@@ -86,7 +86,7 @@ contains
 
         ! Ice: initially no ice
         do k = 1, ngr
-            an1(i, j, k+1) = 0.0
+            an1(i, j, k + 1) = 0.0
             wice1(i, j, k) = 0.0
             hsnp(k) = 0.0
             hicp(k) = 0.0
@@ -101,7 +101,7 @@ contains
         humid(i, j) = 0.7   ! 70% humidity
 
         ! Snowfall climatology (will be overridden by ERA5)
-        sfal = (/ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 /)
+        sfal = (/0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0/)
 
         ! Other params
         kt1(i, j) = 1  ! ocean cell
@@ -130,12 +130,12 @@ contains
 
         print *, ""
         print *, "--- Day ", day, " Diagnostics ---"
-        print *, "  Air temp:     ", tatm(50,50), " °C"
-        print *, "  Surface temp: ", t1(50,50,1), " °C"
+        print *, "  Air temp:     ", tatm(50, 50), " °C"
+        print *, "  Surface temp: ", t1(50, 50, 1), " °C"
         print *, "  Snow depth:   ", hsnp(1), " m"
         print *, "  Ice thick:    ", hicp(1), " m"
-        print *, "  Ice conc:     ", ans(50,50)
-        print *, "  Snowfall rate:", era5_snowfall_rate_test(50,50), " m/s"
+        print *, "  Ice conc:     ", ans(50, 50)
+        print *, "  Snowfall rate:", era5_snowfall_rate_test(50, 50), " m/s"
     end subroutine print_diagnostics
 
 end program cold_ice_snow_test

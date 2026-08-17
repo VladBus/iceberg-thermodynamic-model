@@ -17,16 +17,16 @@ program thermo_input_test
     ! Используем ту же формулу Клаузиуса-Клапейрона, что в heat():
     ! e_sat(T) = 610.78 * 10.0**(8.61503*(T - 273.15)/T) [Pa]
     ! humid = e_sat(d2m) / e_sat(t2m)
-    real, parameter :: t2m_test(6) = (/ 273.15, 263.15, 253.15, 243.15, 273.15, 293.15 /)
-    real, parameter :: d2m_test(6) = (/ 273.15, 258.15, 248.15, 238.15, 268.15, 288.15 /)
+    real, parameter :: t2m_test(6) = (/273.15, 263.15, 253.15, 243.15, 273.15, 293.15/)
+    real, parameter :: d2m_test(6) = (/273.15, 258.15, 248.15, 238.15, 268.15, 288.15/)
     real, parameter :: humid_expected(6) = (/ &
-        1.0, &   ! насыщение: t2m = d2m = 0°C
-        0.525, & ! d2m = -5°C, t2m = -10°C
-        0.525, & ! d2m = -5°C, t2m = -10°C (тот же дельта)
-        0.525, & ! d2m = -5°C, t2m = -10°C
-        0.79, &  ! t2m = 0°C, d2m = -5°C
-        0.79 &   ! t2m = 20°C, d2m = 15°C (относительно одинаковый дефицит)
-    /)
+                       1.0, &   ! насыщение: t2m = d2m = 0°C
+                       0.525, & ! d2m = -5°C, t2m = -10°C
+                       0.525, & ! d2m = -5°C, t2m = -10°C (тот же дельта)
+                       0.525, & ! d2m = -5°C, t2m = -10°C
+                       0.79, &  ! t2m = 0°C, d2m = -5°C
+                       0.79 &   ! t2m = 20°C, d2m = 15°C (относительно одинаковый дефицит)
+                       /)
     real :: humid_computed(6)
     real :: e_sat_t2m, e_sat_d2m
 
@@ -52,9 +52,9 @@ program thermo_input_test
     print *, "--- Test 1: Humidity conversion ---"
     do i = 1, n_humid_tests
         n_checks = n_checks + 1
-        e_sat_t2m = 610.78 * 10.0**(8.61503*(t2m_test(i) - 273.15)/t2m_test(i))
-        e_sat_d2m = 610.78 * 10.0**(8.61503*(d2m_test(i) - 273.15)/d2m_test(i))
-        humid_computed(i) = e_sat_d2m / e_sat_t2m
+        e_sat_t2m = 610.78*10.0**(8.61503*(t2m_test(i) - 273.15)/t2m_test(i))
+        e_sat_d2m = 610.78*10.0**(8.61503*(d2m_test(i) - 273.15)/d2m_test(i))
+        humid_computed(i) = e_sat_d2m/e_sat_t2m
 
         if (humid_computed(i) .lt. 0.0 .or. humid_computed(i) .gt. 1.0) then
             print '(A,I3,A,F10.6)', "ERROR Test 1.", i, ": humid out of [0,1] = ", humid_computed(i)
@@ -81,8 +81,8 @@ program thermo_input_test
 
     ! --- Test 3: Saturated case (d2m == t2m) -> humid = 1 ---
     n_checks = n_checks + 1
-    e_sat_t2m = 610.78 * 10.0**(8.61503*(273.15 - 273.15)/273.15)
-    e_sat_d2m = 610.78 * 10.0**(8.61503*(273.15 - 273.15)/273.15)
+    e_sat_t2m = 610.78*10.0**(8.61503*(273.15 - 273.15)/273.15)
+    e_sat_d2m = 610.78*10.0**(8.61503*(273.15 - 273.15)/273.15)
     if (abs(e_sat_d2m/e_sat_t2m - 1.0) .gt. 1e-6) then
         print *, "ERROR Test 3: saturated case humid != 1"
         n_errors = n_errors + 1
@@ -93,8 +93,8 @@ program thermo_input_test
     ! --- Test 4: Very dry case (large T-Td) -> humid > 0 ---
     n_checks = n_checks + 1
     ! t2m = 273.15 (0°C), d2m = 233.15 (-40°C) -> очень сухо
-    e_sat_t2m = 610.78 * 10.0**(8.61503*(273.15 - 273.15)/273.15)
-    e_sat_d2m = 610.78 * 10.0**(8.61503*(233.15 - 273.15)/233.15)
+    e_sat_t2m = 610.78*10.0**(8.61503*(273.15 - 273.15)/273.15)
+    e_sat_d2m = 610.78*10.0**(8.61503*(233.15 - 273.15)/233.15)
     if (e_sat_d2m/e_sat_t2m .le. 0.0 .or. e_sat_d2m/e_sat_t2m .ge. 1.0) then
         print *, "ERROR Test 4: dry case humid not in (0,1)"
         n_errors = n_errors + 1
@@ -105,7 +105,7 @@ program thermo_input_test
     ! --- Test 5: Cloud mapping (tcc -> cloud) ---
     print *, ""
     print *, "--- Test 5: Cloud mapping ---"
-    tcc_test = (/ 0.0, 0.5, 1.0 /)
+    tcc_test = (/0.0, 0.5, 1.0/)
     cloud_mapped = tcc_test  ! прямая проекция
 
     n_checks = n_checks + 1
@@ -124,13 +124,13 @@ program thermo_input_test
     ! --- Test 6: Cloud radiative formula check (1 - 0.6*cclo^3) ---
     print *, ""
     print *, "--- Test 6: Cloud radiative formula ---"
-    cclo_test = (/ 0.0, 0.25, 0.5, 1.0 /)
-    sw_expected = (/ 1.0, 1.0 - 0.6*0.25**3, 1.0 - 0.6*0.5**3, 1.0 - 0.6*1.0**3 /)
+    cclo_test = (/0.0, 0.25, 0.5, 1.0/)
+    sw_expected = (/1.0, 1.0 - 0.6*0.25**3, 1.0 - 0.6*0.5**3, 1.0 - 0.6*1.0**3/)
 
     n_checks = n_checks + 1
     do i = 1, n_cloud_tests
         cclo = cclo_test(i)
-        sw_factor = 1.0 - 0.6 * cclo**3
+        sw_factor = 1.0 - 0.6*cclo**3
         if (abs(sw_factor - sw_expected(i)) .gt. 1e-6) then
             print '(A,I2,A,F10.6,A,F10.6)', "ERROR Test 6.", i, ": SW factor = ", sw_factor, " expected ", sw_expected(i)
             n_errors = n_errors + 1
@@ -142,7 +142,7 @@ program thermo_input_test
     ! --- Test 7: sfal climatology interface (non-negative) ---
     print *, ""
     print *, "--- Test 7: sfal climatology ---"
-    sfal_data = (/ 0.85, 0.85, 0.83, 0.81, 0.82, 0.78, 0.64, 0.69, 0.84, 0.85, 0.85, 0.85 /)
+    sfal_data = (/0.85, 0.85, 0.83, 0.81, 0.82, 0.78, 0.64, 0.69, 0.84, 0.85, 0.85, 0.85/)
 
     n_checks = n_checks + 1
     do i = 1, 12

@@ -43,15 +43,15 @@ program eos_precision_test
     print *, "--- 1. REAL kind / storage ---"
     print '(A,I2,A,I4,A)', 'default REAL: kind=', sp, &
         ' storage_size=', storage_size(1.0_sp), ' bits'
-    print '(A,I2,A)',     'REAL64     : kind=', dp
-    print '(A,I2)',       'precision(default real)=', precision(1.0_sp)
-    print '(A,I3)',       'range(default real)     =', range(1.0_sp)
-    print '(A,F10.6)',    'epsilon(default real)   =', epsilon(1.0_sp)
-    print '(A,ES11.4)',   'tiny(default real)      =', tiny(1.0_sp)
-    print '(A,ES11.4)',   'huge(default real)      =', huge(1.0_sp)
+    print '(A,I2,A)', 'REAL64     : kind=', dp
+    print '(A,I2)', 'precision(default real)=', precision(1.0_sp)
+    print '(A,I3)', 'range(default real)     =', range(1.0_sp)
+    print '(A,F10.6)', 'epsilon(default real)   =', epsilon(1.0_sp)
+    print '(A,ES11.4)', 'tiny(default real)      =', tiny(1.0_sp)
+    print '(A,ES11.4)', 'huge(default real)      =', huge(1.0_sp)
 
     ! Порог из convective_adjustment.f90 (исторический).
-    print '(A,ES11.4)',   'threshold eps_density (0.9e-7 real32) = ', &
+    print '(A,ES11.4)', 'threshold eps_density (0.9e-7 real32) = ', &
         0.9e-7_sp
 
     ! --- 2. Reproduction of production EOS for representative T/S ---
@@ -60,7 +60,7 @@ program eos_precision_test
         select case (i)
         case (1); t = 15.0_sp; s = 0.033_sp
         case (2); t = 10.0_sp; s = 0.034_sp
-        case (3); t = 0.0_sp;  s = 0.033_sp
+        case (3); t = 0.0_sp; s = 0.033_sp
         case (4); t = 25.0_sp; s = 0.035_sp
         end select
         aa = 1779.5 + (11.25 - 0.0745*t)*t - (3800.0 + 10.0*t)*s
@@ -75,13 +75,13 @@ program eos_precision_test
         ro_next = nearest(ro, +1.0_sp)
 
         print '(A,I1,A,F5.1,A,F6.3,A)', 'T/S case ', i, ': T=', t, ' S=', s
-        print '(A,ES16.9,A,ES16.9)',    '  aa     = ', aa, '  bb     = ', bb
-        print '(A,ES16.9,A,ES16.9)',    '  X      = ', x, '  RO     = ', ro
-        print '(A,ES11.4,A,ES11.4)',    '  spacing(X) = ', spacing_x, &
+        print '(A,ES16.9,A,ES16.9)', '  aa     = ', aa, '  bb     = ', bb
+        print '(A,ES16.9,A,ES16.9)', '  X      = ', x, '  RO     = ', ro
+        print '(A,ES11.4,A,ES11.4)', '  spacing(X) = ', spacing_x, &
             '  spacing(RO) = ', spacing_ro
-        print '(A,ES11.4,A,ES11.4)',    '  nearest(X,+1) = ', x_next, &
+        print '(A,ES11.4,A,ES11.4)', '  nearest(X,+1) = ', x_next, &
             '  nearest(RO,+1) = ', ro_next
-        print '(A,ES11.4,A,ES11.4)',    '  nearest-X - X  = ', x_next - x, &
+        print '(A,ES11.4,A,ES11.4)', '  nearest-X - X  = ', x_next - x, &
             '  nearest-RO - RO = ', ro_next - ro
     end do
 
@@ -91,7 +91,7 @@ program eos_precision_test
         select case (i)
         case (1); t = 15.0_sp; s = 0.033_sp
         case (2); t = 10.0_sp; s = 0.034_sp
-        case (3); t = 0.0_sp;  s = 0.033_sp
+        case (3); t = 0.0_sp; s = 0.033_sp
         case (4); t = 25.0_sp; s = 0.035_sp
         end select
         aa = 1779.5 + (11.25 - 0.0745*t)*t - (3800.0 + 10.0*t)*s
@@ -115,7 +115,7 @@ program eos_precision_test
         select case (i)
         case (1); t = 15.0_sp; s = 0.033_sp
         case (2); t = 10.0_sp; s = 0.034_sp
-        case (3); t = 0.0_sp;  s = 0.033_sp
+        case (3); t = 0.0_sp; s = 0.033_sp
         case (4); t = 25.0_sp; s = 0.035_sp
         end select
         aa = 1779.5 + (11.25 - 0.0745*t)*t - (3800.0 + 10.0*t)*s
@@ -143,7 +143,7 @@ program eos_precision_test
         select case (i)
         case (1); t = 15.0_sp; s = 0.033_sp
         case (2); t = 10.0_sp; s = 0.034_sp
-        case (3); t = 0.0_sp;  s = 0.033_sp
+        case (3); t = 0.0_sp; s = 0.033_sp
         case (4); t = 25.0_sp; s = 0.035_sp
         end select
         aa64 = 1779.5d0 + (11.25d0 - 0.0745d0*dble(t))*dble(t) &
@@ -292,11 +292,11 @@ contains
             end if
         end do
 
-        print '(A,I7)',       '  distinct RO32 values enumerated: ', nval
+        print '(A,I7)', '  distinct RO32 values enumerated: ', nval
         print '(A,ES12.5,A,ES12.5)', '  X range over grid: [', x_min, ', ', x_max, ']'
-        print '(A,ES11.4)',   '  min nonzero |ROa - ROb| (sorted grid) = ', dmin
-        print '(A,ES11.4)',   '  threshold 0.9e-7 = ', thresh
-        print '(A,ES11.4)',   '  2^-23 = ', 2.0_sp**(-23)
+        print '(A,ES11.4)', '  min nonzero |ROa - ROb| (sorted grid) = ', dmin
+        print '(A,ES11.4)', '  threshold 0.9e-7 = ', thresh
+        print '(A,ES11.4)', '  2^-23 = ', 2.0_sp**(-23)
         print '(A,L1)', '  exists pair with 0 < diff <= 0.9e-7: ', &
             nonzero_below_thresh
 

@@ -37,7 +37,9 @@ def merge_snowfall(instantaneous_nc, snowfall_nc, output_nc):
     # Verify snowfall structure
     print(f"Snowfall shape: {ds_snow['sf'].shape}")
     print(f"Snowfall time steps: {len(ds_snow.valid_time)}")
-    print(f"Snowfall time range: {ds_snow.valid_time[0].values} to {ds_snow.valid_time[-1].values}")
+    print(
+        f"Snowfall time range: {ds_snow.valid_time[0].values} to {ds_snow.valid_time[-1].values}"
+    )
 
     # The snowfall is at 00:00 and 12:00 UTC (analysis times)
     # Each value = 12-hour accumulation ending at that analysis time
@@ -45,11 +47,15 @@ def merge_snowfall(instantaneous_nc, snowfall_nc, output_nc):
 
     # Use the instantaneous file's time axis as the target
     target_times = ds_inst.valid_time.values
-    target_time_sec = np.array([np.datetime64(t, 's').astype('int64') for t in target_times])
+    target_time_sec = np.array(
+        [np.datetime64(t, "s").astype("int64") for t in target_times]
+    )
 
     # Snowfall time axis
     snow_times = ds_snow.valid_time.values
-    snow_time_sec = np.array([np.datetime64(t, 's').astype('int64') for t in snow_times])
+    snow_time_sec = np.array(
+        [np.datetime64(t, "s").astype("int64") for t in snow_times]
+    )
 
     print(f"Target (instantaneous) time steps: {len(target_times)}")
     print(f"Target time range: {target_times[0]} to {target_times[-1]}")
@@ -60,7 +66,7 @@ def merge_snowfall(instantaneous_nc, snowfall_nc, output_nc):
     # Each value = 12-hour accumulation ending at that analysis time
     # Convert snowfall accumulations to rates [m/s]
     # Each accumulation is over 12 hours = 43200 seconds
-    snow_accum = ds_snow['sf'].values  # [time, lat, lon] in m water equivalent
+    snow_accum = ds_snow["sf"].values  # [time, lat, lon] in m water equivalent
     snow_rate = snow_accum / 43200.0  # m/s
 
     # Interpolate snowfall rate to target times
@@ -73,8 +79,13 @@ def merge_snowfall(instantaneous_nc, snowfall_nc, output_nc):
             # Skip land points (where snowfall is always 0)
             if np.all(snow_rate[:, i, j] == 0):
                 continue
-            f = interpolate.interp1d(snow_time_sec, snow_rate[:, i, j],
-                                     kind='linear', bounds_error=False, fill_value=0.0)
+            f = interpolate.interp1d(
+                snow_time_sec,
+                snow_rate[:, i, j],
+                kind="linear",
+                bounds_error=False,
+                fill_value=0.0,
+            )
             snow_rate_interp[:, i, j] = f(target_time_sec)
 
     # Create new dataset with merged variables
@@ -82,26 +93,26 @@ def merge_snowfall(instantaneous_nc, snowfall_nc, output_nc):
     ds_out = ds_inst.copy()
 
     # Add snowfall as new variable with distinct name
-    ds_out['era5_snowfall_rate'] = xr.DataArray(
+    ds_out["era5_snowfall_rate"] = xr.DataArray(
         snow_rate_interp,
-        dims=('valid_time', 'latitude', 'longitude'),
+        dims=("valid_time", "latitude", "longitude"),
         coords={
-            'valid_time': target_times,
-            'latitude': ds_snow.latitude,
-            'longitude': ds_snow.longitude,
+            "valid_time": target_times,
+            "latitude": ds_snow.latitude,
+            "longitude": ds_snow.longitude,
         },
         attrs={
-            'units': 'm s-1',
-            'long_name': 'Snowfall rate',
-            'standard_name': 'snowfall_flux',
-            'comment': 'Interpolated from ERA5 12-hourly accumulated snowfall (sf) at 00/12 UTC analyses. '
-                       'Original units: m water equivalent per 12 hours. Converted to m/s rate.'
-        }
+            "units": "m s-1",
+            "long_name": "Snowfall rate",
+            "standard_name": "snowfall_flux",
+            "comment": "Interpolated from ERA5 12-hourly accumulated snowfall (sf) at 00/12 UTC analyses. "
+            "Original units: m water equivalent per 12 hours. Converted to m/s rate.",
+        },
     )
 
     # Select only the variables we need (instantaneous + snowfall)
     # The model expects: u10, v10, t2m, d2m, msl, tcc, sf
-    required_vars = ['u10', 'v10', 't2m', 'd2m', 'msl', 'tcc', 'era5_snowfall_rate']
+    required_vars = ["u10", "v10", "t2m", "d2m", "msl", "tcc", "era5_snowfall_rate"]
     for var in list(ds_out.data_vars.keys()):
         if var not in required_vars:
             ds_out = ds_out.drop_vars(var)
@@ -109,19 +120,19 @@ def merge_snowfall(instantaneous_nc, snowfall_nc, output_nc):
     # Write output with proper time encoding (seconds since 1970-01-01)
     # to match the original CDS format expected by the Fortran model
     encoding = {
-        'valid_time': {
-            'units': 'seconds since 1970-01-01',
-            'calendar': 'proleptic_gregorian',
-            'dtype': 'int64'
+        "valid_time": {
+            "units": "seconds since 1970-01-01",
+            "calendar": "proleptic_gregorian",
+            "dtype": "int64",
         }
     }
     # Apply same encoding to all time-dependent variables
     for var in ds_out.data_vars:
-        if 'valid_time' in ds_out[var].dims:
-            encoding[var] = {'zlib': True, 'complevel': 4}
+        if "valid_time" in ds_out[var].dims:
+            encoding[var] = {"zlib": True, "complevel": 4}
 
     print(f"Writing merged file to {output_nc}")
-    ds_out.to_netcdf(output_nc, format='NETCDF4', encoding=encoding)
+    ds_out.to_netcdf(output_nc, format="NETCDF4", encoding=encoding)
     print("Done!")
 
     ds_inst.close()
@@ -134,16 +145,13 @@ def main():
     )
     parser.add_argument(
         "instantaneous_nc",
-        help="Path to instantaneous variables NetCDF (u10, v10, t2m, d2m, msl, tcc)"
+        help="Path to instantaneous variables NetCDF (u10, v10, t2m, d2m, msl, tcc)",
     )
     parser.add_argument(
         "snowfall_nc",
-        help="Path to snowfall NetCDF (accumulated, 12-hourly at 00/12 UTC)"
+        help="Path to snowfall NetCDF (accumulated, 12-hourly at 00/12 UTC)",
     )
-    parser.add_argument(
-        "output_nc",
-        help="Output merged NetCDF path"
-    )
+    parser.add_argument("output_nc", help="Output merged NetCDF path")
     args = parser.parse_args()
 
     for path in [args.instantaneous_nc, args.snowfall_nc]:

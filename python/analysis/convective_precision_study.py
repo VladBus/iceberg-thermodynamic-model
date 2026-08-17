@@ -60,18 +60,47 @@ def load_daily_diagnostics(csv_path):
     """Load the daily diagnostics CSV from a 30-day run."""
     if not pathlib.Path(csv_path).exists():
         return None
-    df = pd.read_csv(csv_path, skiprows=1, header=None,
-                     names=["day", "month", "u_min", "u_max", "u_mean",
-                            "v_min", "v_max", "v_mean",
-                            "w_min", "w_max", "w_mean",
-                            "t_min", "t_max", "t_mean",
-                            "s_min", "s_max", "s_mean",
-                            "ro_min", "ro_max", "ro_mean",
-                            "wind_max", "tx_min", "tx_max",
-                            "ty_min", "ty_max",
-                            "dpx_min", "dpx_max", "dpy_min", "dpy_max",
-                            "euu", "ca_nmix", "ca_max_iter",
-                            "ca_guard_hits", "ca_affected_cols"])
+    df = pd.read_csv(
+        csv_path,
+        skiprows=1,
+        header=None,
+        names=[
+            "day",
+            "month",
+            "u_min",
+            "u_max",
+            "u_mean",
+            "v_min",
+            "v_max",
+            "v_mean",
+            "w_min",
+            "w_max",
+            "w_mean",
+            "t_min",
+            "t_max",
+            "t_mean",
+            "s_min",
+            "s_max",
+            "s_mean",
+            "ro_min",
+            "ro_max",
+            "ro_mean",
+            "wind_max",
+            "tx_min",
+            "tx_max",
+            "ty_min",
+            "ty_max",
+            "dpx_min",
+            "dpx_max",
+            "dpy_min",
+            "dpy_max",
+            "euu",
+            "ca_nmix",
+            "ca_max_iter",
+            "ca_guard_hits",
+            "ca_affected_cols",
+        ],
+    )
     return df
 
 
@@ -93,9 +122,12 @@ def profile_stats_from_nc(prof_glob, day):
     ro = ds["density"].values.astype(F32)
     ds.close()
     return {
-        "t_min": float(t.min()), "t_max": float(t.max()),
-        "s_min": float(s.min()), "s_max": float(s.max()),
-        "ro_min": float(ro.min()), "ro_max": float(ro.max()),
+        "t_min": float(t.min()),
+        "t_max": float(t.max()),
+        "s_min": float(s.min()),
+        "s_max": float(s.max()),
+        "ro_min": float(ro.min()),
+        "ro_max": float(ro.max()),
     }
 
 
@@ -144,8 +176,14 @@ def experiment_c_stats(threshold_label):
     - 2.0e-7: 22786 pairs
     - 3.0e-7: 29611 pairs (includes 2×2^-23 diffs)
     """
-    reachable = {"0.9e-7": 0, "1.0e-7": 0, "1.2e-7": 22786,
-                 "1.5e-7": 22786, "2.0e-7": 22786, "3.0e-7": 29611}
+    reachable = {
+        "0.9e-7": 0,
+        "1.0e-7": 0,
+        "1.2e-7": 22786,
+        "1.5e-7": 22786,
+        "2.0e-7": 22786,
+        "3.0e-7": 29611,
+    }
     min_nonzero = 1.1920929e-7  # 2^-23
     return {
         "experiment": "C",
@@ -158,7 +196,7 @@ def experiment_c_stats(threshold_label):
         "residual_max": f"{min_nonzero:.6e} (2^-23, min nonzero float32 diff)",
         "residual_mean": f"{min_nonzero:.6e} (2^-23, min nonzero float32 diff)",
         "affected_cols": f"All columns with nonzero residuals; ~{reachable[threshold_label]}/"
-                         f"33931 distinct RO values have diff <= threshold",
+        f"33931 distinct RO values have diff <= threshold",
         "T_min": "N/A (grid study, not full model run)",
         "T_max": "N/A",
         "S_min": "N/A",
@@ -268,16 +306,27 @@ def baseline_stats():
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--baseline-csv", default=DEFAULT_BASELINE_CSV,
-                        help="Path to daily_diagnostics.csv from baseline run")
-    parser.add_argument("--events-csv", default=DEFAULT_EVENTS_CSV,
-                        help="Path to convective_guard_events.csv")
-    parser.add_argument("--profiles-glob", default=DEFAULT_PROFILES_GLOB,
-                        help="Glob pattern for daily NetCDF profiles")
-    parser.add_argument("--output-csv", default=OUTPUT_CSV,
-                        help="Output precision study CSV")
-    parser.add_argument("--output-txt", default=OUTPUT_TXT,
-                        help="Output precision study TXT report")
+    parser.add_argument(
+        "--baseline-csv",
+        default=DEFAULT_BASELINE_CSV,
+        help="Path to daily_diagnostics.csv from baseline run",
+    )
+    parser.add_argument(
+        "--events-csv",
+        default=DEFAULT_EVENTS_CSV,
+        help="Path to convective_guard_events.csv",
+    )
+    parser.add_argument(
+        "--profiles-glob",
+        default=DEFAULT_PROFILES_GLOB,
+        help="Glob pattern for daily NetCDF profiles",
+    )
+    parser.add_argument(
+        "--output-csv", default=OUTPUT_CSV, help="Output precision study CSV"
+    )
+    parser.add_argument(
+        "--output-txt", default=OUTPUT_TXT, help="Output precision study TXT report"
+    )
     args = parser.parse_args()
 
     lines = []
@@ -304,7 +353,9 @@ def main():
         p(f"  {k}: {v}")
     p()
 
-    p("3. EXPERIMENT C: THRESHOLD STUDY (0.9e-7, 1.0e-7, 1.2e-7, 1.5e-7, 2.0e-7, 3.0e-7)")
+    p(
+        "3. EXPERIMENT C: THRESHOLD STUDY (0.9e-7, 1.0e-7, 1.2e-7, 1.5e-7, 2.0e-7, 3.0e-7)"
+    )
     p("-" * 70)
     # Table of results
     p("  Threshold | Pairs in (0, thresh] | Reachable? | Min nonzero diff")
@@ -357,7 +408,9 @@ def main():
     p("D. none acceptable; retain guard and document:   <-- SELECTED")
     p("   The 1000-iteration guard is the correct physical exit:")
     p("   - float32 EOS quantization (2^-23 = 1.192e-7) makes 0.9e-7 unreachable")
-    p("   - Columns are physically converged when guard fires; only 1-ulp residual remains")
+    p(
+        "   - Columns are physically converged when guard fires; only 1-ulp residual remains"
+    )
     p("   - 2-day ERA5 run with guard: EXIT=0, all tests pass")
     p("   - Changing EOS/threshold permanently requires promt.md approval")
     p("   - Stage 4.4 value: diagnostics and root-cause verification, not a fix")
@@ -400,10 +453,17 @@ def main():
     p(f"  TXT: {pathlib.Path(args.output_txt).name}")
 
     # Write CSV
-    rows = [baseline_stats(), experiment_b_stats(), experiment_c_stats("0.9e-7"),
-            experiment_c_stats("1.0e-7"), experiment_c_stats("1.2e-7"),
-            experiment_c_stats("1.5e-7"), experiment_c_stats("2.0e-7"),
-            experiment_c_stats("3.0e-7"), experiment_d_stats()]
+    rows = [
+        baseline_stats(),
+        experiment_b_stats(),
+        experiment_c_stats("0.9e-7"),
+        experiment_c_stats("1.0e-7"),
+        experiment_c_stats("1.2e-7"),
+        experiment_c_stats("1.5e-7"),
+        experiment_c_stats("2.0e-7"),
+        experiment_c_stats("3.0e-7"),
+        experiment_d_stats(),
+    ]
     df = pd.DataFrame(rows)
     df.to_csv(args.output_csv, index=False)
     p(f"  Written: {args.output_csv}")

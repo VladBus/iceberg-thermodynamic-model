@@ -146,7 +146,9 @@ def main():
     out.parent.mkdir(parents=True, exist_ok=True)
 
     # Download instantaneous variables
-    request = build_request(args.year, args.month, list(args.area), list(args.time), accumulated=False)
+    request = build_request(
+        args.year, args.month, list(args.area), list(args.time), accumulated=False
+    )
     print("Dataset :", DATASET)
     print("Request (instantaneous):", request)
     print("Output  :", out)
@@ -158,13 +160,19 @@ def main():
     # Optionally download snowfall (accumulated, separate request)
     if args.include_snowfall:
         snow_out = out.with_name(out.stem + "_snowfall.nc")
-        snow_request = build_request(args.year, args.month, list(args.area), list(args.time), accumulated=True)
+        snow_request = build_request(
+            args.year, args.month, list(args.area), list(args.time), accumulated=True
+        )
         print("\nRequest (snowfall, accumulated):", snow_request)
         print("Output  :", snow_out)
         client.retrieve(DATASET, snow_request).download(str(snow_out))
         print("Download finished (snowfall):", snow_out)
-        print("\nNOTE: Snowfall is in a separate file (accumulated forecast, requires 'step' parameter).")
-        print("      It cannot be combined with instantaneous variables in a single CDS request.")
+        print(
+            "\nNOTE: Snowfall is in a separate file (accumulated forecast, requires 'step' parameter)."
+        )
+        print(
+            "      It cannot be combined with instantaneous variables in a single CDS request."
+        )
         print("      Use python/era5/merge_snowfall.py to merge if needed.")
 
 

@@ -32,6 +32,7 @@ contains
         integer :: tx_varid, ty_varid
         integer :: dpx_varid, dpy_varid
         integer :: tatm_varid, patm_varid
+        integer :: humid_varid, cloud_varid
         integer :: status, i, k
         integer :: ro_varid
         real :: x_coord(is1), y_coord(js1), depth(ks), depth_w(ks1)
@@ -188,6 +189,14 @@ contains
         if (.not. nc_ok(status, 'define air_press')) then
             status = nf90_close(ncid); return
         end if
+        status = nf90_def_var(ncid, 'humidity', nf90_real, (/x_dimid, y_dimid/), humid_varid)
+        if (.not. nc_ok(status, 'define humidity')) then
+            status = nf90_close(ncid); return
+        end if
+        status = nf90_def_var(ncid, 'cloud', nf90_real, (/x_dimid, y_dimid/), cloud_varid)
+        if (.not. nc_ok(status, 'define cloud')) then
+            status = nf90_close(ncid); return
+        end if
 
         ! Атрибуты переменных
         call set_att(ncid, x_varid, 'units', 'km')
@@ -264,6 +273,14 @@ contains
 
         call set_att(ncid, patm_varid, 'units', 'hPa')
         call set_att(ncid, patm_varid, 'standard_name', 'air_pressure')
+
+        call set_att(ncid, humid_varid, 'units', '1')
+        call set_att(ncid, humid_varid, 'standard_name', 'relative_humidity')
+        call set_att(ncid, humid_varid, 'long_name', 'relative humidity from ERA5 dew point')
+
+        call set_att(ncid, cloud_varid, 'units', '1')
+        call set_att(ncid, cloud_varid, 'standard_name', 'cloud_area_fraction')
+        call set_att(ncid, cloud_varid, 'long_name', 'total cloud cover from ERA5')
 
         status = nf90_enddef(ncid)
         if (.not. nc_ok(status, 'end define mode')) then
@@ -366,6 +383,14 @@ contains
         end if
         status = nf90_put_var(ncid, patm_varid, patm)
         if (.not. nc_ok(status, 'write air_press')) then
+            status = nf90_close(ncid); return
+        end if
+        status = nf90_put_var(ncid, humid_varid, humid)
+        if (.not. nc_ok(status, 'write humidity')) then
+            status = nf90_close(ncid); return
+        end if
+        status = nf90_put_var(ncid, cloud_varid, cloud)
+        if (.not. nc_ok(status, 'write cloud')) then
             status = nf90_close(ncid); return
         end if
 

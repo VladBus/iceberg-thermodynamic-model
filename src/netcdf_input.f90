@@ -28,6 +28,9 @@ module netcdf_input
     real(4), allocatable :: era5_v10(:, :, :)  ! [m s-1]
     real(4), allocatable :: era5_t2m(:, :, :)  ! [K]
     real(4), allocatable :: era5_msl(:, :, :)  ! [Pa]
+    real(4), allocatable :: era5_d2m(:, :, :)  ! [K] dew point temperature
+    real(4), allocatable :: era5_tcc(:, :, :)  ! [1] total cloud cover
+    real(4), allocatable :: era5_snowfall(:, :, :)  ! [kg m-2 s-1] snowfall
     real(4) :: era5_fill = 3.4028235e38        ! заполнитель/нет данных (ERA5 GRIB missing)
     logical :: era5_lat_decreasing = .false.   ! флаг направления координаты latitude
     logical :: era5_is_open = .false.          ! открыт ли файл
@@ -111,9 +114,14 @@ contains
         if (allocated(era5_v10)) deallocate (era5_v10)
         if (allocated(era5_t2m)) deallocate (era5_t2m)
         if (allocated(era5_msl)) deallocate (era5_msl)
+        if (allocated(era5_d2m)) deallocate (era5_d2m)
+        if (allocated(era5_tcc)) deallocate (era5_tcc)
+        if (allocated(era5_snowfall)) deallocate (era5_snowfall)
         allocate (era5_time(ntime), era5_lat(nlat), era5_lon(nlon), &
                   era5_u10(nlat, nlon, ntime), era5_v10(nlat, nlon, ntime), &
-                  era5_t2m(nlat, nlon, ntime), era5_msl(nlat, nlon, ntime))
+                  era5_t2m(nlat, nlon, ntime), era5_msl(nlat, nlon, ntime), &
+                  era5_d2m(nlat, nlon, ntime), era5_tcc(nlat, nlon, ntime), &
+                  era5_snowfall(nlat, nlon, ntime))
         allocate (lat_tmp(nlat), lon_tmp(nlon))
 
         ! --- Чтение времени ---
@@ -181,6 +189,19 @@ contains
         if (status .ne. 0) goto 999
         call era5_read_var(ncid, 'msl', era5_msl, status, filename)
         if (status .ne. 0) goto 999
+        call era5_read_var(ncid, 'd2m', era5_d2m, status, filename)
+        if (status .ne. 0) goto 999
+        call era5_read_var(ncid, 'tcc', era5_tcc, status, filename)
+        if (status .ne. 0) goto 999
+        ! snowfall is optional - may not be available in all ERA5 datasets
+        call era5_read_var(ncid, 'snowfall', era5_snowfall, status, filename)
+        if (status .ne. 0) then
+            print *, "ERA5 WARNING: snowfall variable not found, using zeros."
+            if (allocated(era5_snowfall)) deallocate (era5_snowfall)
+            allocate (era5_snowfall(era5_nlat, era5_nlon, era5_ntime))
+            era5_snowfall = 0.0
+            status = 0
+        end if
 
         era5_is_open = .true.
         nf_status = nf90_close(ncid)
@@ -266,6 +287,9 @@ contains
         print *, "v10 min/max [m s-1]:", minval(era5_v10), maxval(era5_v10)
         print *, "t2m min/max [K]:   ", minval(era5_t2m), maxval(era5_t2m)
         print *, "msl min/max [Pa]:  ", minval(era5_msl), maxval(era5_msl)
+        print *, "d2m min/max [K]:   ", minval(era5_d2m), maxval(era5_d2m)
+        print *, "tcc min/max [1]:   ", minval(era5_tcc), maxval(era5_tcc)
+        print *, "snowfall min/max [kg m-2 s-1]: ", minval(era5_snowfall), maxval(era5_snowfall)
         print *, "fill value (assumed):", era5_fill
         print *, "--- end ERA5 diagnostic ---"
     end subroutine era5_diag

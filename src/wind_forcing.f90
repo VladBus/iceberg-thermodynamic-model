@@ -12,7 +12,8 @@ module wind_forcing
     use param
     use smooth_filter    ! Подключаем модуль сглаживания
     use netcdf_input, only: era5_find_time_index, era5_bilinear2d, &
-                            era5_u10, era5_v10, era5_t2m, era5_msl, era5_is_open
+                            era5_u10, era5_v10, era5_t2m, era5_msl, &
+                            era5_d2m, era5_tcc, era5_snowfall, era5_is_open
     implicit none
 
 contains
@@ -188,7 +189,7 @@ contains
         real(8), intent(in) :: itime_sec
         integer :: i, j, tidx
         integer :: nbad
-        real(8) :: lat, lon, u10v, v10v, t2mv, mslv
+        real(8) :: lat, lon, u10v, v10v, t2mv, mslv, d2mv, tccv, snowfallv
         real(8) :: spd, cof8, u_cm, v_cm
         real, parameter :: dxx = 13.89e5 ! Горизонтальный шаг сетки (см)
         logical :: ok
@@ -205,6 +206,8 @@ contains
             dpy1 = 0.0
             tatm = 0.0
             patm = 0.0
+            humid = 0.0
+            cloud = 0.0
             return
         end if
 
@@ -227,8 +230,16 @@ contains
                 ok = era5_bilinear2d(era5_v10(:, :, tidx), lat, lon, v10v)
                 ok = era5_bilinear2d(era5_t2m(:, :, tidx), lat, lon, t2mv)
                 ok = era5_bilinear2d(era5_msl(:, :, tidx), lat, lon, mslv)
-
-                ! Ветер: м/с -> см/с (СГС).
+                ok = era5_bilinear2d(era5_d2m(:, :, tidx), lat, lon, d2mv)
+                ok = era5_bilinear2d(era5_tcc(:, :, tidx), lat, lon, tccv)
+                ok = era5_bilinear2d(era5_snowfall(:, :, tidx), lat, lon, snowfallv)
+                ! Точка росы: e_vap = hhum * e_sat(tta)
+                ! по определению: e_vap = e_sat(d2m), hhum = e_sat(d2m)/e_sat(t2m)
+                ! относительная влажность: RH = e_sat(d2m)/e_sat(t2m)
+                humid(i, j) = (610.78 * 10.0**((8.61503*(d2mv - 273.15))/d2mv)) / &
+                       (610.78 * 10.0**((8.61503*(t2mv - 273.15))/t2mv))
+                ! Облачность: ERA5 tcc [0,1] -> model cloud [0,1]
+                cloud(i, j) = tccv
                 u_cm = u10v*100.0_8
                 v_cm = v10v*100.0_8
                 spd = sqrt(u_cm*u_cm + v_cm*v_cm)

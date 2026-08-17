@@ -36,7 +36,10 @@ VARIABLES = [
     "10m_u_component_of_wind",
     "10m_v_component_of_wind",
     "2m_temperature",
+    "2m_dewpoint_temperature",
     "mean_sea_level_pressure",
+    "total_cloud_cover",
+    "snowfall",
 ]
 
 # Default spatial area [north, west, south, east]: Arctic strip 65-90 N.

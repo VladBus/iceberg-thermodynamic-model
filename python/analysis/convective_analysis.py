@@ -75,6 +75,7 @@ def column_inv(ro):
     return n_inv, inv_max, k_max
 
 
+# pylint: disable=too-many-locals,too-many-statements
 def representative_day_rows(day, events, prof_glob):
     """One CSV row per representative day with typical + guard-column profiles."""
     ev = events[events["day"] == day]
@@ -126,7 +127,9 @@ def representative_day_rows(day, events, prof_glob):
     return row
 
 
+# pylint: disable=too-many-locals,too-many-statements
 def main():
+    """Build the Stage 4.3 convective-cycling report (CSV + text)."""
     parser = argparse.ArgumentParser(
         description="Stage 4.3 convective-adjustment guard cycling analysis."
     )
@@ -141,7 +144,9 @@ def main():
     daily = pd.read_csv(args.daily)
 
     lines = []
-    p = lambda s="": lines.append(s)
+
+    def p(s=""):
+        lines.append(s)
 
     p("=" * 78)
     p("Stage 4.3 - Convective-adjustment guard cycling analysis")
@@ -156,12 +161,18 @@ def main():
     p(f"  Days with events:         {events['day'].nunique()}")
     p(f"  ki of all events:         {events['ki'].unique()}")
     p(f"  iter_count of all:        {events['iter_count'].unique()} (guard)")
-    p(f"  resid_inv values:         {[f'{v:.3e}' for v in sorted(events['resid_inv'].unique())]}")
+    p(
+        f"  resid_inv values:         {[f'{v:.3e}' for v in sorted(events['resid_inv'].unique())]}"
+    )
     ulp23 = 2**-23
-    n_ulp1 = int((np.abs(events['resid_inv'] - ulp23) < 1e-12).sum())
-    n_ulp2 = int((np.abs(events['resid_inv'] - 2 * ulp23) < 1e-12).sum())
-    p(f"  resid_inv == 2^-23 (1 ulp):   {n_ulp1} / {len(events)} ({100.0*n_ulp1/len(events):.1f}%)")
-    p(f"  resid_inv == 2*2^-23 (2 ulp): {n_ulp2} / {len(events)} ({100.0*n_ulp2/len(events):.1f}%)")
+    n_ulp1 = int((np.abs(events["resid_inv"] - ulp23) < 1e-12).sum())
+    n_ulp2 = int((np.abs(events["resid_inv"] - 2 * ulp23) < 1e-12).sum())
+    p(
+        f"  resid_inv == 2^-23 (1 ulp):   {n_ulp1} / {len(events)} ({100.0*n_ulp1/len(events):.1f}%)"
+    )
+    p(
+        f"  resid_inv == 2*2^-23 (2 ulp): {n_ulp2} / {len(events)} ({100.0*n_ulp2/len(events):.1f}%)"
+    )
     p(f"  nmix / iteration:         mean {events['nmix'].mean()/1001:.3f}")
     p("  k_problem distribution (interface level):")
     for k, n in events["k_problem"].value_counts().sort_index().items():
@@ -170,8 +181,12 @@ def main():
     p()
     p("2. CONSERVATION (T*DZ1 / S*DZ1 across the guard)")
     p("-" * 40)
-    p(f"  |rel_t|  max {events['rel_t'].abs().max():.3e}  mean {events['rel_t'].abs().mean():.3e}")
-    p(f"  |rel_s|  max {events['rel_s'].abs().max():.3e}  mean {events['rel_s'].abs().mean():.3e}")
+    p(
+        f"  |rel_t|  max {events['rel_t'].abs().max():.3e}  mean {events['rel_t'].abs().mean():.3e}"
+    )
+    p(
+        f"  |rel_s|  max {events['rel_s'].abs().max():.3e}  mean {events['rel_s'].abs().mean():.3e}"
+    )
     p(f"  |dtdz|   max {events['dtdz'].abs().max():.3e}")
     p(f"  |dsdz|   max {events['dsdz'].abs().max():.3e}")
 
@@ -196,9 +211,19 @@ def main():
         df.to_csv(args.out_csv, index=False)
         p(f"  See {args.out_csv} ({len(df)} rows)")
         p()
-        cols = ["day", "n_guard_events", "typ_ki", "typ_n_inv", "typ_inv_max",
-                "typ_inv_k", "typ_ro_range", "mx_ki", "mx_n_inv", "mx_inv_max",
-                "mx_ro_range"]
+        cols = [
+            "day",
+            "n_guard_events",
+            "typ_ki",
+            "typ_n_inv",
+            "typ_inv_max",
+            "typ_inv_k",
+            "typ_ro_range",
+            "mx_ki",
+            "mx_n_inv",
+            "mx_inv_max",
+            "mx_ro_range",
+        ]
         p(df[cols].to_string(index=False))
     else:
         p("  No representative columns available.")
@@ -206,8 +231,19 @@ def main():
     p()
     p("5. CORRELATIONS OF guard_hits WITH SCALARS (Pearson)")
     p("-" * 40)
-    cols = ["euu", "ro_max", "ro_mean", "t_min", "t_max", "u_max", "v_max",
-            "w_max", "wind_max", "ca_nmix", "ca_affected_cols"]
+    cols = [
+        "euu",
+        "ro_max",
+        "ro_mean",
+        "t_min",
+        "t_max",
+        "u_max",
+        "v_max",
+        "w_max",
+        "wind_max",
+        "ca_nmix",
+        "ca_affected_cols",
+    ]
     sub = daily[["ca_guard_hits"] + cols].dropna()
     for c in cols:
         r = np.corrcoef(sub["ca_guard_hits"], sub[c])[0, 1]
@@ -215,7 +251,7 @@ def main():
     p()
     p("  NOTE: correlation != causation; 30 points, no significance test.")
 
-    with open(args.out_txt, "w") as f:
+    with open(args.out_txt, "w", encoding="utf-8") as f:
         f.write("\n".join(lines) + "\n")
 
     print("\n".join(lines))

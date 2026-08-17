@@ -10,6 +10,7 @@ fill values (NaN/Inf), and physical min/max ranges.
 """
 
 import argparse
+import datetime as _dt
 import pathlib
 
 import numpy as np
@@ -25,7 +26,9 @@ VARIABLES = {
 }
 
 
+# pylint: disable=too-many-locals
 def main():
+    """Inspect a downloaded ERA5 NetCDF file and validate its contents."""
     parser = argparse.ArgumentParser(
         description="Inspect a downloaded ERA5 NetCDF file."
     )
@@ -53,8 +56,6 @@ def main():
         print(f"  end   : {times[-1]}")
         n = len(times)
         if n > 1:
-            import datetime as _dt
-
             dt = _dt.datetime.fromisoformat(str(times[1])) - _dt.datetime.fromisoformat(
                 str(times[0])
             )

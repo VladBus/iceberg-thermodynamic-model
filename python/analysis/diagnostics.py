@@ -28,6 +28,7 @@ DEFAULT_OUT = "data/output/daily_summary.csv"
 
 
 def main():
+    """Read Fortran daily diagnostics CSV and write daily_summary.csv."""
     parser = argparse.ArgumentParser(
         description="Compute daily summary statistics from Fortran daily diagnostics."
     )

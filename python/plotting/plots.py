@@ -17,11 +17,11 @@ import pathlib
 
 import matplotlib
 
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
-import xarray as xr
+matplotlib.use("Agg")  # pylint: disable=wrong-import-position
+import matplotlib.pyplot as plt  # pylint: disable=wrong-import-position
+import numpy as np  # pylint: disable=wrong-import-position
+import pandas as pd  # pylint: disable=wrong-import-position
+import xarray as xr  # pylint: disable=wrong-import-position
 
 DEFAULT_GLOB = "data/output/results_day_[0-9][0-9].nc"
 DEFAULT_DIAG = "data/output/daily_diagnostics.csv"
@@ -35,6 +35,7 @@ def _load_daily(path):
 
 
 def plot_surface_maps(day_file, outdir):
+    """Plot surface T/S/speed maps for one daily snapshot."""
     ds = _load_daily(day_file)
     lat = ds["latitude"].values
     lon = ds["longitude"].values
@@ -75,6 +76,7 @@ def plot_surface_maps(day_file, outdir):
 
 
 def plot_daily_series(diag_csv, outdir):
+    """Plot EUU and convective statistics vs model day."""
     df = pd.read_csv(diag_csv)
     if "euu" not in df.columns:
         return
@@ -106,6 +108,7 @@ def plot_daily_series(diag_csv, outdir):
 
 
 def plot_vertical_profiles(glob_pattern, outdir):
+    """Plot horizontal-mean T/S vertical profiles over days."""
     files = sorted(glob.glob(glob_pattern))
     if not files:
         return
@@ -145,6 +148,7 @@ def plot_vertical_profiles(glob_pattern, outdir):
 
 
 def main():
+    """Generate all standardized figures from model output."""
     parser = argparse.ArgumentParser(
         description="Plot standardized figures from model output."
     )

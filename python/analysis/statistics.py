@@ -22,6 +22,7 @@ DEFAULT_OUT = "data/output/monthly_summary.txt"
 
 
 def main():
+    """Compute monthly statistics from the daily summary CSV."""
     parser = argparse.ArgumentParser(
         description="Compute monthly statistics from the daily summary CSV."
     )

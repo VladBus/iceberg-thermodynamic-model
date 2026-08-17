@@ -15,11 +15,11 @@ import pathlib
 
 import matplotlib
 
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
-import xarray as xr
+matplotlib.use("Agg")  # pylint: disable=wrong-import-position
+import matplotlib.pyplot as plt  # pylint: disable=wrong-import-position
+import numpy as np  # pylint: disable=wrong-import-position
+import pandas as pd  # pylint: disable=wrong-import-position
+import xarray as xr  # pylint: disable=wrong-import-position
 
 DEFAULT_EVENTS = "data/output/convective_guard_events.csv"
 DEFAULT_DIAG = "data/output/daily_diagnostics.csv"
@@ -44,6 +44,7 @@ def load_column(path, i, j):
 
 
 def plot_guard_hits_evolution(daily, outdir):
+    """Plot per-day convective guard-hit counts."""
     fig, ax = plt.subplots(figsize=(8, 4))
     ax.plot(daily["day"], daily["ca_guard_hits"], marker="o", ms=3, color="crimson")
     ax.set_xlabel("model day")
@@ -56,6 +57,7 @@ def plot_guard_hits_evolution(daily, outdir):
 
 
 def plot_guard_nmix_kproblem(events, outdir):
+    """Plot mixings-per-iteration and problem-interface level histograms."""
     fig, axes = plt.subplots(1, 2, figsize=(11, 4))
     axes[0].hist(events["nmix"] / 1001, bins=40, color="steelblue")
     axes[0].set_xlabel("nmix per iteration (mean ~2.03)")
@@ -75,6 +77,7 @@ def plot_guard_nmix_kproblem(events, outdir):
 
 
 def plot_guard_vs_scalars(daily, outdir):
+    """Plot guard hits against kinetic energy and density anomaly."""
     fig, axes = plt.subplots(1, 2, figsize=(11, 4))
     for ax, var, lab in [
         (axes[0], "euu", "EUU (cm2/s2)"),
@@ -92,12 +95,17 @@ def plot_guard_vs_scalars(daily, outdir):
 
 
 def plot_residual_inversion(events, outdir):
+    """Plot residual-inversion histogram in float32 ulp units."""
     fig, ax = plt.subplots(figsize=(7, 4))
     ulp = 2**-23
     vals = events["resid_inv"].values / ulp  # units of ulp
     ax.hist(vals, bins=np.arange(0.5, 3.0, 0.25), color="rebeccapurple")
-    ax.axvline(0.9e-7 / ulp, color="crimson", ls="--",
-               label="threshold 0.9e-7 = %.3f ulp" % (0.9e-7 / ulp))
+    ax.axvline(
+        0.9e-7 / ulp,
+        color="crimson",
+        ls="--",
+        label=f"threshold 0.9e-7 = {0.9e-7 / ulp:.3f} ulp",
+    )
     ax.set_xlabel("residual inversion (units of float32 ulp = 2^-23)")
     ax.set_ylabel("events")
     ax.set_title("All guard events end at the 1-ulp quantization level")
@@ -108,10 +116,11 @@ def plot_residual_inversion(events, outdir):
     plt.close(fig)
 
 
+# pylint: disable=too-many-locals
 def plot_representative_profiles(events, prof_glob, outdir):
     """T/S/RO profiles at a typical guard column for representative days."""
     fig, axes = plt.subplots(1, 3, figsize=(14, 6))
-    cmap = plt.cm.viridis
+    cmap = plt.get_cmap("viridis")
     norm = plt.Normalize(0, max(REPR_DAYS))
 
     n = 0
@@ -152,6 +161,7 @@ def plot_representative_profiles(events, prof_glob, outdir):
 
 
 def main():
+    """Generate all Stage 4.3 convective guard-cycling figures."""
     parser = argparse.ArgumentParser(
         description="Stage 4.3 convective guard-cycling diagnostic figures."
     )

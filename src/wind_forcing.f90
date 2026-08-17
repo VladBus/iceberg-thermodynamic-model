@@ -186,7 +186,7 @@ contains
     ! ==========================================================================
     subroutine era5_wind(itime_sec)
         real(8), intent(in) :: itime_sec
-        integer :: i, j, idx
+        integer :: i, j, tidx
         integer :: nbad
         real(8) :: lat, lon, u10v, v10v, t2mv, mslv
         real(8) :: spd, cof8, u_cm, v_cm
@@ -208,9 +208,9 @@ contains
             return
         end if
 
-        call era5_find_time_index(itime_sec, idx)
+        call era5_find_time_index(itime_sec, tidx)
         nbad = 0
-        print *, "ERA5 WIND: idx=", idx, " sec=", itime_sec
+        print *, "ERA5 WIND: tidx=", tidx, " sec=", itime_sec
 
         ! Интерполяция во ВСЕ узлы модельной сетки. Точки суши затем
         ! маскируются ниже (wind=1.70141e38), как в legacy.
@@ -219,14 +219,14 @@ contains
                 lat = real(fi(i, j), 8)
                 lon = real(dl(i, j), 8)
 
-                ok = era5_bilinear2d(era5_u10(:, :, idx), lat, lon, u10v)
+                ok = era5_bilinear2d(era5_u10(:, :, tidx), lat, lon, u10v)
                 if (.not. ok) then
                     nbad = nbad + 1
                     cycle
                 end if
-                ok = era5_bilinear2d(era5_v10(:, :, idx), lat, lon, v10v)
-                ok = era5_bilinear2d(era5_t2m(:, :, idx), lat, lon, t2mv)
-                ok = era5_bilinear2d(era5_msl(:, :, idx), lat, lon, mslv)
+                ok = era5_bilinear2d(era5_v10(:, :, tidx), lat, lon, v10v)
+                ok = era5_bilinear2d(era5_t2m(:, :, tidx), lat, lon, t2mv)
+                ok = era5_bilinear2d(era5_msl(:, :, tidx), lat, lon, mslv)
 
                 ! Ветер: м/с -> см/с (СГС).
                 u_cm = u10v*100.0_8

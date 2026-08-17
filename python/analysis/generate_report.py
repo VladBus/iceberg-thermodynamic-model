@@ -20,7 +20,9 @@ DEFAULT_STATS = "data/output/monthly_summary.txt"
 DEFAULT_OUT = "data/output/monthly_report.txt"
 
 
+# pylint: disable=too-many-statements
 def main():
+    """Assemble the monthly analysis report from daily diagnostics."""
     parser = argparse.ArgumentParser(
         description="Assemble the monthly analysis report."
     )

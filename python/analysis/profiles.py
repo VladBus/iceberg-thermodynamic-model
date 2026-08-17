@@ -18,7 +18,6 @@ import argparse
 import glob
 import pathlib
 
-import numpy as np
 import pandas as pd
 import xarray as xr
 
@@ -61,6 +60,7 @@ def daily_profile(path):
 
 
 def main():
+    """Compute horizontal-mean vertical profiles and write the CSV."""
     parser = argparse.ArgumentParser(
         description="Compute horizontal-mean vertical profiles from daily snapshots."
     )

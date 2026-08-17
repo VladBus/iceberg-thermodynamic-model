@@ -263,10 +263,10 @@ program main
         call wind1()
     end if
 
-    do mmmm = 1, mm5
+    do mmmm = 1, mm5 ! Цикл по годам
         nday = 0
-        do lll = 1, mm4
-            do kkk = kkb, mm1
+        do lll = 1, mm4 ! Цикл по месяцам
+            do kkk = kkb, mm1 ! Цикл по дням
                 nday = nday + 1
                 nday1 = nday1 + 1
 
@@ -294,7 +294,7 @@ program main
                     call wind1()
                 end if
 
-                do iii = 1, mm2
+                do iii = 1, mm2 ! Цикл по суткам
                     ! 1. Временная интерполяция ветровых напряжений
                     if (iii .ne. 1) then
                         b = real(mm2 - iii + 2)
@@ -393,8 +393,6 @@ program main
                         u(1, :) = u(2, :)
                         v(1, :) = v(2, :)
                     end do
-
-                    ! 4. Адвекция сплошности и массы льда
 
                     ! 4. Адвекция сплошности и массы льда
                     do k = 1, ngr
@@ -756,7 +754,7 @@ contains
         real :: s_min, s_max, s_sum, ro_min, ro_max, ro_sum
         real :: wind_max, tx_min, tx_max, ty_min, ty_max
         real :: dpx_min, dpx_max, dpy_min, dpy_max
-        integer :: n, i, j, k, ki
+        integer :: n, iw, jw, kw, ki_col
         integer :: total_nmix, max_iter, guard_hits, affected_cols
         logical :: first, is_open
 
@@ -773,23 +771,23 @@ contains
         dpy_min = huge(1.0); dpy_max = -huge(1.0)
         n = 0
 
-        do j = 2, js
-            do i = 2, is
-                ki = kt1(i, j)
-                if (ki .eq. 0) cycle
-                wind_max = max(wind_max, wind(i, j))
-                tx_min = min(tx_min, tx(i, j)); tx_max = max(tx_max, tx(i, j))
-                ty_min = min(ty_min, ty(i, j)); ty_max = max(ty_max, ty(i, j))
-                dpx_min = min(dpx_min, dpx(i, j)); dpx_max = max(dpx_max, dpx(i, j))
-                dpy_min = min(dpy_min, dpy(i, j)); dpy_max = max(dpy_max, dpy(i, j))
-                do k = 1, ki
+        do jw = 2, js
+            do iw = 2, is
+                ki_col = kt1(iw, jw)
+                if (ki_col .eq. 0) cycle
+                wind_max = max(wind_max, wind(iw, jw))
+                tx_min = min(tx_min, tx(iw, jw)); tx_max = max(tx_max, tx(iw, jw))
+                ty_min = min(ty_min, ty(iw, jw)); ty_max = max(ty_max, ty(iw, jw))
+                dpx_min = min(dpx_min, dpx(iw, jw)); dpx_max = max(dpx_max, dpx(iw, jw))
+                dpy_min = min(dpy_min, dpy(iw, jw)); dpy_max = max(dpy_max, dpy(iw, jw))
+                do kw = 1, ki_col
                     n = n + 1
-                    u_min = min(u_min, u2(i, j, k)); u_max = max(u_max, u2(i, j, k)); u_sum = u_sum + u2(i, j, k)
-                    v_min = min(v_min, v2(i, j, k)); v_max = max(v_max, v2(i, j, k)); v_sum = v_sum + v2(i, j, k)
-                    w_min = min(w_min, w(i, j, k)); w_max = max(w_max, w(i, j, k)); w_sum = w_sum + w(i, j, k)
-                    t_min = min(t_min, t2(i, j, k)); t_max = max(t_max, t2(i, j, k)); t_sum = t_sum + t2(i, j, k)
-                    s_min = min(s_min, s2(i, j, k)); s_max = max(s_max, s2(i, j, k)); s_sum = s_sum + s2(i, j, k)
-                    ro_min = min(ro_min, ro(i, j, k)); ro_max = max(ro_max, ro(i, j, k)); ro_sum = ro_sum + ro(i, j, k)
+                    u_min = min(u_min, u2(iw, jw, kw)); u_max = max(u_max, u2(iw, jw, kw)); u_sum = u_sum + u2(iw, jw, kw)
+                    v_min = min(v_min, v2(iw, jw, kw)); v_max = max(v_max, v2(iw, jw, kw)); v_sum = v_sum + v2(iw, jw, kw)
+                    w_min = min(w_min, w(iw, jw, kw)); w_max = max(w_max, w(iw, jw, kw)); w_sum = w_sum + w(iw, jw, kw)
+                    t_min = min(t_min, t2(iw, jw, kw)); t_max = max(t_max, t2(iw, jw, kw)); t_sum = t_sum + t2(iw, jw, kw)
+                    s_min = min(s_min, s2(iw, jw, kw)); s_max = max(s_max, s2(iw, jw, kw)); s_sum = s_sum + s2(iw, jw, kw)
+                    ro_min = min(ro_min, ro(iw, jw, kw)); ro_max = max(ro_max, ro(iw, jw, kw)); ro_sum = ro_sum + ro(iw, jw, kw)
                 end do
             end do
         end do

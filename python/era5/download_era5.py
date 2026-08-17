@@ -74,6 +74,7 @@ def default_output(year, month):
 
 
 def main():
+    """Download ERA5 single-level fields from the Copernicus CDS archive."""
     parser = argparse.ArgumentParser(
         description="Download ERA5 single-level fields (u10, v10, t2m, msl) "
         "from the Copernicus CDS archive."

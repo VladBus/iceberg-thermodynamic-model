@@ -25,7 +25,7 @@ program check
     real, allocatable :: temp(:, :, :), salt(:, :, :)
 
     character(len=256) :: ncfile
-    ncfile = 'data/output/results_day_05.nc'
+    ncfile = 'data/output/results_day_final.nc'
 
     print *, "=================================================="
     print *, "  Running Validation Suite on NetCDF Output File"

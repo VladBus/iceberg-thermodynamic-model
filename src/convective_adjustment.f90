@@ -23,10 +23,17 @@ module convective_adjustment
     implicit none
 
     private
-    public :: conv_adj, convect_column
+    public :: conv_adj, convect_column, ca_reset, ca_stats
 
     ! Порог плотностной инверсии [г/см3] - историческое значение.
     real, parameter :: eps_density = 0.9e-7
+
+    ! Диагностические счётчики convective adjustment (этап 4.2, мониторинг).
+    ! НЕ меняют алгоритм перемешивания - только фиксируют статистику для отчёта.
+    integer, save :: ca_total_nmix = 0      ! суммарное число перемешиваний
+    integer, save :: ca_max_iter = 0        ! максимальное число итераций в столбце
+    integer, save :: ca_guard_hits = 0      ! число столбцов с iter_count > 1000
+    integer, save :: ca_affected_cols = 0   ! число столбцов, где было перемешивание
 
 contains
 
@@ -37,18 +44,26 @@ contains
     ! Вход:    cdz1(:) - толщины полуслоёв DZ1 [см], ki - число уровней.
     ! Вход/выход: ct(:), cs(:) - температура и соленость уровней (изменяются).
     ! Выход:   nmix - суммарное число выполненных перемешиваний.
+    ! Опционально: o_iter_count - число проходов (итераций) по столбцу,
+    !              o_guard_hit - сработал ли сторожевой предел iter_count > 1000.
+    !              Эти выходы используются только для мониторинга (этап 4.2)
+    !              и не влияют на алгоритм.
     ! ==========================================================================
-    subroutine convect_column(ct, cs, cdz1, ki, nmix)
+    subroutine convect_column(ct, cs, cdz1, ki, nmix, o_iter_count, o_guard_hit)
         real, intent(inout) :: ct(:), cs(:)
         real, intent(in) :: cdz1(:)
         integer, intent(in) :: ki
         integer, intent(out) :: nmix
+        integer, intent(out), optional :: o_iter_count
+        logical, intent(out), optional :: o_guard_hit
         real :: cr(ks)
         real :: dzz, dzz1, dz1z, a
         integer :: k, k1, ki2, a1
         integer :: iter_count
 
         nmix = 0
+        if (present(o_iter_count)) o_iter_count = 0
+        if (present(o_guard_hit)) o_guard_hit = .false.
         if (ki .le. 0) return
 
         ! Плотность до перемешивания
@@ -90,9 +105,11 @@ contains
             ! Защита от бесконечного цикла: исторический алгоритм должен
             ! сходиться за ~20 итераций. >1000 = баг/несходимость.
             if (iter_count > 1000) then
+                if (present(o_guard_hit)) o_guard_hit = .true.
                 exit
             end if
         end do
+        if (present(o_iter_count)) o_iter_count = iter_count
     end subroutine convect_column
 
     ! ==========================================================================
@@ -102,6 +119,8 @@ contains
     ! ==========================================================================
     subroutine conv_adj()
         integer :: i, j, k, ki, nmix
+        integer :: iter_count
+        logical :: guard_hit
         real :: ct(ks), cs(ks), cdz1(ks)
 
         do j = 1, js
@@ -113,7 +132,11 @@ contains
                     cs(k) = s2(i, j, k)
                 end do
                 cdz1(1:ki) = dz1(1:ki)
-                call convect_column(ct, cs, cdz1, ki, nmix)
+                call convect_column(ct, cs, cdz1, ki, nmix, iter_count, guard_hit)
+                ca_total_nmix = ca_total_nmix + nmix
+                if (nmix .gt. 0) ca_affected_cols = ca_affected_cols + 1
+                if (guard_hit) ca_guard_hits = ca_guard_hits + 1
+                ca_max_iter = max(ca_max_iter, iter_count)
                 do k = 1, ki
                     t2(i, j, k) = ct(k)
                     s2(i, j, k) = cs(k)
@@ -122,5 +145,26 @@ contains
             end do
         end do
     end subroutine conv_adj
+
+    ! ==========================================================================
+    ! ca_reset: обнуление диагностических счётчиков (вызывается раз в сутки).
+    ! ==========================================================================
+    subroutine ca_reset()
+        ca_total_nmix = 0
+        ca_max_iter = 0
+        ca_guard_hits = 0
+        ca_affected_cols = 0
+    end subroutine ca_reset
+
+    ! ==========================================================================
+    ! ca_stats: возврат накопленных за сутки счётчиков.
+    ! ==========================================================================
+    subroutine ca_stats(total_nmix, max_iter, guard_hits, affected_cols)
+        integer, intent(out) :: total_nmix, max_iter, guard_hits, affected_cols
+        total_nmix = ca_total_nmix
+        max_iter = ca_max_iter
+        guard_hits = ca_guard_hits
+        affected_cols = ca_affected_cols
+    end subroutine ca_stats
 
 end module convective_adjustment

@@ -33,6 +33,7 @@ contains
         integer :: dpx_varid, dpy_varid
         integer :: tatm_varid, patm_varid
         integer :: status, i, k
+        integer :: ro_varid
         real :: x_coord(is1), y_coord(js1), depth(ks), depth_w(ks1)
 
         ! x/y - индексы регулярной сетки в км; dx в модели задан в сантиметрах.
@@ -129,6 +130,13 @@ contains
             status = nf90_close(ncid); return
         end if
 
+        ! Плотность RO [г/см3] - диагностика этапа 3.1 (EOS), для Python-анализа
+        ! Python НЕ пересчитывает EOS, а читает RO из вывода модели.
+        status = nf90_def_var(ncid, 'density', nf90_real, (/x_dimid, y_dimid, z_dimid/), ro_varid)
+        if (.not. nc_ok(status, 'define density')) then
+            status = nf90_close(ncid); return
+        end if
+
         ! 3D-течения океана [см/с]
         status = nf90_def_var(ncid, 'u_velocity', nf90_real, (/x_dimid, y_dimid, z_dimid/), u_varid)
         if (.not. nc_ok(status, 'define u_velocity')) then
@@ -211,6 +219,10 @@ contains
         call set_att(ncid, salt_varid, 'units', '1')
         call set_att(ncid, salt_varid, 'standard_name', 'sea_water_salinity')
         call set_att(ncid, salt_varid, 'comment', 'mass fraction; 0.033 is approximately 33 PSU')
+
+        call set_att(ncid, ro_varid, 'units', 'g cm-3')
+        call set_att(ncid, ro_varid, 'long_name', 'seawater density anomaly')
+        call set_att(ncid, ro_varid, 'comment', 'computed by Fortran Eckart EOS (Stage 3.1); Python must not recompute')
 
         call set_att(ncid, u_varid, 'units', 'cm s-1')
         call set_att(ncid, u_varid, 'long_name', 'x-component of ocean velocity (along model X axis = j index)')
@@ -295,6 +307,11 @@ contains
         end if
         status = nf90_put_var(ncid, salt_varid, s2)
         if (.not. nc_ok(status, 'write salinity')) then
+            status = nf90_close(ncid); return
+        end if
+
+        status = nf90_put_var(ncid, ro_varid, ro)
+        if (.not. nc_ok(status, 'write density')) then
             status = nf90_close(ncid); return
         end if
 

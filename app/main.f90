@@ -52,6 +52,7 @@ program main
 
     real :: ecc = 0.0, ess = 0.0
     character(len=20) :: nam_file
+    character(len=64) :: day_file
     real(8) :: start_sec
     integer :: nperday
 
@@ -224,12 +225,12 @@ program main
     ! ====================================================================
     !              ЧТЕНИЕ АТМОСФЕРНОГО ФОРСИНГА ERA5 (NetCDF)
     ! ====================================================================
-    ! Этап 2/3: чтение и диагностика. Принудительно открываем тестовый
-    ! файл era5_test.nc. Пока это только проверка канала ввода; подключение
-    ! к физике (wind/tx/ty/dpx/dpy/tatm/patm) выполняется на следующих этапах.
+    ! Этап 2/3: чтение и диагностика. Открываем файл полного месяца (январь
+    ! 2020). Пока это только проверка канала ввода; подключение к физике
+    ! (wind/tx/ty/dpx/dpy/tatm/patm) выполняется на следующих этапах.
     ! При ошибке чтения модель продолжает работу в legacy-режиме (без ERA5).
     if (forcing_mode .eq. forcing_mode_era5) then
-        call era5_open('data/input/era5_test.nc', ios)
+        call era5_open('data/input/raw/era5/era5_2020_01.nc', ios)
         if (ios .eq. 0) then
             call era5_diag()
 
@@ -275,6 +276,9 @@ program main
                 print *, "Day:", kkk, " Month:", lll, " Kin.Energy(EUU)=", euu
                 ecc = euu
                 euu = 0.0
+
+                ! Сброс суточных счётчиков convective adjustment (этап 4.2).
+                call ca_reset()
 
                 dpx(:, :) = dpx1(:, :)
                 dpy(:, :) = dpy1(:, :)
@@ -697,6 +701,14 @@ program main
                     end if
 
                 end do ! Конец суточного цикла III
+
+                ! --- Суточный диагностический вывод (этап 4.2) ---
+                ! Пишем NetCDF-срез за сутки kkk и строку CSV со статистиками
+                ! (U/V/W/T/S/RO min/max/mean, ветер, напряжения, градиенты,
+                !  кинетическая энергия EUU, счётчики convective adjustment).
+                write (day_file, '(A,I2.2,A)') 'data/output/results_day_', kkk, '.nc'
+                call write_nc(trim(day_file))
+                call write_daily_diagnostics(kkk, lll)
             end do ! Конец цикла дней KKK
         end do ! Конец цикла месяцев LLL
     end do ! Конец цикла лет MMMM
@@ -706,7 +718,97 @@ program main
     ! Диагностика уравнения состояния после 5 дней (этап 3.1)
     call eos_diag()
 
-    ! Записываем состояние океана ПОСЛЕ 5 дней расчета
-    call write_nc('data/output/results_day_05.nc')
+    ! Записываем финальное состояние океана после интеграции.
+    ! Суточные срезы записаны внутри цикла как results_day_01.nc...30.nc,
+    ! поэтому финальный файл назван отдельно и не затирает суточный срез.
+    call write_nc('data/output/results_day_final.nc')
+
+contains
+
+    ! ==========================================================================
+    ! write_daily_diagnostics: суточная диагностика (этап 4.2).
+    ! Считает min/max/mean U/V/W/T/S/RO по водным колонкам, max ветра,
+    ! min/max напряжений и градиентов давления, кинетическую энергию EUU
+    ! и суточные счётчики convective adjustment. Аппендит одну CSV-строку.
+    ! Ничего в физике не меняет - только диагностический вывод.
+    ! ==========================================================================
+    subroutine write_daily_diagnostics(day, month)
+        integer, intent(in) :: day, month
+
+        integer, parameter :: diag_unit = 77
+        real :: u_min, u_max, u_sum, v_min, v_max, v_sum
+        real :: w_min, w_max, w_sum, t_min, t_max, t_sum
+        real :: s_min, s_max, s_sum, ro_min, ro_max, ro_sum
+        real :: wind_max, tx_min, tx_max, ty_min, ty_max
+        real :: dpx_min, dpx_max, dpy_min, dpy_max
+        integer :: n, i, j, k, ki
+        integer :: total_nmix, max_iter, guard_hits, affected_cols
+        logical :: first, is_open
+
+        u_min = huge(1.0); u_max = -huge(1.0); u_sum = 0.0
+        v_min = huge(1.0); v_max = -huge(1.0); v_sum = 0.0
+        w_min = huge(1.0); w_max = -huge(1.0); w_sum = 0.0
+        t_min = huge(1.0); t_max = -huge(1.0); t_sum = 0.0
+        s_min = huge(1.0); s_max = -huge(1.0); s_sum = 0.0
+        ro_min = huge(1.0); ro_max = -huge(1.0); ro_sum = 0.0
+        wind_max = 0.0
+        tx_min = huge(1.0); tx_max = -huge(1.0)
+        ty_min = huge(1.0); ty_max = -huge(1.0)
+        dpx_min = huge(1.0); dpx_max = -huge(1.0)
+        dpy_min = huge(1.0); dpy_max = -huge(1.0)
+        n = 0
+
+        do j = 2, js
+            do i = 2, is
+                ki = kt1(i, j)
+                if (ki .eq. 0) cycle
+                wind_max = max(wind_max, wind(i, j))
+                tx_min = min(tx_min, tx(i, j)); tx_max = max(tx_max, tx(i, j))
+                ty_min = min(ty_min, ty(i, j)); ty_max = max(ty_max, ty(i, j))
+                dpx_min = min(dpx_min, dpx(i, j)); dpx_max = max(dpx_max, dpx(i, j))
+                dpy_min = min(dpy_min, dpy(i, j)); dpy_max = max(dpy_max, dpy(i, j))
+                do k = 1, ki
+                    n = n + 1
+                    u_min = min(u_min, u2(i, j, k)); u_max = max(u_max, u2(i, j, k)); u_sum = u_sum + u2(i, j, k)
+                    v_min = min(v_min, v2(i, j, k)); v_max = max(v_max, v2(i, j, k)); v_sum = v_sum + v2(i, j, k)
+                    w_min = min(w_min, w(i, j, k)); w_max = max(w_max, w(i, j, k)); w_sum = w_sum + w(i, j, k)
+                    t_min = min(t_min, t2(i, j, k)); t_max = max(t_max, t2(i, j, k)); t_sum = t_sum + t2(i, j, k)
+                    s_min = min(s_min, s2(i, j, k)); s_max = max(s_max, s2(i, j, k)); s_sum = s_sum + s2(i, j, k)
+                    ro_min = min(ro_min, ro(i, j, k)); ro_max = max(ro_max, ro(i, j, k)); ro_sum = ro_sum + ro(i, j, k)
+                end do
+            end do
+        end do
+
+        call ca_stats(total_nmix, max_iter, guard_hits, affected_cols)
+
+        ! Заголовок CSV - только если файл создаётся заново.
+        inquire (file='data/output/daily_diagnostics.csv', exist=first)
+        first = .not. first
+        open (diag_unit, file='data/output/daily_diagnostics.csv', position='append')
+        if (first) then
+            write (diag_unit, '(A)') &
+                "day,month,u_min,u_max,u_mean,v_min,v_max,v_mean,w_min,w_max,w_mean,"// &
+                "t_min,t_max,t_mean,s_min,s_max,s_mean,ro_min,ro_max,ro_mean,"// &
+                "wind_max,tx_min,tx_max,ty_min,ty_max,dpx_min,dpx_max,dpy_min,dpy_max,"// &
+                "euu,ca_nmix,ca_max_iter,ca_guard_hits,ca_affected_cols"
+        end if
+        write (diag_unit, '(I3,A1,I3,34(A1,ES13.5))') &
+            day, ',', month, ',', &
+            u_min, ',', u_max, ',', u_sum/max(n, 1), ',', &
+            v_min, ',', v_max, ',', v_sum/max(n, 1), ',', &
+            w_min, ',', w_max, ',', w_sum/max(n, 1), ',', &
+            t_min, ',', t_max, ',', t_sum/max(n, 1), ',', &
+            s_min, ',', s_max, ',', s_sum/max(n, 1), ',', &
+            ro_min, ',', ro_max, ',', ro_sum/max(n, 1), ',', &
+            wind_max, ',', tx_min, ',', tx_max, ',', ty_min, ',', ty_max, ',', &
+            dpx_min, ',', dpx_max, ',', dpy_min, ',', dpy_max, ',', &
+            euu, ',', real(total_nmix), ',', real(max_iter), ',', &
+            real(guard_hits), ',', real(affected_cols)
+        close (diag_unit)
+        print '(A,I3,A,ES12.4,A,I8,A,I5,A,I3,A,I8)', &
+            "  daily diag day=", day, " EUU=", euu, &
+            " nmix=", total_nmix, " maxiter=", max_iter, &
+            " guard=", guard_hits, " cols=", affected_cols
+    end subroutine write_daily_diagnostics
 
 end program main

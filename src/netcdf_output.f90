@@ -32,7 +32,7 @@ contains
         integer :: tx_varid, ty_varid
         integer :: dpx_varid, dpy_varid
         integer :: tatm_varid, patm_varid
-        integer :: humid_varid, cloud_varid
+        integer :: humid_varid, cloud_varid, era5_snowfall_rate_varid
         integer :: status, i, k
         integer :: ro_varid
         real :: x_coord(is1), y_coord(js1), depth(ks), depth_w(ks1)
@@ -197,6 +197,10 @@ contains
         if (.not. nc_ok(status, 'define cloud')) then
             status = nf90_close(ncid); return
         end if
+        status = nf90_def_var(ncid, 'era5_snowfall_rate', nf90_real, (/x_dimid, y_dimid/), era5_snowfall_rate_varid)
+        if (.not. nc_ok(status, 'define era5_snowfall_rate')) then
+            status = nf90_close(ncid); return
+        end if
 
         ! Атрибуты переменных
         call set_att(ncid, x_varid, 'units', 'km')
@@ -281,6 +285,10 @@ contains
         call set_att(ncid, cloud_varid, 'units', '1')
         call set_att(ncid, cloud_varid, 'standard_name', 'cloud_area_fraction')
         call set_att(ncid, cloud_varid, 'long_name', 'total cloud cover from ERA5')
+
+        call set_att(ncid, era5_snowfall_rate_varid, 'units', 'm s-1')
+        call set_att(ncid, era5_snowfall_rate_varid, 'standard_name', 'snowfall_flux')
+        call set_att(ncid, era5_snowfall_rate_varid, 'long_name', 'ERA5 snowfall rate (interpolated from 12-hourly accumulated sf)')
 
         status = nf90_enddef(ncid)
         if (.not. nc_ok(status, 'end define mode')) then
@@ -391,6 +399,10 @@ contains
         end if
         status = nf90_put_var(ncid, cloud_varid, cloud)
         if (.not. nc_ok(status, 'write cloud')) then
+            status = nf90_close(ncid); return
+        end if
+        status = nf90_put_var(ncid, era5_snowfall_rate_varid, era5_snowfall_rate)
+        if (.not. nc_ok(status, 'write era5_snowfall_rate')) then
             status = nf90_close(ncid); return
         end if
 

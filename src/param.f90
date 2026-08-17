@@ -128,7 +128,7 @@ module param
             tx1(is1, js1), ty1(is1, js1), dpx1(is1, js1), dpy1(is1, js1), &
             tatm1(is1, js1, 12), tatm(is1, js1), cloud1(is1, js1, 12), &
             cloud(is1, js1), humid(is1, js1), patm(is1, js1), wind(is1, js1), &
-            wmonth(12), sfal(12), &
+            wmonth(12), sfal(12), era5_snowfall_rate(is1, js1), &
             windx1(is1, js1), windy1(is1, js1), windx(is1, js1), &
             windy(is1, js1), &
             p(1420, 100), pp(1420), x01(1330), y01(1330), &

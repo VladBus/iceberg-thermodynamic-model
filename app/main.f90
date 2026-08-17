@@ -230,7 +230,7 @@ program main
     ! (wind/tx/ty/dpx/dpy/tatm/patm) выполняется на следующих этапах.
     ! При ошибке чтения модель продолжает работу в legacy-режиме (без ERA5).
     if (forcing_mode .eq. forcing_mode_era5) then
-        call era5_open('data/input/raw/era5/era5_2020_01.nc', ios)
+        call era5_open('data/input/raw/era5/era5_2020_01_merged.nc', ios)
         if (ios .eq. 0) then
             call era5_diag()
 

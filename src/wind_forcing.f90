@@ -208,6 +208,7 @@ contains
             patm = 0.0
             humid = 0.0
             cloud = 0.0
+            era5_snowfall_rate = 0.0
             return
         end if
 
@@ -240,6 +241,7 @@ contains
                        (610.78 * 10.0**((8.61503*(t2mv - 273.15))/t2mv))
                 ! Облачность: ERA5 tcc [0,1] -> model cloud [0,1]
                 cloud(i, j) = tccv
+                era5_snowfall_rate(i, j) = real(snowfallv, 4)
                 u_cm = u10v*100.0_8
                 v_cm = v10v*100.0_8
                 spd = sqrt(u_cm*u_cm + v_cm*v_cm)

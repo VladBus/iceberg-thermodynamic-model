@@ -102,8 +102,8 @@ program check
             end if
         end do
     end do
-    print *, "Wind / stress sign mismatches during sub-step linear transitions: ", n_sign_mismatches, &
-             " (expected due to linear sub-step time interpolation of quadratic drag)"
+ print *, "Wind / stress sign mismatches during sub-step linear transitions: ", n_sign_mismatches, &
+        " (expected due to linear sub-step time interpolation of quadratic drag)"
 
     print *, "=================================================="
     if (n_errors .eq. 0) then
@@ -137,10 +137,10 @@ contains
                     print *, "ERROR: Inf detected in ", trim(name), " at ", i, j
                     n_err = n_err + 1
                 else if (arr(i, j) .gt. 1.0e30) then
-                    print *, "ERROR: ERA5 missing value / uninitialized huge val in ", trim(name), " at ", i, j
+         print *, "ERROR: ERA5 missing value / uninitialized huge val in ", trim(name), " at ", i, j
                     n_err = n_err + 1
                 else if (arr(i, j) .lt. min_valid .or. arr(i, j) .gt. max_valid) then
-                    print *, "ERROR: Out-of-bounds value in ", trim(name), " at ", i, j, ": ", arr(i, j)
+                print *, "ERROR: Out-of-bounds value in ", trim(name), " at ", i, j, ": ", arr(i, j)
                     n_err = n_err + 1
                 end if
             end do
@@ -169,10 +169,10 @@ contains
                         print *, "ERROR: Inf detected in ", trim(name), " at ", i, j, k
                         n_err = n_err + 1
                     else if (arr(i, j, k) .gt. 1.0e30) then
-                        print *, "ERROR: ERA5 missing value / uninitialized huge val in ", trim(name), " at ", i, j, k
+      print *, "ERROR: ERA5 missing value / uninitialized huge val in ", trim(name), " at ", i, j, k
                         n_err = n_err + 1
                     else if (arr(i, j, k) .lt. min_valid .or. arr(i, j, k) .gt. max_valid) then
-                        print *, "ERROR: Out-of-bounds value in ", trim(name), " at ", i, j, k, ": ", arr(i, j, k)
+          print *, "ERROR: Out-of-bounds value in ", trim(name), " at ", i, j, k, ": ", arr(i, j, k)
                         n_err = n_err + 1
                     end if
                 end do

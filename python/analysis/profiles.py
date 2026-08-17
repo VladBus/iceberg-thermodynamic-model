@@ -64,7 +64,9 @@ def main():
     parser = argparse.ArgumentParser(
         description="Compute horizontal-mean vertical profiles from daily snapshots."
     )
-    parser.add_argument("glob", nargs="?", default=DEFAULT_GLOB, help="Glob of daily NetCDF files")
+    parser.add_argument(
+        "glob", nargs="?", default=DEFAULT_GLOB, help="Glob of daily NetCDF files"
+    )
     parser.add_argument("--out", default=DEFAULT_OUT, help="Output CSV path")
     args = parser.parse_args()
 
@@ -81,7 +83,9 @@ def main():
     df = df.sort_values(["day", "depth_m"]).reset_index(drop=True)
     df.to_csv(args.out, index=False)
 
-    print(f"Vertical profiles written to {args.out} ({len(df)} rows, {df['day'].nunique()} days)")
+    print(
+        f"Vertical profiles written to {args.out} ({len(df)} rows, {df['day'].nunique()} days)"
+    )
     print("\nSample (day 1):")
     print(df[df["day"] == df["day"].min()].head(6).to_string(index=False))
     return 0

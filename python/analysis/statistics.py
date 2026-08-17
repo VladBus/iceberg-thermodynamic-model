@@ -58,7 +58,9 @@ def main():
     ]
     lines.append("Physical ranges over the month (overall min / max):")
     for label, cmin, cmax in scalar_ranges:
-        lines.append(f"  {label:12s}: min={df[cmin].min():.6e}  max={df[cmax].max():.6e}")
+        lines.append(
+            f"  {label:12s}: min={df[cmin].min():.6e}  max={df[cmax].max():.6e}"
+        )
     lines.append("")
 
     lines.append("Kinetic energy EUU (cm2/s2):")

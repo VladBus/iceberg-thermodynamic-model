@@ -540,8 +540,8 @@ program main
                                 cc_val = c8*dzz
                                 sum = sum + (a + a1)*cc_val
                                 sum1 = sum1 + (b + b1)*cc_val
-                                slapu = u1(i, j2, k) + u1(i, j1, k) + u1(i2, j, k) + u1(i1, j, k) - 4.0*uij
-                                slapv = v1(i1, j, k) + v1(i2, j, k) + v1(i, j1, k) + v1(i, j2, k) - 4.0*vij
+                         slapu = u1(i, j2, k) + u1(i, j1, k) + u1(i2, j, k) + u1(i1, j, k) - 4.0*uij
+                         slapv = v1(i1, j, k) + v1(i2, j, k) + v1(i, j1, k) + v1(i, j2, k) - 4.0*vij
                                 auu = uij + asa1*vij + dt*(-c1*sum - dpx(i, j) + c3*slapu)
                                 avv = vij - asa1*uij + dt*(-c1*sum1 - dpy(i, j) + c3*slapv)
                                 u2(i, j, k) = (auu + avv*asa1)/asa
@@ -579,7 +579,7 @@ program main
                                 bb = sqrt(uij*uij + vij*vij)
                                 ff = hht - z(k) + 2.0
                                 ff1 = z(k) - yyy - 2.0
-                                sl = 0.4/hht*ff*ff1*(1.0 - 1.2*ff*ff1/hht/hht)/(4.0*ff1/5000.0 + 1.0)
+                               sl = 0.4/hht*ff*ff1*(1.0 - 1.2*ff*ff1/hht/hht)/(4.0*ff1/5000.0 + 1.0)
                                 if (k .ne. ki) then
                                     rr(k) = sl*sl*abs(bb - aa)/dz(k1)
                                 else

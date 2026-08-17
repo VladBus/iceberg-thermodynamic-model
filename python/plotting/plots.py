@@ -92,7 +92,9 @@ def plot_daily_series(diag_csv, outdir):
     if {"ca_guard_hits", "ca_affected_cols"}.issubset(df.columns):
         fig, ax = plt.subplots(figsize=(8, 4))
         ax.plot(df["day"], df["ca_guard_hits"], label="guard hits", marker="o", ms=3)
-        ax.plot(df["day"], df["ca_affected_cols"], label="affected cols", marker="s", ms=3)
+        ax.plot(
+            df["day"], df["ca_affected_cols"], label="affected cols", marker="s", ms=3
+        )
         ax.set_xlabel("model day")
         ax.set_ylabel("columns")
         ax.set_title("Convective adjustment monitoring (guard preserved)")
@@ -112,10 +114,18 @@ def plot_vertical_profiles(glob_pattern, outdir):
         ds = xr.open_dataset(f)
         kt = ds["water_column_levels"].values
         depths = ds["depth"].values
-        t = np.array([float(ds["temperature"].isel(depth=k).values[kt > k].mean())
-                      for k in range(ds.sizes["depth"])])
-        s = np.array([float(ds["salinity"].isel(depth=k).values[kt > k].mean())
-                      for k in range(ds.sizes["depth"])])
+        t = np.array(
+            [
+                float(ds["temperature"].isel(depth=k).values[kt > k].mean())
+                for k in range(ds.sizes["depth"])
+            ]
+        )
+        s = np.array(
+            [
+                float(ds["salinity"].isel(depth=k).values[kt > k].mean())
+                for k in range(ds.sizes["depth"])
+            ]
+        )
         day = f.split("_")[-1].split(".")[0]
         axes[0].plot(t, depths, label=f"day {day}")
         axes[1].plot(s, depths, label=f"day {day}")
@@ -135,11 +145,17 @@ def plot_vertical_profiles(glob_pattern, outdir):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Plot standardized figures from model output.")
+    parser = argparse.ArgumentParser(
+        description="Plot standardized figures from model output."
+    )
     parser.add_argument("--glob", default=DEFAULT_GLOB, help="Daily NetCDF glob")
     parser.add_argument("--diag", default=DEFAULT_DIAG, help="Daily diagnostics CSV")
-    parser.add_argument("--outdir", default=DEFAULT_OUTDIR, help="Output directory for PNGs")
-    parser.add_argument("--day", type=int, default=None, help="Day to plot surface maps (default: last)")
+    parser.add_argument(
+        "--outdir", default=DEFAULT_OUTDIR, help="Output directory for PNGs"
+    )
+    parser.add_argument(
+        "--day", type=int, default=None, help="Day to plot surface maps (default: last)"
+    )
     args = parser.parse_args()
 
     outdir = pathlib.Path(args.outdir)
@@ -151,7 +167,9 @@ def main():
     else:
         day_file = files[-1]
         if args.day is not None:
-            matches = [f for f in files if int(f.split("_")[-1].split(".")[0]) == args.day]
+            matches = [
+                f for f in files if int(f.split("_")[-1].split(".")[0]) == args.day
+            ]
             if matches:
                 day_file = matches[0]
         print("Surface maps from:", day_file)

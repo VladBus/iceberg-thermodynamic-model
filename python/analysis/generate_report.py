@@ -21,9 +21,15 @@ DEFAULT_OUT = "data/output/monthly_report.txt"
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Assemble the monthly analysis report.")
-    parser.add_argument("--diag", default=DEFAULT_DIAG, help="Fortran daily diagnostics CSV")
-    parser.add_argument("--stats", default=DEFAULT_STATS, help="monthly_summary.txt from statistics.py")
+    parser = argparse.ArgumentParser(
+        description="Assemble the monthly analysis report."
+    )
+    parser.add_argument(
+        "--diag", default=DEFAULT_DIAG, help="Fortran daily diagnostics CSV"
+    )
+    parser.add_argument(
+        "--stats", default=DEFAULT_STATS, help="monthly_summary.txt from statistics.py"
+    )
     parser.add_argument("--out", default=DEFAULT_OUT, help="Output report path")
     args = parser.parse_args()
 
@@ -46,29 +52,41 @@ def main():
 
     lines.append("RUN OVERVIEW")
     lines.append(f"  Model days simulated : {len(df)}")
-    lines.append(f"  First / last day     : {int(df['day'].min())} / {int(df['day'].max())}")
+    lines.append(
+        f"  First / last day     : {int(df['day'].min())} / {int(df['day'].max())}"
+    )
     lines.append("")
 
     lines.append("ENERGY")
-    lines.append(f"  Kinetic energy EUU min/max/mean (cm2/s2): "
-                 f"{df['euu'].min():.4e} / {df['euu'].max():.4e} / {df['euu'].mean():.4e}")
+    lines.append(
+        f"  Kinetic energy EUU min/max/mean (cm2/s2): "
+        f"{df['euu'].min():.4e} / {df['euu'].max():.4e} / {df['euu'].mean():.4e}"
+    )
     lines.append("")
 
     lines.append("VELOCITIES (cm/s, min/max over all days)")
     for col, name in [("u", "U"), ("v", "V"), ("w", "W")]:
-        lines.append(f"  {name}: {df[f'{col}_min'].min():.4e} .. {df[f'{col}_max'].max():.4e}")
+        lines.append(
+            f"  {name}: {df[f'{col}_min'].min():.4e} .. {df[f'{col}_max'].max():.4e}"
+        )
     lines.append("")
 
     lines.append("THERMODYNAMICS (min/max over all days)")
     lines.append(f"  T : {df['t_min'].min():.4f} .. {df['t_max'].max():.4f} degC")
-    lines.append(f"  S : {df['s_min'].min():.6f} .. {df['s_max'].max():.6f} (mass fraction)")
+    lines.append(
+        f"  S : {df['s_min'].min():.6f} .. {df['s_max'].max():.6f} (mass fraction)"
+    )
     lines.append(f"  RO: {df['ro_min'].min():.6e} .. {df['ro_max'].max():.6e} g/cm3")
     lines.append("")
 
     lines.append("FORCING")
     lines.append(f"  max wind speed : {df['wind_max'].max():.3f} m/s")
-    lines.append(f"  tau_x range    : {df['tx_min'].min():.4f} .. {df['tx_max'].max():.4f} dyn/cm2")
-    lines.append(f"  tau_y range    : {df['ty_min'].min():.4f} .. {df['ty_max'].max():.4f} dyn/cm2")
+    lines.append(
+        f"  tau_x range    : {df['tx_min'].min():.4f} .. {df['tx_max'].max():.4f} dyn/cm2"
+    )
+    lines.append(
+        f"  tau_y range    : {df['ty_min'].min():.4f} .. {df['ty_max'].max():.4f} dyn/cm2"
+    )
     lines.append("")
 
     lines.append("CONVECTIVE ADJUSTMENT (monitoring only, guard preserved)")

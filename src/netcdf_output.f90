@@ -146,7 +146,7 @@ contains
         if (.not. nc_ok(status, 'define v_velocity')) then
             status = nf90_close(ncid); return
         end if
-        status = nf90_def_var(ncid, 'w_velocity', nf90_real, (/x_dimid, y_dimid, zw_dimid/), w_varid)
+       status = nf90_def_var(ncid, 'w_velocity', nf90_real, (/x_dimid, y_dimid, zw_dimid/), w_varid)
         if (.not. nc_ok(status, 'define w_velocity')) then
             status = nf90_close(ncid); return
         end if
@@ -231,7 +231,7 @@ contains
 
         call set_att(ncid, v_varid, 'units', 'cm s-1')
         call set_att(ncid, v_varid, 'long_name', 'y-component of ocean velocity (along model Y axis = i index)')
-        call set_att(ncid, v_varid, 'comment', 'Model-grid component, NOT geographic northward. '// &
+       call set_att(ncid, v_varid, 'comment', 'Model-grid component, NOT geographic northward. '// &
                      'NetCDF y-axis <-> model j <-> u; NetCDF x-axis <-> model i <-> v.')
 
         call set_att(ncid, w_varid, 'units', 'cm s-1')

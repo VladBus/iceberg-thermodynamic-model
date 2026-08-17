@@ -104,7 +104,7 @@ contains
             if (a1 .eq. 0) exit
             ! Защита от бесконечного цикла: исторический алгоритм должен
             ! сходиться за ~20 итераций. >1000 = баг/несходимость.
-            if (iter_count > 1000) then
+            if (iter_count .gt. 1000) then
                 if (present(o_guard_hit)) o_guard_hit = .true.
                 exit
             end if

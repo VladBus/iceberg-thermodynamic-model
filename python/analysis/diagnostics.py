@@ -31,7 +31,9 @@ def main():
     parser = argparse.ArgumentParser(
         description="Compute daily summary statistics from Fortran daily diagnostics."
     )
-    parser.add_argument("csv", nargs="?", default=DEFAULT_CSV, help="Fortran daily diagnostics CSV")
+    parser.add_argument(
+        "csv", nargs="?", default=DEFAULT_CSV, help="Fortran daily diagnostics CSV"
+    )
     parser.add_argument("--out", default=DEFAULT_OUT, help="Output CSV path")
     args = parser.parse_args()
 
@@ -44,10 +46,27 @@ def main():
 
     # Required columns per the Fortran write_daily_diagnostics() format.
     required = [
-        "day", "u_min", "u_max", "u_mean", "v_min", "v_max", "v_mean",
-        "t_min", "t_max", "t_mean", "s_min", "s_max", "s_mean",
-        "ro_min", "ro_max", "ro_mean", "euu",
-        "ca_nmix", "ca_max_iter", "ca_guard_hits", "ca_affected_cols",
+        "day",
+        "u_min",
+        "u_max",
+        "u_mean",
+        "v_min",
+        "v_max",
+        "v_mean",
+        "t_min",
+        "t_max",
+        "t_mean",
+        "s_min",
+        "s_max",
+        "s_mean",
+        "ro_min",
+        "ro_max",
+        "ro_mean",
+        "euu",
+        "ca_nmix",
+        "ca_max_iter",
+        "ca_guard_hits",
+        "ca_affected_cols",
     ]
     missing = [c for c in required if c not in df.columns]
     if missing:
@@ -56,7 +75,7 @@ def main():
 
     # Add derived fields: mean kinetic energy proxy and wind info are already
     # present; keep the table as-is but order columns consistently.
-    order = [c for c in df.columns if c != "day"] 
+    order = [c for c in df.columns if c != "day"]
     df_out = df[["day"] + order].copy()
     df_out.to_csv(args.out, index=False)
 

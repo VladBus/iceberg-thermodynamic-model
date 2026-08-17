@@ -487,10 +487,25 @@ program main
                     call advs(dt, c2)
                     call advt(dt, c2)
 
+                    ! Диагностика этапа 4.3 (ТОЛЬКО чтение, не влияет на физику):
+                    ! точка A - плотностные инверсии сразу после адвекции T/S,
+                    ! т.е. на входе в convective adjustment. Опрашивается в
+                    ! нескольких шагах суток, чтобы не засорять консоль.
+                    if (iii .eq. 1 .or. iii .eq. 6 .or. iii .eq. mm2) then
+                        call ca_probe_inversions('A_after_adv', kkk, iii)
+                    end if
+
                     ! Конвективная коррекция плотностной стратификации (этап 3.2):
                     ! историческая схема перемешивания при RR(K)-RR(K1) > 0.9E-7.
                     ! RO пока НЕ используется в уравнениях движения (этапы 3.1-3.2).
-                    call conv_adj()
+                    call conv_adj(kkk, iii)
+
+                    ! Диагностика этапа 4.3: точка D - остаточные инверсии после
+                    ! convective adjustment (должны быть близки к нулю, кроме
+                    ! столбцов с guard-срабатыванием).
+                    if (iii .eq. 1 .or. iii .eq. 6 .or. iii .eq. mm2) then
+                        call ca_probe_inversions('D_after_conv', kkk, iii)
+                    end if
 
                     ! 6b. 3D-импульс (этап 3.3): исторический block 200.
                     !    U2/V2 из U1/V1 (предыдущий бароклинный шаг) с учётом:

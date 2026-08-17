@@ -193,10 +193,10 @@ contains
         if (status .ne. 0) goto 999
         call era5_read_var(ncid, 'tcc', era5_tcc, status, filename)
         if (status .ne. 0) goto 999
-        ! snowfall is optional - may not be available in all ERA5 datasets
-        call era5_read_var(ncid, 'snowfall', era5_snowfall, status, filename)
+        ! snowfall (CDS variable 'sf') is optional - may not be available in all ERA5 datasets
+        call era5_read_var(ncid, 'sf', era5_snowfall, status, filename)
         if (status .ne. 0) then
-            print *, "ERA5 WARNING: snowfall variable not found, using zeros."
+            print *, "ERA5 WARNING: snowfall (sf) variable not found, using zeros."
             if (allocated(era5_snowfall)) deallocate (era5_snowfall)
             allocate (era5_snowfall(era5_nlat, era5_nlon, era5_ntime))
             era5_snowfall = 0.0
@@ -289,7 +289,7 @@ contains
         print *, "msl min/max [Pa]:  ", minval(era5_msl), maxval(era5_msl)
         print *, "d2m min/max [K]:   ", minval(era5_d2m), maxval(era5_d2m)
         print *, "tcc min/max [1]:   ", minval(era5_tcc), maxval(era5_tcc)
-        print *, "snowfall min/max [kg m-2 s-1]: ", minval(era5_snowfall), maxval(era5_snowfall)
+        print *, "snowfall (sf) min/max [m water eq.]: ", minval(era5_snowfall), maxval(era5_snowfall)
         print *, "fill value (assumed):", era5_fill
         print *, "--- end ERA5 diagnostic ---"
     end subroutine era5_diag

@@ -32,15 +32,26 @@ import cdsapi
 
 DATASET = "reanalysis-era5-single-levels"
 
-VARIABLES = [
+# CDS API parameter names for instantaneous variables (ERA5 single-levels reanalysis)
+# These are available at analysis times (00, 06, 12, 18 UTC)
+INSTANTANEOUS_PARAMS = [
     "10m_u_component_of_wind",
     "10m_v_component_of_wind",
     "2m_temperature",
     "2m_dewpoint_temperature",
     "mean_sea_level_pressure",
     "total_cloud_cover",
-    "snowfall",
 ]
+
+# Snowfall is an ACCUMULATED forecast variable requiring 'step' parameter
+# (forecast hours 1-24 from 00/12 UTC analyses). It cannot be combined with
+# instantaneous variables in a single CDS request.
+ACCUMULATED_PARAMS = [
+    "snowfall",  # CDS variable 'sf', units: m of water equivalent
+]
+
+# Human-readable variable names for documentation
+VARIABLES = INSTANTANEOUS_PARAMS + ACCUMULATED_PARAMS
 
 # Default spatial area [north, west, south, east]: Arctic strip 65-90 N.
 DEFAULT_AREA = [90, -180, 65, 180]
@@ -49,20 +60,36 @@ DEFAULT_AREA = [90, -180, 65, 180]
 DEFAULT_TIMES = ["00:00", "06:00", "12:00", "18:00"]
 
 
-def build_request(year, month, area, times):
+def build_request(year, month, area, times, accumulated=False):
     """Construct the CDS request dict (preserves the validated structure)."""
     ndays = calendar.monthrange(year, month)[1]
-    return {
-        "product_type": ["reanalysis"],
-        "variable": VARIABLES,
-        "year": [f"{year}"],
-        "month": [f"{month:02d}"],
-        "day": [f"{d:02d}" for d in range(1, ndays + 1)],
-        "time": times,
-        "data_format": "netcdf",
-        "download_format": "unarchived",
-        "area": area,
-    }
+    if accumulated:
+        # Snowfall: forecast accumulation from 00/12 UTC analyses, steps 1-24h
+        return {
+            "product_type": ["reanalysis"],
+            "variable": ACCUMULATED_PARAMS,
+            "year": [f"{year}"],
+            "month": [f"{month:02d}"],
+            "day": [f"{d:02d}" for d in range(1, ndays + 1)],
+            "time": ["00:00", "12:00"],  # Analysis times for forecasts
+            "step": [str(h) for h in range(1, 25)],  # 1-24 hour forecasts
+            "data_format": "netcdf",
+            "download_format": "unarchived",
+            "area": area,
+        }
+    else:
+        # Instantaneous variables: analysis times (00, 06, 12, 18 UTC)
+        return {
+            "product_type": ["reanalysis"],
+            "variable": INSTANTANEOUS_PARAMS,
+            "year": [f"{year}"],
+            "month": [f"{month:02d}"],
+            "day": [f"{d:02d}" for d in range(1, ndays + 1)],
+            "time": times,
+            "data_format": "netcdf",
+            "download_format": "unarchived",
+            "area": area,
+        }
 
 
 def default_output(year, month):
@@ -79,7 +106,7 @@ def default_output(year, month):
 def main():
     """Download ERA5 single-level fields from the Copernicus CDS archive."""
     parser = argparse.ArgumentParser(
-        description="Download ERA5 single-level fields (u10, v10, t2m, msl) "
+        description="Download ERA5 single-level fields (u10, v10, t2m, msl, d2m, tcc, snowfall) "
         "from the Copernicus CDS archive."
     )
     parser.add_argument("--year", type=int, default=2020, help="Year (default: 2020)")
@@ -96,13 +123,18 @@ def main():
         "--time",
         nargs="+",
         default=DEFAULT_TIMES,
-        help="Hourly slices, default: 6-hourly 00/06/12/18",
+        help="Hourly slices for instantaneous vars, default: 6-hourly 00/06/12/18",
     )
     parser.add_argument(
         "--output",
         type=pathlib.Path,
         default=None,
         help="Output .nc path (default: data/input/raw/era5/era5_YYYY_MM.nc)",
+    )
+    parser.add_argument(
+        "--include-snowfall",
+        action="store_true",
+        help="Also download snowfall (accumulated forecast, separate request)",
     )
     args = parser.parse_args()
 
@@ -113,14 +145,27 @@ def main():
     )
     out.parent.mkdir(parents=True, exist_ok=True)
 
-    request = build_request(args.year, args.month, list(args.area), list(args.time))
+    # Download instantaneous variables
+    request = build_request(args.year, args.month, list(args.area), list(args.time), accumulated=False)
     print("Dataset :", DATASET)
-    print("Request :", request)
+    print("Request (instantaneous):", request)
     print("Output  :", out)
 
     client = cdsapi.Client()
     client.retrieve(DATASET, request).download(str(out))
-    print("Download finished:", out)
+    print("Download finished (instantaneous):", out)
+
+    # Optionally download snowfall (accumulated, separate request)
+    if args.include_snowfall:
+        snow_out = out.with_name(out.stem + "_snowfall.nc")
+        snow_request = build_request(args.year, args.month, list(args.area), list(args.time), accumulated=True)
+        print("\nRequest (snowfall, accumulated):", snow_request)
+        print("Output  :", snow_out)
+        client.retrieve(DATASET, snow_request).download(str(snow_out))
+        print("Download finished (snowfall):", snow_out)
+        print("\nNOTE: Snowfall is in a separate file (accumulated forecast, requires 'step' parameter).")
+        print("      It cannot be combined with instantaneous variables in a single CDS request.")
+        print("      Use python/era5/merge_snowfall.py to merge if needed.")
 
 
 if __name__ == "__main__":

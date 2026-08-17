@@ -25,7 +25,7 @@ VARIABLES = {
     "msl": ("Pa", 50000.0, 110000.0),
     "d2m": ("K", 150.0, 340.0),
     "tcc": ("1", 0.0, 1.0),
-    "snowfall": ("kg m-2 s-1", 0.0, None),
+    "sf": ("m", 0.0, 5.0),  # ERA5 snowfall: m of water equivalent
 }
 
 

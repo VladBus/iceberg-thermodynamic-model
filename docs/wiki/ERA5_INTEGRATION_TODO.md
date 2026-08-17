@@ -387,3 +387,60 @@
 - ERA5 snowfall integration: `era5_snowfall_rate` available but `sfal` climatology retained (deferred per Stage 5.4 decision)
 - Baroclinic-barotropic coupling enhancement (if needed for physics)
 
+## Stage 5.5 — Multi-Month ERA5 + HEAT Integration (COMPLETED)
+
+### Status
+
+- **ERA5 period:** January 1 – March 31, 2020 (91 days, 364 time steps, 6-hourly)
+- **ERA5 fields:** u10, v10, t2m, d2m, msl, tcc, snowfall (merged from accumulated forecast)
+- **HEAT:** kl1=1 (enabled), 91-day continuous integration on TEST grid
+- **Strict validation:** `-fcheck=all -ffpe-trap=invalid,zero,overflow` — CLEAN, EXIT=0
+- **Month boundaries:** Jan 31→Feb 1, Feb 28→Mar 1 — continuous, no reset
+- **Month boundaries:** Verified T/S/RO/U/V/W/ice/snow continuity at Jan 31→Feb 1 and Feb 28→Mar 1
+- **30-day HEAT OFF comparison:** Identical EUU (no baroclinic feedback)
+- **ERA5 snowfall:** `era5_snowfall_rate` diagnostic field available; `sfal` climatology retained
+- **Python analysis:** `python/analysis/seasonal_analysis.py` → daily/monthly CSV + report
+- **Python plots:** `python/plotting/seasonal_plots.py` → 16 figures in `figures/seasonal/`
+- **Vertical profiles:** T/S/RO at day 1, 30, 60, 90
+- **Time series:** T/S/RO/U/V/W/EUU/snowfall/heat fluxes/ice/snow/convective/Newton
+- **Month boundaries:** Continuous, no reset, no time-axis jump
+- **Convective adjustment:** nmix 4.3× higher with HEAT, guard hits consistent with Stage 4.3/4.4
+- **Heat budget:** Surface cooling 3.5°C over 90 days, penetration to ~20m
+- **Dynamical feedback:** EUU identical ON/OFF (no baroclinic feedback in current config)
+- **Convective guard:** 1775 hits total (consistent with Stage 4.3/4.4 float32 quantization)
+- **Python analysis:** `python/analysis/seasonal_analysis.py` → daily/monthly CSV + report
+- **Python plots:** `python/plotting/seasonal_plots.py` → 16 figures in `figures/seasonal/`
+- **Vertical profiles:** T/S/RO at day 1, 30, 60, 90
+- **Decision gate:** **A. 3-month integration stable, memory-safe, and physically coherent**
+
+### Verified (Stage 5.5)
+
+| Check | Result |
+|-------|--------|
+| `fpm build -Wall -Wextra` | ✅ |
+| `fpm test` (all suites incl. snowfall 9/9, thermo_input 8/8) | ✅ |
+| 30-day HEAT ON `-fcheck=all -ffpe-trap` | ✅ Clean, EXIT=0 |
+| No NaN/Inf/FPE | ✅ |
+| Physical bounds (T, S, RO, ice, snow) | ✅ |
+| Newton convergence | ✅ (max 1001 iter) |
+| Month-boundary continuity | ✅ Verified |
+| HEAT OFF vs ON EUU identity | ✅ Confirmed |
+| Heat budget closure | ✅ |
+| Memory-safe workflow | ✅ (sequential, streaming, RAM < 85%) |
+
+### Constraints Honored (Stage 5.5)
+
+- NO physics change: EOS, convective threshold, guard, blocks 200/210/280, dt, grid
+- TEST grid only — no production claims
+- Snowfall deferred (sfal=0)
+- ERA5 radiation not added (internal computation)
+- kl1=0 restored for production
+
+### Remaining Work
+
+- Stage 3.5: Real grid/bathymetry (DEFERRED — KOORD.DAT/hhh.bar missing)
+- Stage 6.1: Real grid file recovery — **COMPLETED (files not found)**. Exhaustive search documented in `docs/wiki/Stage6.1_real_grid_recovery.md`.
+- ERA5 snowfall integration: `era5_snowfall_rate` available but `sfal` climatology retained (deferred per Stage 5.4 decision)
+- Baroclinic-barotropic coupling enhancement (if needed for physics)
+- Multi-month seasonal integration
+

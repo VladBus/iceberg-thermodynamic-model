@@ -79,7 +79,7 @@ program main
     ! --- Временные и пространственные шаги сетки ---
     dt1 = 120.0         ! Шаг баротропной моды (сек)
     dt = 3600.0         ! Шаг бароклинной моды и термодинамики (сек)
-    mm1 = 60            ! Количество циклов моделирования в месяце (дни)
+    mm1 = 91            ! Количество циклов моделирования в месяце (дни)
     mm2 = 12            ! Количество шагов с термодинамическим шагом (DT) за сутки
     mm3 = 30            ! Количество баротропных микрошагов за бароклинный шаг (DT/DT1)
     mm4 = 1             ! Количество расчетных месяцев
@@ -230,7 +230,7 @@ program main
     ! (wind/tx/ty/dpx/dpy/tatm/patm) выполняется на следующих этапах.
     ! При ошибке чтения модель продолжает работу в legacy-режиме (без ERA5).
     if (forcing_mode .eq. forcing_mode_era5) then
-        call era5_open('data/input/raw/era5/era5_2020_01_merged.nc', ios)
+        call era5_open('data/input/raw/era5/era5_2020_0103_merged.nc', ios)
         if (ios .eq. 0) then
             call era5_diag()
 
@@ -270,7 +270,7 @@ program main
                 nday = nday + 1
                 nday1 = nday1 + 1
 
-                if (nday1 .eq. 42) exit
+                if (nday1 .eq. 91) exit
 
                 ess = euu - ecc
                 print *, "Day:", kkk, " Month:", lll, " Kin.Energy(EUU)=", euu

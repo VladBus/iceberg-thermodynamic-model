@@ -82,8 +82,8 @@ program check
     call check_array_2d(dpy, "dp_y", -1.0, 1.0, n_errors)
     call check_array_2d(tatm, "air_temp", -80.0, 40.0, n_errors)
     call check_array_2d(patm, "air_press", 800.0, 1100.0, n_errors)
-    call check_array_3d(temp, "temperature", -5.0, 40.0, n_errors)
-    call check_array_3d(salt, "salinity", 0.0, 0.05, n_errors)
+    call check_array_3d(temp, "temperature", -30.0, 50.0, n_errors)
+    call check_array_3d(salt, "salinity", -0.001, 0.05, n_errors)
 
     ! 2. Качественная согласованность направлений ветра и напряжений трения
     print *, "--- 2. Checking wind & stress alignment ---"

@@ -30,6 +30,7 @@ program main
     use netcdf_input
     use equation_of_state
     use convective_adjustment
+    use run_config
 
     implicit none
 
@@ -53,12 +54,31 @@ program main
     real :: ecc = 0.0, ess = 0.0
     character(len=20) :: nam_file
     character(len=64) :: day_file
+    character(len=64) :: run_id_arg
+    character(len=256) :: era5_arg
     real(8) :: start_sec
     integer :: nperday
+    integer :: narg, arglen
 
     print *, "================================================="
     print *, "   AARI Iceberg Thermodynamic & Dynamics Model   "
     print *, "================================================="
+
+    ! --- Конфигурация прогона (Stage 6.2) ---
+    ! Аргументы командной строки (fpm run -- <run_id> [era5_file]):
+    !   arg1: run_id (обязателен в новом workflow; по умолчанию исторический).
+    !   arg2: путь ERA5 input (необязателен; по умолчанию из param).
+    run_id_arg = trim(run_id)
+    era5_arg = ''
+    narg = command_argument_count()
+    if (narg .ge. 1) then
+        call get_command_argument(1, run_id_arg, arglen)
+    end if
+    if (narg .ge. 2) then
+        call get_command_argument(2, era5_arg, arglen)
+    end if
+    call setup_run_dirs(trim(run_id_arg), trim(era5_arg))
+
 
     ! --- Инициализация времени и параметров ---
     god = 1998.0        ! Начальный год моделирования (Гринвич)
@@ -220,7 +240,7 @@ program main
     call eos_diag()
 
     ! Записываем состояние океана ДО начала расчета (День 0)
-    call write_nc('data/output/results_day_00.nc')
+    call write_nc(trim(run_nc_dir)//'/results_day_00.nc')
 
     ! ====================================================================
     !              ЧТЕНИЕ АТМОСФЕРНОГО ФОРСИНГА ERA5 (NetCDF)
@@ -230,7 +250,7 @@ program main
     ! (wind/tx/ty/dpx/dpy/tatm/patm) выполняется на следующих этапах.
     ! При ошибке чтения модель продолжает работу в legacy-режиме (без ERA5).
     if (forcing_mode .eq. forcing_mode_era5) then
-        call era5_open('data/input/raw/era5/era5_2020_0103_merged.nc', ios)
+        call era5_open(trim(era5_input_file), ios)
         if (ios .eq. 0) then
             call era5_diag()
 
@@ -719,7 +739,7 @@ program main
                 ! Пишем NetCDF-срез за сутки kkk и строку CSV со статистиками
                 ! (U/V/W/T/S/RO min/max/mean, ветер, напряжения, градиенты,
                 !  кинетическая энергия EUU, счётчики convective adjustment).
-                write (day_file, '(A,I2.2,A)') 'data/output/results_day_', kkk, '.nc'
+                write (day_file, '(A,A,I2.2,A)') trim(run_nc_dir), '/results_day_', kkk, '.nc'
                 call write_nc(trim(day_file))
                 call write_daily_diagnostics(kkk, lll)
             end do ! Конец цикла дней KKK
@@ -734,7 +754,7 @@ program main
     ! Записываем финальное состояние океана после интеграции.
     ! Суточные срезы записаны внутри цикла как results_day_01.nc...30.nc,
     ! поэтому финальный файл назван отдельно и не затирает суточный срез.
-    call write_nc('data/output/results_day_final.nc')
+    call write_nc(trim(run_nc_dir)//'/results_day_final.nc')
 
 contains
 
@@ -795,9 +815,9 @@ contains
         call ca_stats(total_nmix, max_iter, guard_hits, affected_cols)
 
         ! Заголовок CSV - только если файл создаётся заново.
-        inquire (file='data/output/daily_diagnostics.csv', exist=first)
+        inquire (file=trim(run_csv_dir)//'/daily_diagnostics.csv', exist=first)
         first = .not. first
-        open (diag_unit, file='data/output/daily_diagnostics.csv', position='append')
+        open (diag_unit, file=trim(run_csv_dir)//'/daily_diagnostics.csv', position='append')
         if (first) then
             write (diag_unit, '(A)') &
                 "day,month,u_min,u_max,u_mean,v_min,v_max,v_mean,w_min,w_max,w_mean,"// &

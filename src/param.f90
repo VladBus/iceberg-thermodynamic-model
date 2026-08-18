@@ -166,6 +166,21 @@ module param
     integer, parameter :: grid_mode_test = 1
     integer :: grid_mode = grid_mode_test
 
+    ! --- Конфигурация прогона (Stage 6.2: изоляция выходов по run_id) ---
+    ! Каждый научный прогон пишет выходы в data/runs/<run_id>/output/{nc,csv,txt,logs,figures}.
+    ! run_id задаётся первым аргументом командной строки main (например
+    ! '2020_Q1_test_heat_on'), по умолчанию - исторический Q1-прогон.
+    ! ERA5 input по умолчанию указывает на processed-файл новой структуры
+    ! data/input/processed/era5/<YYYY>/<YYYY_MM>/.
+    character(len=64) :: run_id = '2020_Q1_test_heat_on'
+    character(len=256) :: run_output_dir = ''
+    character(len=256) :: run_nc_dir = ''
+    character(len=256) :: run_csv_dir = ''
+    character(len=256) :: run_txt_dir = ''
+    character(len=256) :: run_log_dir = ''
+    character(len=256) :: run_fig_dir = ''
+    character(len=256) :: era5_input_file = 'data/input/processed/era5/2020/2020_Q1/era5_2020_0103_merged.nc'
+
     ! Инициализация данных (блок DATA)
     ! Z - глубины центров 18 Z-уровней [см].
     data z/250., 500., 1000., 1500., 2000., 2500., 3000., 4000., &

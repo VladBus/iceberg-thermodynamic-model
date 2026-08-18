@@ -25,7 +25,16 @@ program check
     real, allocatable :: temp(:, :, :), salt(:, :, :)
 
     character(len=256) :: ncfile
-    ncfile = 'data/output/results_day_final.nc'
+    character(len=256) :: arg
+    integer :: narg, arglen
+    ! По умолчанию - исторический путь (Stage 6.2: прогоны изолированы в data/runs/<run_id>/output/nc).
+    ! Путь можно передать аргументом командной строки: fpm test -- <path> или запуск check <path>.
+    ncfile = 'data/runs/2020_Q1_test_heat_on/output/nc/results_day_final.nc'
+    narg = command_argument_count()
+    if (narg .ge. 1) then
+        call get_command_argument(1, arg, arglen)
+        ncfile = trim(arg)
+    end if
 
     print *, "=================================================="
     print *, "  Running Validation Suite on NetCDF Output File"

@@ -45,11 +45,6 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "analysis")
 from units import temperature_k_to_c, velocity_mps_to_cmps, density_anomaly_kgm3_to_gcm3
 from run_context import resolve_run, add_run_args
 
-DEFAULT_GLOB = "data/output/results_day_[0-9][0-9].nc"
-DEFAULT_DIAG = "data/output/daily_diagnostics.csv"
-DEFAULT_SEASONAL_DAILY = "data/output/seasonal_daily_summary.csv"
-DEFAULT_OUTDIR = "python/plotting/figures/seasonal"
-
 DPI = 150
 
 
@@ -125,9 +120,7 @@ def plot_time_series_seasonal(seasonal_csv, outdir, diag=None):
     ax.legend()
     fig.tight_layout()
     fig.savefig(
-        pathlib.Path(
-            "python/plotting/figures/seasonal/surface_temperature_time_series.png"
-        ),
+        outdir / "surface_temperature_time_series.png",
         dpi=DPI,
     )
     plt.close()

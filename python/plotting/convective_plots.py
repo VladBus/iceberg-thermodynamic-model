@@ -26,11 +26,6 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "analysis")
 from units import temperature_k_to_c, density_anomaly_kgm3_to_gcm3
 from run_context import resolve_run, add_run_args
 
-DEFAULT_EVENTS = "data/output/convective_guard_events.csv"
-DEFAULT_DIAG = "data/output/daily_diagnostics.csv"
-DEFAULT_PROF = "data/output/results_day_[0-9][0-9].nc"
-DEFAULT_OUTDIR = "python/plotting/figures/convective"
-
 DPI = 150
 
 REPR_DAYS = [1, 5, 10, 15, 20, 25, 30]

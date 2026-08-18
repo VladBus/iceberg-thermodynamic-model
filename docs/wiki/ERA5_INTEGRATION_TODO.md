@@ -88,14 +88,14 @@
   exact multiple of `2^-23` (7,792,470 NetCDF density values, 0 exceptions);
   min nonzero |ROa−ROb| = exactly `2^-23 = 1.1920929e-7` over 33,931 distinct
   grid RO32 AND over 2e6 random float32 pairs (100.0% of diffs are multiples
-  of 2^-23); **0 pairs in (0, 0.9e-7]** → threshold mathematically unreachable.
+  of 2^-23); **0 pairs in (0, 0.9e-7]\*\* → threshold mathematically unreachable.
 - **REAL64 comparison:** same grid gives min nonzero gap `1.258e-12` and
   pairs `≤ 0.9e-7` exist → threshold IS reachable in float64, float32 is the
   sole cause.
 - **Compiler effect: NONE** — bit-identical EOS output for
   -O0/-O2/-O3/-fno-fast-math/-ffast-math.
 - **Precision nuance (refines Stage 4.3 wording):** `spacing(RO)` at RO≈0.004
-  is `2^-31/2^-32` NOT `2^-23`; the correct statement is that the *attainable*
+  is `2^-31/2^-32` NOT `2^-23`; the correct statement is that the _attainable_
   RO set and all residual differences lie on the `2^-23` grid (because
   `RO = X − 1.02` is an exact difference of two [1,2) float32 multiples of
   2^-23, representable without rounding). Classification unchanged: **A.
@@ -109,14 +109,14 @@
 
 ### Verified (Stage 4.3b)
 
-| Check                                   | Result                              |
-| --------------------------------------- | ----------------------------------- |
-| fpm build -Wall -Wextra                 | ✅                                  |
-| fpm test (conv 15/15, EOS 7/7, precision 8/8, NetCDF) | ✅                 |
-| fpm run -fcheck=all -ffpe-trap (30 d)   | ✅ unchanged, EXIT=0                |
-| eos_precision_test standalone -Wall -Wextra | ✅ no warnings, STOP 0          |
-| Python eos_precision_analysis.py        | ✅ summary CSV + report             |
-| Compiler-flag experiment                | ✅ bit-identical md5                |
+| Check                                                 | Result                  |
+| ----------------------------------------------------- | ----------------------- |
+| fpm build -Wall -Wextra                               | ✅                      |
+| fpm test (conv 15/15, EOS 7/7, precision 8/8, NetCDF) | ✅                      |
+| fpm run -fcheck=all -ffpe-trap (30 d)                 | ✅ unchanged, EXIT=0    |
+| eos_precision_test standalone -Wall -Wextra           | ✅ no warnings, STOP 0  |
+| Python eos_precision_analysis.py                      | ✅ summary CSV + report |
+| Compiler-flag experiment                              | ✅ bit-identical md5    |
 
 ### Constraints honored (Stage 4.3b)
 
@@ -162,15 +162,15 @@
 
 ### Verified (Stage 4.4)
 
-| Check                                   | Result                              |
-| --------------------------------------- | ----------------------------------- |
-| fpm build -Wall -Wextra                 | ✅                                  |
-| fpm test (conv 15/15, EOS 7/7, precision 8/8, NetCDF) | ✅                 |
-| fpm run -fcheck=all -ffpe-trap (30 d)   | ✅ unchanged, EXIT=0                |
-| Experiment A reference metrics           | ✅ collected (EUU, nmix, guard, RO) |
-| Python convective_precision_study.py    | ✅ CSV + report written             |
-| Threshold study (0.9/1.0/1.2/1.5/2.0/3.0e-7) | ✅ 1.2e-7 first reachable       |
-| Experiment D (D1 vs D2 comparison)      | ✅ D1 unreachable, D2 reachable   |
+| Check                                                 | Result                              |
+| ----------------------------------------------------- | ----------------------------------- |
+| fpm build -Wall -Wextra                               | ✅                                  |
+| fpm test (conv 15/15, EOS 7/7, precision 8/8, NetCDF) | ✅                                  |
+| fpm run -fcheck=all -ffpe-trap (30 d)                 | ✅ unchanged, EXIT=0                |
+| Experiment A reference metrics                        | ✅ collected (EUU, nmix, guard, RO) |
+| Python convective_precision_study.py                  | ✅ CSV + report written             |
+| Threshold study (0.9/1.0/1.2/1.5/2.0/3.0e-7)          | ✅ 1.2e-7 first reachable           |
+| Experiment D (D1 vs D2 comparison)                    | ✅ D1 unreachable, D2 reachable     |
 
 ### Constraints honored (Stage 4.4)
 
@@ -201,19 +201,19 @@
 
 ### Verified (Stage 5.1)
 
-| Check                                   | Result                              |
-| --------------------------------------- | ----------------------------------- |
-| `fpm build -Wall -Wextra`                 | ✅                                  |
-| No production physics changes           | ✅ (kl1=0 unchanged)                |
-| Heat input inventory complete           | ✅ 22 variables documented          |
-| ERA5 mapping verified                    | ✅ tatm/patm/wind: verified; others documented |
-| Historical source mapping                | ✅ Code inspected, no historic files in repo |
-| Cloud formula `1−0.6·cclo³` check       | ✅ Physically reasonable            |
-| SKT is model-internal                    | ✅ Not from ERA5                    |
-| Radiation internal, no ERA5 fields needed| ✅                                  |
-| TEST-grid solar geometry note            | ✅ Documented                       |
-| Risks table compiled                     | ✅ 7 risks identified               |
-| Decision: kl1=0 remains                  | ✅                                  |
+| Check                                     | Result                                         |
+| ----------------------------------------- | ---------------------------------------------- |
+| `fpm build -Wall -Wextra`                 | ✅                                             |
+| No production physics changes             | ✅ (kl1=0 unchanged)                           |
+| Heat input inventory complete             | ✅ 22 variables documented                     |
+| ERA5 mapping verified                     | ✅ tatm/patm/wind: verified; others documented |
+| Historical source mapping                 | ✅ Code inspected, no historic files in repo   |
+| Cloud formula `1−0.6·cclo³` check         | ✅ Physically reasonable                       |
+| SKT is model-internal                     | ✅ Not from ERA5                               |
+| Radiation internal, no ERA5 fields needed | ✅                                             |
+| TEST-grid solar geometry note             | ✅ Documented                                  |
+| Risks table compiled                      | ✅ 7 risks identified                          |
+| Decision: kl1=0 remains                   | ✅                                             |
 
 ### Constraints honored (Stage 5.1)
 
@@ -265,15 +265,15 @@
 
 ### Verified (Stage 5.2 - Current)
 
-| Check                                   | Result                              |
-| --------------------------------------- | ----------------------------------- |
-| `fpm build -Wall -Wextra`                 | ✅                                  |
-| `fpm run` (30-day ERA5)                 | ✅ clean, EXIT=0                    |
-| ERA5 d2m/tcc loaded and interpolated    | ✅                                  |
-| Humidity conversion (d2m→RH) working    | ✅                                  |
-| Cloud mapping (tcc→cloud) working       | ✅                                  |
-| NetCDF output includes humid/cloud      | ✅                                  |
-| No physics changes (kl1=0, HEAT off)    | ✅                                  |
+| Check                                | Result           |
+| ------------------------------------ | ---------------- |
+| `fpm build -Wall -Wextra`            | ✅               |
+| `fpm run` (30-day ERA5)              | ✅ clean, EXIT=0 |
+| ERA5 d2m/tcc loaded and interpolated | ✅               |
+| Humidity conversion (d2m→RH) working | ✅               |
+| Cloud mapping (tcc→cloud) working    | ✅               |
+| NetCDF output includes humid/cloud   | ✅               |
+| No physics changes (kl1=0, HEAT off) | ✅               |
 
 ### Constraints honored (Stage 5.2 - Current)
 
@@ -322,16 +322,16 @@
 
 ### Verified (Stage 5.3)
 
-| Check | Result |
-|-------|--------|
-| `fpm build -Wall -Wextra` | ✅ |
-| `fpm test` (all suites) | ✅ |
-| 30-day HEAT ON `-fcheck=all -ffpe-trap` | ✅ Clean, EXIT=0 |
-| No NaN/Inf/FPE | ✅ |
-| Physical bounds (T, S, RO, ice, snow) | ✅ |
-| Newton convergence | ✅ (max 1001 iter) |
-| HEAT OFF vs ON EUU identity | ✅ Confirmed |
-| Heat budget closure | ✅ |
+| Check                                   | Result             |
+| --------------------------------------- | ------------------ |
+| `fpm build -Wall -Wextra`               | ✅                 |
+| `fpm test` (all suites)                 | ✅                 |
+| 30-day HEAT ON `-fcheck=all -ffpe-trap` | ✅ Clean, EXIT=0   |
+| No NaN/Inf/FPE                          | ✅                 |
+| Physical bounds (T, S, RO, ice, snow)   | ✅                 |
+| Newton convergence                      | ✅ (max 1001 iter) |
+| HEAT OFF vs ON EUU identity             | ✅ Confirmed       |
+| Heat budget closure                     | ✅                 |
 
 ### Constraints Honored (Stage 5.3)
 
@@ -360,15 +360,15 @@
 
 ### Verified (Stage 5.4)
 
-| Check | Result |
-|-------|--------|
-| `fpm build -Wall -Wextra` | ✅ |
-| `fpm test` (all suites incl. snowfall 9/9) | ✅ |
-| `fpm run -fcheck=all -ffpe-trap` (30-day) | ✅ Clean, EXIT=0 |
-| Snowfall download + merge | ✅ |
-| NetCDF output includes era5_snowfall_rate | ✅ |
-| Physical bounds (T, S, RO, ice, snow) | ✅ |
-| Convective guard behavior consistent | ✅ |
+| Check                                      | Result           |
+| ------------------------------------------ | ---------------- |
+| `fpm build -Wall -Wextra`                  | ✅               |
+| `fpm test` (all suites incl. snowfall 9/9) | ✅               |
+| `fpm run -fcheck=all -ffpe-trap` (30-day)  | ✅ Clean, EXIT=0 |
+| Snowfall download + merge                  | ✅               |
+| NetCDF output includes era5_snowfall_rate  | ✅               |
+| Physical bounds (T, S, RO, ice, snow)      | ✅               |
+| Convective guard behavior consistent       | ✅               |
 
 ### Constraints Honored (Stage 5.4)
 
@@ -415,18 +415,18 @@
 
 ### Verified (Stage 5.5)
 
-| Check | Result |
-|-------|--------|
-| `fpm build -Wall -Wextra` | ✅ |
-| `fpm test` (all suites incl. snowfall 9/9, thermo_input 8/8) | ✅ |
-| 30-day HEAT ON `-fcheck=all -ffpe-trap` | ✅ Clean, EXIT=0 |
-| No NaN/Inf/FPE | ✅ |
-| Physical bounds (T, S, RO, ice, snow) | ✅ |
-| Newton convergence | ✅ (max 1001 iter) |
-| Month-boundary continuity | ✅ Verified |
-| HEAT OFF vs ON EUU identity | ✅ Confirmed |
-| Heat budget closure | ✅ |
-| Memory-safe workflow | ✅ (sequential, streaming, RAM < 85%) |
+| Check                                                        | Result                                |
+| ------------------------------------------------------------ | ------------------------------------- |
+| `fpm build -Wall -Wextra`                                    | ✅                                    |
+| `fpm test` (all suites incl. snowfall 9/9, thermo_input 8/8) | ✅                                    |
+| 30-day HEAT ON `-fcheck=all -ffpe-trap`                      | ✅ Clean, EXIT=0                      |
+| No NaN/Inf/FPE                                               | ✅                                    |
+| Physical bounds (T, S, RO, ice, snow)                        | ✅                                    |
+| Newton convergence                                           | ✅ (max 1001 iter)                    |
+| Month-boundary continuity                                    | ✅ Verified                           |
+| HEAT OFF vs ON EUU identity                                  | ✅ Confirmed                          |
+| Heat budget closure                                          | ✅                                    |
+| Memory-safe workflow                                         | ✅ (sequential, streaming, RAM < 85%) |
 
 ### Constraints Honored (Stage 5.5)
 
@@ -444,3 +444,64 @@
 - Baroclinic-barotropic coupling enhancement (if needed for physics)
 - Multi-month seasonal integration
 
+## Stage 5.5b — Q1 2020 Output & Unit Audit (COMPLETED)
+
+### Status
+
+- **Calendar audit** (`data/output/q1_calendar_audit.csv`): 90 model days
+  (day 1 = 2020-01-01 … day 90 = 2020-03-30), no gaps/dups; leap year handled
+  (day 59 = 2020-02-28, day 60 = 2020-02-29); run is 90 not 91 days because
+  `mm1 = min(91, (364-1)/4) = 90` (main.f90:244–245).
+- **Unit audit** (`data/output/q1_units_audit.csv`, 22 rows) + canonical SI
+  external interface in `src/netcdf_output.f90` (conversion at output boundary
+  only; internal CGS/Celsius state unchanged):
+  - renames: `salinity` → `salinity_mass_fraction` (1 = kg/kg, NOT PSU),
+    `density` → `density_anomaly` (kg m⁻³)
+  - K (temperature/air_temp), Pa (tau/air_press), Pa m⁻¹ (dp), m s⁻¹
+    (u/v/w/wind_x/y), ×1000 density, ×0.1 stress/∇p, ×100 pressure
+  - global `unit_system = "SI (canonical external units, Stage 5.5b)"`
+- `test/check.f90`: SI bounds + `salinity_mass_fraction` lookup.
+- `python/analysis/units.py` (**new**): single source of truth for
+  presentation conversions. All analysis/plotting scripts updated.
+- `python/analysis/validate_q1_output.py` (**new**): calendar + units +
+  bounds integrity validation → **PASS**.
+- **Physical-extremes audit** (`data/output/q1_extremes_audit.{txt,csv}`):
+  Tmax 62.7 °C (day 64, k=0), Tmin −23.9 °C (day 84, k=17), Smin −8.3e-4
+  (day 90, k=1), ROmin −29.55 kg m⁻³, Smax 0.0369, ROmax +10.16 kg m⁻³.
+  **All EOS-consistent** (float32 Eckart EOS reproduces stored RO from T/S to
+  ≤ 1.2e-4) ⇒ no unit/mask/output defect. Classification: A/B valid-derived,
+  C (negative salinity) and E (instability) documented on TEST grid only.
+- 90-day Q1 run regenerated with SI outputs; seasonal analysis/plots,
+  snowfall/heat diagnostics re-run against the new interface.
+- Report: `docs/wiki/Stage5.5b_q1_output_and_units_audit.md`,
+  `docs/wiki/Stage5.5b_units.md`.
+
+### Verified (Stage 5.5b)
+
+| Check                                              | Result |
+| -------------------------------------------------- | ------ |
+| `fpm build -Wall -Wextra`                          | ✅     |
+| `fpm test` (all suites)                            | ✅     |
+| 90-day Q1 run (SI outputs)                         | ✅ EXIT=0 |
+| Calendar audit (90 days, Feb 29, day 90 = Mar 30)  | ✅     |
+| Unit audit (22 fields → canonical SI)              | ✅     |
+| EOS-consistency of extremes (Δ ≤ 1.2e-4)           | ✅     |
+| `validate_q1_output.py`                            | ✅ PASS |
+| Manifest regenerated + validated                   | ✅     |
+
+### Constraints honored (Stage 5.5b)
+
+- NO internal physics change: EOS, convective threshold 0.9e-7, guard 1000,
+  blocks 200/210/280, shal, FCT, grid, kl1=1 — all UNTOUCHED. Conversions only
+  at the output boundary.
+- TEST grid only — no production claims; extremes documented, not "fixed".
+- No REAL64 in production; Python reads stored density anomaly (no EOS recompute).
+- No new forcing fields.
+
+### Remaining Work
+
+- Stage 3.5 real grid/bathymetry — DEFERRED (KOORD.DAT/hhh.bar missing)
+- Extreme-value note: negative Smin is a TEST-grid artifact (excessive surface
+  freshening); fixing requires promt.md physics procedure + approval
+- Multi-month seasonal integration continues; any future runs use the SI
+  interface and manifest-based analysis

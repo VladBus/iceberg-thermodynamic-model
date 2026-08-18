@@ -21,6 +21,10 @@ import numpy as np  # pylint: disable=wrong-import-position
 import pandas as pd  # pylint: disable=wrong-import-position
 import xarray as xr  # pylint: disable=wrong-import-position
 
+import sys
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "analysis"))
+from units import temperature_k_to_c, density_anomaly_kgm3_to_gcm3
+
 DEFAULT_EVENTS = "data/output/convective_guard_events.csv"
 DEFAULT_DIAG = "data/output/daily_diagnostics.csv"
 DEFAULT_PROF = "data/output/results_day_[0-9][0-9].nc"
@@ -32,13 +36,17 @@ REPR_DAYS = [1, 5, 10, 15, 20, 25, 30]
 
 
 def load_column(path, i, j):
-    """T/S/RO/depth at column (i,j) - NetCDF x<->i (axis2), y<->j (axis1)."""
+    """T/S/RO/depth at column (i,j) - NetCDF x<->i (axis2), y<->j (axis1).
+
+    NetCDF canonical units: T in K, RO anomaly in kg m-3. Convert to degC /
+    g cm-3 for presentation.
+    """
     ds = xr.open_dataset(path)
     ki = int(ds["water_column_levels"].values[j - 1, i - 1])
     depth = ds["depth"].values[:ki]
-    t = ds["temperature"].values[:ki, j - 1, i - 1]
-    s = ds["salinity"].values[:ki, j - 1, i - 1]
-    ro = ds["density"].values[:ki, j - 1, i - 1]
+    t = temperature_k_to_c(ds["temperature"].values[:ki, j - 1, i - 1])
+    s = ds["salinity_mass_fraction"].values[:ki, j - 1, i - 1]
+    ro = density_anomaly_kgm3_to_gcm3(ds["density_anomaly"].values[:ki, j - 1, i - 1])
     ds.close()
     return depth, t, s, ro
 

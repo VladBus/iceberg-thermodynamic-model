@@ -18,6 +18,9 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
+from units import (temperature_k_to_c, velocity_mps_to_cmps,
+                   density_anomaly_kgm3_to_gcm3)
+
 
 def load_manifest(manifest_path: pathlib.Path) -> dict:
     """Load and validate run manifest."""
@@ -103,14 +106,14 @@ def analyze_seasonal(manifest: dict, diag_csv: pathlib.Path,
                 month = 3
                 month_name = "March"
 
-            # Temperature statistics (3D)
-            temp = ds['temperature'].values
+            # Temperature statistics (3D) - NetCDF in K, convert to degC
+            temp = temperature_k_to_c(ds['temperature'].values)
             temp_mean = float(np.nanmean(temp))
             temp_min = float(np.nanmin(temp))
             temp_max = float(np.nanmax(temp))
 
             # Surface temperature (depth=0)
-            temp_surf = ds['temperature'].isel(depth=0).values
+            temp_surf = temperature_k_to_c(ds['temperature'].isel(depth=0).values)
             temp_surf_mean = float(np.nanmean(temp_surf))
             temp_surf_min = float(np.nanmin(temp_surf))
             temp_surf_max = float(np.nanmax(temp_surf))
@@ -125,37 +128,37 @@ def analyze_seasonal(manifest: dict, diag_csv: pathlib.Path,
             else:
                 idx_20m, idx_100m, idx_500m = 3, 8, 15
 
-            temp_20m = ds['temperature'].isel(depth=idx_20m).values if idx_20m < temp.shape[0] else np.array([np.nan])
-            temp_100m = ds['temperature'].isel(depth=idx_100m).values if idx_100m < temp.shape[0] else np.array([np.nan])
-            temp_500m = ds['temperature'].isel(depth=idx_500m).values if idx_500m < temp.shape[0] else np.array([np.nan])
+            temp_20m = temperature_k_to_c(ds['temperature'].isel(depth=idx_20m).values) if idx_20m < temp.shape[0] else np.array([np.nan])
+            temp_100m = temperature_k_to_c(ds['temperature'].isel(depth=idx_100m).values) if idx_100m < temp.shape[0] else np.array([np.nan])
+            temp_500m = temperature_k_to_c(ds['temperature'].isel(depth=idx_500m).values) if idx_500m < temp.shape[0] else np.array([np.nan])
 
-            # Salinity
-            salt = ds['salinity'].values
+            # Salinity (mass fraction, already canonical 1 = kg/kg)
+            salt = ds['salinity_mass_fraction'].values
             salt_mean = float(np.nanmean(salt))
             salt_min = float(np.nanmin(salt))
             salt_max = float(np.nanmax(salt))
 
-            # Density
-            dens = ds['density'].values
+            # Density anomaly (kg m-3 canonical; present as g cm-3)
+            dens = density_anomaly_kgm3_to_gcm3(ds['density_anomaly'].values)
             dens_mean = float(np.nanmean(dens))
             dens_min = float(np.nanmin(dens))
             dens_max = float(np.nanmax(dens))
 
-            # Velocities
-            u = ds['u_velocity'].values
-            v = ds['v_velocity'].values
-            w = ds['w_velocity'].values
+            # Velocities (canonical m s-1; present as cm s-1)
+            u = velocity_mps_to_cmps(ds['u_velocity'].values)
+            v = velocity_mps_to_cmps(ds['v_velocity'].values)
+            w = velocity_mps_to_cmps(ds['w_velocity'].values)
             u_max = float(np.nanmax(np.abs(u)))
             v_max = float(np.nanmax(np.abs(v)))
             w_max = float(np.nanmax(np.abs(w)))
 
-            u_surf = ds['u_velocity'].isel(depth=0).values
-            v_surf = ds['v_velocity'].isel(depth=0).values
+            u_surf = velocity_mps_to_cmps(ds['u_velocity'].isel(depth=0).values)
+            v_surf = velocity_mps_to_cmps(ds['v_velocity'].isel(depth=0).values)
             u_surf_max = float(np.nanmax(np.abs(u_surf)))
             v_surf_max = float(np.nanmax(np.abs(v_surf)))
 
-            # Atmosphere
-            air_temp = ds['air_temp'].values
+            # Atmosphere (air_temp canonical K, present as degC)
+            air_temp = temperature_k_to_c(ds['air_temp'].values)
             air_temp_mean = float(np.nanmean(air_temp))
             air_temp_min = float(np.nanmin(air_temp))
             air_temp_max = float(np.nanmax(air_temp))
@@ -324,7 +327,7 @@ def analyze_seasonal(manifest: dict, diag_csv: pathlib.Path,
         f.write(f"\nSalinity (mass fraction):\n")
         f.write(f"  Mean: {seasonal_df['salt_mean'].mean():.5f} (min {seasonal_df['salt_min'].min():.5f}, max {seasonal_df['salt_max'].max():.5f})\n")
 
-        f.write(f"\nDensity Anomaly (g/cm³):\n")
+        f.write(f"\nDensity Anomaly (g/cm³; canonical NetCDF unit kg/m³):\n")
         f.write(f"  Mean: {seasonal_df['dens_mean'].mean():.5f} (min {seasonal_df['dens_min'].min():.5f}, max {seasonal_df['dens_max'].max():.5f})\n")
 
         f.write(f"\nVelocities (cm/s):\n")

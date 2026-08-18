@@ -30,6 +30,8 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
+from units import temperature_k_to_c, density_anomaly_kgm3_to_gcm3
+
 F32 = np.float32
 U23 = F32(2.0**-23)
 THRESH = F32(0.9e-7)
@@ -182,9 +184,11 @@ def bit_evidence(t, s):
 def load_event_profile(path, i, j):
     ds = xr.open_dataset(path)
     ki = int(ds["water_column_levels"].values[j - 1, i - 1])
-    t = ds["temperature"].values[:ki, j - 1, i - 1].astype(F32)
-    s = ds["salinity"].values[:ki, j - 1, i - 1].astype(F32)
-    ro = ds["density"].values[:ki, j - 1, i - 1].astype(F32)
+    # NetCDF canonical units: T in K, RO anomaly in kg m-3. Convert back to the
+    # model-internal degC / g cm-3 so float32 EOS comparison stays consistent.
+    t = temperature_k_to_c(ds["temperature"].values[:ki, j - 1, i - 1]).astype(F32)
+    s = ds["salinity_mass_fraction"].values[:ki, j - 1, i - 1].astype(F32)
+    ro = density_anomaly_kgm3_to_gcm3(ds["density_anomaly"].values[:ki, j - 1, i - 1]).astype(F32)
     ds.close()
     return t, s, ro
 

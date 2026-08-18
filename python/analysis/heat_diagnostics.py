@@ -15,6 +15,8 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
+from units import temperature_k_to_c, density_anomaly_kgm3_to_gcm3
+
 
 def analyze_heat_diagnostics(nc_dir, diag_csv, output_csv, output_txt):
     """Analyze HEAT diagnostics from model output."""
@@ -53,20 +55,20 @@ def analyze_heat_diagnostics(nc_dir, diag_csv, output_csv, output_txt):
             day_str = nc_file.stem.split("_")[-1]
             day = int(day_str) if day_str.isdigit() else 0
 
-            # Temperature statistics
-            temp = ds["temperature"].values
+            # Temperature statistics (canonical K, present as degC)
+            temp = temperature_k_to_c(ds["temperature"].values)
             temp_mean = np.nanmean(temp)
             temp_min = np.nanmin(temp)
             temp_max = np.nanmax(temp)
 
-            # Salinity statistics
-            salt = ds["salinity"].values
+            # Salinity statistics (mass fraction)
+            salt = ds["salinity_mass_fraction"].values
             salt_mean = np.nanmean(salt)
             salt_min = np.nanmin(salt)
             salt_max = np.nanmax(salt)
 
-            # Density statistics
-            dens = ds["density"].values
+            # Density anomaly statistics (canonical kg m-3, present as g cm-3)
+            dens = density_anomaly_kgm3_to_gcm3(ds["density_anomaly"].values)
             dens_mean = np.nanmean(dens)
             dens_min = np.nanmin(dens)
             dens_max = np.nanmax(dens)
@@ -80,13 +82,13 @@ def analyze_heat_diagnostics(nc_dir, diag_csv, output_csv, output_txt):
             w_max = np.nanmax(np.abs(w))
 
             # Surface layer (k=0) temperature
-            temp_surf = ds["temperature"].isel(depth=0).values
+            temp_surf = temperature_k_to_c(ds["temperature"].isel(depth=0).values)
             temp_surf_mean = np.nanmean(temp_surf)
             temp_surf_min = np.nanmin(temp_surf)
             temp_surf_max = np.nanmax(temp_surf)
 
-            # Air temperature (forcing)
-            air_temp = ds["air_temp"].values
+            # Air temperature (forcing; canonical K, present as degC)
+            air_temp = temperature_k_to_c(ds["air_temp"].values)
             air_temp_mean = np.nanmean(air_temp)
             air_temp_min = np.nanmin(air_temp)
             air_temp_max = np.nanmax(air_temp)

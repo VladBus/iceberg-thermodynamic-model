@@ -23,6 +23,10 @@ import numpy as np  # pylint: disable=wrong-import-position
 import pandas as pd  # pylint: disable=wrong-import-position
 import xarray as xr  # pylint: disable=wrong-import-position
 
+import sys
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "analysis"))
+from units import temperature_k_to_c, velocity_mps_to_cmps
+
 DEFAULT_GLOB = "data/output/results_day_[0-9][0-9].nc"
 DEFAULT_DIAG = "data/output/daily_diagnostics.csv"
 DEFAULT_OUTDIR = "python/plotting/figures"
@@ -43,14 +47,17 @@ def plot_surface_maps(day_file, outdir):
 
     for var, name, cmap in [
         ("temperature", "surface_temperature", "RdBu_r"),
-        ("salinity", "surface_salinity", "viridis"),
+        ("salinity_mass_fraction", "surface_salinity", "viridis"),
     ]:
         if var not in ds.data_vars:
             continue
         fig, ax = plt.subplots(figsize=(7, 5))
         v = ds[var].isel(depth=0).values
+        if var == "temperature":
+            v = temperature_k_to_c(v)
         pcm = ax.pcolormesh(lon, lat, v, cmap=cmap, shading="auto")
-        fig.colorbar(pcm, ax=ax, label=str(ds[var].attrs.get("units", "")))
+        units_label = "degC" if var == "temperature" else str(ds[var].attrs.get("units", ""))
+        fig.colorbar(pcm, ax=ax, label=units_label)
         ax.set_title(f"{var} at surface (day {day_label})")
         ax.set_xlabel("longitude (deg E)")
         ax.set_ylabel("latitude (deg N)")
@@ -60,8 +67,8 @@ def plot_surface_maps(day_file, outdir):
 
     if "u_velocity" in ds.data_vars:
         fig, ax = plt.subplots(figsize=(7, 5))
-        u = ds["u_velocity"].isel(depth=0).values
-        v = ds["v_velocity"].isel(depth=0).values
+        u = velocity_mps_to_cmps(ds["u_velocity"].isel(depth=0).values)
+        v = velocity_mps_to_cmps(ds["v_velocity"].isel(depth=0).values)
         spd = np.sqrt(u * u + v * v)
         pcm = ax.pcolormesh(lon, lat, spd, cmap="magma", shading="auto")
         fig.colorbar(pcm, ax=ax, label="|U| (cm/s)")
@@ -119,13 +126,13 @@ def plot_vertical_profiles(glob_pattern, outdir):
         depths = ds["depth"].values
         t = np.array(
             [
-                float(ds["temperature"].isel(depth=k).values[kt > k].mean())
+                float(temperature_k_to_c(ds["temperature"].isel(depth=k).values[kt > k]).mean())
                 for k in range(ds.sizes["depth"])
             ]
         )
         s = np.array(
             [
-                float(ds["salinity"].isel(depth=k).values[kt > k].mean())
+                float(ds["salinity_mass_fraction"].isel(depth=k).values[kt > k].mean())
                 for k in range(ds.sizes["depth"])
             ]
         )

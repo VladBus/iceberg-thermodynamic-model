@@ -19,6 +19,8 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
+from units import temperature_k_to_c
+
 
 def analyze_snowfall_diagnostics(nc_dir, diag_csv, output_csv, output_txt):
     """Analyze snowfall diagnostics from model output."""
@@ -91,19 +93,18 @@ def analyze_snowfall_diagnostics(nc_dir, diag_csv, output_csv, output_txt):
             else:
                 ice_conc_mean = np.nan
 
-            # Surface temperature
+            # Surface temperature (canonical K, present as degC)
             if "temperature" in ds.data_vars:
-                temp = ds["temperature"].values
-                temp_surf = ds["temperature"].isel(depth=0).values
+                temp_surf = temperature_k_to_c(ds["temperature"].isel(depth=0).values)
                 temp_surf_mean = np.nanmean(temp_surf)
                 temp_surf_min = np.nanmin(temp_surf)
                 temp_surf_max = np.nanmax(temp_surf)
             else:
                 temp_surf_mean = temp_surf_min = temp_surf_max = np.nan
 
-            # Air temperature (forcing)
+            # Air temperature (forcing; canonical K, present as degC)
             if "air_temp" in ds.data_vars:
-                air_temp = ds["air_temp"].values
+                air_temp = temperature_k_to_c(ds["air_temp"].values)
                 air_temp_mean = np.nanmean(air_temp)
                 air_temp_min = np.nanmin(air_temp)
                 air_temp_max = np.nanmax(air_temp)

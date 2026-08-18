@@ -15,14 +15,32 @@ Produces
 """
 
 import argparse
-import glob
+import json
 import pathlib
 
+import numpy as np
 import pandas as pd
 import xarray as xr
 
-DEFAULT_GLOB = "data/output/results_day_[0-9][0-9].nc"
+from units import temperature_k_to_c, velocity_mps_to_cmps, density_anomaly_kgm3_to_gcm3
+
+DEFAULT_MANIFEST = "data/output/run_manifest_2020_Q1_HEAT_ON.json"
 DEFAULT_OUT = "data/output/vertical_profiles.csv"
+
+
+def load_manifest(manifest_path):
+    """Load the run manifest (files + days), or fall back to legacy glob."""
+    p = pathlib.Path(manifest_path)
+    if p.exists():
+        manifest = json.loads(p.read_text())
+        files = [pathlib.Path(f["file"]) for f in manifest.get("files", [])]
+        if files:
+            return files
+    # Legacy fallback (no manifest): exclude day_00 / final explicitly.
+    import glob
+    return [pathlib.Path(f) for f in sorted(
+        glob.glob("data/output/results_day_[0-9][0-9].nc"))
+        if not f.endswith("_00.nc")]
 
 
 def daily_profile(path):
@@ -32,8 +50,8 @@ def daily_profile(path):
     nlev = ds.sizes["depth"]
     kt1 = ds["water_column_levels"].values  # (x, y)
 
-    # RO/density variable (added by the model in Stage 4.2); if absent, NaN.
-    has_ro = "density" in ds.data_vars
+    # RO/density anomaly variable (added by the model in Stage 4.2); if absent, NaN.
+    has_ro = "density_anomaly" in ds.data_vars
 
     depths = ds["depth"].values  # m
     rows = []
@@ -44,16 +62,16 @@ def daily_profile(path):
         row = {
             "day": int(p.stem.split("_")[2]),
             "depth_m": float(depths[k]),
-            "t": float(ds["temperature"].isel(depth=k).values[mask].mean()),
-            "s": float(ds["salinity"].isel(depth=k).values[mask].mean()),
-            "u": float(ds["u_velocity"].isel(depth=k).values[mask].mean()),
-            "v": float(ds["v_velocity"].isel(depth=k).values[mask].mean()),
+            "t": float(temperature_k_to_c(ds["temperature"].isel(depth=k).values[mask]).mean()),
+            "s": float(ds["salinity_mass_fraction"].isel(depth=k).values[mask].mean()),
+            "u": float(velocity_mps_to_cmps(ds["u_velocity"].isel(depth=k).values[mask]).mean()),
+            "v": float(velocity_mps_to_cmps(ds["v_velocity"].isel(depth=k).values[mask]).mean()),
         }
         # W uses depth_w dimension (ks1 = ks + 1); keep it only if present.
         if "w_velocity" in ds.data_vars and k < ds.sizes["depth_w"]:
-            row["w"] = float(ds["w_velocity"].isel(depth_w=k).values[mask].mean())
+            row["w"] = float(velocity_mps_to_cmps(ds["w_velocity"].isel(depth_w=k).values[mask]).mean())
         if has_ro:
-            row["ro"] = float(ds["density"].isel(depth=k).values[mask].mean())
+            row["ro"] = float(density_anomaly_kgm3_to_gcm3(ds["density_anomaly"].isel(depth=k).values[mask]).mean())
         rows.append(row)
     ds.close()
     return rows
@@ -65,14 +83,14 @@ def main():
         description="Compute horizontal-mean vertical profiles from daily snapshots."
     )
     parser.add_argument(
-        "glob", nargs="?", default=DEFAULT_GLOB, help="Glob of daily NetCDF files"
+        "--manifest", default=DEFAULT_MANIFEST, help="Run manifest JSON (preferred)"
     )
     parser.add_argument("--out", default=DEFAULT_OUT, help="Output CSV path")
     args = parser.parse_args()
 
-    files = sorted(glob.glob(args.glob))
+    files = load_manifest(args.manifest)
     if not files:
-        print(f"ERROR: no files match {args.glob}. Run the Fortran model first.")
+        print(f"ERROR: no files in {args.manifest} (or matching legacy glob). Run the Fortran model first.")
         return 1
 
     all_rows = []

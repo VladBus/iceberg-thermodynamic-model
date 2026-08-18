@@ -40,6 +40,10 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
+import sys
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "analysis"))
+from units import temperature_k_to_c, velocity_mps_to_cmps, density_anomaly_kgm3_to_gcm3
+
 DEFAULT_GLOB = "data/output/results_day_[0-9][0-9].nc"
 DEFAULT_DIAG = "data/output/daily_diagnostics.csv"
 DEFAULT_SEASONAL_DAILY = "data/output/seasonal_daily_summary.csv"
@@ -65,14 +69,17 @@ def plot_surface_maps(day_file, outdir):
 
     for var, name, cmap in [
         ("temperature", "surface_temperature", "RdBu_r"),
-        ("salinity", "surface_salinity", "viridis"),
+        ("salinity_mass_fraction", "surface_salinity", "viridis"),
     ]:
         if var not in ds.data_vars:
             continue
         fig, ax = plt.subplots(figsize=(7, 5))
         v = ds[var].isel(depth=0).values
+        if var == "temperature":
+            v = temperature_k_to_c(v)
         pcm = ax.pcolormesh(lon, lat, v, cmap=cmap, shading="auto")
-        fig.colorbar(pcm, ax=ax, label=str(ds[var].attrs.get("units", "")))
+        units_label = "degC" if var == "temperature" else str(ds[var].attrs.get("units", ""))
+        fig.colorbar(pcm, ax=ax, label=units_label)
         ax.set_title(f"{var} at surface (day {day_label})")
         ax.set_xlabel("longitude (deg E)")
         ax.set_ylabel("latitude (deg N)")
@@ -82,8 +89,8 @@ def plot_surface_maps(day_file, outdir):
 
     if "u_velocity" in ds.data_vars:
         fig, ax = plt.subplots(figsize=(7, 5))
-        u = ds["u_velocity"].isel(depth=0).values
-        v = ds["v_velocity"].isel(depth=0).values
+        u = velocity_mps_to_cmps(ds["u_velocity"].isel(depth=0).values)
+        v = velocity_mps_to_cmps(ds["v_velocity"].isel(depth=0).values)
         spd = np.sqrt(u * u + v * v)
         pcm = ax.pcolormesh(lon, lat, spd, cmap="magma", shading="auto")
         fig.colorbar(pcm, ax=ax, label="|U| (cm/s)")
@@ -107,14 +114,21 @@ def plot_time_series_seasonal(seasonal_csv, outdir):
     # Surface temperature
     fig, ax = plt.subplots(figsize=(10, 4))
     ax.plot(df["day"], df["temp_surf_mean"], label="Surface T", color="red")
-    ax.fill_between(df["day"], df["temp_surf_min"], df["temp_surf_max"], alpha=0.2, color="red")
+    ax.fill_between(
+        df["day"], df["temp_surf_min"], df["temp_surf_max"], alpha=0.2, color="red"
+    )
     ax.set_xlabel("model day")
     ax.set_ylabel("T (°C)")
     ax.set_title("Surface Temperature Time Series")
     ax.grid(alpha=0.3)
     ax.legend()
     fig.tight_layout()
-    fig.savefig(pathlib.Path("python/plotting/figures/seasonal/surface_temperature_time_series.png"), dpi=DPI)
+    fig.savefig(
+        pathlib.Path(
+            "python/plotting/figures/seasonal/surface_temperature_time_series.png"
+        ),
+        dpi=DPI,
+    )
     plt.close()
 
     # 20m temperature
@@ -125,7 +139,10 @@ def plot_time_series_seasonal(seasonal_csv, outdir):
     ax.set_title("Temperature at 20m Depth")
     ax.grid(alpha=0.3)
     fig.tight_layout()
-    fig.savefig(pathlib.Path("python/plotting/figures/seasonal/temp_20m_time_series.png"), dpi=DPI)
+    fig.savefig(
+        pathlib.Path("python/plotting/figures/seasonal/temp_20m_time_series.png"),
+        dpi=DPI,
+    )
     plt.close()
 
     # 100m temperature
@@ -136,7 +153,10 @@ def plot_time_series_seasonal(seasonal_csv, outdir):
     ax.set_title("Temperature at 100m Depth")
     ax.grid(alpha=0.3)
     fig.tight_layout()
-    fig.savefig(pathlib.Path("python/plotting/figures/seasonal/temp_100m_time_series.png"), dpi=DPI)
+    fig.savefig(
+        pathlib.Path("python/plotting/figures/seasonal/temp_100m_time_series.png"),
+        dpi=DPI,
+    )
     plt.close()
 
     # Surface salinity
@@ -147,7 +167,10 @@ def plot_time_series_seasonal(seasonal_csv, outdir):
     ax.set_title("Surface Salinity Time Series")
     ax.grid(alpha=0.3)
     fig.tight_layout()
-    fig.savefig(pathlib.Path("python/plotting/figures/seasonal/salinity_time_series.png"), dpi=DPI)
+    fig.savefig(
+        pathlib.Path("python/plotting/figures/seasonal/salinity_time_series.png"),
+        dpi=DPI,
+    )
     plt.close()
 
     # Surface density
@@ -158,7 +181,10 @@ def plot_time_series_seasonal(seasonal_csv, outdir):
     ax.set_title("Surface Density Anomaly Time Series")
     ax.grid(alpha=0.3)
     fig.tight_layout()
-    fig.savefig(pathlib.Path("python/plotting/figures/seasonal/density_time_series.png"), dpi=DPI)
+    fig.savefig(
+        pathlib.Path("python/plotting/figures/seasonal/density_time_series.png"),
+        dpi=DPI,
+    )
     plt.close()
 
     # U max
@@ -169,7 +195,9 @@ def plot_time_series_seasonal(seasonal_csv, outdir):
     ax.set_title("Maximum U Velocity")
     ax.grid(alpha=0.3)
     fig.tight_layout()
-    fig.savefig(pathlib.Path("python/plotting/figures/seasonal/u_max_time_series.png"), dpi=DPI)
+    fig.savefig(
+        pathlib.Path("python/plotting/figures/seasonal/u_max_time_series.png"), dpi=DPI
+    )
     plt.close()
 
     # V max
@@ -180,7 +208,9 @@ def plot_time_series_seasonal(seasonal_csv, outdir):
     ax.set_title("Maximum V Velocity")
     ax.grid(alpha=0.3)
     fig.tight_layout()
-    fig.savefig(pathlib.Path("python/plotting/figures/seasonal/v_max_time_series.png"), dpi=DPI)
+    fig.savefig(
+        pathlib.Path("python/plotting/figures/seasonal/v_max_time_series.png"), dpi=DPI
+    )
     plt.close()
 
     # W max
@@ -191,7 +221,9 @@ def plot_time_series_seasonal(seasonal_csv, outdir):
     ax.set_title("Maximum W Velocity")
     ax.grid(alpha=0.3)
     fig.tight_layout()
-    fig.savefig(pathlib.Path("python/plotting/figures/seasonal/w_max_time_series.png"), dpi=DPI)
+    fig.savefig(
+        pathlib.Path("python/plotting/figures/seasonal/w_max_time_series.png"), dpi=DPI
+    )
     plt.close()
 
     # EUU
@@ -202,7 +234,9 @@ def plot_time_series_seasonal(seasonal_csv, outdir):
     ax.set_title("Domain Kinetic Energy (EUU)")
     ax.grid(alpha=0.3)
     fig.tight_layout()
-    fig.savefig(pathlib.Path("python/plotting/figures/seasonal/euu_time_series.png"), dpi=DPI)
+    fig.savefig(
+        pathlib.Path("python/plotting/figures/seasonal/euu_time_series.png"), dpi=DPI
+    )
     plt.close()
 
     # Heat fluxes - need to extract from seasonal data or use diag
@@ -214,7 +248,9 @@ def plot_time_series_seasonal(seasonal_csv, outdir):
     ax.set_title("ERA5 Snowfall Rate")
     ax.grid(alpha=0.3)
     fig.tight_layout()
-    fig.savefig(pathlib.Path("python/plotting/figures/seasonal/snowfall_rate.png"), dpi=DPI)
+    fig.savefig(
+        pathlib.Path("python/plotting/figures/seasonal/snowfall_rate.png"), dpi=DPI
+    )
     plt.close()
 
     # Ice concentration - from diagnostics
@@ -224,26 +260,39 @@ def plot_time_series_seasonal(seasonal_csv, outdir):
         diag = pd.read_csv(diag_file)
         if "diag_ca_guard_hits" in diag.columns:
             fig, ax = plt.subplots(figsize=(10, 4))
-            ax.plot(diag["day"], diag["diag_ca_guard_hits"], label="Guard Hits", color="red")
+            ax.plot(
+                diag["day"], diag["diag_ca_guard_hits"], label="Guard Hits", color="red"
+            )
             ax.set_xlabel("model day")
             ax.set_ylabel("Guard Hits")
             ax.set_title("Convective Adjustment Guard Hits")
             ax.grid(alpha=0.3)
             ax.legend()
             fig.tight_layout()
-            fig.savefig(pathlib.Path("python/plotting/figures/seasonal/convective_guard.png"), dpi=DPI)
+            fig.savefig(
+                pathlib.Path("python/plotting/figures/seasonal/convective_guard.png"),
+                dpi=DPI,
+            )
             plt.close()
 
         if "diag_ca_max_iter" in diag.columns:
             fig, ax = plt.subplots(figsize=(10, 4))
-            ax.plot(diag["day"], diag["diag_ca_max_iter"], label="Max Iterations", color="orange")
+            ax.plot(
+                diag["day"],
+                diag["diag_ca_max_iter"],
+                label="Max Iterations",
+                color="orange",
+            )
             ax.set_xlabel("model day")
             ax.set_ylabel("Max Iterations")
             ax.set_title("Convective Adjustment Max Iterations")
             ax.grid(alpha=0.3)
             ax.legend()
             fig.tight_layout()
-            fig.savefig(pathlib.Path("python/plotting/figures/seasonal/newton_iterations.png"), dpi=DPI)
+            fig.savefig(
+                pathlib.Path("python/plotting/figures/seasonal/newton_iterations.png"),
+                dpi=DPI,
+            )
             plt.close()
 
 
@@ -270,18 +319,24 @@ def plot_vertical_profiles_seasonal(glob_pattern, outdir):
         ds = xr.open_dataset(file_map[day])
         kt = ds["water_column_levels"].values
         depths = ds["depth"].values
-        t = np.array([
-            float(ds["temperature"].isel(depth=k).values[kt > k].mean())
-            for k in range(ds.sizes["depth"])
-        ])
-        s = np.array([
-            float(ds["salinity"].isel(depth=k).values[kt > k].mean())
-            for k in range(ds.sizes["depth"])
-        ])
-        ro = np.array([
-            float(ds["density"].isel(depth=k).values[kt > k].mean())
-            for k in range(ds.sizes["depth"])
-        ])
+        t = np.array(
+            [
+                float(temperature_k_to_c(ds["temperature"].isel(depth=k).values[kt > k]).mean())
+                for k in range(ds.sizes["depth"])
+            ]
+        )
+        s = np.array(
+            [
+                float(ds["salinity_mass_fraction"].isel(depth=k).values[kt > k].mean())
+                for k in range(ds.sizes["depth"])
+            ]
+        )
+        ro = np.array(
+            [
+                float(density_anomaly_kgm3_to_gcm3(ds["density_anomaly"].isel(depth=k).values[kt > k]).mean())
+                for k in range(ds.sizes["depth"])
+            ]
+        )
 
         axes[0].plot(t, depths, label=f"Day {day}", linewidth=2)
         axes[1].plot(s, depths, label=f"Day {day}", linewidth=2)
@@ -305,9 +360,18 @@ def plot_vertical_profiles_seasonal(glob_pattern, outdir):
     axes[2].legend()
 
     fig.tight_layout()
-    fig.savefig(pathlib.Path("python/plotting/figures/seasonal/vertical_temp_profiles.png"), dpi=DPI)
-    fig.savefig(pathlib.Path("python/plotting/figures/seasonal/vertical_salinity_profiles.png"), dpi=DPI)
-    fig.savefig(pathlib.Path("python/plotting/figures/seasonal/vertical_density_profiles.png"), dpi=DPI)
+    fig.savefig(
+        pathlib.Path("python/plotting/figures/seasonal/vertical_temp_profiles.png"),
+        dpi=DPI,
+    )
+    fig.savefig(
+        pathlib.Path("python/plotting/figures/seasonal/vertical_salinity_profiles.png"),
+        dpi=DPI,
+    )
+    fig.savefig(
+        pathlib.Path("python/plotting/figures/seasonal/vertical_density_profiles.png"),
+        dpi=DPI,
+    )
     plt.close()
 
 
@@ -329,7 +393,9 @@ def plot_heat_fluxes(seasonal_csv, outdir):
     ax.grid(alpha=0.3)
     ax.legend()
     fig.tight_layout()
-    fig.savefig(pathlib.Path("python/plotting/figures/seasonal/heat_fluxes.png"), dpi=DPI)
+    fig.savefig(
+        pathlib.Path("python/plotting/figures/seasonal/heat_fluxes.png"), dpi=DPI
+    )
     plt.close()
 
 
@@ -352,10 +418,12 @@ def plot_vertical_temp_profiles_separate(glob_pattern, outdir):
         ds = xr.open_dataset(file_map[day])
         kt = ds["water_column_levels"].values
         depths = ds["depth"].values
-        t = np.array([
-            float(ds["temperature"].isel(depth=k).values[kt > k].mean())
-            for k in range(ds.sizes["depth"])
-        ])
+        t = np.array(
+            [
+                float(temperature_k_to_c(ds["temperature"].isel(depth=k).values[kt > k]).mean())
+                for k in range(ds.sizes["depth"])
+            ]
+        )
         ax.plot(t, depths, label=f"Day {day}", linewidth=2)
         ds.close()
     ax.set_ylabel("Depth (m)")
@@ -364,7 +432,10 @@ def plot_vertical_temp_profiles_separate(glob_pattern, outdir):
     ax.invert_yaxis()
     ax.legend()
     fig.tight_layout()
-    fig.savefig(pathlib.Path("python/plotting/figures/seasonal/vertical_temp_profiles.png"), dpi=DPI)
+    fig.savefig(
+        pathlib.Path("python/plotting/figures/seasonal/vertical_temp_profiles.png"),
+        dpi=DPI,
+    )
     plt.close()
 
 
@@ -387,10 +458,12 @@ def plot_vertical_salinity_profiles_separate(glob_pattern, outdir):
         ds = xr.open_dataset(file_map[day])
         kt = ds["water_column_levels"].values
         depths = ds["depth"].values
-        s = np.array([
-            float(ds["salinity"].isel(depth=k).values[kt > k].mean())
-            for k in range(ds.sizes["depth"])
-        ])
+        s = np.array(
+            [
+                float(ds["salinity_mass_fraction"].isel(depth=k).values[kt > k].mean())
+                for k in range(ds.sizes["depth"])
+            ]
+        )
         ax.plot(s, depths, label=f"Day {day}", linewidth=2)
         ds.close()
     ax.set_ylabel("Depth (m)")
@@ -399,7 +472,10 @@ def plot_vertical_salinity_profiles_separate(glob_pattern, outdir):
     ax.invert_yaxis()
     ax.legend()
     fig.tight_layout()
-    fig.savefig(pathlib.Path("python/plotting/figures/seasonal/vertical_salinity_profiles.png"), dpi=DPI)
+    fig.savefig(
+        pathlib.Path("python/plotting/figures/seasonal/vertical_salinity_profiles.png"),
+        dpi=DPI,
+    )
     plt.close()
 
 
@@ -422,10 +498,12 @@ def plot_vertical_density_profiles_separate(glob_pattern, outdir):
         ds = xr.open_dataset(file_map[day])
         kt = ds["water_column_levels"].values
         depths = ds["depth"].values
-        ro = np.array([
-            float(ds["density"].isel(depth=k).values[kt > k].mean())
-            for k in range(ds.sizes["depth"])
-        ])
+        ro = np.array(
+            [
+                float(density_anomaly_kgm3_to_gcm3(ds["density_anomaly"].isel(depth=k).values[kt > k]).mean())
+                for k in range(ds.sizes["depth"])
+            ]
+        )
         ax.plot(ro, depths, label=f"Day {day}", linewidth=2)
         ds.close()
     ax.set_ylabel("Depth (m)")
@@ -434,7 +512,10 @@ def plot_vertical_density_profiles_separate(glob_pattern, outdir):
     ax.invert_yaxis()
     ax.legend()
     fig.tight_layout()
-    fig.savefig(pathlib.Path("python/plotting/figures/seasonal/vertical_density_profiles.png"), dpi=DPI)
+    fig.savefig(
+        pathlib.Path("python/plotting/figures/seasonal/vertical_density_profiles.png"),
+        dpi=DPI,
+    )
     plt.close()
 
 
@@ -444,7 +525,9 @@ def plot_heat_off_on_comparison(outdir):
     on_files = glob.glob("data/output/results_day_[0-9][0-9].nc")
     if not on_files:
         return
-    print("HEAT ON/OFF comparison: reference files not available for automated comparison")
+    print(
+        "HEAT ON/OFF comparison: reference files not available for automated comparison"
+    )
     print("Manual comparison needed for HEAT ON vs HEAT OFF")
 
 
@@ -453,10 +536,26 @@ def main():
     parser = argparse.ArgumentParser(
         description="Plot seasonal figures from multi-month ERA5 + HEAT integration."
     )
-    parser.add_argument("--glob", default="data/output/results_day_[0-9][0-9].nc", help="Daily NetCDF glob")
-    parser.add_argument("--diag", default="data/output/daily_diagnostics.csv", help="Daily diagnostics CSV")
-    parser.add_argument("--seasonal", default="data/output/seasonal_daily_summary.csv", help="Seasonal daily summary CSV")
-    parser.add_argument("--outdir", default="python/plotting/figures/seasonal", help="Output directory for PNGs")
+    parser.add_argument(
+        "--glob",
+        default="data/output/results_day_[0-9][0-9].nc",
+        help="Daily NetCDF glob",
+    )
+    parser.add_argument(
+        "--diag",
+        default="data/output/daily_diagnostics.csv",
+        help="Daily diagnostics CSV",
+    )
+    parser.add_argument(
+        "--seasonal",
+        default="data/output/seasonal_daily_summary.csv",
+        help="Seasonal daily summary CSV",
+    )
+    parser.add_argument(
+        "--outdir",
+        default="python/plotting/figures/seasonal",
+        help="Output directory for PNGs",
+    )
     args = parser.parse_args()
 
     outdir = pathlib.Path(args.outdir)

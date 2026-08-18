@@ -40,6 +40,8 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
+from units import temperature_k_to_c, density_anomaly_kgm3_to_gcm3
+
 F32 = np.float32
 U23 = F32(2.0**-23)
 THRESH_09 = F32(0.9e-7)
@@ -112,14 +114,18 @@ def load_guard_events(events_path):
 
 
 def profile_stats_from_nc(prof_glob, day):
-    """Extract T/S/RO min/max from a daily NetCDF slice."""
+    """Extract T/S/RO min/max from a daily NetCDF slice.
+
+    NetCDF canonical units: T in K, RO anomaly in kg m-3. Convert to the
+    model-internal degC / g cm-3 for presentation consistency.
+    """
     path = pathlib.Path(prof_glob.replace("[0-9][0-9]", f"{day:02d}"))
     if not path.exists():
         return None
     ds = xr.open_dataset(path)
-    t = ds["temperature"].values.astype(F32)
-    s = ds["salinity"].values.astype(F32)
-    ro = ds["density"].values.astype(F32)
+    t = temperature_k_to_c(ds["temperature"].values.astype(F32))
+    s = ds["salinity_mass_fraction"].values.astype(F32)
+    ro = density_anomaly_kgm3_to_gcm3(ds["density_anomaly"].values.astype(F32))
     ds.close()
     return {
         "t_min": float(t.min()),

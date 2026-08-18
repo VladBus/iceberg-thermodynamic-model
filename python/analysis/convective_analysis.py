@@ -34,6 +34,8 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
+from units import temperature_k_to_c, density_anomaly_kgm3_to_gcm3
+
 DEFAULT_EVENTS = "data/output/convective_guard_events.csv"
 DEFAULT_DAILY = "data/output/daily_diagnostics.csv"
 DEFAULT_PROF = "data/output/results_day_[0-9][0-9].nc"
@@ -52,9 +54,11 @@ def load_column_profile(path, i, j):
     # NetCDF axis x <-> Fortran index i (size is1=133), y <-> index j (js1=105);
     # xarray exposes (depth, y, x), so j selects axis 1, i selects axis 2.
     ki = int(ds["water_column_levels"].values[j - 1, i - 1])
-    t = ds["temperature"].values[:ki, j - 1, i - 1]
-    s = ds["salinity"].values[:ki, j - 1, i - 1]
-    ro = ds["density"].values[:ki, j - 1, i - 1]
+    # NetCDF canonical units: T in K, RO anomaly in kg m-3. Convert to degC and
+    # g cm-3 so the 0.9e-7 threshold (model internal g/cm3) stays consistent.
+    t = temperature_k_to_c(ds["temperature"].values[:ki, j - 1, i - 1])
+    s = ds["salinity_mass_fraction"].values[:ki, j - 1, i - 1]
+    ro = density_anomaly_kgm3_to_gcm3(ds["density_anomaly"].values[:ki, j - 1, i - 1])
     depth = ds["depth"].values[:ki]
     ds.close()
     return depth, t, s, ro

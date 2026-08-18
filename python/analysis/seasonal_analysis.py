@@ -44,17 +44,18 @@ def load_manifest(manifest_path: pathlib.Path) -> dict:
     # Verify dates
     start_date = datetime.fromisoformat(manifest["start_date"])
     for f in manifest["files"]:
+        # Model integration day d = start_date + d days
         expected_date = (
             (
-                datetime.fromisoformat(manifest["start_date"])
-                + timedelta(days=f["day"] - 1)
+                start_date
+                + timedelta(days=f["day"])
             )
             .date()
             .isoformat()
         )
         if f["date"] != expected_date:
             raise ValueError(
-                f"Date mismatch for day {f['day']}: expected {expected_date}, got {f['date']}"
+                f"Date mismatch for day {f['day']}: expected {expected_date} (model day {f['day']} = start_date + {f['day']} days), got {f['date']}"
             )
         if not pathlib.Path(f["file"]).exists():
             raise FileNotFoundError(f"Missing file for day {f['day']}: {f['file']}")
@@ -93,11 +94,12 @@ def analyze_seasonal(
 
     # Compute month from day if not present or all same
     if "month" not in diag.columns or diag["month"].nunique() == 1:
+        start_date = datetime.fromisoformat(manifest["start_date"])
         diag["month"] = diag["day"].apply(
-            lambda d: 1 if d <= 31 else (2 if d <= 59 else 3)
+            lambda d: (start_date + timedelta(days=d - 1)).month
         )
-        diag["month_name"] = diag["month"].map(
-            {1: "January", 2: "February", 3: "March"}
+        diag["month_name"] = diag["month"].apply(
+            lambda m: {1: "January", 2: "February", 3: "March"}.get(m, str(m))
         )
 
     # Use manifest file list
@@ -114,16 +116,10 @@ def analyze_seasonal(
         try:
             ds = xr.open_dataset(nc_file)
 
-            # Determine month from day
-            if day <= 31:
-                month = 1
-                month_name = "January"
-            elif day <= 59:  # Jan 31 + Feb 28/29
-                month = 2
-                month_name = "February"
-            else:
-                month = 3
-                month_name = "March"
+            # Determine month from day using actual calendar
+            current_date = start_date + timedelta(days=day - 1)
+            month = current_date.month
+            month_name = current_date.strftime("%B")
 
             # Temperature statistics (3D) - NetCDF in K, convert to degC
             temp = temperature_k_to_c(ds["temperature"].values)

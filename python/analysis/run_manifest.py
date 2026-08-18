@@ -77,13 +77,18 @@ class RunManifest:
         self.meta: Dict[str, Any] = {}
 
     def generate_file_list(self) -> List[Dict[str, Any]]:
-        """Generate expected file list from start_date and expected_days."""
+        """Generate expected file list from start_date and expected_days.
+
+        Model semantics: integration day d (1-indexed) corresponds to
+        calendar date start_date + d days, because day_00 = initial state
+        at start_date, day_01 = after 1 day, etc.
+        """
         files = []
-        current_date = self.start_date
         for day in range(1, self.expected_days + 1):
             file_name = self.file_pattern.format(day)
             file_path = self.base_dir / file_name
-            expected_date = self.start_date + timedelta(days=day - 1)
+            # Model integration day d = start_date + d days (day_00 = initial at start_date)
+            expected_date = self.start_date + timedelta(days=day)
             files.append(
                 {
                     "day": day,
@@ -193,8 +198,9 @@ class RunManifest:
             seen_days.add(day)
 
             # Check expected date
+            # Model integration day d = start_date + d days
             expected_date = (
-                (self.start_date + timedelta(days=day - 1)).date().isoformat()
+                (self.start_date + timedelta(days=day)).date().isoformat()
             )
             if f["date"] != expected_date:
                 results["date_mismatches"].append(
@@ -263,19 +269,25 @@ class RunManifest:
 
 
 def create_q1_2020_heat_on_manifest() -> RunManifest:
-    """Create manifest for Stage 5.5 Q1 2020 HEAT ON run (isolated in data/runs/)."""
+    """Create manifest for Stage 5.5 Q1 2020 HEAT ON run (isolated in data/runs/).
+
+    Model semantics: day_00 = initial state at 2020-01-01.
+    Integration days 1..90 produce results_day_01.nc .. results_day_90.nc.
+    Calendar date for integration day d = 2020-01-01 + d days.
+    So day 1 = 2020-01-02, day 90 = 2020-03-31.
+    """
     m = RunManifest(
         run_id="2020_Q1_test_heat_on",
         start_date="2020-01-01",
-        end_date="2020-03-30",
+        end_date="2020-03-31",
         expected_days=90,
         file_pattern="results_day_{:02d}.nc",
         base_dir="data/runs/2020_Q1_test_heat_on/output/nc",
     )
     m.meta.update(
         {
-            "description": "Q1 2020 ERA5 + HEAT ON on TEST grid (Jan 1 - Mar 30, 90 days)",
-            "era5_period": "2020-01-01..2020-03-30 (6-hourly)",
+            "description": "Q1 2020 ERA5 + HEAT ON on TEST grid (Jan 1 - Mar 31, 90 integration days)",
+            "era5_period": "2020-01-01..2020-03-31 (6-hourly, 364 steps)",
             "era5_domain": "arctic (historical dataset, lat 66-82 / lon 30-63 used by file)",
             "grid_mode": "TEST",
             "heat_state": "on",

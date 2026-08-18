@@ -1,8 +1,8 @@
 """Stage 5.5b output-integrity validation: calendar + canonical SI units.
 
 Validates the Q1 2020 run outputs against the canonical unit system:
-  1. Calendar: manifest has 90 days, day N -> start + (N-1) days, no dup/gap,
-     Feb 29 (leap 2020) present, day 90 = 2020-03-30 (model limit), all files exist.
+  1. Calendar: manifest has 90 integration days, day N -> start + N days, no dup/gap,
+     Feb 29 (leap 2020) present, day 90 = 2020-03-31 (model limit), all files exist.
   2. Canonical units: every NetCDF field carries the expected SI unit attribute
      (temperature/air_temp K, velocities/wind m s-1, tau Pa, dp Pa m-1,
      air_press Pa, density_anomaly kg m-3, salinity mass fraction 1, etc.)
@@ -66,19 +66,22 @@ def check_calendar(manifest: dict) -> list:
 
     for f in files:
         d = f["day"]
-        expected = (start + pd.Timedelta(days=d - 1)).date().isoformat()
+        # Model day d (1-indexed integration day) = start_date + d days
+        # because day_00 = initial state at start_date, day_01 = after 1 day, etc.
+        expected = (start + pd.Timedelta(days=d)).date().isoformat()
         if f["date"] != expected:
-            errors.append(f"day {d}: manifest date {f['date']} != expected {expected}")
+            errors.append(f"day {d}: manifest date {f['date']} != expected {expected} (model day {d} = start_date + {d} days)")
         if not pathlib.Path(f["file"]).exists():
             errors.append(f"day {d}: file missing {f['file']}")
 
-    # Leap-day awareness: verify the manifest dates match start+(day-1) using
+    # Leap-day awareness: verify the manifest dates match start+day using
     # calendar-aware arithmetic (handles Feb 29 automatically).
+    # Model integration day d = start_date + d days (day_00 = initial state).
     last = files[-1]
-    expected_last = (start + pd.Timedelta(days=len(files) - 1)).date().isoformat()
+    expected_last = (start + pd.Timedelta(days=len(files))).date().isoformat()
     if last["date"] != expected_last:
         errors.append(
-            f"day {last['day']} last date {last['date']} != expected {expected_last}"
+            f"day {last['day']} last date {last['date']} != expected {expected_last} (model day {last['day']} = start_date + {last['day']} days)"
         )
     return errors
 

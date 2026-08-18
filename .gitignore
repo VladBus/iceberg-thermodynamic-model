@@ -115,6 +115,8 @@ AGENTS.md
 opencode.jsonc
 promt.md
 docs/wiki/
+# Internal live TODO (kept locally, NOT tracked in Git)
+docs/wiki/ERA5_INTEGRATION_TODO.md
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs

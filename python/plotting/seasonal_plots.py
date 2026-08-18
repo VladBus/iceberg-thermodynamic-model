@@ -43,6 +43,7 @@ import xarray as xr
 import sys
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "analysis"))
 from units import temperature_k_to_c, velocity_mps_to_cmps, density_anomaly_kgm3_to_gcm3
+from run_context import resolve_run, add_run_args
 
 DEFAULT_GLOB = "data/output/results_day_[0-9][0-9].nc"
 DEFAULT_DIAG = "data/output/daily_diagnostics.csv"
@@ -104,7 +105,7 @@ def plot_surface_maps(day_file, outdir):
     ds.close()
 
 
-def plot_time_series_seasonal(seasonal_csv, outdir):
+def plot_time_series_seasonal(seasonal_csv, outdir, diag=None):
     """Plot all time series from seasonal daily summary."""
     df = pd.read_csv(seasonal_csv)
     df = df.sort_values("day")
@@ -140,7 +141,7 @@ def plot_time_series_seasonal(seasonal_csv, outdir):
     ax.grid(alpha=0.3)
     fig.tight_layout()
     fig.savefig(
-        pathlib.Path("python/plotting/figures/seasonal/temp_20m_time_series.png"),
+        outdir / "temp_20m_time_series.png",
         dpi=DPI,
     )
     plt.close()
@@ -154,7 +155,7 @@ def plot_time_series_seasonal(seasonal_csv, outdir):
     ax.grid(alpha=0.3)
     fig.tight_layout()
     fig.savefig(
-        pathlib.Path("python/plotting/figures/seasonal/temp_100m_time_series.png"),
+        outdir / "temp_100m_time_series.png",
         dpi=DPI,
     )
     plt.close()
@@ -168,7 +169,7 @@ def plot_time_series_seasonal(seasonal_csv, outdir):
     ax.grid(alpha=0.3)
     fig.tight_layout()
     fig.savefig(
-        pathlib.Path("python/plotting/figures/seasonal/salinity_time_series.png"),
+        outdir / "salinity_time_series.png",
         dpi=DPI,
     )
     plt.close()
@@ -182,7 +183,7 @@ def plot_time_series_seasonal(seasonal_csv, outdir):
     ax.grid(alpha=0.3)
     fig.tight_layout()
     fig.savefig(
-        pathlib.Path("python/plotting/figures/seasonal/density_time_series.png"),
+        outdir / "density_time_series.png",
         dpi=DPI,
     )
     plt.close()
@@ -196,7 +197,7 @@ def plot_time_series_seasonal(seasonal_csv, outdir):
     ax.grid(alpha=0.3)
     fig.tight_layout()
     fig.savefig(
-        pathlib.Path("python/plotting/figures/seasonal/u_max_time_series.png"), dpi=DPI
+        outdir / "u_max_time_series.png", dpi=DPI
     )
     plt.close()
 
@@ -209,7 +210,7 @@ def plot_time_series_seasonal(seasonal_csv, outdir):
     ax.grid(alpha=0.3)
     fig.tight_layout()
     fig.savefig(
-        pathlib.Path("python/plotting/figures/seasonal/v_max_time_series.png"), dpi=DPI
+        outdir / "v_max_time_series.png", dpi=DPI
     )
     plt.close()
 
@@ -222,7 +223,7 @@ def plot_time_series_seasonal(seasonal_csv, outdir):
     ax.grid(alpha=0.3)
     fig.tight_layout()
     fig.savefig(
-        pathlib.Path("python/plotting/figures/seasonal/w_max_time_series.png"), dpi=DPI
+        outdir / "w_max_time_series.png", dpi=DPI
     )
     plt.close()
 
@@ -235,7 +236,7 @@ def plot_time_series_seasonal(seasonal_csv, outdir):
     ax.grid(alpha=0.3)
     fig.tight_layout()
     fig.savefig(
-        pathlib.Path("python/plotting/figures/seasonal/euu_time_series.png"), dpi=DPI
+        outdir / "euu_time_series.png", dpi=DPI
     )
     plt.close()
 
@@ -249,14 +250,14 @@ def plot_time_series_seasonal(seasonal_csv, outdir):
     ax.grid(alpha=0.3)
     fig.tight_layout()
     fig.savefig(
-        pathlib.Path("python/plotting/figures/seasonal/snowfall_rate.png"), dpi=DPI
+        outdir / "snowfall_rate.png", dpi=DPI
     )
     plt.close()
 
     # Ice concentration - from diagnostics
     # Use daily diagnostics if available
-    diag_file = pathlib.Path("data/output/daily_diagnostics.csv")
-    if diag_file.exists():
+    diag_file = pathlib.Path(diag) if diag else None
+    if diag_file is not None and diag_file.exists():
         diag = pd.read_csv(diag_file)
         if "diag_ca_guard_hits" in diag.columns:
             fig, ax = plt.subplots(figsize=(10, 4))
@@ -270,7 +271,7 @@ def plot_time_series_seasonal(seasonal_csv, outdir):
             ax.legend()
             fig.tight_layout()
             fig.savefig(
-                pathlib.Path("python/plotting/figures/seasonal/convective_guard.png"),
+                outdir / "convective_guard.png",
                 dpi=DPI,
             )
             plt.close()
@@ -290,7 +291,7 @@ def plot_time_series_seasonal(seasonal_csv, outdir):
             ax.legend()
             fig.tight_layout()
             fig.savefig(
-                pathlib.Path("python/plotting/figures/seasonal/newton_iterations.png"),
+                outdir / "newton_iterations.png",
                 dpi=DPI,
             )
             plt.close()
@@ -361,15 +362,15 @@ def plot_vertical_profiles_seasonal(glob_pattern, outdir):
 
     fig.tight_layout()
     fig.savefig(
-        pathlib.Path("python/plotting/figures/seasonal/vertical_temp_profiles.png"),
+        outdir / "vertical_temp_profiles.png",
         dpi=DPI,
     )
     fig.savefig(
-        pathlib.Path("python/plotting/figures/seasonal/vertical_salinity_profiles.png"),
+        outdir / "vertical_salinity_profiles.png",
         dpi=DPI,
     )
     fig.savefig(
-        pathlib.Path("python/plotting/figures/seasonal/vertical_density_profiles.png"),
+        outdir / "vertical_density_profiles.png",
         dpi=DPI,
     )
     plt.close()
@@ -394,7 +395,7 @@ def plot_heat_fluxes(seasonal_csv, outdir):
     ax.legend()
     fig.tight_layout()
     fig.savefig(
-        pathlib.Path("python/plotting/figures/seasonal/heat_fluxes.png"), dpi=DPI
+        outdir / "heat_fluxes.png", dpi=DPI
     )
     plt.close()
 
@@ -433,7 +434,7 @@ def plot_vertical_temp_profiles_separate(glob_pattern, outdir):
     ax.legend()
     fig.tight_layout()
     fig.savefig(
-        pathlib.Path("python/plotting/figures/seasonal/vertical_temp_profiles.png"),
+        outdir / "vertical_temp_profiles.png",
         dpi=DPI,
     )
     plt.close()
@@ -473,7 +474,7 @@ def plot_vertical_salinity_profiles_separate(glob_pattern, outdir):
     ax.legend()
     fig.tight_layout()
     fig.savefig(
-        pathlib.Path("python/plotting/figures/seasonal/vertical_salinity_profiles.png"),
+        outdir / "vertical_salinity_profiles.png",
         dpi=DPI,
     )
     plt.close()
@@ -513,7 +514,7 @@ def plot_vertical_density_profiles_separate(glob_pattern, outdir):
     ax.legend()
     fig.tight_layout()
     fig.savefig(
-        pathlib.Path("python/plotting/figures/seasonal/vertical_density_profiles.png"),
+        outdir / "vertical_density_profiles.png",
         dpi=DPI,
     )
     plt.close()
@@ -521,12 +522,9 @@ def plot_vertical_density_profiles_separate(glob_pattern, outdir):
 
 def plot_heat_off_on_comparison(outdir):
     """Compare HEAT ON vs HEAT OFF if both available."""
-    # Check if we have both runs
-    on_files = glob.glob("data/output/results_day_[0-9][0-9].nc")
-    if not on_files:
-        return
     print(
-        "HEAT ON/OFF comparison: reference files not available for automated comparison"
+        "HEAT ON/OFF comparison: reference (HEAT OFF) run not available under the "
+        "run-based data architecture"
     )
     print("Manual comparison needed for HEAT ON vs HEAT OFF")
 
@@ -536,55 +534,69 @@ def main():
     parser = argparse.ArgumentParser(
         description="Plot seasonal figures from multi-month ERA5 + HEAT integration."
     )
+    add_run_args(parser, default_run_id="2020_Q1_test_heat_on")
     parser.add_argument(
         "--glob",
-        default="data/output/results_day_[0-9][0-9].nc",
-        help="Daily NetCDF glob",
+        default=None,
+        help="Daily NetCDF glob (default: run nc dir)",
     )
     parser.add_argument(
         "--diag",
-        default="data/output/daily_diagnostics.csv",
-        help="Daily diagnostics CSV",
+        default=None,
+        help="Daily diagnostics CSV (default: run csv dir)",
     )
     parser.add_argument(
         "--seasonal",
-        default="data/output/seasonal_daily_summary.csv",
-        help="Seasonal daily summary CSV",
+        default=None,
+        help="Seasonal daily summary CSV (default: run csv dir)",
     )
     parser.add_argument(
         "--outdir",
-        default="python/plotting/figures/seasonal",
-        help="Output directory for PNGs",
+        default=None,
+        help="Output directory for PNGs (default: run figures dir)",
     )
     args = parser.parse_args()
 
-    outdir = pathlib.Path(args.outdir)
+    try:
+        ctx = resolve_run(run_id=args.run_id, manifest=args.manifest)
+    except Exception as e:
+        print(f"ERROR: Failed to resolve run: {e}")
+        return 1
+
+    # Resolve paths from the run context; still allow explicit --* overrides.
+    nc_files = sorted(str(p) for p in ctx.nc_dir.glob("results_day_[0-9][0-9].nc"))
+    if not nc_files:
+        print(f"WARNING: no daily NetCDF files in {ctx.nc_dir}")
+    nc_glob = args.glob or str(ctx.nc_dir / "results_day_[0-9][0-9].nc")
+    diag = str(args.diag) if args.diag else str(ctx.daily_diagnostics)
+    seasonal = str(args.seasonal) if args.seasonal else str(ctx.csv_dir / "seasonal_daily_summary.csv")
+    outdir = pathlib.Path(args.outdir) if args.outdir else ctx.fig_dir
     outdir.mkdir(parents=True, exist_ok=True)
 
-    seasonal_csv = pathlib.Path(args.seasonal)
+    seasonal_csv = pathlib.Path(seasonal)
     if seasonal_csv.exists():
         print("Generating seasonal time series plots...")
-        plot_time_series_seasonal(args.seasonal, outdir)
+        plot_time_series_seasonal(seasonal, outdir, diag=diag)
     else:
-        print(f"WARNING: {args.seasonal} not found; skipping time-series plots")
+        print(f"WARNING: {seasonal} not found; skipping time-series plots")
 
     print("Generating vertical profile plots...")
-    plot_vertical_profiles_seasonal(args.glob, outdir)
-    plot_vertical_temp_profiles_separate(args.glob, outdir)
-    plot_vertical_salinity_profiles_separate(args.glob, outdir)
-    plot_vertical_density_profiles_separate(args.glob, outdir)
+    plot_vertical_profiles_seasonal(nc_glob, outdir)
+    plot_vertical_temp_profiles_separate(nc_glob, outdir)
+    plot_vertical_salinity_profiles_separate(nc_glob, outdir)
+    plot_vertical_density_profiles_separate(nc_glob, outdir)
 
     print("Generating heat flux indicators...")
-    plot_heat_fluxes(args.seasonal, outdir)
+    plot_heat_fluxes(seasonal, outdir)
 
     print("Generating surface maps from last day...")
-    files = sorted(glob.glob(args.glob))
+    files = sorted(glob.glob(nc_glob))
     if files:
-        plot_surface_maps(files[-1], pathlib.Path(args.outdir))
+        plot_surface_maps(files[-1], outdir)
 
     plot_heat_off_on_comparison(outdir)
 
-    produced = sorted(pathlib.Path(args.outdir).glob("*.png"))
+    produced = sorted(outdir.glob("*.png"))
     print(f"\nFigures written to {outdir}:")
     for p in produced:
         print(f"  {p.name}")

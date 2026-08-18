@@ -31,6 +31,7 @@ import pandas as pd
 import xarray as xr
 
 from units import temperature_k_to_c, density_anomaly_kgm3_to_gcm3
+from run_context import resolve_run, add_run_args
 
 F32 = np.float32
 U23 = F32(2.0**-23)
@@ -234,11 +235,23 @@ def guard_event_rows(events_csv, prof_glob):
 def main():
     """Run the full EOS precision diagnostic and write summary + report."""
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--events", default=DEFAULT_EVENTS)
-    parser.add_argument("--profiles", default=DEFAULT_PROF)
-    parser.add_argument("--out-csv", default=DEFAULT_OUT_CSV)
-    parser.add_argument("--out-txt", default=DEFAULT_OUT_TXT)
+    add_run_args(parser, default_run_id="2020_Q1_test_heat_on")
+    parser.add_argument("--events", default=None)
+    parser.add_argument("--profiles", default=None)
+    parser.add_argument("--out-csv", default=None)
+    parser.add_argument("--out-txt", default=None)
     args = parser.parse_args()
+
+    try:
+        ctx = resolve_run(run_id=args.run_id, manifest=args.manifest)
+    except Exception as e:
+        print(f"ERROR: Failed to resolve run: {e}")
+        return 1
+
+    events_path = str(args.events) if args.events else str(ctx.csv_dir / "convective_guard_events.csv")
+    prof_glob = str(args.profiles) if args.profiles else str(ctx.nc_dir / "results_day_[0-9][0-9].nc")
+    out_csv = str(args.out_csv) if args.out_csv else str(ctx.csv_dir / "eos_precision_summary.csv")
+    out_txt = str(args.out_txt) if args.out_txt else str(ctx.txt_dir / "eos_precision_report.txt")
 
     lines = []
 
@@ -312,7 +325,7 @@ def main():
 
     p()
     p("7. PRODUCTION GUARD EVENTS (from CSV + daily NetCDF)")
-    ev_rows = guard_event_rows(args.events, args.profiles)
+    ev_rows = guard_event_rows(events_path, prof_glob)
     if ev_rows:
         df = pd.DataFrame(ev_rows)
         p(f"  events reconstructed: {len(df)}")
@@ -363,14 +376,14 @@ def main():
     summary["grid"] = g
     summary["random"] = r
 
-    pathlib.Path(args.out_csv).parent.mkdir(parents=True, exist_ok=True)
-    summary.to_csv(args.out_csv, index=False)
-    with open(args.out_txt, "w", encoding="utf-8") as f:
+    pathlib.Path(out_csv).parent.mkdir(parents=True, exist_ok=True)
+    summary.to_csv(out_csv, index=False)
+    with open(out_txt, "w", encoding="utf-8") as f:
         f.write("\n".join(lines) + "\n")
 
     print("\n".join(lines))
-    print(f"\nSummary written to {args.out_csv}")
-    print(f"Report written to {args.out_txt}")
+    print(f"\nSummary written to {out_csv}")
+    print(f"Report written to {out_txt}")
 
 
 if __name__ == "__main__":

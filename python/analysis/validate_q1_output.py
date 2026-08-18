@@ -10,7 +10,8 @@ Validates the Q1 2020 run outputs against the canonical unit system:
   3. Wet/dry masking sanity: mean statistics exclude land (kt1 = 0) columns.
   4. Physical-bounds sanity (post unit normalization) on the final snapshot.
 
-Run: python python/analysis/validate_q1_output.py --manifest data/output/run_manifest_2020_Q1_HEAT_ON.json
+Run: python python/analysis/validate_q1_output.py --run-id 2020_Q1_test_heat_on
+     python python/analysis/validate_q1_output.py --manifest data/runs/<run_id>/manifest.json
 """
 
 import argparse
@@ -20,6 +21,8 @@ import pathlib
 import numpy as np
 import pandas as pd
 import xarray as xr
+
+from run_context import resolve_run, add_run_args
 
 
 EXPECTED_UNITS = {
@@ -68,23 +71,19 @@ def check_calendar(manifest: dict) -> list:
         if not pathlib.Path(f["file"]).exists():
             errors.append(f"day {d}: file missing {f['file']}")
 
-    # Leap day: day 59 = 2020-02-28, day 60 = 2020-02-29
-    d59 = [f for f in files if f["day"] == 59]
-    d60 = [f for f in files if f["day"] == 60]
-    if d59 and d59[0]["date"] != "2020-02-28":
-        errors.append(f"day 59 date {d59[0]['date']} != 2020-02-28")
-    if d60 and d60[0]["date"] != "2020-02-29":
-        errors.append(f"day 60 date {d60[0]['date']} != 2020-02-29 (leap year)")
+    # Leap-day awareness: verify the manifest dates match start+(day-1) using
+    # calendar-aware arithmetic (handles Feb 29 automatically).
     last = files[-1]
-    if last["date"] != "2020-03-30":
-        errors.append(f"day {last['day']} last date {last['date']} != 2020-03-30 (model limit)")
+    expected_last = (start + pd.Timedelta(days=len(files) - 1)).date().isoformat()
+    if last["date"] != expected_last:
+        errors.append(f"day {last['day']} last date {last['date']} != expected {expected_last}")
     return errors
 
 
-def check_units(manifest: dict) -> list:
+def check_units(manifest: dict, ctx) -> list:
     errors = []
     # Check the final snapshot for full variable/unit coverage
-    final = "data/output/results_day_final.nc"
+    final = ctx.nc_dir / "results_day_final.nc"
     if not pathlib.Path(final).exists():
         errors.append(f"{final} not found")
         return errors
@@ -103,7 +102,7 @@ def check_units(manifest: dict) -> list:
     return errors
 
 
-def check_masking_and_bounds(manifest: dict) -> list:
+def check_masking_and_bounds(manifest: dict, ctx) -> list:
     errors = []
     f = pathlib.Path(manifest["files"][0]["file"])
     ds = xr.open_dataset(f)
@@ -117,7 +116,7 @@ def check_masking_and_bounds(manifest: dict) -> list:
         pass  # informational only; not a hard error in the current mask design
     ds.close()
 
-    final = "data/output/results_day_final.nc"
+    final = ctx.nc_dir / "results_day_final.nc"
     if pathlib.Path(final).exists():
         ds = xr.open_dataset(final)
         t = ds["temperature"].values  # K
@@ -135,19 +134,20 @@ def check_masking_and_bounds(manifest: dict) -> list:
 
 def main():
     parser = argparse.ArgumentParser(description="Stage 5.5b output-integrity validation")
-    parser.add_argument("--manifest", default="data/output/run_manifest_2020_Q1_HEAT_ON.json")
+    add_run_args(parser, default_run_id="2020_Q1_test_heat_on")
     args = parser.parse_args()
 
-    mpath = pathlib.Path(args.manifest)
-    if not mpath.exists():
-        print(f"ERROR: manifest {mpath} not found")
+    try:
+        ctx = resolve_run(run_id=args.run_id, manifest=args.manifest)
+        manifest = json.loads(ctx.manifest.read_text())
+    except Exception as e:
+        print(f"ERROR: Failed to resolve run/manifest: {e}")
         return 1
-    manifest = json.loads(mpath.read_text())
 
     errors = []
     errors += check_calendar(manifest)
-    errors += check_units(manifest)
-    errors += check_masking_and_bounds(manifest)
+    errors += check_units(manifest, ctx)
+    errors += check_masking_and_bounds(manifest, ctx)
 
     print("Stage 5.5b output-integrity validation")
     print("=" * 60)

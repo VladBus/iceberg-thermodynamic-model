@@ -35,6 +35,7 @@ import pandas as pd
 import xarray as xr
 
 from units import temperature_k_to_c, density_anomaly_kgm3_to_gcm3
+from run_context import resolve_run, add_run_args
 
 DEFAULT_EVENTS = "data/output/convective_guard_events.csv"
 DEFAULT_DAILY = "data/output/daily_diagnostics.csv"
@@ -137,15 +138,28 @@ def main():
     parser = argparse.ArgumentParser(
         description="Stage 4.3 convective-adjustment guard cycling analysis."
     )
-    parser.add_argument("--events", default=DEFAULT_EVENTS)
-    parser.add_argument("--daily", default=DEFAULT_DAILY)
-    parser.add_argument("--profiles", default=DEFAULT_PROF)
-    parser.add_argument("--out-csv", default=DEFAULT_OUT_CSV)
-    parser.add_argument("--out-txt", default=DEFAULT_OUT_TXT)
+    add_run_args(parser, default_run_id="2020_Q1_test_heat_on")
+    parser.add_argument("--events", default=None)
+    parser.add_argument("--daily", default=None)
+    parser.add_argument("--profiles", default=None)
+    parser.add_argument("--out-csv", default=None)
+    parser.add_argument("--out-txt", default=None)
     args = parser.parse_args()
 
-    events = pd.read_csv(args.events)
-    daily = pd.read_csv(args.daily)
+    try:
+        ctx = resolve_run(run_id=args.run_id, manifest=args.manifest)
+    except Exception as e:
+        print(f"ERROR: Failed to resolve run: {e}")
+        return 1
+
+    events_path = str(args.events) if args.events else str(ctx.csv_dir / "convective_guard_events.csv")
+    daily_path = str(args.daily) if args.daily else str(ctx.daily_diagnostics)
+    prof_glob = str(args.profiles) if args.profiles else str(ctx.nc_dir / "results_day_[0-9][0-9].nc")
+    out_csv = str(args.out_csv) if args.out_csv else str(ctx.csv_dir / "convective_analysis.csv")
+    out_txt = str(args.out_txt) if args.out_txt else str(ctx.txt_dir / "convective_analysis.txt")
+
+    events = pd.read_csv(events_path)
+    daily = pd.read_csv(daily_path)
 
     lines = []
 
@@ -207,13 +221,13 @@ def main():
     p("-" * 40)
     rows = []
     for d in REPR_DAYS:
-        r = representative_day_rows(d, events, args.profiles)
+        r = representative_day_rows(d, events, prof_glob)
         if r is not None:
             rows.append(r)
     df = pd.DataFrame(rows)
     if len(df):
-        df.to_csv(args.out_csv, index=False)
-        p(f"  See {args.out_csv} ({len(df)} rows)")
+        df.to_csv(out_csv, index=False)
+        p(f"  See {out_csv} ({len(df)} rows)")
         p()
         cols = [
             "day",
@@ -255,11 +269,11 @@ def main():
     p()
     p("  NOTE: correlation != causation; 30 points, no significance test.")
 
-    with open(args.out_txt, "w", encoding="utf-8") as f:
+    with open(out_txt, "w", encoding="utf-8") as f:
         f.write("\n".join(lines) + "\n")
 
     print("\n".join(lines))
-    print(f"\nReport written to {args.out_txt}")
+    print(f"\nReport written to {out_txt}")
     return 0
 
 

@@ -2,10 +2,10 @@
 """Seasonal analysis of multi-month ERA5 + HEAT integration.
 
 Reads daily NetCDF files and daily_diagnostics.csv using a run manifest
-to produce validated seasonal outputs:
-- data/output/seasonal_daily_summary.csv
-- data/output/seasonal_monthly_summary.csv
-- data/output/seasonal_report.txt
+to produce validated seasonal outputs inside the run directory:
+- data/runs/<run_id>/output/csv/seasonal_daily_summary.csv
+- data/runs/<run_id>/output/csv/seasonal_monthly_summary.csv
+- data/runs/<run_id>/output/txt/seasonal_report.txt
 """
 
 import argparse
@@ -20,6 +20,7 @@ import xarray as xr
 
 from units import (temperature_k_to_c, velocity_mps_to_cmps,
                    density_anomaly_kgm3_to_gcm3)
+from run_context import resolve_run, add_run_args
 
 
 def load_manifest(manifest_path: pathlib.Path) -> dict:
@@ -51,7 +52,8 @@ def load_manifest(manifest_path: pathlib.Path) -> dict:
     return manifest
 
 
-def analyze_seasonal(manifest: dict, diag_csv: pathlib.Path, 
+def analyze_seasonal(manifest: dict, manifest_path: pathlib.Path,
+                     diag_csv: pathlib.Path, 
                      output_daily_csv: pathlib.Path, 
                      output_monthly_csv: pathlib.Path, 
                      output_txt: pathlib.Path) -> int:
@@ -308,8 +310,8 @@ def analyze_seasonal(manifest: dict, diag_csv: pathlib.Path,
         f.write("=" * 80 + "\n\n")
 
         f.write(f"Analyzed {len(seasonal_df)} daily NetCDF files\n")
-        f.write(f"Source directory: data/output\n")
-        f.write(f"Manifest: data/output/run_manifest_2020_Q1_HEAT_ON.json\n\n")
+        f.write(f"Source directory: {pathlib.Path(manifest['base_dir'])}\n")
+        f.write(f"Manifest: {manifest_path}\n\n")
 
         f.write("-" * 80 + "\n")
         f.write("SEASONAL SUMMARY STATISTICS\n")
@@ -389,20 +391,26 @@ def analyze_seasonal(manifest: dict, diag_csv: pathlib.Path,
 
 def main():
     parser = argparse.ArgumentParser(description="Analyze seasonal ERA5 + HEAT integration diagnostics")
-    parser.add_argument("--manifest", default="data/output/run_manifest_2020_Q1_HEAT_ON.json", help="Run manifest JSON")
-    parser.add_argument("--diag-csv", default="data/output/daily_diagnostics.csv", help="Daily diagnostics CSV")
-    parser.add_argument("--output-daily-csv", default="data/output/seasonal_daily_summary.csv", help="Output daily CSV")
-    parser.add_argument("--output-monthly-csv", default="data/output/seasonal_monthly_summary.csv", help="Output monthly CSV")
-    parser.add_argument("--output-txt", default="data/output/seasonal_report.txt", help="Output report TXT")
+    add_run_args(parser, default_run_id="2020_Q1_test_heat_on")
+    parser.add_argument("--diag-csv", default=None, help="Daily diagnostics CSV (default: run csv dir)")
+    parser.add_argument("--output-daily-csv", default=None, help="Output daily CSV (default: run csv dir)")
+    parser.add_argument("--output-monthly-csv", default=None, help="Output monthly CSV (default: run csv dir)")
+    parser.add_argument("--output-txt", default=None, help="Output report TXT (default: run txt dir)")
     args = parser.parse_args()
 
     try:
-        manifest = load_manifest(pathlib.Path(args.manifest))
+        ctx = resolve_run(run_id=args.run_id, manifest=args.manifest)
+        manifest = load_manifest(ctx.manifest)
     except Exception as e:
-        print(f"ERROR: Failed to load manifest: {e}")
+        print(f"ERROR: Failed to resolve/load run: {e}")
         return 1
 
-    return analyze_seasonal(manifest, args.diag_csv, args.output_daily_csv, args.output_monthly_csv, args.output_txt)
+    diag_csv = pathlib.Path(args.diag_csv) if args.diag_csv else ctx.daily_diagnostics
+    out_daily = pathlib.Path(args.output_daily_csv) if args.output_daily_csv else ctx.csv_dir / "seasonal_daily_summary.csv"
+    out_monthly = pathlib.Path(args.output_monthly_csv) if args.output_monthly_csv else ctx.csv_dir / "seasonal_monthly_summary.csv"
+    out_txt = pathlib.Path(args.output_txt) if args.output_txt else ctx.txt_dir / "seasonal_report.txt"
+
+    return analyze_seasonal(manifest, ctx.manifest, diag_csv, out_daily, out_monthly, out_txt)
 
 
 if __name__ == "__main__":

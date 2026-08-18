@@ -24,6 +24,7 @@ import xarray as xr  # pylint: disable=wrong-import-position
 import sys
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "analysis"))
 from units import temperature_k_to_c, density_anomaly_kgm3_to_gcm3
+from run_context import resolve_run, add_run_args
 
 DEFAULT_EVENTS = "data/output/convective_guard_events.csv"
 DEFAULT_DIAG = "data/output/daily_diagnostics.csv"
@@ -173,23 +174,33 @@ def main():
     parser = argparse.ArgumentParser(
         description="Stage 4.3 convective guard-cycling diagnostic figures."
     )
-    parser.add_argument("--events", default=DEFAULT_EVENTS)
-    parser.add_argument("--daily", default=DEFAULT_DIAG)
-    parser.add_argument("--profiles", default=DEFAULT_PROF)
-    parser.add_argument("--outdir", default=DEFAULT_OUTDIR)
+    add_run_args(parser, default_run_id="2020_Q1_test_heat_on")
+    parser.add_argument("--events", default=None)
+    parser.add_argument("--daily", default=None)
+    parser.add_argument("--profiles", default=None)
+    parser.add_argument("--outdir", default=None)
     args = parser.parse_args()
 
-    outdir = pathlib.Path(args.outdir)
+    try:
+        ctx = resolve_run(run_id=args.run_id, manifest=args.manifest)
+    except Exception as e:
+        print(f"ERROR: Failed to resolve run: {e}")
+        return 1
+
+    events_path = str(args.events) if args.events else str(ctx.csv_dir / "convective_guard_events.csv")
+    daily_path = str(args.daily) if args.daily else str(ctx.daily_diagnostics)
+    prof_glob = str(args.profiles) if args.profiles else str(ctx.nc_dir / "results_day_[0-9][0-9].nc")
+    outdir = pathlib.Path(args.outdir) if args.outdir else ctx.fig_dir
     outdir.mkdir(parents=True, exist_ok=True)
 
-    events = pd.read_csv(args.events)
-    daily = pd.read_csv(args.daily)
+    events = pd.read_csv(events_path)
+    daily = pd.read_csv(daily_path)
 
     plot_guard_hits_evolution(daily, outdir)
     plot_guard_nmix_kproblem(events, outdir)
     plot_guard_vs_scalars(daily, outdir)
     plot_residual_inversion(events, outdir)
-    plot_representative_profiles(events, args.profiles, outdir)
+    plot_representative_profiles(events, prof_glob, outdir)
 
     print(f"Convective figures written to {outdir}")
     return 0

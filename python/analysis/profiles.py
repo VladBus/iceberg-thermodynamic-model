@@ -23,24 +23,21 @@ import pandas as pd
 import xarray as xr
 
 from units import temperature_k_to_c, velocity_mps_to_cmps, density_anomaly_kgm3_to_gcm3
+from run_context import resolve_run, add_run_args
 
-DEFAULT_MANIFEST = "data/output/run_manifest_2020_Q1_HEAT_ON.json"
-DEFAULT_OUT = "data/output/vertical_profiles.csv"
+DEFAULT_OUT = "vertical_profiles.csv"
 
 
 def load_manifest(manifest_path):
-    """Load the run manifest (files + days), or fall back to legacy glob."""
+    """Load the run manifest (files + days)."""
     p = pathlib.Path(manifest_path)
-    if p.exists():
-        manifest = json.loads(p.read_text())
-        files = [pathlib.Path(f["file"]) for f in manifest.get("files", [])]
-        if files:
-            return files
-    # Legacy fallback (no manifest): exclude day_00 / final explicitly.
-    import glob
-    return [pathlib.Path(f) for f in sorted(
-        glob.glob("data/output/results_day_[0-9][0-9].nc"))
-        if not f.endswith("_00.nc")]
+    if not p.exists():
+        raise FileNotFoundError(f"manifest not found: {p}")
+    manifest = json.loads(p.read_text())
+    files = [pathlib.Path(f["file"]) for f in manifest.get("files", [])]
+    if not files:
+        raise ValueError(f"manifest has no files: {p}")
+    return files
 
 
 def daily_profile(path):
@@ -82,16 +79,18 @@ def main():
     parser = argparse.ArgumentParser(
         description="Compute horizontal-mean vertical profiles from daily snapshots."
     )
-    parser.add_argument(
-        "--manifest", default=DEFAULT_MANIFEST, help="Run manifest JSON (preferred)"
-    )
-    parser.add_argument("--out", default=DEFAULT_OUT, help="Output CSV path")
+    add_run_args(parser, default_run_id="2020_Q1_test_heat_on")
+    parser.add_argument("--out", default=None, help="Output CSV path (default: run csv dir)")
     args = parser.parse_args()
 
-    files = load_manifest(args.manifest)
-    if not files:
-        print(f"ERROR: no files in {args.manifest} (or matching legacy glob). Run the Fortran model first.")
+    try:
+        ctx = resolve_run(run_id=args.run_id, manifest=args.manifest)
+        files = load_manifest(ctx.manifest)
+    except Exception as e:
+        print(f"ERROR: Failed to resolve run/manifest: {e}")
         return 1
+
+    out = pathlib.Path(args.out) if args.out else ctx.csv_dir / DEFAULT_OUT
 
     all_rows = []
     for f in files:
@@ -99,10 +98,10 @@ def main():
 
     df = pd.DataFrame(all_rows)
     df = df.sort_values(["day", "depth_m"]).reset_index(drop=True)
-    df.to_csv(args.out, index=False)
+    df.to_csv(out, index=False)
 
     print(
-        f"Vertical profiles written to {args.out} ({len(df)} rows, {df['day'].nunique()} days)"
+        f"Vertical profiles written to {out} ({len(df)} rows, {df['day'].nunique()} days)"
     )
     print("\nSample (day 1):")
     print(df[df["day"] == df["day"].min()].head(6).to_string(index=False))

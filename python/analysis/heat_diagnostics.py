@@ -16,6 +16,7 @@ import pandas as pd
 import xarray as xr
 
 from units import temperature_k_to_c, density_anomaly_kgm3_to_gcm3
+from run_context import resolve_run, add_run_args
 
 
 def analyze_heat_diagnostics(nc_dir, diag_csv, output_csv, output_txt):
@@ -307,19 +308,20 @@ def main():
     parser = argparse.ArgumentParser(
         description="Analyze HEAT thermodynamics diagnostics"
     )
+    add_run_args(parser, default_run_id="2020_Q1_test_heat_on")
     parser.add_argument(
-        "--nc-dir", default="data/output", help="Directory with results_day_*.nc files"
+        "--nc-dir", default=None, help="Directory with results_day_*.nc files (default: run nc dir)"
     )
     parser.add_argument(
         "--diag-csv",
-        default="data/output/daily_diagnostics.csv",
-        help="Daily diagnostics CSV",
+        default=None,
+        help="Daily diagnostics CSV (default: run csv dir)",
     )
     parser.add_argument(
-        "--output-csv", default="data/output/daily_heat_summary.csv", help="Output CSV"
+        "--output-csv", default=None, help="Output CSV (default: run csv dir)"
     )
     parser.add_argument(
-        "--output-txt", default="data/output/heat_report.txt", help="Output report TXT"
+        "--output-txt", default=None, help="Output report TXT (default: run txt dir)"
     )
     parser.add_argument(
         "--compare-on-off",
@@ -329,12 +331,21 @@ def main():
 
     args = parser.parse_args()
 
+    try:
+        ctx = resolve_run(run_id=args.run_id, manifest=args.manifest)
+    except Exception as e:
+        print(f"ERROR: Failed to resolve run: {e}")
+        return 1
+
+    nc_dir = str(args.nc_dir) if args.nc_dir else str(ctx.nc_dir)
+    diag_csv = str(args.diag_csv) if args.diag_csv else str(ctx.daily_diagnostics)
+    out_csv = str(args.output_csv) if args.output_csv else str(ctx.csv_dir / "daily_heat_summary.csv")
+    out_txt = str(args.output_txt) if args.output_txt else str(ctx.txt_dir / "heat_report.txt")
+
     if args.compare_on_off:
-        compare_heat_on_off(args.nc_dir, args.nc_dir, args.output_csv, args.output_txt)
+        compare_heat_on_off(nc_dir, nc_dir, out_csv, out_txt)
     else:
-        return analyze_heat_diagnostics(
-            args.nc_dir, args.diag_csv, args.output_csv, args.output_txt
-        )
+        return analyze_heat_diagnostics(nc_dir, diag_csv, out_csv, out_txt)
 
 
 if __name__ == "__main__":

@@ -26,10 +26,7 @@ import xarray as xr  # pylint: disable=wrong-import-position
 import sys
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "analysis"))
 from units import temperature_k_to_c, velocity_mps_to_cmps
-
-DEFAULT_GLOB = "data/output/results_day_[0-9][0-9].nc"
-DEFAULT_DIAG = "data/output/daily_diagnostics.csv"
-DEFAULT_OUTDIR = "python/plotting/figures"
+from run_context import resolve_run, add_run_args
 
 DPI = 150
 
@@ -159,22 +156,31 @@ def main():
     parser = argparse.ArgumentParser(
         description="Plot standardized figures from model output."
     )
-    parser.add_argument("--glob", default=DEFAULT_GLOB, help="Daily NetCDF glob")
-    parser.add_argument("--diag", default=DEFAULT_DIAG, help="Daily diagnostics CSV")
+    add_run_args(parser, default_run_id="2020_Q1_test_heat_on")
+    parser.add_argument("--glob", default=None, help="Daily NetCDF glob (default: run nc dir)")
+    parser.add_argument("--diag", default=None, help="Daily diagnostics CSV (default: run csv dir)")
     parser.add_argument(
-        "--outdir", default=DEFAULT_OUTDIR, help="Output directory for PNGs"
+        "--outdir", default=None, help="Output directory for PNGs (default: run figures dir)"
     )
     parser.add_argument(
         "--day", type=int, default=None, help="Day to plot surface maps (default: last)"
     )
     args = parser.parse_args()
 
-    outdir = pathlib.Path(args.outdir)
+    try:
+        ctx = resolve_run(run_id=args.run_id, manifest=args.manifest)
+    except Exception as e:
+        print(f"ERROR: Failed to resolve run: {e}")
+        return 1
+
+    nc_glob = str(args.glob) if args.glob else str(ctx.nc_dir / "results_day_[0-9][0-9].nc")
+    diag = str(args.diag) if args.diag else str(ctx.daily_diagnostics)
+    outdir = pathlib.Path(args.outdir) if args.outdir else ctx.fig_dir
     outdir.mkdir(parents=True, exist_ok=True)
 
-    files = sorted(glob.glob(args.glob))
+    files = sorted(glob.glob(nc_glob))
     if not files:
-        print(f"WARNING: no daily NetCDF files match {args.glob}")
+        print(f"WARNING: no daily NetCDF files match {nc_glob}")
     else:
         day_file = files[-1]
         if args.day is not None:
@@ -186,13 +192,13 @@ def main():
         print("Surface maps from:", day_file)
         plot_surface_maps(day_file, outdir)
 
-    diag = pathlib.Path(args.diag)
-    if diag.exists():
-        plot_daily_series(str(diag), outdir)
+    diag_path = pathlib.Path(diag)
+    if diag_path.exists():
+        plot_daily_series(str(diag_path), outdir)
     else:
-        print(f"WARNING: {diag} not found; skipping time-series plots")
+        print(f"WARNING: {diag_path} not found; skipping time-series plots")
 
-    plot_vertical_profiles(args.glob, outdir)
+    plot_vertical_profiles(nc_glob, outdir)
 
     produced = sorted(outdir.glob("*.png"))
     print(f"Figures written to {outdir}:")

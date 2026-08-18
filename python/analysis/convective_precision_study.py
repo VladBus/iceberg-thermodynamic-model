@@ -41,6 +41,7 @@ import pandas as pd
 import xarray as xr
 
 from units import temperature_k_to_c, density_anomaly_kgm3_to_gcm3
+from run_context import resolve_run, add_run_args
 
 F32 = np.float32
 U23 = F32(2.0**-23)
@@ -255,9 +256,9 @@ def experiment_d_stats():
     }
 
 
-def baseline_stats():
+def baseline_stats(baseline_csv=DEFAULT_BASELINE_CSV):
     """Baseline Experiment A: 30-day January 2020 ERA5 run."""
-    df = load_daily_diagnostics(DEFAULT_BASELINE_CSV)
+    df = load_daily_diagnostics(baseline_csv)
     if df is None:
         # Return known reference values from the run that just completed
         return {
@@ -312,28 +313,41 @@ def baseline_stats():
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    add_run_args(parser, default_run_id="2020_Q1_test_heat_on")
     parser.add_argument(
         "--baseline-csv",
-        default=DEFAULT_BASELINE_CSV,
+        default=None,
         help="Path to daily_diagnostics.csv from baseline run",
     )
     parser.add_argument(
         "--events-csv",
-        default=DEFAULT_EVENTS_CSV,
+        default=None,
         help="Path to convective_guard_events.csv",
     )
     parser.add_argument(
         "--profiles-glob",
-        default=DEFAULT_PROFILES_GLOB,
+        default=None,
         help="Glob pattern for daily NetCDF profiles",
     )
     parser.add_argument(
-        "--output-csv", default=OUTPUT_CSV, help="Output precision study CSV"
+        "--output-csv", default=None, help="Output precision study CSV"
     )
     parser.add_argument(
-        "--output-txt", default=OUTPUT_TXT, help="Output precision study TXT report"
+        "--output-txt", default=None, help="Output precision study TXT report"
     )
     args = parser.parse_args()
+
+    try:
+        ctx = resolve_run(run_id=args.run_id, manifest=args.manifest)
+    except Exception as e:
+        print(f"ERROR: Failed to resolve run: {e}")
+        return 1
+
+    baseline = str(args.baseline_csv) if args.baseline_csv else str(ctx.daily_diagnostics)
+    events = str(args.events_csv) if args.events_csv else str(ctx.csv_dir / "convective_guard_events.csv")
+    profiles = str(args.profiles_glob) if args.profiles_glob else str(ctx.nc_dir / "results_day_[0-9][0-9].nc")
+    out_csv = str(args.output_csv) if args.output_csv else str(ctx.csv_dir / "precision_study.csv")
+    out_txt = str(args.output_txt) if args.output_txt else str(ctx.txt_dir / "precision_study.txt")
 
     lines = []
 
@@ -347,7 +361,7 @@ def main():
 
     p("1. EXPERIMENT A: BASELINE (production 30-day January 2020 ERA5, TEST grid)")
     p("-" * 70)
-    b = baseline_stats()
+    b = baseline_stats(baseline)
     for k, v in sorted(b.items()):
         p(f"  {k}: {v}")
     p()
@@ -455,12 +469,12 @@ def main():
 
     p("8. SUMMARY CSV & REPORT")
     p("-" * 70)
-    p(f"  CSV: {pathlib.Path(args.output_csv).name}")
-    p(f"  TXT: {pathlib.Path(args.output_txt).name}")
+    p(f"  CSV: {pathlib.Path(out_csv).name}")
+    p(f"  TXT: {pathlib.Path(out_txt).name}")
 
     # Write CSV
     rows = [
-        baseline_stats(),
+        baseline_stats(baseline),
         experiment_b_stats(),
         experiment_c_stats("0.9e-7"),
         experiment_c_stats("1.0e-7"),
@@ -471,17 +485,17 @@ def main():
         experiment_d_stats(),
     ]
     df = pd.DataFrame(rows)
-    df.to_csv(args.output_csv, index=False)
-    p(f"  Written: {args.output_csv}")
+    df.to_csv(out_csv, index=False)
+    p(f"  Written: {out_csv}")
 
     # Write TXT report
-    with open(args.output_txt, "w", encoding="utf-8") as f:
+    with open(out_txt, "w", encoding="utf-8") as f:
         f.write("\n".join(lines) + "\n")
-    p(f"  Written: {args.output_txt}")
+    p(f"  Written: {out_txt}")
 
     print("\n".join(lines))
-    print(f"\nCSV written to {args.output_csv}")
-    print(f"Report written to {args.output_txt}")
+    print(f"\nCSV written to {out_csv}")
+    print(f"Report written to {out_txt}")
 
 
 if __name__ == "__main__":

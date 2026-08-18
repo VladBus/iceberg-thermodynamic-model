@@ -8,6 +8,16 @@ ERA5 snowfall (variable 'sf') is an accumulated forecast variable:
 
 This script merges snowfall into the instantaneous variables NetCDF file,
 interpolating to the model's 6-hourly time steps.
+
+Usage (Stage 6.2 run-based data layout):
+
+    python python/era5/merge_snowfall.py \
+        data/input/raw/era5/2020/2020_01/era5_2020_01.nc \
+        data/input/raw/era5/2020/2020_01/snowfall_2020_01.nc \
+        data/input/processed/era5/2020/2020_01/era5_2020_01_merged.nc
+
+The Fortran reader expects the merged snowfall variable named ``sf`` (units
+m s-1) in the output file.
 """
 
 import argparse

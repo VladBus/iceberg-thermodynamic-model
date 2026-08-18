@@ -310,7 +310,9 @@ def main():
     )
     add_run_args(parser, default_run_id="2020_Q1_test_heat_on")
     parser.add_argument(
-        "--nc-dir", default=None, help="Directory with results_day_*.nc files (default: run nc dir)"
+        "--nc-dir",
+        default=None,
+        help="Directory with results_day_*.nc files (default: run nc dir)",
     )
     parser.add_argument(
         "--diag-csv",
@@ -339,8 +341,16 @@ def main():
 
     nc_dir = str(args.nc_dir) if args.nc_dir else str(ctx.nc_dir)
     diag_csv = str(args.diag_csv) if args.diag_csv else str(ctx.daily_diagnostics)
-    out_csv = str(args.output_csv) if args.output_csv else str(ctx.csv_dir / "daily_heat_summary.csv")
-    out_txt = str(args.output_txt) if args.output_txt else str(ctx.txt_dir / "heat_report.txt")
+    out_csv = (
+        str(args.output_csv)
+        if args.output_csv
+        else str(ctx.csv_dir / "daily_heat_summary.csv")
+    )
+    out_txt = (
+        str(args.output_txt)
+        if args.output_txt
+        else str(ctx.txt_dir / "heat_report.txt")
+    )
 
     if args.compare_on_off:
         compare_heat_on_off(nc_dir, nc_dir, out_csv, out_txt)

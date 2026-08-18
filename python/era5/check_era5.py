@@ -133,7 +133,9 @@ def main():
     lon = ds["longitude"].values
     lat_min, lat_max = float(np.min(lat)), float(np.max(lat))
     lon_min, lon_max = float(np.min(lon)), float(np.max(lon))
-    print(f"  latitude : {lat_min:.2f} .. {lat_max:.2f} (decreasing={lat[0] > lat[-1]})")
+    print(
+        f"  latitude : {lat_min:.2f} .. {lat_max:.2f} (decreasing={lat[0] > lat[-1]})"
+    )
     print(f"  longitude: {lon_min:.2f} .. {lon_max:.2f}")
 
     if args.area is not None:
@@ -180,8 +182,10 @@ def main():
 
     ds.close()
     if n_errors or domain_problems:
-        print(f"\nWARNING: {n_errors} variable(s) outside expected ranges; "
-              f"{len(domain_problems)} domain coverage issue(s).")
+        print(
+            f"\nWARNING: {n_errors} variable(s) outside expected ranges; "
+            f"{len(domain_problems)} domain coverage issue(s)."
+        )
         return 1
     print("\nOK: ERA5 file passed validation.")
     return 0

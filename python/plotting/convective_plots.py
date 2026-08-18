@@ -22,6 +22,7 @@ import pandas as pd  # pylint: disable=wrong-import-position
 import xarray as xr  # pylint: disable=wrong-import-position
 
 import sys
+
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "analysis"))
 from units import temperature_k_to_c, density_anomaly_kgm3_to_gcm3
 from run_context import resolve_run, add_run_args
@@ -182,9 +183,17 @@ def main():
         print(f"ERROR: Failed to resolve run: {e}")
         return 1
 
-    events_path = str(args.events) if args.events else str(ctx.csv_dir / "convective_guard_events.csv")
+    events_path = (
+        str(args.events)
+        if args.events
+        else str(ctx.csv_dir / "convective_guard_events.csv")
+    )
     daily_path = str(args.daily) if args.daily else str(ctx.daily_diagnostics)
-    prof_glob = str(args.profiles) if args.profiles else str(ctx.nc_dir / "results_day_[0-9][0-9].nc")
+    prof_glob = (
+        str(args.profiles)
+        if args.profiles
+        else str(ctx.nc_dir / "results_day_[0-9][0-9].nc")
+    )
     outdir = pathlib.Path(args.outdir) if args.outdir else ctx.fig_dir
     outdir.mkdir(parents=True, exist_ok=True)
 

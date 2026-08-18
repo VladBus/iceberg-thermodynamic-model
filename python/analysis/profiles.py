@@ -59,16 +59,30 @@ def daily_profile(path):
         row = {
             "day": int(p.stem.split("_")[2]),
             "depth_m": float(depths[k]),
-            "t": float(temperature_k_to_c(ds["temperature"].isel(depth=k).values[mask]).mean()),
+            "t": float(
+                temperature_k_to_c(ds["temperature"].isel(depth=k).values[mask]).mean()
+            ),
             "s": float(ds["salinity_mass_fraction"].isel(depth=k).values[mask].mean()),
-            "u": float(velocity_mps_to_cmps(ds["u_velocity"].isel(depth=k).values[mask]).mean()),
-            "v": float(velocity_mps_to_cmps(ds["v_velocity"].isel(depth=k).values[mask]).mean()),
+            "u": float(
+                velocity_mps_to_cmps(ds["u_velocity"].isel(depth=k).values[mask]).mean()
+            ),
+            "v": float(
+                velocity_mps_to_cmps(ds["v_velocity"].isel(depth=k).values[mask]).mean()
+            ),
         }
         # W uses depth_w dimension (ks1 = ks + 1); keep it only if present.
         if "w_velocity" in ds.data_vars and k < ds.sizes["depth_w"]:
-            row["w"] = float(velocity_mps_to_cmps(ds["w_velocity"].isel(depth_w=k).values[mask]).mean())
+            row["w"] = float(
+                velocity_mps_to_cmps(
+                    ds["w_velocity"].isel(depth_w=k).values[mask]
+                ).mean()
+            )
         if has_ro:
-            row["ro"] = float(density_anomaly_kgm3_to_gcm3(ds["density_anomaly"].isel(depth=k).values[mask]).mean())
+            row["ro"] = float(
+                density_anomaly_kgm3_to_gcm3(
+                    ds["density_anomaly"].isel(depth=k).values[mask]
+                ).mean()
+            )
         rows.append(row)
     ds.close()
     return rows
@@ -80,7 +94,9 @@ def main():
         description="Compute horizontal-mean vertical profiles from daily snapshots."
     )
     add_run_args(parser, default_run_id="2020_Q1_test_heat_on")
-    parser.add_argument("--out", default=None, help="Output CSV path (default: run csv dir)")
+    parser.add_argument(
+        "--out", default=None, help="Output CSV path (default: run csv dir)"
+    )
     args = parser.parse_args()
 
     try:

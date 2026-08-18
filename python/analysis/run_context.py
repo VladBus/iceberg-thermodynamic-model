@@ -28,8 +28,13 @@ RUNS_ROOT = pathlib.Path("data/runs")
 class RunContext:
     """Resolved paths for one isolated model run."""
 
-    def __init__(self, run_id: str, run_dir: pathlib.Path, manifest: pathlib.Path,
-                 meta: dict = None):
+    def __init__(
+        self,
+        run_id: str,
+        run_dir: pathlib.Path,
+        manifest: pathlib.Path,
+        meta: dict = None,
+    ):
         self.run_id = run_id
         self.run_dir = pathlib.Path(run_dir)
         self.manifest = pathlib.Path(manifest)
@@ -75,7 +80,8 @@ def _from_run_id(run_id: str) -> RunContext:
         raise FileNotFoundError(
             f"run directory not found: {run_dir}. Create it with "
             f"`python python/analysis/run_manifest.py --run-id {run_id}` "
-            f"or run the model with `fpm run -- {run_id}`.")
+            f"or run the model with `fpm run -- {run_id}`."
+        )
     mpath = run_dir / "manifest.json"
     meta = load_manifest_meta(mpath)
     return RunContext(run_id, run_dir, mpath, meta)
@@ -88,28 +94,37 @@ def resolve_run(run_id=None, manifest=None) -> RunContext:
     if run_id is not None:
         return _from_run_id(run_id)
     # Fallback: newest run by manifest timestamp (explicit, logged).
-    runs = sorted(RUNS_ROOT.glob("*/manifest.json"),
-                  key=lambda p: p.stat().st_mtime, reverse=True)
+    runs = sorted(
+        RUNS_ROOT.glob("*/manifest.json"), key=lambda p: p.stat().st_mtime, reverse=True
+    )
     if not runs:
         raise FileNotFoundError(
-            "no runs found in data/runs/. Pass --run-id or --manifest explicitly.")
+            "no runs found in data/runs/. Pass --run-id or --manifest explicitly."
+        )
     print(f"NOTE: no --run-id given; using newest run {runs[0].parent.name}")
     return _from_manifest(runs[0])
 
 
 def add_run_args(parser, default_run_id=None):
     """Add --run-id and --manifest arguments to an argparse parser."""
-    parser.add_argument("--run-id", default=default_run_id,
-                        help="Run identifier (data/runs/<run_id>). Default: newest run.")
-    parser.add_argument("--manifest", default=None,
-                        help="Path to run manifest.json (overrides --run-id).")
+    parser.add_argument(
+        "--run-id",
+        default=default_run_id,
+        help="Run identifier (data/runs/<run_id>). Default: newest run.",
+    )
+    parser.add_argument(
+        "--manifest",
+        default=None,
+        help="Path to run manifest.json (overrides --run-id).",
+    )
     return parser
 
 
 def main():
     """CLI: print resolved run paths for a given run."""
     parser = __import__("argparse").ArgumentParser(
-        description="Resolve a run directory from --run-id or --manifest.")
+        description="Resolve a run directory from --run-id or --manifest."
+    )
     add_run_args(parser)
     args = parser.parse_args()
     try:

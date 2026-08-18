@@ -152,11 +152,27 @@ def main():
         print(f"ERROR: Failed to resolve run: {e}")
         return 1
 
-    events_path = str(args.events) if args.events else str(ctx.csv_dir / "convective_guard_events.csv")
+    events_path = (
+        str(args.events)
+        if args.events
+        else str(ctx.csv_dir / "convective_guard_events.csv")
+    )
     daily_path = str(args.daily) if args.daily else str(ctx.daily_diagnostics)
-    prof_glob = str(args.profiles) if args.profiles else str(ctx.nc_dir / "results_day_[0-9][0-9].nc")
-    out_csv = str(args.out_csv) if args.out_csv else str(ctx.csv_dir / "convective_analysis.csv")
-    out_txt = str(args.out_txt) if args.out_txt else str(ctx.txt_dir / "convective_analysis.txt")
+    prof_glob = (
+        str(args.profiles)
+        if args.profiles
+        else str(ctx.nc_dir / "results_day_[0-9][0-9].nc")
+    )
+    out_csv = (
+        str(args.out_csv)
+        if args.out_csv
+        else str(ctx.csv_dir / "convective_analysis.csv")
+    )
+    out_txt = (
+        str(args.out_txt)
+        if args.out_txt
+        else str(ctx.txt_dir / "convective_analysis.txt")
+    )
 
     events = pd.read_csv(events_path)
     daily = pd.read_csv(daily_path)

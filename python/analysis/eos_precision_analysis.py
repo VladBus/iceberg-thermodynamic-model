@@ -189,7 +189,9 @@ def load_event_profile(path, i, j):
     # model-internal degC / g cm-3 so float32 EOS comparison stays consistent.
     t = temperature_k_to_c(ds["temperature"].values[:ki, j - 1, i - 1]).astype(F32)
     s = ds["salinity_mass_fraction"].values[:ki, j - 1, i - 1].astype(F32)
-    ro = density_anomaly_kgm3_to_gcm3(ds["density_anomaly"].values[:ki, j - 1, i - 1]).astype(F32)
+    ro = density_anomaly_kgm3_to_gcm3(
+        ds["density_anomaly"].values[:ki, j - 1, i - 1]
+    ).astype(F32)
     ds.close()
     return t, s, ro
 
@@ -248,10 +250,26 @@ def main():
         print(f"ERROR: Failed to resolve run: {e}")
         return 1
 
-    events_path = str(args.events) if args.events else str(ctx.csv_dir / "convective_guard_events.csv")
-    prof_glob = str(args.profiles) if args.profiles else str(ctx.nc_dir / "results_day_[0-9][0-9].nc")
-    out_csv = str(args.out_csv) if args.out_csv else str(ctx.csv_dir / "eos_precision_summary.csv")
-    out_txt = str(args.out_txt) if args.out_txt else str(ctx.txt_dir / "eos_precision_report.txt")
+    events_path = (
+        str(args.events)
+        if args.events
+        else str(ctx.csv_dir / "convective_guard_events.csv")
+    )
+    prof_glob = (
+        str(args.profiles)
+        if args.profiles
+        else str(ctx.nc_dir / "results_day_[0-9][0-9].nc")
+    )
+    out_csv = (
+        str(args.out_csv)
+        if args.out_csv
+        else str(ctx.csv_dir / "eos_precision_summary.csv")
+    )
+    out_txt = (
+        str(args.out_txt)
+        if args.out_txt
+        else str(ctx.txt_dir / "eos_precision_report.txt")
+    )
 
     lines = []
 

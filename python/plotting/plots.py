@@ -24,6 +24,7 @@ import pandas as pd  # pylint: disable=wrong-import-position
 import xarray as xr  # pylint: disable=wrong-import-position
 
 import sys
+
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "analysis"))
 from units import temperature_k_to_c, velocity_mps_to_cmps
 from run_context import resolve_run, add_run_args
@@ -53,7 +54,9 @@ def plot_surface_maps(day_file, outdir):
         if var == "temperature":
             v = temperature_k_to_c(v)
         pcm = ax.pcolormesh(lon, lat, v, cmap=cmap, shading="auto")
-        units_label = "degC" if var == "temperature" else str(ds[var].attrs.get("units", ""))
+        units_label = (
+            "degC" if var == "temperature" else str(ds[var].attrs.get("units", ""))
+        )
         fig.colorbar(pcm, ax=ax, label=units_label)
         ax.set_title(f"{var} at surface (day {day_label})")
         ax.set_xlabel("longitude (deg E)")
@@ -123,7 +126,11 @@ def plot_vertical_profiles(glob_pattern, outdir):
         depths = ds["depth"].values
         t = np.array(
             [
-                float(temperature_k_to_c(ds["temperature"].isel(depth=k).values[kt > k]).mean())
+                float(
+                    temperature_k_to_c(
+                        ds["temperature"].isel(depth=k).values[kt > k]
+                    ).mean()
+                )
                 for k in range(ds.sizes["depth"])
             ]
         )
@@ -157,10 +164,16 @@ def main():
         description="Plot standardized figures from model output."
     )
     add_run_args(parser, default_run_id="2020_Q1_test_heat_on")
-    parser.add_argument("--glob", default=None, help="Daily NetCDF glob (default: run nc dir)")
-    parser.add_argument("--diag", default=None, help="Daily diagnostics CSV (default: run csv dir)")
     parser.add_argument(
-        "--outdir", default=None, help="Output directory for PNGs (default: run figures dir)"
+        "--glob", default=None, help="Daily NetCDF glob (default: run nc dir)"
+    )
+    parser.add_argument(
+        "--diag", default=None, help="Daily diagnostics CSV (default: run csv dir)"
+    )
+    parser.add_argument(
+        "--outdir",
+        default=None,
+        help="Output directory for PNGs (default: run figures dir)",
     )
     parser.add_argument(
         "--day", type=int, default=None, help="Day to plot surface maps (default: last)"
@@ -173,7 +186,9 @@ def main():
         print(f"ERROR: Failed to resolve run: {e}")
         return 1
 
-    nc_glob = str(args.glob) if args.glob else str(ctx.nc_dir / "results_day_[0-9][0-9].nc")
+    nc_glob = (
+        str(args.glob) if args.glob else str(ctx.nc_dir / "results_day_[0-9][0-9].nc")
+    )
     diag = str(args.diag) if args.diag else str(ctx.daily_diagnostics)
     outdir = pathlib.Path(args.outdir) if args.outdir else ctx.fig_dir
     outdir.mkdir(parents=True, exist_ok=True)

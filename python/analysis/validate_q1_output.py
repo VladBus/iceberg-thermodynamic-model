@@ -24,7 +24,6 @@ import xarray as xr
 
 from run_context import resolve_run, add_run_args
 
-
 EXPECTED_UNITS = {
     "temperature": "K",
     "air_temp": "K",
@@ -55,7 +54,9 @@ def check_calendar(manifest: dict) -> list:
     start = pd.Timestamp(manifest["start_date"])
     n = len(files)
     if n != manifest.get("expected_days", 0):
-        errors.append(f"manifest has {n} files, expected_days={manifest['expected_days']}")
+        errors.append(
+            f"manifest has {n} files, expected_days={manifest['expected_days']}"
+        )
 
     days = [f["day"] for f in files]
     if len(days) != len(set(days)):
@@ -76,7 +77,9 @@ def check_calendar(manifest: dict) -> list:
     last = files[-1]
     expected_last = (start + pd.Timedelta(days=len(files) - 1)).date().isoformat()
     if last["date"] != expected_last:
-        errors.append(f"day {last['day']} last date {last['date']} != expected {expected_last}")
+        errors.append(
+            f"day {last['day']} last date {last['date']} != expected {expected_last}"
+        )
     return errors
 
 
@@ -90,7 +93,9 @@ def check_units(manifest: dict, ctx) -> list:
     ds = xr.open_dataset(final)
     gattrs = dict(ds.attrs)
     if gattrs.get("unit_system", "") != "SI (canonical external units, Stage 5.5b)":
-        errors.append(f"global unit_system attribute missing/incorrect: {gattrs.get('unit_system')}")
+        errors.append(
+            f"global unit_system attribute missing/incorrect: {gattrs.get('unit_system')}"
+        )
     for var, expected in EXPECTED_UNITS.items():
         if var not in ds.data_vars:
             errors.append(f"missing variable {var}")
@@ -123,17 +128,25 @@ def check_masking_and_bounds(manifest: dict, ctx) -> list:
         s = ds["salinity_mass_fraction"].values
         ro = ds["density_anomaly"].values  # kg m-3
         if np.nanmin(t) < 200.0 or np.nanmax(t) > 400.0:
-            errors.append(f"temperature range beyond sanity [200,400] K: {np.nanmin(t):.1f}..{np.nanmax(t):.1f}")
+            errors.append(
+                f"temperature range beyond sanity [200,400] K: {np.nanmin(t):.1f}..{np.nanmax(t):.1f}"
+            )
         if np.nanmin(s) < -0.01 or np.nanmax(s) > 0.1:
-            errors.append(f"salinity range beyond sanity [-0.01,0.1]: {np.nanmin(s):.3f}..{np.nanmax(s):.3f}")
+            errors.append(
+                f"salinity range beyond sanity [-0.01,0.1]: {np.nanmin(s):.3f}..{np.nanmax(s):.3f}"
+            )
         if np.nanmin(ro) < -100.0 or np.nanmax(ro) > 100.0:
-            errors.append(f"density_anomaly range beyond sanity [-100,100] kg/m3: {np.nanmin(ro):.1f}..{np.nanmax(ro):.1f}")
+            errors.append(
+                f"density_anomaly range beyond sanity [-100,100] kg/m3: {np.nanmin(ro):.1f}..{np.nanmax(ro):.1f}"
+            )
         ds.close()
     return errors
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Stage 5.5b output-integrity validation")
+    parser = argparse.ArgumentParser(
+        description="Stage 5.5b output-integrity validation"
+    )
     add_run_args(parser, default_run_id="2020_Q1_test_heat_on")
     args = parser.parse_args()
 
@@ -151,9 +164,15 @@ def main():
 
     print("Stage 5.5b output-integrity validation")
     print("=" * 60)
-    print(f"Calendar errors:   {len([e for e in errors if 'day' in e.lower() or 'date' in e.lower() or 'manifest' in e.lower()])}")
-    print(f"Units errors:      {len([e for e in errors if 'units' in e.lower() or 'variable' in e.lower() or 'unit_system' in e.lower() or 'missing' in e.lower()])}")
-    print(f"Bounds errors:     {len([e for e in errors if 'range' in e.lower() or 'sanity' in e.lower()])}")
+    print(
+        f"Calendar errors:   {len([e for e in errors if 'day' in e.lower() or 'date' in e.lower() or 'manifest' in e.lower()])}"
+    )
+    print(
+        f"Units errors:      {len([e for e in errors if 'units' in e.lower() or 'variable' in e.lower() or 'unit_system' in e.lower() or 'missing' in e.lower()])}"
+    )
+    print(
+        f"Bounds errors:     {len([e for e in errors if 'range' in e.lower() or 'sanity' in e.lower()])}"
+    )
     print("-" * 60)
     for e in errors:
         print(f"  ERROR: {e}")

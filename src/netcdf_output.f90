@@ -80,7 +80,7 @@ contains
         if (.not. nc_ok(status, 'write global conventions')) then
             status = nf90_close(ncid); return
         end if
-        status = nf90_put_att(ncid, nf90_global, 'unit_system', 'SI (canonical external units, Stage 5.5b)')
+status = nf90_put_att(ncid, nf90_global, 'unit_system', 'SI (canonical external units, Stage 5.5b)')
         if (.not. nc_ok(status, 'write global unit_system')) then
             status = nf90_close(ncid); return
         end if
@@ -151,7 +151,7 @@ contains
 
         ! Плотность RO [г/см3] - диагностика этапа 3.1 (EOS), для Python-анализа
         ! Python НЕ пересчитывает EOS, а читает RO из вывода модели.
-        status = nf90_def_var(ncid, 'density_anomaly', nf90_real, (/x_dimid, y_dimid, z_dimid/), ro_varid)
+  status = nf90_def_var(ncid, 'density_anomaly', nf90_real, (/x_dimid, y_dimid, z_dimid/), ro_varid)
         if (.not. nc_ok(status, 'define density')) then
             status = nf90_close(ncid); return
         end if
@@ -246,7 +246,7 @@ contains
 
         call set_att(ncid, temp_varid, 'units', 'K')
         call set_att(ncid, temp_varid, 'standard_name', 'sea_water_temperature')
-        call set_att(ncid, temp_varid, 'comment', 'canonical SI unit K; internal model unit is degC')
+       call set_att(ncid, temp_varid, 'comment', 'canonical SI unit K; internal model unit is degC')
 
         call set_att(ncid, salt_varid, 'units', '1')
         call set_att(ncid, salt_varid, 'standard_name', 'sea_water_salinity')
@@ -255,7 +255,7 @@ contains
         call set_att(ncid, ro_varid, 'units', 'kg m-3')
         call set_att(ncid, ro_varid, 'long_name', 'seawater density anomaly')
         call set_att(ncid, ro_varid, 'comment', 'computed by Fortran Eckart EOS (Stage 3.1); Python must not recompute. '// &
-                     'Value is density ANOMALY (rho - 1.02 g/cm3) in kg m-3 (internal g cm-3 * 1000)')
+                   'Value is density ANOMALY (rho - 1.02 g/cm3) in kg m-3 (internal g cm-3 * 1000)')
 
         call set_att(ncid, u_varid, 'units', 'm s-1')
         call set_att(ncid, u_varid, 'long_name', 'x-component of ocean velocity (along model X axis = j index)')
@@ -279,11 +279,11 @@ contains
 
         call set_att(ncid, windx_varid, 'units', 'm s-1')
         call set_att(ncid, windx_varid, 'long_name', 'x-component of wind velocity')
-        call set_att(ncid, windx_varid, 'comment', 'canonical SI unit m s-1 (internal cm s-1 * 0.01)')
+      call set_att(ncid, windx_varid, 'comment', 'canonical SI unit m s-1 (internal cm s-1 * 0.01)')
 
         call set_att(ncid, windy_varid, 'units', 'm s-1')
         call set_att(ncid, windy_varid, 'long_name', 'y-component of wind velocity')
-        call set_att(ncid, windy_varid, 'comment', 'canonical SI unit m s-1 (internal cm s-1 * 0.01)')
+      call set_att(ncid, windy_varid, 'comment', 'canonical SI unit m s-1 (internal cm s-1 * 0.01)')
 
         call set_att(ncid, tx_varid, 'units', 'Pa')
         call set_att(ncid, tx_varid, 'long_name', 'x-component of surface wind stress')
@@ -295,15 +295,15 @@ contains
 
         call set_att(ncid, dpx_varid, 'units', 'Pa m-1')
         call set_att(ncid, dpx_varid, 'long_name', 'x-component of sea level pressure gradient')
-        call set_att(ncid, dpx_varid, 'comment', 'canonical SI unit Pa m-1 (internal hPa km-1 * 0.1)')
+      call set_att(ncid, dpx_varid, 'comment', 'canonical SI unit Pa m-1 (internal hPa km-1 * 0.1)')
 
         call set_att(ncid, dpy_varid, 'units', 'Pa m-1')
         call set_att(ncid, dpy_varid, 'long_name', 'y-component of sea level pressure gradient')
-        call set_att(ncid, dpy_varid, 'comment', 'canonical SI unit Pa m-1 (internal hPa km-1 * 0.1)')
+      call set_att(ncid, dpy_varid, 'comment', 'canonical SI unit Pa m-1 (internal hPa km-1 * 0.1)')
 
         call set_att(ncid, tatm_varid, 'units', 'K')
         call set_att(ncid, tatm_varid, 'standard_name', 'air_temperature')
-        call set_att(ncid, tatm_varid, 'comment', 'canonical SI unit K; internal model unit is degC')
+       call set_att(ncid, tatm_varid, 'comment', 'canonical SI unit K; internal model unit is degC')
 
         call set_att(ncid, patm_varid, 'units', 'Pa')
         call set_att(ncid, patm_varid, 'standard_name', 'air_pressure')

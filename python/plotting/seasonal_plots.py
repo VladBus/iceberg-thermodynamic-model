@@ -41,6 +41,7 @@ import pandas as pd
 import xarray as xr
 
 import sys
+
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "analysis"))
 from units import temperature_k_to_c, velocity_mps_to_cmps, density_anomaly_kgm3_to_gcm3
 from run_context import resolve_run, add_run_args
@@ -74,7 +75,9 @@ def plot_surface_maps(day_file, outdir):
         if var == "temperature":
             v = temperature_k_to_c(v)
         pcm = ax.pcolormesh(lon, lat, v, cmap=cmap, shading="auto")
-        units_label = "degC" if var == "temperature" else str(ds[var].attrs.get("units", ""))
+        units_label = (
+            "degC" if var == "temperature" else str(ds[var].attrs.get("units", ""))
+        )
         fig.colorbar(pcm, ax=ax, label=units_label)
         ax.set_title(f"{var} at surface (day {day_label})")
         ax.set_xlabel("longitude (deg E)")
@@ -189,9 +192,7 @@ def plot_time_series_seasonal(seasonal_csv, outdir, diag=None):
     ax.set_title("Maximum U Velocity")
     ax.grid(alpha=0.3)
     fig.tight_layout()
-    fig.savefig(
-        outdir / "u_max_time_series.png", dpi=DPI
-    )
+    fig.savefig(outdir / "u_max_time_series.png", dpi=DPI)
     plt.close()
 
     # V max
@@ -202,9 +203,7 @@ def plot_time_series_seasonal(seasonal_csv, outdir, diag=None):
     ax.set_title("Maximum V Velocity")
     ax.grid(alpha=0.3)
     fig.tight_layout()
-    fig.savefig(
-        outdir / "v_max_time_series.png", dpi=DPI
-    )
+    fig.savefig(outdir / "v_max_time_series.png", dpi=DPI)
     plt.close()
 
     # W max
@@ -215,9 +214,7 @@ def plot_time_series_seasonal(seasonal_csv, outdir, diag=None):
     ax.set_title("Maximum W Velocity")
     ax.grid(alpha=0.3)
     fig.tight_layout()
-    fig.savefig(
-        outdir / "w_max_time_series.png", dpi=DPI
-    )
+    fig.savefig(outdir / "w_max_time_series.png", dpi=DPI)
     plt.close()
 
     # EUU
@@ -228,9 +225,7 @@ def plot_time_series_seasonal(seasonal_csv, outdir, diag=None):
     ax.set_title("Domain Kinetic Energy (EUU)")
     ax.grid(alpha=0.3)
     fig.tight_layout()
-    fig.savefig(
-        outdir / "euu_time_series.png", dpi=DPI
-    )
+    fig.savefig(outdir / "euu_time_series.png", dpi=DPI)
     plt.close()
 
     # Heat fluxes - need to extract from seasonal data or use diag
@@ -242,9 +237,7 @@ def plot_time_series_seasonal(seasonal_csv, outdir, diag=None):
     ax.set_title("ERA5 Snowfall Rate")
     ax.grid(alpha=0.3)
     fig.tight_layout()
-    fig.savefig(
-        outdir / "snowfall_rate.png", dpi=DPI
-    )
+    fig.savefig(outdir / "snowfall_rate.png", dpi=DPI)
     plt.close()
 
     # Ice concentration - from diagnostics
@@ -315,7 +308,11 @@ def plot_vertical_profiles_seasonal(glob_pattern, outdir):
         depths = ds["depth"].values
         t = np.array(
             [
-                float(temperature_k_to_c(ds["temperature"].isel(depth=k).values[kt > k]).mean())
+                float(
+                    temperature_k_to_c(
+                        ds["temperature"].isel(depth=k).values[kt > k]
+                    ).mean()
+                )
                 for k in range(ds.sizes["depth"])
             ]
         )
@@ -327,7 +324,11 @@ def plot_vertical_profiles_seasonal(glob_pattern, outdir):
         )
         ro = np.array(
             [
-                float(density_anomaly_kgm3_to_gcm3(ds["density_anomaly"].isel(depth=k).values[kt > k]).mean())
+                float(
+                    density_anomaly_kgm3_to_gcm3(
+                        ds["density_anomaly"].isel(depth=k).values[kt > k]
+                    ).mean()
+                )
                 for k in range(ds.sizes["depth"])
             ]
         )
@@ -387,9 +388,7 @@ def plot_heat_fluxes(seasonal_csv, outdir):
     ax.grid(alpha=0.3)
     ax.legend()
     fig.tight_layout()
-    fig.savefig(
-        outdir / "heat_fluxes.png", dpi=DPI
-    )
+    fig.savefig(outdir / "heat_fluxes.png", dpi=DPI)
     plt.close()
 
 
@@ -414,7 +413,11 @@ def plot_vertical_temp_profiles_separate(glob_pattern, outdir):
         depths = ds["depth"].values
         t = np.array(
             [
-                float(temperature_k_to_c(ds["temperature"].isel(depth=k).values[kt > k]).mean())
+                float(
+                    temperature_k_to_c(
+                        ds["temperature"].isel(depth=k).values[kt > k]
+                    ).mean()
+                )
                 for k in range(ds.sizes["depth"])
             ]
         )
@@ -494,7 +497,11 @@ def plot_vertical_density_profiles_separate(glob_pattern, outdir):
         depths = ds["depth"].values
         ro = np.array(
             [
-                float(density_anomaly_kgm3_to_gcm3(ds["density_anomaly"].isel(depth=k).values[kt > k]).mean())
+                float(
+                    density_anomaly_kgm3_to_gcm3(
+                        ds["density_anomaly"].isel(depth=k).values[kt > k]
+                    ).mean()
+                )
                 for k in range(ds.sizes["depth"])
             ]
         )
@@ -562,7 +569,11 @@ def main():
         print(f"WARNING: no daily NetCDF files in {ctx.nc_dir}")
     nc_glob = args.glob or str(ctx.nc_dir / "results_day_[0-9][0-9].nc")
     diag = str(args.diag) if args.diag else str(ctx.daily_diagnostics)
-    seasonal = str(args.seasonal) if args.seasonal else str(ctx.csv_dir / "seasonal_daily_summary.csv")
+    seasonal = (
+        str(args.seasonal)
+        if args.seasonal
+        else str(ctx.csv_dir / "seasonal_daily_summary.csv")
+    )
     outdir = pathlib.Path(args.outdir) if args.outdir else ctx.fig_dir
     outdir.mkdir(parents=True, exist_ok=True)
 

@@ -102,21 +102,21 @@ def merge_snowfall(instantaneous_nc, snowfall_nc, output_nc):
     # Start with instantaneous variables and add snowfall
     ds_out = ds_inst.copy()
 
-# Add snowfall as new variable with distinct name
-    ds_out['sf'] = xr.DataArray(
+    # Add snowfall as new variable with distinct name
+    ds_out["sf"] = xr.DataArray(
         snow_rate_interp,
-        dims=('valid_time', 'latitude', 'longitude'),
+        dims=("valid_time", "latitude", "longitude"),
         coords={
-            'valid_time': target_times,
-            'latitude': ds_snow.latitude,
-            'longitude': ds_snow.longitude,
+            "valid_time": target_times,
+            "latitude": ds_snow.latitude,
+            "longitude": ds_snow.longitude,
         },
         attrs={
-            'units': 'm s-1',
-            'long_name': 'Snowfall rate',
-            'standard_name': 'snowfall_flux',
-            'comment': 'Interpolated from ERA5 12-hourly accumulated snowfall (sf) at 00/12 UTC analyses. Original units: m water equivalent per 12 hours. Converted to m/s rate.'
-        }
+            "units": "m s-1",
+            "long_name": "Snowfall rate",
+            "standard_name": "snowfall_flux",
+            "comment": "Interpolated from ERA5 12-hourly accumulated snowfall (sf) at 00/12 UTC analyses. Original units: m water equivalent per 12 hours. Converted to m/s rate.",
+        },
     )
 
     # Select only the variables we need (instantaneous + snowfall)

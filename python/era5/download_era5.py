@@ -215,9 +215,7 @@ def main():
         print(
             "      It cannot be combined with instantaneous variables in a single CDS request."
         )
-        print(
-            "      Use python/era5/merge_snowfall.py to merge if needed."
-        )
+        print("      Use python/era5/merge_snowfall.py to merge if needed.")
 
 
 if __name__ == "__main__":

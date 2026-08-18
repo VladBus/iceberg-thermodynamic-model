@@ -30,20 +30,38 @@ RUNS_ROOT = pathlib.Path("data/runs")
 
 # ERA5 Barents research-domain defaults (Stage 6.2). Not the model grid.
 DOMAINS = {
-    "barents": {"name": "barents", "north": 90.0, "west": 10.0, "south": 70.0, "east": 70.0,
-                "description": "Barents Sea / Svalbard / Franz Josef Land iceberg-source domain"},
-    "arctic": {"name": "arctic", "north": 90.0, "west": -180.0, "south": 65.0, "east": 180.0,
-               "description": "Historical Arctic-wide strip (pre-Stage 6.2 datasets)"},
+    "barents": {
+        "name": "barents",
+        "north": 90.0,
+        "west": 10.0,
+        "south": 70.0,
+        "east": 70.0,
+        "description": "Barents Sea / Svalbard / Franz Josef Land iceberg-source domain",
+    },
+    "arctic": {
+        "name": "arctic",
+        "north": 90.0,
+        "west": -180.0,
+        "south": 65.0,
+        "east": 180.0,
+        "description": "Historical Arctic-wide strip (pre-Stage 6.2 datasets)",
+    },
 }
 
 
 class RunManifest:
     """Represents a single model run with its expected output files."""
 
-    def __init__(self, run_id: str, start_date: str, end_date: str,
-                 expected_days: int, file_pattern: str = "results_day_{:02d}.nc",
-                 base_dir: str = "data/runs/<run_id>/output/nc",
-                 run_root: pathlib.Path = RUNS_ROOT):
+    def __init__(
+        self,
+        run_id: str,
+        start_date: str,
+        end_date: str,
+        expected_days: int,
+        file_pattern: str = "results_day_{:02d}.nc",
+        base_dir: str = "data/runs/<run_id>/output/nc",
+        run_root: pathlib.Path = RUNS_ROOT,
+    ):
         self.run_id = run_id
         self.run_root = pathlib.Path(run_root)
         self.run_dir = self.run_root / run_id
@@ -66,18 +84,24 @@ class RunManifest:
             file_name = self.file_pattern.format(day)
             file_path = self.base_dir / file_name
             expected_date = self.start_date + timedelta(days=day - 1)
-            files.append({
-                "day": day,
-                "date": expected_date.date().isoformat(),
-                "file": str(file_path),
-                "exists": file_path.exists()
-            })
+            files.append(
+                {
+                    "day": day,
+                    "date": expected_date.date().isoformat(),
+                    "file": str(file_path),
+                    "exists": file_path.exists(),
+                }
+            )
         return files
 
     def git_commit(self) -> str:
         try:
-            out = subprocess.run(["git", "rev-parse", "--short", "HEAD"],
-                                 capture_output=True, text=True, check=True)
+            out = subprocess.run(
+                ["git", "rev-parse", "--short", "HEAD"],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
             return out.stdout.strip()
         except Exception:
             return "unknown"
@@ -102,7 +126,7 @@ class RunManifest:
             "git_commit": self.git_commit(),
             "generated_at": self.generated_at,
             "status": self.meta.get("status", "unknown"),
-            "files": self.files
+            "files": self.files,
         }
         return manifest
 
@@ -125,14 +149,25 @@ class RunManifest:
             end_date=data["end_date"],
             expected_days=data["expected_days"],
             file_pattern=data.get("file_pattern", "results_day_{:02d}.nc"),
-            base_dir=data.get("base_dir", "data/runs/<run_id>/output/nc")
+            base_dir=data.get("base_dir", "data/runs/<run_id>/output/nc"),
         )
         manifest.files = data.get("files", [])
         manifest.generated_at = data.get("generated_at", datetime.now().isoformat())
-        manifest.meta = {k: v for k, v in data.items()
-                         if k not in ("run_id", "start_date", "end_date",
-                                      "expected_days", "file_pattern", "base_dir",
-                                      "generated_at", "files")}
+        manifest.meta = {
+            k: v
+            for k, v in data.items()
+            if k
+            not in (
+                "run_id",
+                "start_date",
+                "end_date",
+                "expected_days",
+                "file_pattern",
+                "base_dir",
+                "generated_at",
+                "files",
+            )
+        }
         return manifest
 
     def validate(self) -> Dict[str, Any]:
@@ -146,7 +181,7 @@ class RunManifest:
             "duplicate_days": [],
             "date_mismatches": [],
             "file_size_zero": [],
-            "checks_passed": True
+            "checks_passed": True,
         }
 
         seen_days = set()
@@ -158,13 +193,13 @@ class RunManifest:
             seen_days.add(day)
 
             # Check expected date
-            expected_date = (self.start_date + timedelta(days=day - 1)).date().isoformat()
+            expected_date = (
+                (self.start_date + timedelta(days=day - 1)).date().isoformat()
+            )
             if f["date"] != expected_date:
-                results["date_mismatches"].append({
-                    "day": day,
-                    "expected": expected_date,
-                    "found": f["date"]
-                })
+                results["date_mismatches"].append(
+                    {"day": day, "expected": expected_date, "found": f["date"]}
+                )
                 results["checks_passed"] = False
 
             # Check file exists
@@ -190,8 +225,10 @@ class RunManifest:
         all_nc_files = list(self.base_dir.glob("results_day_*.nc"))
         expected_files = {f["file"] for f in self.files}
         for nc_file in all_nc_files:
-            if (str(nc_file) not in expected_files and
-                    nc_file.name not in ("results_day_final.nc", "results_day_00.nc")):
+            if str(nc_file) not in expected_files and nc_file.name not in (
+                "results_day_final.nc",
+                "results_day_00.nc",
+            ):
                 results["unexpected_files"].append(str(nc_file))
                 results["checks_passed"] = False
 
@@ -211,7 +248,9 @@ class RunManifest:
             print(f"  DUPLICATE days: {results['duplicate_days']}")
         if results["date_mismatches"]:
             for m in results["date_mismatches"]:
-                print(f"  DATE MISMATCH day {m['day']}: expected {m['expected']}, found {m['found']}")
+                print(
+                    f"  DATE MISMATCH day {m['day']}: expected {m['expected']}, found {m['found']}"
+                )
         if results["file_size_zero"]:
             print(f"  ZERO-SIZE files: {results['file_size_zero']}")
         if results["unexpected_files"]:
@@ -231,30 +270,44 @@ def create_q1_2020_heat_on_manifest() -> RunManifest:
         end_date="2020-03-30",
         expected_days=90,
         file_pattern="results_day_{:02d}.nc",
-        base_dir="data/runs/2020_Q1_test_heat_on/output/nc"
+        base_dir="data/runs/2020_Q1_test_heat_on/output/nc",
     )
-    m.meta.update({
-        "description": "Q1 2020 ERA5 + HEAT ON on TEST grid (Jan 1 - Mar 30, 90 days)",
-        "era5_period": "2020-01-01..2020-03-30 (6-hourly)",
-        "era5_domain": "arctic (historical dataset, lat 66-82 / lon 30-63 used by file)",
-        "grid_mode": "TEST",
-        "heat_state": "on",
-        "snowfall_state": "era5_snowfall_rate available; sfal climatology retained",
-        "status": "completed"
-    })
+    m.meta.update(
+        {
+            "description": "Q1 2020 ERA5 + HEAT ON on TEST grid (Jan 1 - Mar 30, 90 days)",
+            "era5_period": "2020-01-01..2020-03-30 (6-hourly)",
+            "era5_domain": "arctic (historical dataset, lat 66-82 / lon 30-63 used by file)",
+            "grid_mode": "TEST",
+            "heat_state": "on",
+            "snowfall_state": "era5_snowfall_rate available; sfal climatology retained",
+            "status": "completed",
+        }
+    )
     return m
 
 
 def main():
     """Create and/or validate a run manifest."""
-    parser = argparse.ArgumentParser(description="Run manifest generator/validator (Stage 6.2)")
-    parser.add_argument("--run-id", default="2020_Q1_test_heat_on", help="Run identifier")
-    parser.add_argument("--start", default=None, help="Start date YYYY-MM-DD (default: run default)")
+    parser = argparse.ArgumentParser(
+        description="Run manifest generator/validator (Stage 6.2)"
+    )
+    parser.add_argument(
+        "--run-id", default="2020_Q1_test_heat_on", help="Run identifier"
+    )
+    parser.add_argument(
+        "--start", default=None, help="Start date YYYY-MM-DD (default: run default)"
+    )
     parser.add_argument("--days", type=int, default=None, help="Number of model days")
-    parser.add_argument("--domain", default="arctic",
-                        help="ERA5 domain key: barents or arctic (metadata only)")
-    parser.add_argument("--validate", action="store_true",
-                        help="Validate an existing manifest instead of generating")
+    parser.add_argument(
+        "--domain",
+        default="arctic",
+        help="ERA5 domain key: barents or arctic (metadata only)",
+    )
+    parser.add_argument(
+        "--validate",
+        action="store_true",
+        help="Validate an existing manifest instead of generating",
+    )
     args = parser.parse_args()
 
     manifest_path = RUNS_ROOT / args.run_id / "manifest.json"
@@ -272,23 +325,29 @@ def main():
     else:
         start = args.start or "2020-01-01"
         days = args.days or 1
-        end = (datetime.fromisoformat(start) + timedelta(days=days - 1)).date().isoformat()
+        end = (
+            (datetime.fromisoformat(start) + timedelta(days=days - 1))
+            .date()
+            .isoformat()
+        )
         manifest = RunManifest(
             run_id=args.run_id,
             start_date=start,
             end_date=end,
             expected_days=days,
-            base_dir=f"data/runs/{args.run_id}/output/nc"
+            base_dir=f"data/runs/{args.run_id}/output/nc",
         )
         dom = DOMAINS.get(args.domain, DOMAINS["arctic"])
-        manifest.meta.update({
-            "description": f"ERA5 {args.domain} smoke/test run (TEST grid)",
-            "era5_domain": dom["description"],
-            "grid_mode": "TEST",
-            "heat_state": "off",
-            "snowfall_state": "climatology",
-            "status": "planned"
-        })
+        manifest.meta.update(
+            {
+                "description": f"ERA5 {args.domain} smoke/test run (TEST grid)",
+                "era5_domain": dom["description"],
+                "grid_mode": "TEST",
+                "heat_state": "off",
+                "snowfall_state": "climatology",
+                "status": "planned",
+            }
+        )
 
     manifest.build()
     manifest.save(manifest_path)

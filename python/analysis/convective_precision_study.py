@@ -329,9 +329,7 @@ def main():
         default=None,
         help="Glob pattern for daily NetCDF profiles",
     )
-    parser.add_argument(
-        "--output-csv", default=None, help="Output precision study CSV"
-    )
+    parser.add_argument("--output-csv", default=None, help="Output precision study CSV")
     parser.add_argument(
         "--output-txt", default=None, help="Output precision study TXT report"
     )
@@ -343,11 +341,29 @@ def main():
         print(f"ERROR: Failed to resolve run: {e}")
         return 1
 
-    baseline = str(args.baseline_csv) if args.baseline_csv else str(ctx.daily_diagnostics)
-    events = str(args.events_csv) if args.events_csv else str(ctx.csv_dir / "convective_guard_events.csv")
-    profiles = str(args.profiles_glob) if args.profiles_glob else str(ctx.nc_dir / "results_day_[0-9][0-9].nc")
-    out_csv = str(args.output_csv) if args.output_csv else str(ctx.csv_dir / "precision_study.csv")
-    out_txt = str(args.output_txt) if args.output_txt else str(ctx.txt_dir / "precision_study.txt")
+    baseline = (
+        str(args.baseline_csv) if args.baseline_csv else str(ctx.daily_diagnostics)
+    )
+    events = (
+        str(args.events_csv)
+        if args.events_csv
+        else str(ctx.csv_dir / "convective_guard_events.csv")
+    )
+    profiles = (
+        str(args.profiles_glob)
+        if args.profiles_glob
+        else str(ctx.nc_dir / "results_day_[0-9][0-9].nc")
+    )
+    out_csv = (
+        str(args.output_csv)
+        if args.output_csv
+        else str(ctx.csv_dir / "precision_study.csv")
+    )
+    out_txt = (
+        str(args.output_txt)
+        if args.output_txt
+        else str(ctx.txt_dir / "precision_study.txt")
+    )
 
     lines = []
 

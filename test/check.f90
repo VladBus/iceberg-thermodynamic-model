@@ -65,37 +65,37 @@ program check
     status = nf90_inq_varid(ncid, "air_temp", varid_tatm); status = nf90_get_var(ncid, varid_tatm, tatm)
     status = nf90_inq_varid(ncid, "air_press", varid_patm); status = nf90_get_var(ncid, varid_patm, patm)
     status = nf90_inq_varid(ncid, "temperature", varid_temp); status = nf90_get_var(ncid, varid_temp, temp)
-    status = nf90_inq_varid(ncid, "salinity", varid_salt); status = nf90_get_var(ncid, varid_salt, salt)
+    status = nf90_inq_varid(ncid, "salinity_mass_fraction", varid_salt); status = nf90_get_var(ncid, varid_salt, salt)
 
     status = nf90_close(ncid)
 
     n_errors = 0
 
-    ! 1. Проверка NaN / Inf / missing value
+    ! 1. Проверка NaN / Inf / missing value (границы в канонических единицах СИ, Stage 5.5b)
     print *, "--- 1. Checking IEEE NaN, Inf, missing values, and physical bounds ---"
     call check_array_2d(wind, "wind_speed", 0.0, 100.0, n_errors)
-    call check_array_2d(windx, "wind_x", -10000.0, 10000.0, n_errors)
-    call check_array_2d(windy, "wind_y", -10000.0, 10000.0, n_errors)
-    call check_array_2d(tx, "tau_x", -100.0, 100.0, n_errors)
-    call check_array_2d(ty, "tau_y", -100.0, 100.0, n_errors)
-    call check_array_2d(dpx, "dp_x", -1.0, 1.0, n_errors)
-    call check_array_2d(dpy, "dp_y", -1.0, 1.0, n_errors)
-    call check_array_2d(tatm, "air_temp", -80.0, 40.0, n_errors)
-    call check_array_2d(patm, "air_press", 800.0, 1100.0, n_errors)
-    call check_array_3d(temp, "temperature", -30.0, 50.0, n_errors)
-    call check_array_3d(salt, "salinity", -0.001, 0.05, n_errors)
+    call check_array_2d(windx, "wind_x", -100.0, 100.0, n_errors)
+    call check_array_2d(windy, "wind_y", -100.0, 100.0, n_errors)
+    call check_array_2d(tx, "tau_x", -10.0, 10.0, n_errors)
+    call check_array_2d(ty, "tau_y", -10.0, 10.0, n_errors)
+    call check_array_2d(dpx, "dp_x", -0.1, 0.1, n_errors)
+    call check_array_2d(dpy, "dp_y", -0.1, 0.1, n_errors)
+    call check_array_2d(tatm, "air_temp", 193.15, 313.15, n_errors)
+    call check_array_2d(patm, "air_press", 80000.0, 110000.0, n_errors)
+    call check_array_3d(temp, "temperature", 243.15, 323.15, n_errors)
+    call check_array_3d(salt, "salinity_mass_fraction", -0.001, 0.05, n_errors)
 
     ! 2. Качественная согласованность направлений ветра и напряжений трения
     print *, "--- 2. Checking wind & stress alignment ---"
     n_sign_mismatches = 0
     do j = 1, js_val
         do i = 1, is_val
-            if (abs(windx(i, j)) .gt. 1.0e-3 .and. abs(tx(i, j)) .gt. 1.0e-5) then
+            if (abs(windx(i, j)) .gt. 1.0e-5 .and. abs(tx(i, j)) .gt. 1.0e-6) then
                 if (tx(i, j)*windx(i, j) .lt. 0.0) then
                     n_sign_mismatches = n_sign_mismatches + 1
                 end if
             end if
-            if (abs(windy(i, j)) .gt. 1.0e-3 .and. abs(ty(i, j)) .gt. 1.0e-5) then
+            if (abs(windy(i, j)) .gt. 1.0e-5 .and. abs(ty(i, j)) .gt. 1.0e-6) then
                 if (ty(i, j)*windy(i, j) .lt. 0.0) then
                     n_sign_mismatches = n_sign_mismatches + 1
                 end if

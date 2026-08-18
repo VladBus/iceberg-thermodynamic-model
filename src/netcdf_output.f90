@@ -1,9 +1,15 @@
 ! ==============================================================================
 ! Модуль: netcdf_output
 ! Назначение: Самодостаточный экспорт диагностических полей модели в NetCDF.
-! Физика: Сохраняет T [degC], S [массовая доля], 3D-течения U/V/W [см/с],
+! Физика: Сохраняет T [K], S [массовая доля], 3D-течения U/V/W [м/с],
 !         геометрию Z-сетки, маску воды и диагностические поля атмосферного
 !         форсинга (ветер, напряжения, градиенты давления, температура воздуха).
+! Единицы: Внешний интерфейс - канонические единицы СИ (см. Stage5.5b):
+!   T/air_temp [K] (внутренние degC + 273.15), U/V/W/wind_x/wind_y [m/s]
+!   (внутренние cm/s * 0.01), tau [Pa] (dyn/cm2 * 0.1), dp [Pa/m] (hPa/km * 0.1),
+!   air_press [Pa] (hPa * 100), density_anomaly [kg/m3] (g/cm3 * 1000),
+!   salinity_mass_fraction [-], humidity/cloud [-], era5_snowfall_rate [m/s].
+! Внутреннее состояние модели НЕ изменяется - конверсия только на границе вывода.
 ! Ответственность: Формирует метаданные в стандарте CF-1.10.
 !
 ! Соглашение об осях (модельная B-сетка Аракавы):
@@ -36,6 +42,14 @@ contains
         integer :: status, i, k
         integer :: ro_varid
         real :: x_coord(is1), y_coord(js1), depth(ks), depth_w(ks1)
+        ! Буферы канонических единиц СИ (только на границе вывода; внутренние
+        ! массивы param не изменяются). Stage 5.5b.
+        real :: t_k(is1, js1, ks), ro_kgm3(is1, js1, ks)
+        real :: u_ms(is1, js1, ks), v_ms(is1, js1, ks), w_ms(is1, js1, ks1)
+        real :: windx_ms(is1, js1), windy_ms(is1, js1)
+        real :: tau_pa(is1, js1), tauy_pa(is1, js1)
+        real :: dpx_pam(is1, js1), dpy_pam(is1, js1)
+        real :: tatm_k(is1, js1), patm_pa(is1, js1)
 
         ! x/y - индексы регулярной сетки в км; dx в модели задан в сантиметрах.
         do i = 1, is1
@@ -64,6 +78,10 @@ contains
         end if
         status = nf90_put_att(ncid, nf90_global, 'Conventions', 'CF-1.10')
         if (.not. nc_ok(status, 'write global conventions')) then
+            status = nf90_close(ncid); return
+        end if
+        status = nf90_put_att(ncid, nf90_global, 'unit_system', 'SI (canonical external units, Stage 5.5b)')
+        if (.not. nc_ok(status, 'write global unit_system')) then
             status = nf90_close(ncid); return
         end if
         status = nf90_put_att(ncid, nf90_global, 'source', 'AARI Iceberg Thermodynamic Model (Fortran 2018 modernization)')
@@ -126,14 +144,14 @@ contains
         if (.not. nc_ok(status, 'define temperature')) then
             status = nf90_close(ncid); return
         end if
-       status = nf90_def_var(ncid, 'salinity', nf90_real, (/x_dimid, y_dimid, z_dimid/), salt_varid)
+       status = nf90_def_var(ncid, 'salinity_mass_fraction', nf90_real, (/x_dimid, y_dimid, z_dimid/), salt_varid)
         if (.not. nc_ok(status, 'define salinity')) then
             status = nf90_close(ncid); return
         end if
 
         ! Плотность RO [г/см3] - диагностика этапа 3.1 (EOS), для Python-анализа
         ! Python НЕ пересчитывает EOS, а читает RO из вывода модели.
-        status = nf90_def_var(ncid, 'density', nf90_real, (/x_dimid, y_dimid, z_dimid/), ro_varid)
+        status = nf90_def_var(ncid, 'density_anomaly', nf90_real, (/x_dimid, y_dimid, z_dimid/), ro_varid)
         if (.not. nc_ok(status, 'define density')) then
             status = nf90_close(ncid); return
         end if
@@ -226,57 +244,70 @@ contains
         call set_att(ncid, level_varid, 'long_name', 'number of active water levels')
         call set_att(ncid, level_varid, 'units', '1')
 
-        call set_att(ncid, temp_varid, 'units', 'degree_Celsius')
+        call set_att(ncid, temp_varid, 'units', 'K')
         call set_att(ncid, temp_varid, 'standard_name', 'sea_water_temperature')
+        call set_att(ncid, temp_varid, 'comment', 'canonical SI unit K; internal model unit is degC')
 
         call set_att(ncid, salt_varid, 'units', '1')
         call set_att(ncid, salt_varid, 'standard_name', 'sea_water_salinity')
-        call set_att(ncid, salt_varid, 'comment', 'mass fraction; 0.033 is approximately 33 PSU')
+        call set_att(ncid, salt_varid, 'comment', 'mass fraction (kg/kg), NOT PSU; 0.033 is approximately 33 g/kg')
 
-        call set_att(ncid, ro_varid, 'units', 'g cm-3')
+        call set_att(ncid, ro_varid, 'units', 'kg m-3')
         call set_att(ncid, ro_varid, 'long_name', 'seawater density anomaly')
-        call set_att(ncid, ro_varid, 'comment', 'computed by Fortran Eckart EOS (Stage 3.1); Python must not recompute')
+        call set_att(ncid, ro_varid, 'comment', 'computed by Fortran Eckart EOS (Stage 3.1); Python must not recompute. '// &
+                     'Value is density ANOMALY (rho - 1.02 g/cm3) in kg m-3 (internal g cm-3 * 1000)')
 
-        call set_att(ncid, u_varid, 'units', 'cm s-1')
+        call set_att(ncid, u_varid, 'units', 'm s-1')
         call set_att(ncid, u_varid, 'long_name', 'x-component of ocean velocity (along model X axis = j index)')
         call set_att(ncid, u_varid, 'comment', 'Model-grid component, NOT geographic eastward. '// &
-                     'NetCDF y-axis <-> model j <-> u; NetCDF x-axis <-> model i <-> v.')
+                     'NetCDF y-axis <-> model j <-> u; NetCDF x-axis <-> model i <-> v. '// &
+                     'Canonical SI unit m s-1 (internal cm s-1 * 0.01)')
 
-        call set_att(ncid, v_varid, 'units', 'cm s-1')
+        call set_att(ncid, v_varid, 'units', 'm s-1')
         call set_att(ncid, v_varid, 'long_name', 'y-component of ocean velocity (along model Y axis = i index)')
        call set_att(ncid, v_varid, 'comment', 'Model-grid component, NOT geographic northward. '// &
-                     'NetCDF y-axis <-> model j <-> u; NetCDF x-axis <-> model i <-> v.')
+                     'NetCDF y-axis <-> model j <-> u; NetCDF x-axis <-> model i <-> v. '// &
+                     'Canonical SI unit m s-1 (internal cm s-1 * 0.01)')
 
-        call set_att(ncid, w_varid, 'units', 'cm s-1')
+        call set_att(ncid, w_varid, 'units', 'm s-1')
         call set_att(ncid, w_varid, 'standard_name', 'upward_sea_water_velocity')
         call set_att(ncid, w_varid, 'long_name', 'vertical ocean velocity')
+        call set_att(ncid, w_varid, 'comment', 'canonical SI unit m s-1 (internal cm s-1 * 0.01)')
 
         call set_att(ncid, wind_varid, 'units', 'm s-1')
         call set_att(ncid, wind_varid, 'standard_name', 'wind_speed')
 
-        call set_att(ncid, windx_varid, 'units', 'cm s-1')
+        call set_att(ncid, windx_varid, 'units', 'm s-1')
         call set_att(ncid, windx_varid, 'long_name', 'x-component of wind velocity')
+        call set_att(ncid, windx_varid, 'comment', 'canonical SI unit m s-1 (internal cm s-1 * 0.01)')
 
-        call set_att(ncid, windy_varid, 'units', 'cm s-1')
+        call set_att(ncid, windy_varid, 'units', 'm s-1')
         call set_att(ncid, windy_varid, 'long_name', 'y-component of wind velocity')
+        call set_att(ncid, windy_varid, 'comment', 'canonical SI unit m s-1 (internal cm s-1 * 0.01)')
 
-        call set_att(ncid, tx_varid, 'units', 'dyn cm-2')
+        call set_att(ncid, tx_varid, 'units', 'Pa')
         call set_att(ncid, tx_varid, 'long_name', 'x-component of surface wind stress')
+        call set_att(ncid, tx_varid, 'comment', 'canonical SI unit Pa (internal dyn cm-2 * 0.1)')
 
-        call set_att(ncid, ty_varid, 'units', 'dyn cm-2')
+        call set_att(ncid, ty_varid, 'units', 'Pa')
         call set_att(ncid, ty_varid, 'long_name', 'y-component of surface wind stress')
+        call set_att(ncid, ty_varid, 'comment', 'canonical SI unit Pa (internal dyn cm-2 * 0.1)')
 
-        call set_att(ncid, dpx_varid, 'units', 'hPa km-1')
+        call set_att(ncid, dpx_varid, 'units', 'Pa m-1')
         call set_att(ncid, dpx_varid, 'long_name', 'x-component of sea level pressure gradient')
+        call set_att(ncid, dpx_varid, 'comment', 'canonical SI unit Pa m-1 (internal hPa km-1 * 0.1)')
 
-        call set_att(ncid, dpy_varid, 'units', 'hPa km-1')
+        call set_att(ncid, dpy_varid, 'units', 'Pa m-1')
         call set_att(ncid, dpy_varid, 'long_name', 'y-component of sea level pressure gradient')
+        call set_att(ncid, dpy_varid, 'comment', 'canonical SI unit Pa m-1 (internal hPa km-1 * 0.1)')
 
-        call set_att(ncid, tatm_varid, 'units', 'degree_Celsius')
+        call set_att(ncid, tatm_varid, 'units', 'K')
         call set_att(ncid, tatm_varid, 'standard_name', 'air_temperature')
+        call set_att(ncid, tatm_varid, 'comment', 'canonical SI unit K; internal model unit is degC')
 
-        call set_att(ncid, patm_varid, 'units', 'hPa')
+        call set_att(ncid, patm_varid, 'units', 'Pa')
         call set_att(ncid, patm_varid, 'standard_name', 'air_pressure')
+        call set_att(ncid, patm_varid, 'comment', 'canonical SI unit Pa (internal hPa * 100)')
 
         call set_att(ncid, humid_varid, 'units', '1')
         call set_att(ncid, humid_varid, 'standard_name', 'relative_humidity')
@@ -326,7 +357,24 @@ contains
         if (.not. nc_ok(status, 'write water mask')) then
             status = nf90_close(ncid); return
         end if
-        status = nf90_put_var(ncid, temp_varid, t2)
+
+        ! Конверсия во внешние канонические единицы СИ (только на границе вывода;
+        ! внутренние массивы param не изменяются). Stage 5.5b.
+        t_k = t2 + 273.15
+        ro_kgm3 = ro*1000.0
+        u_ms = u2*0.01
+        v_ms = v2*0.01
+        w_ms = w*0.01
+        windx_ms = windx*0.01
+        windy_ms = windy*0.01
+        tau_pa = tx*0.1
+        tauy_pa = ty*0.1
+        dpx_pam = dpx*0.1
+        dpy_pam = dpy*0.1
+        tatm_k = tatm + 273.15
+        patm_pa = patm*100.0
+
+        status = nf90_put_var(ncid, temp_varid, t_k)
         if (.not. nc_ok(status, 'write temperature')) then
             status = nf90_close(ncid); return
         end if
@@ -335,20 +383,20 @@ contains
             status = nf90_close(ncid); return
         end if
 
-        status = nf90_put_var(ncid, ro_varid, ro)
+        status = nf90_put_var(ncid, ro_varid, ro_kgm3)
         if (.not. nc_ok(status, 'write density')) then
             status = nf90_close(ncid); return
         end if
 
-        status = nf90_put_var(ncid, u_varid, u2)
+        status = nf90_put_var(ncid, u_varid, u_ms)
         if (.not. nc_ok(status, 'write u_velocity')) then
             status = nf90_close(ncid); return
         end if
-        status = nf90_put_var(ncid, v_varid, v2)
+        status = nf90_put_var(ncid, v_varid, v_ms)
         if (.not. nc_ok(status, 'write v_velocity')) then
             status = nf90_close(ncid); return
         end if
-        status = nf90_put_var(ncid, w_varid, w)
+        status = nf90_put_var(ncid, w_varid, w_ms)
         if (.not. nc_ok(status, 'write w_velocity')) then
             status = nf90_close(ncid); return
         end if
@@ -358,38 +406,38 @@ contains
         if (.not. nc_ok(status, 'write wind_speed')) then
             status = nf90_close(ncid); return
         end if
-        status = nf90_put_var(ncid, windx_varid, windx)
+        status = nf90_put_var(ncid, windx_varid, windx_ms)
         if (.not. nc_ok(status, 'write wind_x')) then
             status = nf90_close(ncid); return
         end if
-        status = nf90_put_var(ncid, windy_varid, windy)
+        status = nf90_put_var(ncid, windy_varid, windy_ms)
         if (.not. nc_ok(status, 'write wind_y')) then
             status = nf90_close(ncid); return
         end if
 
-        status = nf90_put_var(ncid, tx_varid, tx)
+        status = nf90_put_var(ncid, tx_varid, tau_pa)
         if (.not. nc_ok(status, 'write tau_x')) then
             status = nf90_close(ncid); return
         end if
-        status = nf90_put_var(ncid, ty_varid, ty)
+        status = nf90_put_var(ncid, ty_varid, tauy_pa)
         if (.not. nc_ok(status, 'write tau_y')) then
             status = nf90_close(ncid); return
         end if
 
-        status = nf90_put_var(ncid, dpx_varid, dpx)
+        status = nf90_put_var(ncid, dpx_varid, dpx_pam)
         if (.not. nc_ok(status, 'write dp_x')) then
             status = nf90_close(ncid); return
         end if
-        status = nf90_put_var(ncid, dpy_varid, dpy)
+        status = nf90_put_var(ncid, dpy_varid, dpy_pam)
         if (.not. nc_ok(status, 'write dp_y')) then
             status = nf90_close(ncid); return
         end if
 
-        status = nf90_put_var(ncid, tatm_varid, tatm)
+        status = nf90_put_var(ncid, tatm_varid, tatm_k)
         if (.not. nc_ok(status, 'write air_temp')) then
             status = nf90_close(ncid); return
         end if
-        status = nf90_put_var(ncid, patm_varid, patm)
+        status = nf90_put_var(ncid, patm_varid, patm_pa)
         if (.not. nc_ok(status, 'write air_press')) then
             status = nf90_close(ncid); return
         end if

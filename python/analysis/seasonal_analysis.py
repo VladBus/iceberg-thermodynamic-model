@@ -45,14 +45,7 @@ def load_manifest(manifest_path: pathlib.Path) -> dict:
     start_date = datetime.fromisoformat(manifest["start_date"])
     for f in manifest["files"]:
         # Model integration day d = start_date + d days
-        expected_date = (
-            (
-                start_date
-                + timedelta(days=f["day"])
-            )
-            .date()
-            .isoformat()
-        )
+        expected_date = (start_date + timedelta(days=f["day"])).date().isoformat()
         if f["date"] != expected_date:
             raise ValueError(
                 f"Date mismatch for day {f['day']}: expected {expected_date} (model day {f['day']} = start_date + {f['day']} days), got {f['date']}"

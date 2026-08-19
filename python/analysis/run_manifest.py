@@ -199,9 +199,7 @@ class RunManifest:
 
             # Check expected date
             # Model integration day d = start_date + d days
-            expected_date = (
-                (self.start_date + timedelta(days=day)).date().isoformat()
-            )
+            expected_date = (self.start_date + timedelta(days=day)).date().isoformat()
             if f["date"] != expected_date:
                 results["date_mismatches"].append(
                     {"day": day, "expected": expected_date, "found": f["date"]}

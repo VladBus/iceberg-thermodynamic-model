@@ -70,7 +70,9 @@ def check_calendar(manifest: dict) -> list:
         # because day_00 = initial state at start_date, day_01 = after 1 day, etc.
         expected = (start + pd.Timedelta(days=d)).date().isoformat()
         if f["date"] != expected:
-            errors.append(f"day {d}: manifest date {f['date']} != expected {expected} (model day {d} = start_date + {d} days)")
+            errors.append(
+                f"day {d}: manifest date {f['date']} != expected {expected} (model day {d} = start_date + {d} days)"
+            )
         if not pathlib.Path(f["file"]).exists():
             errors.append(f"day {d}: file missing {f['file']}")
 

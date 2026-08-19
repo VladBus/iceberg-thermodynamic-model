@@ -24,16 +24,18 @@ contains
         integer :: i, j, k, k1, k2
         real :: a, b, a1, a2, a3, b1, b2, b3, dd
 
+        ! --- ЦИКЛ ПО ГОРИЗОНТАЛЬНОЙ СЕТКЕ ---
         do j = 1, js
             do i = 1, is
                 if (kt1(i, j) .eq. 0) cycle
 
-                ! 1. Подготовка категорий
+                ! 1. ПОДГОТОВКА КАТЕГОРИЙ
+                ! Копируем в рабочие массивы для изменений внутри redis()
                 do k = 1, ngr
                     hice(i, j, k) = 0.0
-                    wicpr(k) = wice1(i, j, k)
-                    anpr(k) = an1(i, j, k + 1)
-                    hsnp(k) = hsnow(i, j, k)
+                    wicpr(k) = wice1(i, j, k)      ! Объем льда [м³/м²]
+                    anpr(k) = an1(i, j, k + 1)     ! Площадь категории
+                    hsnp(k) = hsnow(i, j, k)       ! Толщина снега [м]
 
                     if (wicpr(k) .le. 0.0 .or. anpr(k) .le. 0.0) then
                         wicpr(k) = 0.0
@@ -42,7 +44,7 @@ contains
                     end if
                 end do
 
-                ! 2. Перенос льда в более толстые категории
+                ! 2. ПЕРЕНОС ЛЬДА В БОЛЕЕ ТОЛСТЫЕ КАТЕГОРИИ (торашение/нарастание)
                 do k = 1, ngr2
                     k1 = k + 1
                     if (abs(wicpr(k)) .gt. 1e-8) then
@@ -62,7 +64,7 @@ contains
                     end if
                 end do
 
-                ! 3. Перенос льда в более тонкие категории
+                ! 3. ПЕРЕНОС ЛЬДА В БОЛЕЕ ТОНКИЕ КАТЕГОРИИ (таяние/разделение)
                 do k = ngr, 2, -1
                     if (wicpr(k) .gt. 0.0) then
                         k2 = k - 1
@@ -80,7 +82,7 @@ contains
                     end if
                 end do
 
-                ! 4. Расчет средних толщин (HPR)
+                ! 4. РАСЧЕТ СРЕДНИХ ТОЛЩИН (HPR)
                 do k = 1, ngr
                     if (abs(anpr(k)) .gt. 1e-8) then
                         hpr(k) = wicpr(k)/anpr(k)
@@ -89,14 +91,15 @@ contains
                     end if
                 end do
 
-                ! 5. Контроль максимальной площади (сплошности) льда
+                ! 5. КОНТРОЛЬ МАКСИМАЛЬНОЙ ПЛОЩАДИ (СПЛОЧНОСТИ) ЛЬДА
+                ! Итеративная балансировка площадей до SUM(anpr) <= 1.0
                 redistribution_loop: do
                     a1 = 0.0
                     do k = 1, ngr
                         a1 = a1 + anpr(k)
                     end do
 
-                    ! Если сплошность <= 1.0, выходим из цикла балансировки (эквивалент GOTO 315)
+                    ! Если сплошность <= 1.0, выходим из цикла балансировки
                     if (a1 .le. 1.0) exit redistribution_loop
 
                     dd = a1 - 1.0
@@ -161,7 +164,7 @@ contains
                     exit redistribution_loop
                 end do redistribution_loop
 
-                ! 6. Финальное обновление глобальных массивов
+                ! 6. ФИНАЛЬНОЕ ОБНОВЛЕНИЕ ГЛОБАЛЬНЫХ МАССИВОВ
                 a1 = 0.0
                 b1 = 0.0
                 do k = 1, ngr

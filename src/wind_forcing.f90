@@ -1,5 +1,5 @@
 ! ==============================================================================
-! Модуль: wind_forcing (wind1)
+! Модуль: wind_forcing (wind1, era5_wind)
 ! Назначение: Чтение и интерполяция метеорологических данных (форсинга).
 ! Физика: Преобразует поля атмосферного давления в градиенты для вычисления
 !         скорости геострофического ветра. Вычисляет поверхностные касательные
@@ -24,7 +24,7 @@ contains
         real :: bll, x0, y0, fii, dll, dx_int, dy_int, ab
         real :: an1_wind, an2_wind, an3_wind, an4_wind
         real :: px, py, vx, vy, v_wind, q_wind, au, u_wind, cof, a, b
-        real, parameter :: dxx = 13.89e5 ! Горизонтальный шаг сетки (см) из описания
+        real, parameter :: dxx = 13.89e5 ! Горизонтальный шаг сетки (см) из спецификации
         integer :: ios ! Для проверки существования файлов
 
         ! Временное задание имен файлов для вывода (чтобы избежать вылетов)
@@ -59,9 +59,9 @@ contains
             print *, "WARNING: FI1DL1.DAT not found, using default zeros for grid."
         end if
 
-        bll = 37.96
+        bll = 37.96  ! Коэффициент для геострофического ветра (f/rho)
 
-        ! Интерполяция методом конечных элементов
+        ! Интерполяция методом конечных элементов (билинейная на треугольниках)
         do j = 1, 107
             do i = 1, 135
                 nom = np(i, j)
@@ -112,7 +112,7 @@ contains
                 else
                     vx = -py*bll
                     vy = px*bll
-                    dpx1(i, j) = px*1.e3/dxx
+                    dpx1(i, j) = px*1.e3/dxx  ! Градиент давления [гПа/км]
                     dpy1(i, j) = py*1.e3/dxx
                     v_wind = sqrt(vx*vx + vy*vy)
 
@@ -124,7 +124,7 @@ contains
 
                     u_wind = atan2(vx, vy)*57.3 - au
                     v_wind = v_wind*q_wind*100.0
-                    wind(i, j) = v_wind/100.0
+                    wind(i, j) = v_wind/100.0  ! м/с
 
                     if (u_wind .gt. 360.0) u_wind = u_wind - 360.0
                     if (u_wind .le. 0.0) u_wind = u_wind + 360.0
@@ -133,9 +133,11 @@ contains
                 alf(i, j) = u_wind
                 a = sin(u_wind/57.3)
                 b = cos(u_wind/57.3)
-                windx1(i, j) = v_wind*a
-                windy1(i, j) = v_wind*b
+                windx1(i, j) = v_wind*a  ! см/с
+                windy1(i, j) = v_wind*b  ! см/с
 
+                ! Квадратичный закон сопротивления ( аэродинамическое трение )
+                ! cof = (1.1 + 0.04*V_cm*1e-2) * V_cm^2 * 1.29e-6 [дин/см²]
                 cof = (1.1 + 0.04*v_wind*1.e-2)*v_wind*v_wind*1.29e-6
                 ty1(i, j) = cof*b
                 tx1(i, j) = cof*a
@@ -241,7 +243,7 @@ contains
                               (610.78*10.0**((8.61503*(t2mv - 273.15))/t2mv))
                 ! Облачность: ERA5 tcc [0,1] -> model cloud [0,1]
                 cloud(i, j) = tccv
-                era5_snowfall_rate(i, j) = real(snowfallv, 4)
+                era5_snowfall_rate(i, j) = real(snowfallv, 4)  ! [м/с] water equivalent rate
                 u_cm = u10v*100.0_8
                 v_cm = v10v*100.0_8
                 spd = sqrt(u_cm*u_cm + v_cm*v_cm)

@@ -45,7 +45,7 @@ contains
         ! c10 = dt1/dx [с/см].
         c10 = dt1/dx
 
-        ! --- X-COORDINATE ---
+        ! --- X-COORDINATE (компонента UP2) ---
 
         do j = 3, js2
             do i = 2, is2
@@ -114,7 +114,7 @@ contains
             end do
         end do
 
-        ! Коррекция потоков FCT по X
+        ! Коррекция потоков FCT по X (лимитер Залесака)
         do j = 3, js
             do i = 2, is2
                 j2 = j - 1
@@ -132,7 +132,7 @@ contains
             end do
         end do
 
-        ! Обновление CD2
+        ! Обновление CD2 после коррекции по X
         do j = 3, js2
             j1 = j + 1
             do i = 2, is2
@@ -141,7 +141,7 @@ contains
             end do
         end do
 
-        ! --- Y-COORDINATE ---
+        ! --- Y-COORDINATE (для UP2) ---
 
         do j = 3, js2
             do i = 3, is2
@@ -161,7 +161,7 @@ contains
             end do
         end do
 
-        ! Обновление UP2
+        ! Обновление UP2 после коррекции по Y
         do j = 3, js2
             do i = 2, is2
                 i1 = i + 1
@@ -239,7 +239,7 @@ contains
             end do
         end do
 
-        ! Коррекция потоков FCT для V
+        ! Коррекция потоков FCT для V (по X)
         do j = 3, js2
             do i = 3, is2
                 j2 = j - 1
@@ -257,7 +257,7 @@ contains
             end do
         end do
 
-        ! Обновление CD2 для V
+        ! Обновление CD2 для V после коррекции по X
         do j = 2, js2
             j1 = j + 1
             do i = 3, is2
@@ -266,7 +266,7 @@ contains
             end do
         end do
 
-        ! Y-координата для V
+        ! Y-координата для V (лимитер по Y)
         do j = 2, js2
             do i = 3, is
                 i1 = i + 1

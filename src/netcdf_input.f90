@@ -19,26 +19,32 @@ module netcdf_input
     use netcdf
     implicit none
 
-    ! ERA5-поля в исходных единицах. Размеры определяются по факту из файла.
+    ! --- ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ: ХРАНЕНИЕ ERA5 ПОЛЕЙ ---
+    ! Размеры определяются динамически при чтении файла.
     integer :: era5_ntime = 0, era5_nlat = 0, era5_nlon = 0
+    ! Время: секунды с 1970-01-01 (Unix epoch), real(8) для точности
     real(8), allocatable :: era5_time(:)       ! [s since 1970-01-01]
+    ! Координаты: ERA5 latitude [degrees_north], longitude [degrees_east]
     real(8), allocatable :: era5_lat(:)        ! [degrees_north]
     real(8), allocatable :: era5_lon(:)        ! [degrees_east]
-    real(4), allocatable :: era5_u10(:, :, :)  ! [m s-1] (nlat, nlon, ntime)
-    real(4), allocatable :: era5_v10(:, :, :)  ! [m s-1]
-    real(4), allocatable :: era5_t2m(:, :, :)  ! [K]
-    real(4), allocatable :: era5_msl(:, :, :)  ! [Pa]
-    real(4), allocatable :: era5_d2m(:, :, :)  ! [K] dew point temperature
-    real(4), allocatable :: era5_tcc(:, :, :)  ! [1] total cloud cover
+    ! 3D поля (nlat, nlon, ntime) в исходных единицах ERA5:
+    real(4), allocatable :: era5_u10(:, :, :)  ! [m s-1] u-компонента ветра на 10м
+    real(4), allocatable :: era5_v10(:, :, :)  ! [m s-1] v-компонента ветра на 10м
+    real(4), allocatable :: era5_t2m(:, :, :)  ! [K] температура воздуха на 2м
+    real(4), allocatable :: era5_msl(:, :, :)  ! [Pa] давление на уровне моря
+    real(4), allocatable :: era5_d2m(:, :, :)  ! [K] температура точки росы на 2м
+    real(4), allocatable :: era5_tcc(:, :, :)  ! [1] total cloud cover (доли единицы)
+    ! Snowfall: CDS variable 'sf' - 12-часовая накопленная снегозапас [m water equivalent]
+    ! После деления на 43200с (12ч) в merge_snowfall.py -> [m s-1] rate
     real(4), allocatable :: era5_snowfall(:, :, :)  ! [m s-1] snowfall rate (water equivalent)
-    real(4) :: era5_fill = 3.4028235e38        ! заполнитель/нет данных (ERA5 GRIB missing)
-    logical :: era5_lat_decreasing = .false.   ! флаг направления координаты latitude
-    logical :: era5_is_open = .false.          ! открыт ли файл
+    real(4) :: era5_fill = 3.4028235e38        ! Заполнитель/нет данных (ERA5 GRIB missing value)
+    logical :: era5_lat_decreasing = .false.   ! Флаг: широта в файле убывающая (90 -> -90)
+    logical :: era5_is_open = .false.          ! Флаг: открыт ли файл для чтения
 
 contains
 
     ! ==========================================================================
-    ! Открытие файла, чтение размерностей, координат, времени и всех переменных.
+    ! era5_open: Открытие файла, чтение размерностей, координат, времени и всех переменных.
     ! При любой ошибке печатает понятное сообщение и возвращает status != 0.
     ! ==========================================================================
     subroutine era5_open(filename, status)
@@ -53,14 +59,15 @@ contains
 
         status = 0
 
-        ! --- Открытие файла ---
+        ! --- Открытие файла (read-only) ---
         nf_status = nf90_open(trim(filename), nf90_nowrite, ncid)
         if (.not. nc_input_ok(nf_status, 'open', filename=filename)) then
             status = 1
             return
         end if
 
-        ! --- Чтение размерностей ---
+        ! --- Чтение размерностей (проверка валидности) ---
+        ! Время: может называться 'valid_time' (CDS) или 'time' (legacy)
         nf_status = nf90_inq_dimid(ncid, 'valid_time', dimid)
         if (nf_status .ne. nf90_noerr) nf_status = nf90_inq_dimid(ncid, 'time', dimid)
         if (.not. nc_input_ok(nf_status, 'inquire time dimension', filename=filename)) then
@@ -73,6 +80,7 @@ contains
             goto 999
         end if
 
+        ! Широта
         nf_status = nf90_inq_dimid(ncid, 'latitude', dimid)
         if (.not. nc_input_ok(nf_status, 'inquire latitude dimension', filename=filename)) then
             status = 1
@@ -84,6 +92,7 @@ contains
             goto 999
         end if
 
+        ! Долгота
         nf_status = nf90_inq_dimid(ncid, 'longitude', dimid)
         if (.not. nc_input_ok(nf_status, 'inquire longitude dimension', filename=filename)) then
             status = 1
@@ -106,7 +115,7 @@ contains
         era5_nlat = nlat
         era5_nlon = nlon
 
-        ! --- Выделение памяти ---
+        ! --- Выделение памяти под все поля ---
         if (allocated(era5_time)) deallocate (era5_time)
         if (allocated(era5_lat)) deallocate (era5_lat)
         if (allocated(era5_lon)) deallocate (era5_lon)
@@ -224,7 +233,7 @@ contains
     end subroutine era5_open
 
     ! ==========================================================================
-    ! Чтение одной переменной целиком в массив (nlat, nlon, ntime).
+    ! era5_read_var: Чтение одной переменной целиком в массив (nlat, nlon, ntime).
     ! Учитывает переворот latitude: файл хранит время первым измерением,
     ! поэтому читаем через временную копию и разворачиваем lat.
     ! ==========================================================================
@@ -269,7 +278,7 @@ contains
     end subroutine era5_read_var
 
     ! ==========================================================================
-    ! Диагностика: мин/макс всех прочитанных переменных и координат.
+    ! era5_diag: Диагностика мин/макс всех прочитанных переменных и координат.
     ! Служит для контроля корректности чтения (Этап 3).
     ! ==========================================================================
     subroutine era5_diag()
@@ -304,6 +313,7 @@ contains
     ! ==========================================================================
 
     ! Перевод календарной даты (proleptic Gregorian) в секунды с 1970-01-01.
+    ! Использует алгоритм days_from_civil (Howard Hinnant).
     subroutine era5_calendar_to_seconds(y, mo, d, h, sec)
         integer, intent(in) :: y, mo, d, h
         real(8), intent(out) :: sec
@@ -327,6 +337,7 @@ contains
     end subroutine era5_calendar_to_seconds
 
     ! Поиск ближайшего (nearest) ERA5 time index для заданных секунд.
+    ! Использует бинарный поиск по возрастающему массиву era5_time.
     subroutine era5_find_time_index(sec, idx)
         real(8), intent(in) :: sec
         integer, intent(out) :: idx
@@ -454,6 +465,7 @@ contains
         end if
         wlon = min(max(wlon, 0.0_8), 1.0_8)
 
+        ! Билинейная интерполяция: f = (1-wlat)(1-wlon)*f00 + wlat(1-wlon)*f10 + ...
         value = (1.0_8 - wlat)*(1.0_8 - wlon)*field(ilat, jlon) &
                 + wlat*(1.0_8 - wlon)*field(ilat1, jlon) &
                 + (1.0_8 - wlat)*wlon*field(ilat, jlon1) &
@@ -462,7 +474,7 @@ contains
     end function era5_bilinear2d
 
     ! ==========================================================================
-    ! Проверка кода возврата NetCDF. Вместо тихих ошибок печатает контекст.
+    ! nc_input_ok: Проверка кода возврата NetCDF. Вместо тихих ошибок печатает контекст.
     ! ==========================================================================
     logical function nc_input_ok(nf_status, operation, filename, variable)
         integer, intent(in) :: nf_status

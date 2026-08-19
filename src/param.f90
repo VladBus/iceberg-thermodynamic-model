@@ -21,7 +21,7 @@
 module param
     implicit none
 
-    ! Параметры сетки
+    ! --- ПАРАМЕТРЫ СЕТКИ ---
     ! IS, JS - число ячеек по X(Y); KS - число Z-уровней.
     ! IS1=IS+1, JS1=JS+1, KS1=KS+1 — размеры с ghost-узлами для границ.
     integer, parameter :: is = 132, js = 104, ks = 18, is1 = 133, js1 = 105, ks1 = 19
@@ -31,19 +31,20 @@ module param
     integer, parameter :: is4 = 135, js4 = 107
     integer, parameter :: li = 4, lj = 35
 
-    ! Массивы океанского блока
+    ! --- МАССИВЫ ОКЕАНСКОГО БЛОКА ---
     ! MAP1 - усредненная глубина ячейки [см].
     ! Z, DZ, DZ1 - вертикальные координаты: Z[см] глубина центра уровня,
     !              DZ[см] толщина полного слоя, DZ1[см] толщина полуслоя.
     ! U1, U2, V1, V2 - компоненты скорости тока [см/с] на текущем/предыдущем шаге.
-    !                  U1/V1 — шаг DT, U2/V2 — шаг DT1 (баротропный).
+    !                  U1/V1 — шаг DT (бароклинный), U2/V2 — шаг DT1 (баротропный).
     ! FKU - параметр Кориолиса [1/с] в U-точках.
     ! DRX, DRY - бароклинные градиенты давления [см/с²] (отключены в shallow_water).
     ! SKZ - вертикальный турбулентный обмен тепла/соли [см²/с].
-    real :: map1(is1, js1), z(ks), dz(ks1), dz1(ks), &
+    real :: map1(is1, js1), z(ks), dz(ks), dz1(ks), &
             u1(is1, js1, ks), u2(is1, js1, ks), v1(is1, js1, ks), v2(is1, js1, ks), &
             fku(is1, js1), drx(is1, js1), dry(is1, js1), skz(is1, js1)
 
+    ! Массивы для решения трехдиагональных систем (вертикальная вязкость, Томаса)
     double precision :: uca(ks1), unu(ks1), vca(ks1), vnu(ks1)
 
     ! HU, HV - глубины на гранях U и V [см].
@@ -76,7 +77,8 @@ module param
             w(is1, js1, ks1), tt(ks1), ss(ks1), rr(ks1), skt(is1, js1), &
             cd(is1, js1, ks), apx(is1, js1, ks), apy(is1, js1, ks), apz(is1, js1, ks1)
 
-    ! Маски: KK1 - ячейка воды для U/V; KT1 - индекс дна (число мокрых уровней).
+    ! --- МАСКИ И ГЕОМЕТРИЯ ---
+    ! KK1 - ячейка воды для U/V; KT1 - индекс дна (число мокрых уровней).
     ! IDX, IDY - вертикальные границы для W (минимальный из двух соседей).
     ! IT - идентификатор береговой конфигурации для адвекции льда.
     ! KUSH, KVSH - флаг активной U/V-грани (1=внутренняя, 0=берег).
@@ -86,7 +88,7 @@ module param
                it(is1, js1), kush(is1, js1), kvsh(is1, js1), iku(is1, js1), ikv(is1, js1), &
                iip(is1, js1)
 
-    ! Массивы ледового блока
+    ! --- МАССИВЫ ЛЕДОВОГО БЛОКА ---
     ! U0, V0, U, V - скорость льда [м/с] (предыдущая/текущая) и рабочие копии.
     ! WICE1 - объем льда в категории [м] (эквивалентно A_k * h_k).
     ! AN1 - площадь категории: AN1(:,:,1) = открытая вода; AN1(:,:,k+1) = категория k.
@@ -111,7 +113,7 @@ module param
             anp(ngr), danp(ngr), hsnp(ngr), hicp(ngr), &
             sicst(ngr), hst(ngr), hmax(ngr), alsn(12)
 
-    ! Массивы метеорологических данных
+    ! --- МАССИВЫ МЕТЕОРОЛОГИЧЕСКИХ ДАННЫХ ---
     ! TX, TY - касательное напряжение ветра [дина/см²].
     ! TX1, TY1, DPX1, DPY1, WINDX1, WINDY1 - целевые поля для 12-часовой интерполяции.
     ! DPX, DPY - градиенты атмосферного давления [гПа/км] или [hPa/100км].
@@ -152,21 +154,21 @@ module param
     real :: fff(li)
     integer :: mmm(12)
 
-    ! Режимы внешнего форсинга.
+    ! --- РЕЖИМЫ ВНЕШНЕГО ФОРСИНГА ---
     ! forcing_mode_legacy - старый путь: DAV4_5.98 -> p -> геострофический ветер.
     ! forcing_mode_era5  - новый путь: NetCDF (u10/v10/msl/t2m) -> интерполяция.
     integer, parameter :: forcing_mode_legacy = 0
     integer, parameter :: forcing_mode_era5 = 1
     integer :: forcing_mode = forcing_mode_legacy
 
-    ! Режим модельной сетки координат.
+    ! --- РЕЖИМ МОДЕЛЬНОЙ СЕТКИ КООРДИНАТ ---
     ! grid_mode_real - координаты FI/DL читаются из KOORD.DAT (REAL grid).
     ! grid_mode_test  - синтетическая сетка TEST ONLY (KOORD.DAT отсутствует).
     integer, parameter :: grid_mode_real = 0
     integer, parameter :: grid_mode_test = 1
     integer :: grid_mode = grid_mode_test
 
-    ! --- Конфигурация прогона (Stage 6.2: изоляция выходов по run_id) ---
+    ! --- КОНФИГУРАЦИЯ ПРОГОНА (Stage 6.2: изоляция выходов по run_id) ---
     ! Каждый научный прогон пишет выходы в data/runs/<run_id>/output/{nc,csv,txt,logs,figures}.
     ! run_id задаётся первым аргументом командной строки main (например
     ! '2020_Q1_test_heat_on'), по умолчанию - исторический Q1-прогон.
@@ -181,7 +183,7 @@ module param
     character(len=256) :: run_fig_dir = ''
     character(len=256) :: era5_input_file = 'data/input/processed/era5/2020/2020_Q1/era5_2020_0103_barents_expanded_merged.nc'
 
-    ! Инициализация данных (блок DATA)
+    ! --- ИНИЦИАЛИЗАЦИЯ ДАННЫХ (БЛОК DATA) ---
     ! Z - глубины центров 18 Z-уровней [см].
     data z/250., 500., 1000., 1500., 2000., 2500., 3000., 4000., &
         5000., 7500., 10000., 15000., 20000., 25000., &

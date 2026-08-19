@@ -265,7 +265,7 @@ contains
                   position='append')
         end if
         write (ca_diag_unit, '(I4,A,I3,A,I4,A,I4,A,I3,A,I5,A,I8,A,I3,A,ES12.4,'// &
-               'A,ES13.5,A,ES13.5,A,ES13.5,A,ES13.5,A,ES13.5,A,ES13.5,A,ES13.5,A,ES13.5)') &
+               'A,ES13.5,A,ES13.5,A,ES13.5,A,ES13.5,A,ES13.5,A,ES13.5,A,ES13.5)') &
             day, ',', step, ',', i, ',', j, ',', ki, ',', iter_count, ',', nmix, ',', &
             k_problem, ',', resid_inv, ',', &
             tdz_before, ',', tdz_after, ',', dtdz, ',', rel_t, ',', &

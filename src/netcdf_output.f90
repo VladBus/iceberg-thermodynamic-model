@@ -52,6 +52,7 @@ contains
         real :: dpx_pam(is1, js1), dpy_pam(is1, js1)
         real :: tatm_k(is1, js1), patm_pa(is1, js1)
 
+        ! --- ПОДГОТОВКА КООРДИНАТ ---
         ! x/y - индексы регулярной сетки в км; dx в модели задан в сантиметрах.
         do i = 1, is1
             x_coord(i) = real(i - 1)*13.89
@@ -69,6 +70,7 @@ contains
         end do
         depth_w(ks1) = z(ks)*1.0e-2 + 0.5*(z(ks) - z(ks - 1))*1.0e-2
 
+        ! --- СОЗДАНИЕ ФАЙЛА ---
         status = nf90_create(trim(filename), nf90_clobber, ncid)
         if (.not. nc_ok(status, 'create '//trim(filename))) return
 
@@ -90,7 +92,7 @@ status = nf90_put_att(ncid, nf90_global, 'unit_system', 'SI (canonical external 
             status = nf90_close(ncid); return
         end if
 
-        ! Измерения
+        ! --- ОПРЕДЕЛЕНИЕ ИЗМЕРЕНИЙ ---
         status = nf90_def_dim(ncid, 'x', is1, x_dimid)
         if (.not. nc_ok(status, 'define x dimension')) then
             status = nf90_close(ncid); return
@@ -108,7 +110,7 @@ status = nf90_put_att(ncid, nf90_global, 'unit_system', 'SI (canonical external 
             status = nf90_close(ncid); return
         end if
 
-        ! Координатные переменные
+        ! --- КООРДИНАТНЫЕ ПЕРЕМЕННЫЕ ---
         status = nf90_def_var(ncid, 'x', nf90_real, (/x_dimid/), x_varid)
         if (.not. nc_ok(status, 'define x coordinate')) then
             status = nf90_close(ncid); return
@@ -136,7 +138,7 @@ status = nf90_put_att(ncid, nf90_global, 'unit_system', 'SI (canonical external 
             status = nf90_close(ncid); return
         end if
 
-        ! Океанические переменные
+        ! --- ОКЕАНИЧЕСКИЕ ПЕРЕМЕННЫЕ ---
      status = nf90_def_var(ncid, 'water_column_levels', nf90_int, (/x_dimid, y_dimid/), level_varid)
         if (.not. nc_ok(status, 'define water mask')) then
             status = nf90_close(ncid); return
@@ -145,7 +147,7 @@ status = nf90_put_att(ncid, nf90_global, 'unit_system', 'SI (canonical external 
         if (.not. nc_ok(status, 'define temperature')) then
             status = nf90_close(ncid); return
         end if
-       status = nf90_def_var(ncid, 'salinity_mass_fraction', nf90_real, (/x_dimid, y_dimid, z_dimid/), salt_varid)
+        status = nf90_def_var(ncid, 'salinity_mass_fraction', nf90_real, (/x_dimid, y_dimid, z_dimid/), salt_varid)
         if (.not. nc_ok(status, 'define salinity')) then
             status = nf90_close(ncid); return
         end if
@@ -157,7 +159,7 @@ status = nf90_put_att(ncid, nf90_global, 'unit_system', 'SI (canonical external 
             status = nf90_close(ncid); return
         end if
 
-        ! Снежный покров и лед (Stage 6.6) - по категориям толщины
+        ! --- СНЕЖНЫЙ ПОКРОВ И ЛЕД (Stage 6.6) - ПО КАТЕГОРИЯМ ТОЛЩИН ---
         status = nf90_def_dim(ncid, 'ice_category', ngr, cat_dimid)
         if (.not. nc_ok(status, 'define ice_category dimension')) then
             status = nf90_close(ncid); return
@@ -175,7 +177,7 @@ status = nf90_put_att(ncid, nf90_global, 'unit_system', 'SI (canonical external 
             status = nf90_close(ncid); return
         end if
 
-        ! 3D-течения океана [см/с]
+        ! --- 3D-ТЕЧЕНИЯ ОКЕАНА [см/с] ---
         status = nf90_def_var(ncid, 'u_velocity', nf90_real, (/x_dimid, y_dimid, z_dimid/), u_varid)
         if (.not. nc_ok(status, 'define u_velocity')) then
             status = nf90_close(ncid); return
@@ -189,7 +191,7 @@ status = nf90_put_att(ncid, nf90_global, 'unit_system', 'SI (canonical external 
             status = nf90_close(ncid); return
         end if
 
-        ! Диагностические поля форсинга
+        ! --- ДИАГНОСТИЧЕСКИЕ ПОЛЯ ФОРСИНГА ---
         status = nf90_def_var(ncid, 'wind_speed', nf90_real, (/x_dimid, y_dimid/), wind_varid)
         if (.not. nc_ok(status, 'define wind_speed')) then
             status = nf90_close(ncid); return
@@ -239,7 +241,7 @@ status = nf90_put_att(ncid, nf90_global, 'unit_system', 'SI (canonical external 
             status = nf90_close(ncid); return
         end if
 
-        ! Атрибуты переменных
+        ! --- АТРИБУТЫ ПЕРЕМЕННЫХ (CF-1.10 metadata) ---
         call set_att(ncid, x_varid, 'units', 'km')
         call set_att(ncid, x_varid, 'standard_name', 'projection_x_coordinate')
 
@@ -286,7 +288,7 @@ status = nf90_put_att(ncid, nf90_global, 'unit_system', 'SI (canonical external 
         call set_att(ncid, ice_thick_varid, 'comment', 'ice thickness [m] for each of 5 ice thickness categories (internal m)')
 
         call set_att(ncid, ice_conc_varid, 'units', '1')
-        call set_att(ncid, ice_conc_varid, 'long_name', 'ice concentration per ice thickness category')
+     call set_att(ncid, ice_conc_varid, 'long_name', 'ice concentration per ice thickness category')
         call set_att(ncid, ice_conc_varid, 'comment', 'ice area fraction [0-1] for each of 5 ice thickness categories (internal fraction)')
 
         call set_att(ncid, u_varid, 'units', 'm s-1')
@@ -358,7 +360,7 @@ status = nf90_put_att(ncid, nf90_global, 'unit_system', 'SI (canonical external 
             status = nf90_close(ncid); return
         end if
 
-        ! Запись данных
+        ! --- ЗАПИСЬ ДАННЫХ ---
         status = nf90_put_var(ncid, x_varid, x_coord)
         if (.not. nc_ok(status, 'write x coordinate')) then
             status = nf90_close(ncid); return
@@ -429,7 +431,7 @@ status = nf90_put_att(ncid, nf90_global, 'unit_system', 'SI (canonical external 
         if (.not. nc_ok(status, 'write ice_thickness')) then
             status = nf90_close(ncid); return
         end if
-        status = nf90_put_var(ncid, ice_conc_varid, an1(:,:,2:ngr1))
+        status = nf90_put_var(ncid, ice_conc_varid, an1(:, :, 2:ngr1))
         if (.not. nc_ok(status, 'write ice_concentration')) then
             status = nf90_close(ncid); return
         end if
@@ -505,6 +507,7 @@ status = nf90_put_att(ncid, nf90_global, 'unit_system', 'SI (canonical external 
         print *, '>>> Successfully wrote NetCDF file: ', trim(filename)
     end subroutine write_nc
 
+    ! Вспомогательная подпрограмма: запись атрибута
     subroutine set_att(ncid, varid, name, val)
         integer, intent(in) :: ncid, varid
         character(len=*), intent(in) :: name, val
@@ -513,6 +516,7 @@ status = nf90_put_att(ncid, nf90_global, 'unit_system', 'SI (canonical external 
         if (.not. nc_ok(st, 'write att '//trim(name))) return
     end subroutine set_att
 
+    ! Проверка статуса NetCDF
     logical function nc_ok(status, operation)
         integer, intent(in) :: status
         character(len=*), intent(in) :: operation

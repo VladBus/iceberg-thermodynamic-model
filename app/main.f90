@@ -35,10 +35,18 @@ program main
     implicit none
 
     ! --- Локальные переменные ---
-    real :: god, mes, den, hour
-    integer :: kl1, nom, mm1, mm2, mm3, mm4, mm5, kkb
-    real :: dt1, dt, dx, ah, aht, ahs, g, roc, cp
+    ! Временные переменные (модельное время)
+    real :: god, mes, den, hour          ! Год, месяц, день, час (текущие в модели)
+    ! Флаги управления
+    integer :: kl1, nom                  ! kl1=1 включает термодинамику (требует patm>0)
+    ! Параметры временной сетки
+    integer :: mm1, mm2, mm3, mm4, mm5, kkb
+    real :: dt1, dt, dx                  ! Временные шаги [с] и пространственный шаг [см]
+    ! Физические константы
+    real :: ah, aht, ahs, g, roc, cp     ! Коэффициенты диффузии, g, rho0, Cp
+    ! Производные константы (вычисляются один раз для скорости)
     real :: c1, c2, c3, c4, c5, c8, c9, c10, c11, c12, c15, c16, c17
+    ! Рабочие переменные для вычислений в циклах
     real :: sas, a, b, a1, b1, a2, b2, a3, b3, a4, b4, cc_val
     real :: hht, uij, vij, fix, fiy, aa, au, av, sl, du, ff, ff1
     real :: dzz, dzzz, dzz1, dz1z, bb, sum, sum1, asa1, asa, ymm, hh1, hh2
@@ -46,23 +54,26 @@ program main
     real :: ri2j, rij, ri2j2, rij2, slapu, slapv, auu, avv
     real :: ck1, ck2, ww1, ww2, ww
 
-    integer :: mmmm, lll, kkk, iii, jjj
+    ! Счетчики циклов
+    integer :: mmmm, lll, kkk, iii, jjj  ! Год, месяц, день, шаг в сутках, баротропный шаг
     integer :: i, j, k, i1, i2, j1, j2, k1, k2, ki, kk, ki1, ki2
     integer :: ix1, ix2, iy1, iy2
-    integer :: nday, nday1, ikkk, ios
+    integer :: nday, nday1, ikkk, ios    ! Счетчики дней и I/O статус
 
     ! --- ERA5 snowfall accumulation for monthly sfal climatology (Stage 6.6) ---
-    real :: sfal_accum(12)
-    integer :: sfal_count(12)
+    ! Накопление дневных средних снегопада ERA5 для вычисления месячной климатологии sfal
+    real :: sfal_accum(12)               ! Накопленная сумма дневных средних [м/с]
+    integer :: sfal_count(12)            ! Число дней в накоплении для каждого месяца
 
-    real :: ecc = 0.0, ess = 0.0
-    character(len=20) :: nam_file
-    character(len=64) :: day_file
-    character(len=64) :: run_id_arg
-    character(len=256) :: era5_arg
-    real(8) :: start_sec
-    integer :: nperday
-    integer :: narg, arglen
+    ! Энергетические диагностики
+    real :: ecc = 0.0, ess = 0.0         ! Предыдущая и текущая кинетическая энергия
+    character(len=20) :: nam_file        ! Имя файла начального льда (1_1.ice ... 1_5.ice)
+    character(len=64) :: day_file        ! Имя суточного NetCDF файла
+    character(len=64) :: run_id_arg      ! Аргумент командной строки: run_id
+    character(len=256) :: era5_arg       ! Аргумент командной строки: путь ERA5 файла
+    real(8) :: start_sec                 ! Время первого ERA5-среза в секундах с эпохи
+    integer :: nperday                   ! Число ERA5-срезов в сутки
+    integer :: narg, arglen              ! Количество и длина аргументов командной строки
 
     print *, "================================================="
     print *, "   AARI Iceberg Thermodynamic & Dynamics Model   "
@@ -114,27 +125,27 @@ program main
     nday1 = 0           ! Общий счетчик дней модельного времени
 
     ! --- Физические константы модели ---
-    ah = 7.5e6          ! Коэффициент горизонтальной турбулентной диффузии импульса
-    aht = 7.5e6         ! Коэффициент горизонтальной диффузии тепла
-    ahs = 7.5e6         ! Коэффициент горизонтальной диффузии солености
-    g = 981.0           ! Ускорение силы тяжести (см/с²)
-    roc = 1.0           ! Характерная плотность воды (г/см³)
-    cp = 0.958          ! Удельная теплоемкость / эмпирический коэффициент
+    ah = 7.5e6          ! Коэффициент горизонтальной турбулентной диффузии импульса [см²/с]
+    aht = 7.5e6         ! Коэффициент горизонтальной диффузии тепла [см²/с]
+    ahs = 7.5e6         ! Коэффициент горизонтальной диффузии солености [см²/с]
+    g = 981.0           ! Ускорение силы тяжести [см/с²]
+    roc = 1.0           ! Характерная плотность воды [г/см³] (базовая для аномалий)
+    cp = 0.958          ! Удельная теплоемкость / эмпирический коэффициент [безразмерно]
 
-    ! --- Расчетные вспомогательные константы ---
-    c1 = g/roc
-    c2 = dt/dx
-    c3 = ah/(dx*dx)
-    c4 = aht/(dx*dx)*dt
-    c5 = ahs/(dx*dx)*dt
-    c8 = 0.25/dx
-    c9 = 0.5/dx
-    c10 = dt1/dx
-    c11 = g/dx*0.005
-    c12 = 1.0/dx
-    c15 = cos(15.0/57.3)
-    c16 = sin(15.0/57.3)
-    c17 = 0.0055*1000.0/910.0
+    ! --- Расчетные вспомогательные константы (вычисляются один раз для скорости) ---
+    c1 = g/roc                      ! g/rho0 [см/с² / (г/см³)] = см⁴/г/с²
+    c2 = dt/dx                      ! Число Куранта для бароклинного шага [с/см]
+    c3 = ah/(dx*dx)                 ! Коэффициент горизонтальной вязкости [1/с]
+    c4 = aht/(dx*dx)*dt             ! Коэффициент диффузии тепла [безразмерно]
+    c5 = ahs/(dx*dx)*dt             ! Коэффициент диффузии соли [безразмерно]
+    c8 = 0.25/dx                    ! Фактор 1/4dx для градиентов [1/см]
+    c9 = 0.5/dx                     ! Фактор 1/2dx для градиентов [1/см]
+    c10 = dt1/dx                    ! Число Куранта для баротропного шага [с/см]
+    c11 = g/dx*0.005                ! Градиент давления с масштабированием [см/с²]
+    c12 = 1.0/dx                    ! Обратный шаг сетки [1/см]
+    c15 = cos(15.0/57.3)            ! cos(15°) для поворота напряжений (Кориолис)
+    c16 = sin(15.0/57.3)            ! sin(15°) для поворота напряжений (Кориолис)
+    c17 = 0.0055*1000.0/910.0       ! Коэффициент трения вода-лед [безразмерно]
 
     ! --- Чтение приливных гармоник (с защитой iostat) ---
     amp1 = 0.0
@@ -156,14 +167,15 @@ program main
         print *, "WARNING: GRM2 missing, using defaults"
     end if
 
-    ! Инициализация частот приливных гармоник (M2, S2, K1, O1)
-    qq(1) = 28.9841042
-    qq(2) = 30.0
-    qq(3) = 15.041069
-    qq(4) = 13.943036
+    ! Инициализация частот приливных гармоник (M2, S2, K1, O1) [градусы/час]
+    qq(1) = 28.9841042   ! M2 - главная полусуточная лунная
+    qq(2) = 30.0         ! S2 - главная полусуточная солнечная
+    qq(3) = 15.041069    ! K1 - объявленная суточная
+    qq(4) = 13.943036    ! O1 - основная суточная лунная
 
     call datte()
 
+    ! Перевод угловых частот в радианы на баротропный шаг dt1
     q(1:4) = qq(1:4)*dt1/3600.0/57.2958
 
     ! --- Вызов модулей инициализации сетки и геометрии ---
@@ -225,11 +237,12 @@ program main
             ! Безопасное сравнение вещественного числа с нулем устраняет предупреждение -Wcompare-reals
             if (abs(sas) .lt. 1e-8) an1(i, j, 1) = 1.0
 
-            wice1(i, j, 1) = 0.20*an1(i, j, 2)
-            wice1(i, j, 2) = 0.40*an1(i, j, 3)
-            wice1(i, j, 3) = 0.95*an1(i, j, 4)
-            wice1(i, j, 4) = 1.60*an1(i, j, 5)
-            wice1(i, j, 5) = 2.50*an1(i, j, 6)
+            ! Инициализация толщин категорий льда на основе характерных толщин HST
+            wice1(i, j, 1) = 0.20*an1(i, j, 2)   ! Категория 1: 0.20 м
+            wice1(i, j, 2) = 0.40*an1(i, j, 3)   ! Категория 2: 0.40 м
+            wice1(i, j, 3) = 0.95*an1(i, j, 4)   ! Категория 3: 0.95 м
+            wice1(i, j, 4) = 1.60*an1(i, j, 5)   ! Категория 4: 1.60 м
+            wice1(i, j, 5) = 2.50*an1(i, j, 6)   ! Категория 5: 2.50 м
         end do
     end do
 
@@ -245,13 +258,13 @@ program main
     ! Записываем состояние океана ДО начала расчета (День 0)
     call write_nc(trim(run_nc_dir)//'/results_day_00.nc')
 
-    ! ====================================================================
-    !              ЧТЕНИЕ АТМОСФЕРНОГО ФОРСИНГА ERA5 (NetCDF)
-    ! ====================================================================
-    ! Этап 2/3: чтение и диагностика. Открываем файл полного месяца (январь
-    ! 2020). Пока это только проверка канала ввода; подключение к физике
-    ! (wind/tx/ty/dpx/dpy/tatm/patm) выполняется на следующих этапах.
-    ! При ошибке чтения модель продолжает работу в legacy-режиме (без ERA5).
+! ====================================================================
+!              ЧТЕНИЕ АТМОСФЕРНОГО ФОРСИНГА ERA5 (NetCDF)
+! ====================================================================
+! Этап 2/3: чтение и диагностика. Открываем файл полного месяца (январь
+! 2020). Пока это только проверка канала ввода; подключение к физике
+! (wind/tx/ty/dpx/dpy/tatm/patm) выполняется на следующих этапах.
+! При ошибке чтения модель продолжает работу в legacy-режиме (без ERA5).
     if (forcing_mode .eq. forcing_mode_era5) then
         call era5_open(trim(era5_input_file), ios)
         if (ios .eq. 0) then
@@ -274,11 +287,12 @@ program main
         end if
     end if
 
-    ! ====================================================================
-    !                    ГЛАВНЫЙ ЦИКЛ ПО ВРЕМЕНИ
-    ! ====================================================================
+! ====================================================================
+!                    ГЛАВНЫЙ ЦИКЛ ПО ВРЕМЕНИ
+! ====================================================================
     print *, "Starting Main Integration Loop..."
 
+! Начальное состояние ветра/давления для первого дня
     pp(:) = p(:, kkb)
     if (forcing_mode .eq. forcing_mode_era5) then
         call era5_wind(start_sec)
@@ -286,17 +300,20 @@ program main
         call wind1()
     end if
 
-    ! --- Initialize ERA5 snowfall accumulation for monthly sfal climatology (Stage 6.6) ---
+! --- Initialize ERA5 snowfall accumulation for monthly sfal climatology (Stage 6.6) ---
     sfal_accum = 0.0
     sfal_count = 0
 
-    do mmmm = 1, mm5 ! Цикл по годам
+! --- ЦИКЛ ПО ГОДАМ (MMMM = 1..MM5) ---
+    do mmmm = 1, mm5
         nday = 0
-        do lll = 1, mm4 ! Цикл по месяцам
-            ! Reset monthly snowfall accumulator
+        ! --- ЦИКЛ ПО МЕСЯЦАМ (LLL = 1..MM4) ---
+        do lll = 1, mm4
+            ! Reset monthly snowfall accumulator at start of each month
             sfal_accum(lll) = 0.0
             sfal_count(lll) = 0
-            do kkk = kkb, mm1 ! Цикл по дням
+            ! --- ЦИКЛ ПО ДНЯМ (KKK = KKB..MM1) ---
+            do kkk = kkb, mm1
                 nday = nday + 1
                 nday1 = nday1 + 1
 
@@ -310,6 +327,7 @@ program main
                 ! Сброс суточных счётчиков convective adjustment (этап 4.2).
                 call ca_reset()
 
+                ! Сохранение полей предыдущего дня для временной интерполяции
                 dpx(:, :) = dpx1(:, :)
                 dpy(:, :) = dpy1(:, :)
                 windx(:, :) = windx1(:, :)
@@ -317,21 +335,25 @@ program main
                 tx(:, :) = tx1(:, :)
                 ty(:, :) = ty1(:, :)
 
+                ! Переход к следующим метеоданным (день KKK+1)
                 pp(:) = p(:, kkk + 1)
                 if (forcing_mode .eq. forcing_mode_era5) then
                     call era5_wind(start_sec + real(kkk, 8)*86400.0_8)
                     ! Update running monthly mean ERA5 snowfall rate for sfal climatology
                     ! so that heat() uses current best estimate
                     sfal_accum(lll) = sfal_accum(lll) &
-                        + compute_snowfall_mean(era5_snowfall_rate)
+                                      + compute_snowfall_mean(era5_snowfall_rate)
                     sfal_count(lll) = sfal_count(lll) + 1
-                    sfal(lll) = sfal_accum(lll) / real(sfal_count(lll))
+                    sfal(lll) = sfal_accum(lll)/real(sfal_count(lll))
                 else
                     call wind1()
                 end if
 
-                do iii = 1, mm2 ! Цикл по суткам
+                ! --- ЦИКЛ ПО СУТКАМ (III = 1..MM2) ---
+                ! MM2 = 12 означает 12 шагов термодинамики за сутки (dt = 3600 с)
+                do iii = 1, mm2
                     ! 1. Временная интерполяция ветровых напряжений
+                    ! Линейная интерполяция между текущим и следующим днем
                     if (iii .ne. 1) then
                         b = real(mm2 - iii + 2)
                         tx = tx + (tx1 - tx)/b
@@ -345,6 +367,7 @@ program main
                     ! windx/windy хранят см/с, а heat использует модуль скорости в м/с.
                     wind = sqrt(windx*windx + windy*windy)*1.0e-2
 
+                    ! Сохранение текущего шага как "предыдущего" для следующего шага
                     t1 = t2
                     s1 = s2
                     v1 = v2
@@ -359,6 +382,7 @@ program main
                     end if
 
                     ! 3. Динамика льда (баротропные подциклы)
+                    ! MM3 = 30 баротропных шагов на один бароклинный (dt1 = 120 с)
                     do jjj = 1, mm3
                         u0 = u
                         v0 = v
@@ -373,7 +397,7 @@ program main
                             do i = 2, is
                                 i1 = i + 1
                                 i2 = i - 1
-                                if (kk1(i, j) .eq. 0) cycle
+                                if (kt1(i, j) .eq. 0) cycle
 
                               hht = 0.25*(hices(i, j) + hices(i, j2) + hices(i2, j) + hices(i2, j2))
                                 if (hht .lt. 0.01) then
@@ -431,6 +455,7 @@ program main
                     end do
 
                     ! 4. Адвекция сплошности и массы льда
+                    ! Цикл по категориям толщины (NGR = 5 категорий)
                     do k = 1, ngr
                         k1 = k + 1
                         an3(:, :) = an1(:, :, k1)
@@ -448,6 +473,7 @@ program main
                     call redis()
 
                     ! 5. Расчет вертикальной составляющей скорости течений (W)
+                    ! Уравнение неразрывности: dW/dz = -div_h(U)
                     do j = 2, js
                         j1 = j + 1
                         j2 = j - 1
@@ -762,19 +788,19 @@ program main
 
             ! --- Final monthly ERA5 snowfall rate report (running mean already used by heat) ---
             if (forcing_mode .eq. forcing_mode_era5 .and. sfal_count(lll) .gt. 0) then
-                print *, "ERA5 Snowfall: month ", lll, " mean rate = ", sfal(lll), " m/s (", sfal_count(lll), " days)"
+            print *, "ERA5 Snowfall: month ", lll, " mean rate = ", sfal(lll), " m/s (", sfal_count(lll), " days)"
             end if
         end do ! Конец цикла месяцев LLL
     end do ! Конец цикла лет MMMM
 
     print *, "Integration completed successfully!"
 
-    ! Диагностика уравнения состояния после 5 дней (этап 3.1)
+! Диагностика уравнения состояния после 5 дней (этап 3.1)
     call eos_diag()
 
-    ! Записываем финальное состояние океана после интеграции.
-    ! Суточные срезы записаны внутри цикла как results_day_01.nc...30.nc,
-    ! поэтому финальный файл назван отдельно и не затирает суточный срез.
+! Записываем финальное состояние океана после интеграции.
+! Суточные срезы записаны внутри цикла как results_day_01.nc...30.nc,
+! поэтому финальный файл назван отдельно и не затирает суточный срез.
     call write_nc(trim(run_nc_dir)//'/results_day_final.nc')
 
 contains
@@ -870,7 +896,7 @@ contains
     ! avoiding conflict with variable named 'sum'.
     ! ==========================================================================
     real function compute_snowfall_mean(arr)
-        real, intent(in) :: arr(:,:)
+        real, intent(in) :: arr(:, :)
         integer :: i, j
         real :: total
 
@@ -880,7 +906,7 @@ contains
                 total = total + arr(i, j)
             end do
         end do
-        compute_snowfall_mean = total / real(is1 * js1)
+        compute_snowfall_mean = total/real(is1*js1)
     end function compute_snowfall_mean
 
 end program main

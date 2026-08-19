@@ -92,6 +92,7 @@ contains
                     cycle
                 end if
 
+                ! Напряжения возникают только при сплошности > 95%
                 if (ans(i, j) .lt. 0.95) then
                     exx(i, j) = 0.0; eyy(i, j) = 0.0; exy(i, j) = 0.0
                     sxx(i, j) = 0.0; syy(i, j) = 0.0; sxy(i, j) = 0.0
@@ -101,22 +102,26 @@ contains
                 a = exx(i, j) + eyy(i, j)
                 b = (sxx(i, j) + syy(i, j))*0.5
 
+                ! Если расходимость > 0 и давление >= 0 -> разжим, напряжения нулевые
                 if (a .gt. 0.0 .and. b .ge. 0.0) then
                     exx(i, j) = 0.0; eyy(i, j) = 0.0; exy(i, j) = 0.0
                     sxx(i, j) = 0.0; syy(i, j) = 0.0; sxy(i, j) = 0.0
                     cycle
                 end if
 
+                ! Масштабирование в 1e7 для удобства вычислений (дина/см²)
                 ssxx = exx(i, j)*1.e7
                 ssyy = eyy(i, j)*1.e7
                 ssxy = exy(i, j)*1.e7
 
+                ! Инварианты тензора деформации
                 a = (ssxx + ssyy)*0.5
                 b1 = (ssxx - ssyy)*0.5
                 b2 = sqrt(b1*b1 + ssxy*ssxy)
-                a1 = a + b2
-                a2 = a - b2
+                a1 = a + b2          ! Главное напряжение 1
+                a2 = a - b2          ! Главное напряжение 2
 
+                ! Критическая категория толщины для кривой текучести
                 k_crit = 1
                 do k = 1, ngr
                     if (an1(i, j, k + 1) .gt. 0.05) then
@@ -125,26 +130,32 @@ contains
                     end if
                 end do
 
+                ! Критическое значение по эллиптической кривой текучести
                 scrit = -0.43e5*hst(k_crit)**2
 
+                ! Внутри эллипса текучести -> упругие напряжения
                 if (a2 .gt. scrit .and. a1 .lt. 0.0) then
                     sxx(i, j) = ssxx; syy(i, j) = ssyy; sxy(i, j) = ssxy
                     cycle
                 end if
 
+                ! Проекция на границу эллипса текучести
                 if (a2 .lt. scrit) a2 = scrit
                 if (a1 .lt. scrit) a1 = scrit
                 if (a1 .gt. 0.0) a1 = 0.0
                 if (a2 .gt. 0.0) a2 = 0.0
 
+                ! Угол поворота главных осей
                 angl = atan2(ssxy, b1)*0.5
                 cor = cos(-angl)
                 sor = sin(-angl)
 
+                ! Обратное преобразование к компонентам тензора
                 sxx(i, j) = a1*cor*cor + a2*sor*sor
                 syy(i, j) = a1*sor*sor + a2*cor*cor
                 sxy(i, j) = -(a1 - a2)*cor*sor
 
+                ! Возврат в единицы деформации [1/с]
                 exx(i, j) = sxx(i, j)*1.e-7
                 eyy(i, j) = syy(i, j)*1.e-7
                 exy(i, j) = sxy(i, j)*1.e-7

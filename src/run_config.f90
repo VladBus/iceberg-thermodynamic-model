@@ -32,19 +32,25 @@ contains
         integer :: cmdstat
         character(len=512) :: cmd
 
+        ! Установка идентификатора прогона
         run_id = trim(run_id_arg)
-        run_output_dir = 'data/runs/'//trim(run_id)//'/output'
-        run_nc_dir = trim(run_output_dir)//'/nc'
-        run_csv_dir = trim(run_output_dir)//'/csv'
-        run_txt_dir = trim(run_output_dir)//'/txt'
-        run_log_dir = trim(run_output_dir)//'/logs'
-        run_fig_dir = trim(run_output_dir)//'/figures'
 
+        ! Построение путей выходных каталогов (структура Stage 6.2)
+        ! data/runs/<run_id>/output/{nc,csv,txt,logs,figures}
+        run_output_dir = 'data/runs/'//trim(run_id)//'/output'
+        run_nc_dir = trim(run_output_dir)//'/nc'      ! NetCDF файлы результатов
+        run_csv_dir = trim(run_output_dir)//'/csv'    ! CSV диагностики (daily_diagnostics.csv)
+        run_txt_dir = trim(run_output_dir)//'/txt'    ! Текстовые отчеты
+        run_log_dir = trim(run_output_dir)//'/logs'   ! Логи запуска
+        run_fig_dir = trim(run_output_dir)//'/figures'! Графики/фигуры
+
+        ! Переопределение ERA5 input файла, если передан аргументом
         if (present(era5_file)) then
             if (len_trim(era5_file) .gt. 0) era5_input_file = trim(era5_file)
         end if
 
         ! Создание дерева каталогов прогона (mkdir -p, идемпотентно).
+        ! Используем execute_command_line для вызова shell команды.
         write (cmd, '(A)') 'mkdir -p '//trim(run_nc_dir)//' '// &
             trim(run_csv_dir)//' '//trim(run_txt_dir)//' '// &
             trim(run_log_dir)//' '//trim(run_fig_dir)
@@ -53,6 +59,7 @@ contains
             print *, "WARNING: failed to create run directories for run_id=", trim(run_id)
         end if
 
+        ! Вывод конфигурации для диагностики
         print *, "RUN CONFIG: run_id        = ", trim(run_id)
         print *, "RUN CONFIG: output dir    = ", trim(run_output_dir)
         print *, "RUN CONFIG: nc dir        = ", trim(run_nc_dir)

@@ -60,8 +60,8 @@ program main
     integer :: ix1, ix2, iy1, iy2
     integer :: nday, nday1, ikkk, ios    ! Счетчики дней и I/O статус
 
-    ! --- ERA5 snowfall accumulation for monthly sfal climatology (Stage 6.6) ---
-    ! Накопление дневных средних снегопада ERA5 для вычисления месячной климатологии sfal
+    ! --- ERA5 snowfall diagnostics: monthly domain-mean sfal (Stage 7.1) ---
+    ! Доменная средняя для диагностики/валидации. НЕ используется для форсинга.
     real :: sfal_accum(12)               ! Накопленная сумма дневных средних [м/с]
     integer :: sfal_count(12)            ! Число дней в накоплении для каждого месяца
 
@@ -339,8 +339,7 @@ program main
                 pp(:) = p(:, kkk + 1)
                 if (forcing_mode .eq. forcing_mode_era5) then
                     call era5_wind(start_sec + real(kkk, 8)*86400.0_8)
-                    ! Update running monthly mean ERA5 snowfall rate for sfal climatology
-                    ! so that heat() uses current best estimate
+                    ! Diagnostic: update monthly domain-mean sfal for validation (not used for forcing)
                     sfal_accum(lll) = sfal_accum(lll) &
                                       + compute_snowfall_mean(era5_snowfall_rate)
                     sfal_count(lll) = sfal_count(lll) + 1
@@ -786,9 +785,9 @@ program main
                 call write_daily_diagnostics(kkk, lll)
             end do ! Конец цикла дней KKK
 
-            ! --- Final monthly ERA5 snowfall rate report (running mean already used by heat) ---
+            ! --- Final monthly ERA5 snowfall rate report (diagnostic domain-mean) ---
             if (forcing_mode .eq. forcing_mode_era5 .and. sfal_count(lll) .gt. 0) then
-            print *, "ERA5 Snowfall: month ", lll, " mean rate = ", sfal(lll), " m/s (", sfal_count(lll), " days)"
+            print *, "ERA5 Snowfall DIAG: month ", lll, " domain-mean = ", sfal(lll), " m/s (", sfal_count(lll), " days)"
             end if
         end do ! Конец цикла месяцев LLL
     end do ! Конец цикла лет MMMM

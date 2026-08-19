@@ -179,7 +179,7 @@ module param
     character(len=256) :: run_txt_dir = ''
     character(len=256) :: run_log_dir = ''
     character(len=256) :: run_fig_dir = ''
-    character(len=256) :: era5_input_file = 'data/input/processed/era5/2020/2020_Q1/era5_2020_0103_merged.nc'
+    character(len=256) :: era5_input_file = 'data/input/processed/era5/2020/2020_Q1/era5_2020_0103_barents_expanded_merged.nc'
 
     ! Инициализация данных (блок DATA)
     ! Z - глубины центров 18 Z-уровней [см].

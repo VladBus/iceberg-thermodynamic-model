@@ -112,14 +112,27 @@ conda run -n iceberg-thermodynamic-model python python/tests/test_units_roundtri
 | **5.5a** | Post-processing integrity: run manifest, dedup diagnostics, snowfall fix, plots | `fa5afe9` |
 | **5.5b** | Q1 output & unit audit: calendar, canonical SI NetCDF interface, EOS-verified extremes | (Stage 5.5b commits) |
 | **6.2** | Barents research-domain config (CDS area [90,10,70,70]), run-based data architecture, output isolation, run-aware Python, data cleanup, SI round-trip test | (Stage 6.2 commits) |
+| **6.3** | Source tree cleanup, reproducible project layout, dependency graph, FPM audit | `1e565db`, `54d9b18`, `84123a8` |
+| **6.3b** | Run/calendar semantics audit & fix (leap year, day N = start + N days) | `0101957` |
 
 ### Active / Pending
 
-- **Stage 3.5:** Real grid/bathymetry transition — DEFERRED until `KOORD.DAT` and `hhh.bar` provided. Model remains in validated `grid_mode=TEST`.
+- **Stage 3.5/6.1:** Real grid/bathymetry transition — DEFERRED until `KOORD.DAT` and `hhh.bar` provided. Model remains in validated `grid_mode=TEST`.
 - **Convective adjustment:** 1000-iteration guard (`iter_count > 1000`) preserved as correct workaround. **Root cause (Stage 4.3):** EOS `RO = 1.0/(0.698+aa/bb) − 1.02` is float32-quantized on the `2^-23 ≈ 1.19e-7` grid (intermediate `X ∈ [1,2)`); threshold `0.9e-7 < 2^-23` ⇒ convergence requires RO(k)==RO(k+1) exactly; 1-ulp residuals re-invert forever. Do NOT raise the threshold or switch EOS to double precision without promt.md procedure + approval. Stage 4.2 adds **monitoring only** (`ca_reset`/`ca_stats` counters, `daily_diagnostics.csv`); Stage 4.3 adds guard-event CSV (`convective_guard_events.csv`, cap 100/day) + `ca_probe_inversions` (A after advection / D after conv_adj).
 - **Thermodynamics (`heat()`):** gated by `kl1=0`; enabling requires ERA5 d2m/tcc/precip fields or documented TEST assumption.
 - **Full-month ERA5 run:** DONE for January 2020 (30 model days limited by slice coupling, not 31). Other months: use `python/era5/download_era5.py` and run with `fpm run -- <run_id> <era5_file>`.
 - **Barents-domain ERA5 download (Stage 6.2):** configuration/validator/defaults ready (`--domain barents`, area [90,10,70,70]); actual download pending CDS queue. `data/input/raw/era5/era5_test.nc` preserved for regression.
+- **Stage 6.4:** ERA5 Barents domain download (CDS queue pending).
+
+### Calendar Semantics (Fixed in Stage 6.3b)
+
+**Critical:** Model integration day `d` (1-indexed) = `start_date + d days`, NOT `start_date + (d-1) days`.
+- `day_00` = initial state at `start_date`
+- `day_01` = after 1 integration day → `start_date + 1 day`
+- `day_90` = after 90 integration days → `start_date + 90 days` (2020-03-31 for Q1 2020)
+- `results_day_final.nc` = duplicate of `day_90`
+
+All Python analysis scripts (`run_manifest.py`, `validate_q1_output.py`, `seasonal_analysis.py`) now use this semantics. The old hardcoded month boundaries in `seasonal_analysis.py` (leap year bug) were replaced with calendar-aware `datetime` arithmetic.
 
 ### Known Limitations
 
@@ -141,6 +154,8 @@ conda run -n iceberg-thermodynamic-model python python/tests/test_units_roundtri
 | `fpm test` (NetCDF, `results_day_final.nc`) | ✅ Pass |
 | `fpm run -fcheck=all -ffpe-trap` (30-day ERA5) | ✅ Clean, no FPE/NaN/Inf |
 | January 2020 ERA5 run | ✅ Completes, writes `results_day_01..30.nc` + `results_day_final.nc` |
+| Q1 2020 HEAT ON (90 days) | ✅ Completes, all validation PASS |
+| SI round-trip unit test | ✅ Pass |
 
 ## 7. How to Investigate
 
@@ -217,6 +232,9 @@ docs/wiki/
   Stage5.5b_units.md              <- full unit inventory (canonical SI external)
   Stage5.5b_q1_output_and_units_audit.md <- Q1 calendar + units + extremes audit report
   Stage6.1_real_grid.md     <- real grid deferral status
+  Stage6.2_barents_domain.md      <- Barents domain configuration
+  Stage6.2_data_cleanup.md        <- data reorganization details
+  Stage6.3b_run_calendar_semantics.md <- calendar semantics audit & fix
   ERA5_INTEGRATION_TODO.md <- live integration tracking
   ERA5_download.md          <- CDS API + raw data location
   Python_environment.md     <- conda env setup
@@ -238,6 +256,7 @@ src/
   ice_deform.f90         <- ice deformation
   ice_redis.f90          <- ice redeposition
   initial_conditions.f90 <- initial state setup
+  run_config.f90         <- run isolation (run dirs, defaults)
 app/
   main.f90               <- orchestrator (forcing_mode, blocks, exit nday1==42)
 test/
@@ -247,16 +266,27 @@ test/
   thermo_input_test.f90  <- thermodynamic input unit tests (8 checks)
   snowfall_test.f90      <- snowfall conversion unit tests (9 checks)
 python/
-  era5/download_era5.py  <- CDS API downloader (writes data/input/raw/era5/)
-  era5/check_era5.py     <- xarray inspection of downloaded file
-  era5/merge_snowfall.py <- merges snowfall accumulations into instantaneous file
-  analysis/              <- diagnostics.py, statistics.py, profiles.py, generate_report.py, convective_analysis.py, seasonal_analysis.py, snowfall_diagnostics.py
-  plotting/              <- plots.py, convective_plots.py, seasonal_plots.py (+ figures/, figures/seasonal/)
+  era5/download_era5.py  <- CDS API downloader (--domain barents default, new layout)
+  era5/check_era5.py     <- xarray inspection + domain coverage validation
+  era5/merge_snowfall.py <- merges snowfall accumulations into instantaneous file (writes `sf`)
+  analysis/run_context.py  <- RunContext, resolve_run(), add_run_args()
+  analysis/run_manifest.py <- run-aware manifest generation/validation
+  analysis/validate_q1_output.py <- Q1 output integrity (calendar + SI units)
+  analysis/units.py      <- SI → presentation unit conversions
+  analysis/seasonal_analysis.py <- multi-month (leap-year fixed)
+  analysis/heat_diagnostics.py, snowfall_diagnostics.py, profiles.py
+  analysis/convective_analysis.py, eos_precision_analysis.py
+  plotting/plots.py, seasonal_plots.py, convective_plots.py
+  tests/test_units_roundtrip.py  <- SI round-trip unit test
 data/
-  input/raw/era5/era5_2020_01.nc  <- ERA5 input (actual location)
-  input/raw/era5/era5_2020_01_merged.nc  <- ERA5 + snowfall merged
-  input/raw/era5/era5_2020_0103_merged.nc  <- Q1 2020 ERA5 + snowfall merged
-  output/                <- results_day_*.nc, results_day_final.nc, daily_diagnostics.csv, convective_guard_events.csv, convective_analysis.{csv,txt}, seasonal_*.{csv,txt}, run_manifest_*.json
+  input/raw/era5/2020/2020_01/  <- raw + snowfall (per month)
+  input/raw/era5/2020/2020_02/  <- raw + snowfall
+  input/raw/era5/2020/2020_03/  <- raw + snowfall
+  input/raw/era5/era5_test.nc   <- regression dataset (12 steps)
+  input/processed/era5/2020/2020_Q1/era5_2020_0103_merged.nc  <- Q1 merged
+  runs/<run_id>/output/{nc,csv,txt,logs,figures}/  <- run-isolated outputs
+  archive/{legacy,test,pre_cleanup}/  <- moved legacy data
+  output/  <- empty (legacy, not used)
 ```
 
 ## 10. Quick Test Reference
@@ -281,14 +311,20 @@ fpm test --flag "-I/usr/include" thermo_input_test  # 8 thermo input checks
 fpm test --flag "-I/usr/include" snowfall_test    # 9 snowfall checks
 
 # Seasonal analysis (multi-month)
-conda run -n iceberg-thermodynamic-model python python/analysis/seasonal_analysis.py
+conda run -n iceberg-thermodynamic-model python python/analysis/seasonal_analysis.py --run-id 2020_Q1_test_heat_on
 
 # Snowfall diagnostics
-conda run -n iceberg-thermodynamic-model python python/analysis/snowfall_diagnostics.py
+conda run -n iceberg-thermodynamic-model python python/analysis/snowfall_diagnostics.py --run-id 2020_Q1_test_heat_on
 
 # Seasonal plots (from corrected CSVs)
-conda run -n iceberg-thermodynamic-model python python/plotting/seasonal_plots.py
+conda run -n iceberg-thermodynamic-model python python/plotting/seasonal_plots.py --run-id 2020_Q1_test_heat_on
 
 # Run manifest generation/validation
-python python/analysis/run_manifest.py
+python python/analysis/run_manifest.py --run-id 2020_Q1_test_heat_on
+
+# Q1 output integrity validation (calendar + canonical SI units)
+python python/analysis/validate_q1_output.py --run-id 2020_Q1_test_heat_on
+
+# SI round-trip unit test
+conda run -n iceberg-thermodynamic-model python python/tests/test_units_roundtrip.py
 ```

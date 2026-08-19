@@ -41,6 +41,7 @@ contains
         integer :: humid_varid, cloud_varid, era5_snowfall_rate_varid
         integer :: status, i, k
         integer :: ro_varid
+        integer :: cat_dimid, snow_depth_varid, ice_thick_varid, ice_conc_varid
         real :: x_coord(is1), y_coord(js1), depth(ks), depth_w(ks1)
         ! Буферы канонических единиц СИ (только на границе вывода; внутренние
         ! массивы param не изменяются). Stage 5.5b.
@@ -156,6 +157,24 @@ status = nf90_put_att(ncid, nf90_global, 'unit_system', 'SI (canonical external 
             status = nf90_close(ncid); return
         end if
 
+        ! Снежный покров и лед (Stage 6.6) - по категориям толщины
+        status = nf90_def_dim(ncid, 'ice_category', ngr, cat_dimid)
+        if (.not. nc_ok(status, 'define ice_category dimension')) then
+            status = nf90_close(ncid); return
+        end if
+        status = nf90_def_var(ncid, 'snow_depth', nf90_real, (/x_dimid, y_dimid, cat_dimid/), snow_depth_varid)
+        if (.not. nc_ok(status, 'define snow_depth')) then
+            status = nf90_close(ncid); return
+        end if
+        status = nf90_def_var(ncid, 'ice_thickness', nf90_real, (/x_dimid, y_dimid, cat_dimid/), ice_thick_varid)
+        if (.not. nc_ok(status, 'define ice_thickness')) then
+            status = nf90_close(ncid); return
+        end if
+        status = nf90_def_var(ncid, 'ice_concentration', nf90_real, (/x_dimid, y_dimid, cat_dimid/), ice_conc_varid)
+        if (.not. nc_ok(status, 'define ice_concentration')) then
+            status = nf90_close(ncid); return
+        end if
+
         ! 3D-течения океана [см/с]
         status = nf90_def_var(ncid, 'u_velocity', nf90_real, (/x_dimid, y_dimid, z_dimid/), u_varid)
         if (.not. nc_ok(status, 'define u_velocity')) then
@@ -256,6 +275,19 @@ status = nf90_put_att(ncid, nf90_global, 'unit_system', 'SI (canonical external 
         call set_att(ncid, ro_varid, 'long_name', 'seawater density anomaly')
         call set_att(ncid, ro_varid, 'comment', 'computed by Fortran Eckart EOS (Stage 3.1); Python must not recompute. '// &
                    'Value is density ANOMALY (rho - 1.02 g/cm3) in kg m-3 (internal g cm-3 * 1000)')
+
+        ! Snow and ice attributes
+        call set_att(ncid, snow_depth_varid, 'units', 'm')
+        call set_att(ncid, snow_depth_varid, 'long_name', 'snow depth per ice thickness category')
+        call set_att(ncid, snow_depth_varid, 'comment', 'snow thickness [m] for each of 5 ice thickness categories (internal m)')
+
+        call set_att(ncid, ice_thick_varid, 'units', 'm')
+        call set_att(ncid, ice_thick_varid, 'long_name', 'ice thickness per ice thickness category')
+        call set_att(ncid, ice_thick_varid, 'comment', 'ice thickness [m] for each of 5 ice thickness categories (internal m)')
+
+        call set_att(ncid, ice_conc_varid, 'units', '1')
+        call set_att(ncid, ice_conc_varid, 'long_name', 'ice concentration per ice thickness category')
+        call set_att(ncid, ice_conc_varid, 'comment', 'ice area fraction [0-1] for each of 5 ice thickness categories (internal fraction)')
 
         call set_att(ncid, u_varid, 'units', 'm s-1')
         call set_att(ncid, u_varid, 'long_name', 'x-component of ocean velocity (along model X axis = j index)')
@@ -385,6 +417,20 @@ status = nf90_put_att(ncid, nf90_global, 'unit_system', 'SI (canonical external 
 
         status = nf90_put_var(ncid, ro_varid, ro_kgm3)
         if (.not. nc_ok(status, 'write density')) then
+            status = nf90_close(ncid); return
+        end if
+
+        ! Запись снежного покрова и льда (Stage 6.6) - единицы m и 1 (внутренние)
+        status = nf90_put_var(ncid, snow_depth_varid, hsnow)
+        if (.not. nc_ok(status, 'write snow_depth')) then
+            status = nf90_close(ncid); return
+        end if
+        status = nf90_put_var(ncid, ice_thick_varid, hice)
+        if (.not. nc_ok(status, 'write ice_thickness')) then
+            status = nf90_close(ncid); return
+        end if
+        status = nf90_put_var(ncid, ice_conc_varid, an1(:,:,2:ngr1))
+        if (.not. nc_ok(status, 'write ice_concentration')) then
             status = nf90_close(ncid); return
         end if
 

@@ -30,7 +30,7 @@ module netcdf_input
     real(4), allocatable :: era5_msl(:, :, :)  ! [Pa]
     real(4), allocatable :: era5_d2m(:, :, :)  ! [K] dew point temperature
     real(4), allocatable :: era5_tcc(:, :, :)  ! [1] total cloud cover
-    real(4), allocatable :: era5_snowfall(:, :, :)  ! [kg m-2 s-1] snowfall
+    real(4), allocatable :: era5_snowfall(:, :, :)  ! [m s-1] snowfall rate (water equivalent)
     real(4) :: era5_fill = 3.4028235e38        ! заполнитель/нет данных (ERA5 GRIB missing)
     logical :: era5_lat_decreasing = .false.   ! флаг направления координаты latitude
     logical :: era5_is_open = .false.          ! открыт ли файл

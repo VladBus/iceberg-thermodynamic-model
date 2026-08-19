@@ -51,6 +51,10 @@ program main
     integer :: ix1, ix2, iy1, iy2
     integer :: nday, nday1, ikkk, ios
 
+    ! --- ERA5 snowfall accumulation for monthly sfal climatology (Stage 6.6) ---
+    real :: sfal_accum(12)
+    integer :: sfal_count(12)
+
     real :: ecc = 0.0, ess = 0.0
     character(len=20) :: nam_file
     character(len=64) :: day_file
@@ -90,7 +94,7 @@ program main
     nat(3) = int(den)
     nat(4) = int(hour)
 
-    kl1 = 0             ! Флаг чтения климатических данных (0 - нет, 1 - да)
+    kl1 = 1             ! Флаг использования термодинамики (1 - да, требует patm>0)
     nom = 1             ! Идентификатор чтения начальных данных
     ! Временный переключатель для отладки ERA5 input (этап 2/3).
     forcing_mode = forcing_mode_era5
@@ -282,9 +286,16 @@ program main
         call wind1()
     end if
 
+    ! --- Initialize ERA5 snowfall accumulation for monthly sfal climatology (Stage 6.6) ---
+    sfal_accum = 0.0
+    sfal_count = 0
+
     do mmmm = 1, mm5 ! Цикл по годам
         nday = 0
         do lll = 1, mm4 ! Цикл по месяцам
+            ! Reset monthly snowfall accumulator
+            sfal_accum(lll) = 0.0
+            sfal_count(lll) = 0
             do kkk = kkb, mm1 ! Цикл по дням
                 nday = nday + 1
                 nday1 = nday1 + 1
@@ -309,6 +320,12 @@ program main
                 pp(:) = p(:, kkk + 1)
                 if (forcing_mode .eq. forcing_mode_era5) then
                     call era5_wind(start_sec + real(kkk, 8)*86400.0_8)
+                    ! Update running monthly mean ERA5 snowfall rate for sfal climatology
+                    ! so that heat() uses current best estimate
+                    sfal_accum(lll) = sfal_accum(lll) &
+                        + compute_snowfall_mean(era5_snowfall_rate)
+                    sfal_count(lll) = sfal_count(lll) + 1
+                    sfal(lll) = sfal_accum(lll) / real(sfal_count(lll))
                 else
                     call wind1()
                 end if
@@ -742,6 +759,11 @@ program main
                 call write_nc(trim(day_file))
                 call write_daily_diagnostics(kkk, lll)
             end do ! Конец цикла дней KKK
+
+            ! --- Final monthly ERA5 snowfall rate report (running mean already used by heat) ---
+            if (forcing_mode .eq. forcing_mode_era5 .and. sfal_count(lll) .gt. 0) then
+                print *, "ERA5 Snowfall: month ", lll, " mean rate = ", sfal(lll), " m/s (", sfal_count(lll), " days)"
+            end if
         end do ! Конец цикла месяцев LLL
     end do ! Конец цикла лет MMMM
 
@@ -842,5 +864,23 @@ contains
             " nmix=", total_nmix, " maxiter=", max_iter, &
             " guard=", guard_hits, " cols=", affected_cols
     end subroutine write_daily_diagnostics
+
+    ! ==========================================================================
+    ! compute_snowfall_mean: Compute spatial mean of ERA5 snowfall rate
+    ! avoiding conflict with variable named 'sum'.
+    ! ==========================================================================
+    real function compute_snowfall_mean(arr)
+        real, intent(in) :: arr(:,:)
+        integer :: i, j
+        real :: total
+
+        total = 0.0
+        do j = 1, js1
+            do i = 1, is1
+                total = total + arr(i, j)
+            end do
+        end do
+        compute_snowfall_mean = total / real(is1 * js1)
+    end function compute_snowfall_mean
 
 end program main

@@ -264,12 +264,13 @@ contains
             open (ca_diag_unit, file=trim(run_csv_dir)//'/convective_guard_events.csv', &
                   position='append')
         end if
-        write (ca_diag_unit, '(I4,A,I3,A,I4,A,I4,A,I3,A,I5,A,I8,A,I3,A,ES12.4,'// &
-               'A,ES13.5,A,ES13.5,A,ES13.5,A,ES13.5,A,ES13.5,A,ES13.5,A,ES13.5)') &
-            day, ',', step, ',', i, ',', j, ',', ki, ',', iter_count, ',', nmix, ',', &
-            k_problem, ',', resid_inv, ',', &
-            tdz_before, ',', tdz_after, ',', dtdz, ',', rel_t, ',', &
-            sdz_before, ',', sdz_after, ',', dsdz, ',', rel_s
+write (ca_diag_unit, '(I4,A,I3,A,I4,A,I4,A,I3,A,I5,A,I8,A,I3,A,ES12.4,'// &
+               'A,ES13.5,A,ES13.5,A,ES13.5,A,ES13.5,A,ES13.5,A,ES13.5,A,ES13.5,'// &
+               'A,ES13.5)') &
+           day, ',', step, ',', i, ',', j, ',', ki, ',', iter_count, ',', nmix, ',', &
+           k_problem, ',', resid_inv, ',', &
+           tdz_before, ',', tdz_after, ',', dtdz, ',', rel_t, ',', &
+           sdz_before, ',', sdz_after, ',', dsdz, ',', rel_s
         close (ca_diag_unit)
         ca_evt_written = ca_evt_written + 1
     end subroutine ca_log_guard_event

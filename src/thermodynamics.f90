@@ -175,10 +175,10 @@ contains
                         end do
                         if (err .ge. err1 .or. n_iter .eq. 100) tts = tta
 
-if (tts .le. 273.15) then
-                        ! Нарастание снега: локальный ERA5 снегопад
-                        dhsn = dt*era5_snowfall_rate(i, j)
-                        hsnp(k) = dhsn
+                        if (tts .le. 273.15) then
+                            ! Нарастание снега: локальный ERA5 снегопад
+                            dhsn = dt*era5_snowfall_rate(i, j)
+                            hsnp(k) = dhsn
                         else
                             ! Таяние: температура поверхности = 273.15 K
                             tts = 273.15

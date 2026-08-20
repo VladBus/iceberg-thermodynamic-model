@@ -441,6 +441,7 @@ program main
                                     txic(i, j) = -(txic(i, j) - a*(u(i, j)*c15 - v(i, j)*c16))*b3
                                     tyic(i, j) = -(tyic(i, j) - a*(v(i, j)*c15 + u(i, j)*c16))*b3
                                 end if
+
                             end do
                         end do
 

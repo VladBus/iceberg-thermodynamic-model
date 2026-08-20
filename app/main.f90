@@ -68,7 +68,7 @@ program main
     ! Энергетические диагностики
     real :: ecc = 0.0, ess = 0.0         ! Предыдущая и текущая кинетическая энергия
     character(len=20) :: nam_file        ! Имя файла начального льда (1_1.ice ... 1_5.ice)
-    character(len=64) :: day_file        ! Имя суточного NetCDF файла
+    character(len=256) :: day_file       ! Имя суточного NetCDF файл
     character(len=64) :: run_id_arg      ! Аргумент командной строки: run_id
     character(len=256) :: era5_arg       ! Аргумент командной строки: путь ERA5 файла
     real(8) :: start_sec                 ! Время первого ERA5-среза в секундах с эпохи
@@ -871,7 +871,7 @@ contains
                 "wind_max,tx_min,tx_max,ty_min,ty_max,dpx_min,dpx_max,dpy_min,dpy_max,"// &
                 "euu,ca_nmix,ca_max_iter,ca_guard_hits,ca_affected_cols"
         end if
-        write (diag_unit, '(I3,A1,I3,34(A1,ES13.5))') &
+        write (diag_unit, '(I3,A1,I3,34(A1,ES16.5E2))') &
             day, ',', month, ',', &
             u_min, ',', u_max, ',', u_sum/max(n, 1), ',', &
             v_min, ',', v_max, ',', v_sum/max(n, 1), ',', &

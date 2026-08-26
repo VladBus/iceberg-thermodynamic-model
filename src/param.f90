@@ -166,7 +166,7 @@ module param
     ! grid_mode_test  - синтетическая сетка TEST ONLY (KOORD.DAT отсутствует).
     integer, parameter :: grid_mode_real = 0
     integer, parameter :: grid_mode_test = 1
-    integer :: grid_mode = grid_mode_test
+    integer :: grid_mode = grid_mode_real
 
     ! --- КОНФИГУРАЦИЯ ПРОГОНА (Stage 6.2: изоляция выходов по run_id) ---
     ! Каждый научный прогон пишет выходы в data/runs/<run_id>/output/{nc,csv,txt,logs,figures}.

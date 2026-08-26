@@ -7,3 +7,6 @@ netCDF4
 numpy
 pandas
 matplotlib
+scipy
+pyproj
+rasterio

@@ -12,3 +12,7 @@ dependencies:
   - numpy
   - pandas
   - matplotlib
+  # Grid building & processing
+  - scipy
+  - pyproj
+  - rasterio

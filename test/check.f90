@@ -1,10 +1,22 @@
 ! ==============================================================================
-! Тестовая программа валидации результатов модели и входных полей форсинга
-! Проверяет:
+! Тестовая программа валидации результатов модели и входных полей форсинга.
+! Проверяет файл results_day_final.nc (или указанный аргументом командной строки).
+!
+! Проверки:
 ! 1. Отсутствие NaN / IEEE_IS_NAN и Infinity / IEEE_IS_FINITE
 ! 2. Отсутствие фиктивных значений (ERA5 fillValue 3.4028235e38)
-! 3. Физическую реалистичность диапазонов форсинга и океанических полей
+! 3. Физическую реалистичность диапазонов форсинга и океанических полей:
+!    - wind_speed  ∈ [0, 100] [м/с]
+!    - wind_x/y    ∈ [-100, 100] [м/с]
+!    - tau_x/y     ∈ [-10, 10] [Па] (внутренние дин/см² × 0.1)
+!    - dp_x/y      ∈ [-0.1, 0.1] [Па/м] (внутренние гПа/км × 0.1)
+!    - air_temp    ∈ [193.15, 313.15] [K] = [-80, +40] [°C]
+!    - air_press   ∈ [80000, 110000] [Па] = [800, 1100] [гПа]
+!    - temperature ∈ [243.15, 323.15] [K] = [-30, +50] [°C]
+!    - salinity    ∈ [-0.001, 0.05] [массовая доля] (0.033-0.035 — типичный диапазон)
 ! 4. Качественную согласованность направлений ветра и касательного напряжения
+!    (sign(tx) == sign(windx) в большинстве узлов; отклонения допустимы
+!     при линейной интерполяции между подшагами).
 ! ==============================================================================
 
 program check
@@ -125,63 +137,69 @@ program check
 
 contains
 
+    ! Проверка 2D-массива: NaN, Inf, fill values, физические границы
+    ! Границы задаются в канонических единицах СИ (对外 NetCDF формат, Stage 5.5b)
+    ! Порог 1e30 используется для обнаружения fill values ERA5 (3.4028235e38) и
+    ! неинициализированных массивов.
     subroutine check_array_2d(arr, name, min_valid, max_valid, n_err)
         real, intent(in) :: arr(:, :)
         character(len=*), intent(in) :: name
         real, intent(in) :: min_valid, max_valid
         integer, intent(inout) :: n_err
         real :: min_val, max_val
-        integer :: i, j
+        integer :: ci, cj
 
         min_val = minval(arr)
         max_val = maxval(arr)
         print '(A20,A,F12.4,A,F12.4,A)', name, " [min: ", min_val, " max: ", max_val, "]"
 
-        do j = 1, size(arr, 2)
-            do i = 1, size(arr, 1)
-                if (ieee_is_nan(arr(i, j))) then
-                    print *, "ERROR: NaN detected in ", trim(name), " at ", i, j
+        do cj = 1, size(arr, 2)
+            do ci = 1, size(arr, 1)
+                if (ieee_is_nan(arr(ci, cj))) then
+                    print *, "ERROR: NaN detected in ", trim(name), " at ", ci, cj
                     n_err = n_err + 1
-                else if (.not. ieee_is_finite(arr(i, j))) then
-                    print *, "ERROR: Inf detected in ", trim(name), " at ", i, j
+                else if (.not. ieee_is_finite(arr(ci, cj))) then
+                    print *, "ERROR: Inf detected in ", trim(name), " at ", ci, cj
                     n_err = n_err + 1
-                else if (arr(i, j) .gt. 1.0e30) then
-         print *, "ERROR: ERA5 missing value / uninitialized huge val in ", trim(name), " at ", i, j
+                else if (arr(ci, cj) .gt. 1.0e30) then
+       print *, "ERROR: ERA5 missing value / uninitialized huge val in ", trim(name), " at ", ci, cj
                     n_err = n_err + 1
-                else if (arr(i, j) .lt. min_valid .or. arr(i, j) .gt. max_valid) then
-                print *, "ERROR: Out-of-bounds value in ", trim(name), " at ", i, j, ": ", arr(i, j)
+                else if (arr(ci, cj) .lt. min_valid .or. arr(ci, cj) .gt. max_valid) then
+            print *, "ERROR: Out-of-bounds value in ", trim(name), " at ", ci, cj, ": ", arr(ci, cj)
                     n_err = n_err + 1
                 end if
             end do
         end do
     end subroutine check_array_2d
 
+    ! Проверка 3D-массива: NaN, Inf, fill values, физические границы
+    ! Аналог check_array_2d, но для 3D полей (T, S по уровням depth)
     subroutine check_array_3d(arr, name, min_valid, max_valid, n_err)
         real, intent(in) :: arr(:, :, :)
         character(len=*), intent(in) :: name
         real, intent(in) :: min_valid, max_valid
         integer, intent(inout) :: n_err
         real :: min_val, max_val
-        integer :: i, j, k
+        integer :: ci, cj, ck
 
         min_val = minval(arr)
         max_val = maxval(arr)
         print '(A20,A,F12.4,A,F12.4,A)', name, " [min: ", min_val, " max: ", max_val, "]"
 
-        do k = 1, size(arr, 3)
-            do j = 1, size(arr, 2)
-                do i = 1, size(arr, 1)
-                    if (ieee_is_nan(arr(i, j, k))) then
-                        print *, "ERROR: NaN detected in ", trim(name), " at ", i, j, k
+        do ck = 1, size(arr, 3)
+            do cj = 1, size(arr, 2)
+                do ci = 1, size(arr, 1)
+                    if (ieee_is_nan(arr(ci, cj, ck))) then
+                        print *, "ERROR: NaN detected in ", trim(name), " at ", ci, cj, ck
                         n_err = n_err + 1
-                    else if (.not. ieee_is_finite(arr(i, j, k))) then
-                        print *, "ERROR: Inf detected in ", trim(name), " at ", i, j, k
+                    else if (.not. ieee_is_finite(arr(ci, cj, ck))) then
+                        print *, "ERROR: Inf detected in ", trim(name), " at ", ci, cj, ck
                         n_err = n_err + 1
-                    else if (arr(i, j, k) .gt. 1.0e30) then
-      print *, "ERROR: ERA5 missing value / uninitialized huge val in ", trim(name), " at ", i, j, k
+                    else if (arr(ci, cj, ck) .gt. 1.0e30) then
+   print *, "ERROR: ERA5 missing value / uninitialized huge val in ", trim(name), " at ", ci, cj, ck
                         n_err = n_err + 1
-                    else if (arr(i, j, k) .lt. min_valid .or. arr(i, j, k) .gt. max_valid) then
-          print *, "ERROR: Out-of-bounds value in ", trim(name), " at ", i, j, k, ": ", arr(i, j, k)
+                   else if (arr(ci, cj, ck) .lt. min_valid .or. arr(ci, cj, ck) .gt. max_valid) then
+    print *, "ERROR: Out-of-bounds value in ", trim(name), " at ", ci, cj, ck, ": ", arr(ci, cj, ck)
                         n_err = n_err + 1
                     end if
                 end do

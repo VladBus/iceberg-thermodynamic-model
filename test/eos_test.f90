@@ -2,6 +2,13 @@
 ! Тестовая программа: проверка исторического уравнения состояния Эккарта.
 ! Проверяет точность density_anomaly на контрольных точках и физические
 ! диапазоны при типовых значениях T/S модели.
+!
+! Формула (Eckart EOS): RO = 1/(0.698 + aa/bb) - 1.02  [г/см³]
+!   aa = 1779.5 + (11.25 - 0.0745*T)*T - (3800.0 + 10.0*T)*S
+!   bb = 5891.0 + 3000.0*S + (38.0 - 0.375*T)*T
+! Где: T [°C], S [массовая доля, ~0.033-0.035], RO — аномалия плотности (rho - 1.02).
+! Контрольные точки получены вычислением формулы в Python с теми же коэффициентами.
+! Допуск: abs(RO_computed - RO_expected) <= 1e-6 [г/см³].
 ! ==============================================================================
 
 program eos_test
@@ -13,7 +20,7 @@ program eos_test
 
     n_errors = 0
     n_checks = 0
-    tol = 1.0e-6
+    tol = 1.0e-6  ! допуск точности [г/см³] для float32 EOS
 
     print *, "=================================================="
     print *, "  Running EOS (Eckart) Validation Suite"
@@ -56,31 +63,35 @@ program eos_test
 
 contains
 
-    subroutine check_eos(t, s, expected, label)
-        real, intent(in) :: t, s, expected
+    ! Проверка вычисленного RO на контрольной точке
+    ! Допуск: |RO_computed - RO_expected| <= tol = 1e-6 [г/см³]
+    subroutine check_eos(t, s, expected_val, label)
+        real, intent(in) :: t, s, expected_val
         character(len=*), intent(in) :: label
-        real :: val
-        val = density_anomaly(t, s)
+        real :: val_computed
+        val_computed = density_anomaly(t, s)
         n_checks = n_checks + 1
-        if (abs(val - expected) .gt. tol) then
+        if (abs(val_computed - expected_val) .gt. tol) then
             print '(A,A,F12.6,A,F12.6,A)', "ERROR: ", label, &
-                " got=", val, " expected=", expected
+                " got=", val_computed, " expected=", expected_val
             n_errors = n_errors + 1
         else
-            print '(A,A,F12.6)', "OK: ", label, val
+            print '(A,A,F12.6)', "OK: ", label, val_computed
         end if
     end subroutine check_eos
 
-    subroutine check_range(val, label, lo, hi)
-        real, intent(in) :: val, lo, hi
+    ! Проверка попадания значения в физический диапазон [lo, hi]
+    ! Для типовых T/S модели: RO ∈ [0, 0.01] [г/см³] (аномалия плотности)
+    subroutine check_range(val_r, label, lo, hi)
+        real, intent(in) :: val_r, lo, hi
         character(len=*), intent(in) :: label
         n_checks = n_checks + 1
-        if (val .lt. lo .or. val .gt. hi) then
+        if (val_r .lt. lo .or. val_r .gt. hi) then
             print '(A,A,F12.6,A,F12.6,A,F12.6)', "ERROR: ", label, &
-                " value=", val, " not in [", lo, ",", hi, "]"
+                " value=", val_r, " not in [", lo, ",", hi, "]"
             n_errors = n_errors + 1
         else
-            print '(A,A,F12.6)', "OK: ", label, val
+            print '(A,A,F12.6)', "OK: ", label, val_r
         end if
     end subroutine check_range
 

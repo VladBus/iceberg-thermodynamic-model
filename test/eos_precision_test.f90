@@ -40,6 +40,7 @@ program eos_precision_test
     print *, "======================================================"
 
     ! --- 1. REAL kinds ---
+    ! Определяем фактическую точность и диапазон производственного типа REAL
     print *, "--- 1. REAL kind / storage ---"
     print '(A,I2,A,I4,A)', 'default REAL: kind=', sp, &
         ' storage_size=', storage_size(1.0_sp), ' bits'
@@ -55,6 +56,10 @@ program eos_precision_test
         0.9e-7_sp
 
     ! --- 2. Reproduction of production EOS for representative T/S ---
+    ! Точное воспроизведение формулы RO = 1/(0.698+aa/bb) - 1.02 в float32.
+    ! Коэффициенты: 1779.5, 11.25, 0.0745, 3800.0, 10.0, 5891.0, 3000.0, 38.0, 0.375
+    ! Промежуточный X = 1/(0.698+aa/bb) ∈ [~0.998, ~1.006] — диапазон для типовых T/S.
+    ! spacing(X) ≈ 2^-23 ≈ 1.19e-7 — расстояние между соседними representable float32.
     print *, "--- 2. EOS reproduction (production real32 formula) ---"
     do i = 1, 4
         select case (i)
@@ -162,6 +167,10 @@ program eos_precision_test
     end do
 
     ! --- 6. Threshold reachability in float32 ---
+    ! Проверяет, достижим ли порог eps_density = 0.9e-7 в float32.
+    ! Гипотеза Stage 4.3: порог 0.9e-7 < 2^-23 (≈1.19e-7), поэтому
+    ! конечная разность RO не может попасть между 0 и порогом,
+    ! и convective adjustment永远不会 "остановиться" на ненулевой, но нижепороговой разности.
     print *, "--- 6. Threshold 0.9e-7 reachability ---"
     ! Минимальная ненулевая разность двух RO, которую можно получить из
     ! двух отличающихся наборов T/S (поиск перебором по физической сетке).
@@ -191,11 +200,11 @@ contains
     ! Это прямо отвечает на вопрос: может ли float32 произвести residual
     ! inversion МЕЖДУ 0 и 0.9e-7 (что позволило бы конвергенции остановиться
     ! при НЕНУЛЕВОЙ, но нижепороговой разности).
-    subroutine threshold_reachability(n_fail)
-        integer, intent(inout) :: n_fail
+    subroutine threshold_reachability(nfail_arg)
+        integer, intent(inout) :: nfail_arg
         integer :: istep
-        real(sp) :: t1, s1, ro1
-        real(sp) :: t2, s2, ro2
+        real(sp) :: t1x, s1x, ro1x
+        real(sp) :: t2x, s2x, ro2x
         real(sp) :: d, dmin
         real(sp), parameter :: thresh = 0.9e-7_sp
         logical :: nonzero_below_thresh
@@ -206,13 +215,13 @@ contains
         ! Сканируем соседние значения T (шаг 0.01°C) при фиксированной S.
         ! Физический диапазон модели: T 0..25, S 0.033..0.035.
         do istep = 0, 2500
-            t1 = 0.0_sp + real(istep, sp)*0.01_sp
-            t2 = t1 + 0.01_sp
-            s1 = 0.034_sp
-            s2 = 0.034_sp
-            ro1 = eos32(t1, s1)
-            ro2 = eos32(t2, s2)
-            d = abs(ro1 - ro2)
+            t1x = 0.0_sp + real(istep, sp)*0.01_sp
+            t2x = t1x + 0.01_sp
+            s1x = 0.034_sp
+            s2x = 0.034_sp
+            ro1x = eos32(t1x, s1x)
+            ro2x = eos32(t2x, s2x)
+            d = abs(ro1x - ro2x)
             if (d .gt. 0.0_sp .and. d .lt. dmin) dmin = d
             if (d .gt. 0.0_sp .and. d .lt. thresh) nonzero_below_thresh = .true.
         end do
@@ -225,7 +234,7 @@ contains
 
         if (nonzero_below_thresh) then
             print *, "ERROR: a nonzero float32 RO difference below 0.9e-7 exists"
-            n_fail = n_fail + 1
+            nfail_arg = nfail_arg + 1
         else if (dmin .ge. 2.0_sp**(-23)) then
             print *, "OK: min nonzero RO32 diff >= 2^-23 (grid spacing)"
         else
@@ -234,12 +243,12 @@ contains
     end subroutine threshold_reachability
 
     ! Точная копия производственной формулы (equation_of_state.f90:25-32).
-    pure function eos32(tv, sv) result(ro)
+    pure function eos32(tv, sv) result(ro_out)
         real(sp), intent(in) :: tv, sv
-        real(sp) :: aa, bb, ro
-        aa = 1779.5 + (11.25 - 0.0745*tv)*tv - (3800.0 + 10.0*tv)*sv
-        bb = 5891.0 + 3000.0*sv + (38.0 - 0.375*tv)*tv
-        ro = 1.0/(0.698 + aa/bb) - 1.02
+        real(sp) :: aa32, bb32, ro_out
+        aa32 = 1779.5 + (11.25 - 0.0745*tv)*tv - (3800.0 + 10.0*tv)*sv
+        bb32 = 5891.0 + 3000.0*sv + (38.0 - 0.375*tv)*tv
+        ro_out = 1.0/(0.698 + aa32/bb32) - 1.02
     end function eos32
 
     ! Полный перебор представимых RO32 по физической сетке T/S:
@@ -249,33 +258,33 @@ contains
     ! если min nonzero |ROa - ROb| > 0.9e-7, порог математически
     ! недостижим; если существует пара с 0 < |ROa-ROb| <= 0.9e-7 -
     ! порог достижим и гипотеза Stage 4.3 опровергнута.
-    subroutine dense_enumeration(n_fail)
-        integer, intent(inout) :: n_fail
+    subroutine dense_enumeration(nfail_arg)
+        integer, intent(inout) :: nfail_arg
         integer, parameter :: nscan_t = 2801   ! T: -2..26 шаг 0.01
         integer, parameter :: nscan_s = 21     ! S: 0.033..0.035 шаг 0.0001
         integer, parameter :: nmax = nscan_t*nscan_s
         real(sp) :: vals(nmax)
         integer :: nt, ns, idx, nval
-        real(sp) :: t, s, ro
+        real(sp) :: t_d, s_d, ro_d
         real(sp) :: dmin, d
         real(sp), parameter :: thresh = 0.9e-7_sp
         logical :: nonzero_below_thresh
-        real(sp) :: x_min, x_max, x
+        real(sp) :: x_min, x_max, x_loc
 
         idx = 0
         x_min = huge(1.0_sp)
         x_max = -huge(1.0_sp)
         do nt = 0, nscan_t - 1
-            t = -2.0_sp + real(nt, sp)*0.01_sp
+            t_d = -2.0_sp + real(nt, sp)*0.01_sp
             do ns = 0, nscan_s - 1
-                s = 0.033_sp + real(ns, sp)*0.0001_sp
-                ro = eos32(t, s)
+                s_d = 0.033_sp + real(ns, sp)*0.0001_sp
+                ro_d = eos32(t_d, s_d)
                 ! Также отслеживаем диапазон промежуточного X.
-                call eos_x(t, s, x)
-                x_min = min(x_min, x)
-                x_max = max(x_max, x)
+                call eos_x(t_d, s_d, x_loc)
+                x_min = min(x_min, x_loc)
+                x_max = max(x_max, x_loc)
                 idx = idx + 1
-                vals(idx) = ro
+                vals(idx) = ro_d
             end do
         end do
         nval = idx
@@ -302,7 +311,7 @@ contains
 
         if (nonzero_below_thresh) then
             print *, "ERROR: threshold 0.9e-7 IS reachable in float32"
-            n_fail = n_fail + 1
+            nfail_arg = nfail_arg + 1
         else if (dmin .ge. 2.0_sp**(-23)) then
             print *, "OK: min nonzero RO32 diff >= 2^-23, threshold unreachable"
         else
@@ -311,46 +320,46 @@ contains
     end subroutine dense_enumeration
 
     ! Промежуточный X = 1/(0.698 + aa/bb) (та же формула, тот же kind).
-    pure subroutine eos_x(tv, sv, x)
+    pure subroutine eos_x(tv, sv, xout)
         real(sp), intent(in) :: tv, sv
-        real(sp), intent(out) :: x
-        real(sp) :: aa, bb
-        aa = 1779.5 + (11.25 - 0.0745*tv)*tv - (3800.0 + 10.0*tv)*sv
-        bb = 5891.0 + 3000.0*sv + (38.0 - 0.375*tv)*tv
-        x = 1.0/(0.698 + aa/bb)
+        real(sp), intent(out) :: xout
+        real(sp) :: aa_x, bb_x
+        aa_x = 1779.5 + (11.25 - 0.0745*tv)*tv - (3800.0 + 10.0*tv)*sv
+        bb_x = 5891.0 + 3000.0*sv + (38.0 - 0.375*tv)*tv
+        xout = 1.0/(0.698 + aa_x/bb_x)
     end subroutine eos_x
 
     ! Точная копия производственной формулы, но в REAL64 (ТОЛЬКО диагностика).
     ! Проверяет: достижим ли порог 0.9e-7 в двойной точности. Если да -
     ! это прямо подтверждает, что недостижимость порога - свойство float32.
-    pure function eos64(tv, sv) result(ro)
+    pure function eos64(tv, sv) result(ro64_out)
         real(dp), intent(in) :: tv, sv
-        real(dp) :: aa, bb, ro
-        aa = 1779.5d0 + (11.25d0 - 0.0745d0*tv)*tv - (3800.0d0 + 10.0d0*tv)*sv
-        bb = 5891.0d0 + 3000.0d0*sv + (38.0d0 - 0.375d0*tv)*tv
-        ro = 1.0d0/(0.698d0 + aa/bb) - 1.02d0
+        real(dp) :: aa64f, bb64f, ro64_out
+        aa64f = 1779.5d0 + (11.25d0 - 0.0745d0*tv)*tv - (3800.0d0 + 10.0d0*tv)*sv
+        bb64f = 5891.0d0 + 3000.0d0*sv + (38.0d0 - 0.375d0*tv)*tv
+        ro64_out = 1.0d0/(0.698d0 + aa64f/bb64f) - 1.02d0
     end function eos64
 
-    subroutine fp64_reachability(n_fail)
-        integer, intent(inout) :: n_fail
+    subroutine fp64_reachability(nfail_arg)
+        integer, intent(inout) :: nfail_arg
         integer, parameter :: nscan_t = 2801   ! T: -2..26 шаг 0.01
         integer, parameter :: nscan_s = 21     ! S: 0.033..0.035 шаг 0.0001
         integer, parameter :: nmax = nscan_t*nscan_s
         real(dp) :: vals(nmax)
         integer :: nt, ns, idx, nval
-        real(dp) :: t, s, ro
+        real(dp) :: t64, s64, ro64v
         real(dp) :: dmin, d
         real(dp), parameter :: thresh = 0.9d-7
         logical :: nonzero_below_thresh
 
         idx = 0
         do nt = 0, nscan_t - 1
-            t = -2.0d0 + real(nt, dp)*0.01d0
+            t64 = -2.0d0 + real(nt, dp)*0.01d0
             do ns = 0, nscan_s - 1
-                s = 0.033d0 + real(ns, dp)*0.0001d0
-                ro = eos64(t, s)
+                s64 = 0.033d0 + real(ns, dp)*0.0001d0
+                ro64v = eos64(t64, s64)
                 idx = idx + 1
-                vals(idx) = ro
+                vals(idx) = ro64v
             end do
         end do
         nval = idx
@@ -372,7 +381,7 @@ contains
             nonzero_below_thresh
         if (.not. nonzero_below_thresh) then
             print *, "WARNING: 0.9e-7 not reached in this coarse REAL64 scan"
-            n_fail = n_fail + 1
+            nfail_arg = nfail_arg + 1
         else
             print *, "OK: 0.9e-7 IS reachable in REAL64 (float32 is the cause)"
         end if
@@ -381,13 +390,13 @@ contains
     subroutine sort64(vals, n)
         integer, intent(in) :: n
         real(dp), intent(inout) :: vals(n)
-        integer :: i, last
-        do i = n/2, 1, -1
-            call sift64(vals, i, n)
+        integer :: ii, llast
+        do ii = n/2, 1, -1
+            call sift64(vals, ii, n)
         end do
-        do last = n, 2, -1
-            vals(1) = vals(last)
-            call sift64(vals, 1, last - 1)
+        do llast = n, 2, -1
+            vals(1) = vals(llast)
+            call sift64(vals, 1, llast - 1)
         end do
     end subroutine sort64
 
@@ -414,16 +423,16 @@ contains
         integer, intent(in) :: n
         real(sp), intent(inout) :: vals(n)
         real(sp) :: tmp
-        integer :: i, last
+        integer :: ii, llast
 
         ! Построение кучи.
-        do i = n/2, 1, -1
-            call sift_down(vals, i, n)
+        do ii = n/2, 1, -1
+            call sift_down(vals, ii, n)
         end do
         ! Извлечение корня.
-        do last = n, 2, -1
-            tmp = vals(1); vals(1) = vals(last); vals(last) = tmp
-            call sift_down(vals, 1, last - 1)
+        do llast = n, 2, -1
+            tmp = vals(1); vals(1) = vals(llast); vals(llast) = tmp
+            call sift_down(vals, 1, llast - 1)
         end do
     end subroutine sort32
 

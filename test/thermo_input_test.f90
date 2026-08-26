@@ -1,9 +1,17 @@
 ! ==============================================================================
 ! Тестовая программа: thermodynamic ERA5 input conversions (Stage 5.2).
-! Проверяет преобразования:
+! Проверяет корректность преобразований ERA5 переменных для термодинамики.
+!
+! Проверки:
 !   1. Влажность: точка росы (d2m) + температура (t2m) -> относительная влажность (humid)
-!   2. Облачность: ERA5 tcc [0,1] -> model cloud [0,1]
-!   3. Снегопад: неотрицательность, интерфейс sfal
+!      Формула: humid = e_sat(d2m) / e_sat(t2m) [0..1]
+!      e_sat(T) = 610.78 * 10^(8.61503*(T-273.15)/T) [Па] — формула Клаузиуса-Клапейрона
+!   2. Облачность: ERA5 tcc [0,1] -> model cloud [0,1] (прямое копирование)
+!   3. Радиационный фактор облаков: sw_factor = 1 - 0.6*cclo^3
+!      где cclo — облачность [0..1]; factor ∈ [0.4, 1.0]
+!      Уменьшает коротковолновую радиацию при облачности (3-я степень — нелинейный эффект)
+!   4. Снегопад: неотрицательность массива sfal (мес. климатология)
+!   5. Маппинг переменных ERA5: d2m → humid, tcc → cloud, sf → snowfall (deferred)
 ! ==============================================================================
 
 program thermo_input_test
@@ -14,9 +22,12 @@ program thermo_input_test
     integer :: i, n_humid_tests, n_cloud_tests
 
     ! Тестовые случаи: (t2m_K, d2m_K) -> ожидаемая humid [0,1]
-    ! Используем ту же формулу Клаузиуса-Клапейрона, что в heat():
-    ! e_sat(T) = 610.78 * 10.0**(8.61503*(T - 273.15)/T) [Pa]
-    ! humid = e_sat(d2m) / e_sat(t2m)
+    ! Формула Клаузиуса-Клапейрона ( Appeals saturation vapor pressure ):
+    !   e_sat(T_K) = 610.78 * 10.0^(8.61503*(T_K - 273.15)/T_K) [Па]
+    !   RH = e_sat(d2m) / e_sat(t2m)
+    ! Когда d2m == t2m → RH = 1.0 (насыщение).
+    ! Когда d2m < t2m → RH < 1.0 (ненасыщенный воздух).
+    ! Диапазон RH всегда ∈ [0, 1] математически.
     real, parameter :: t2m_test(6) = (/273.15, 263.15, 253.15, 243.15, 273.15, 293.15/)
     real, parameter :: d2m_test(6) = (/273.15, 258.15, 248.15, 238.15, 268.15, 288.15/)
     real, parameter :: humid_expected(6) = (/ &
@@ -122,6 +133,12 @@ program thermo_input_test
     end do
 
     ! --- Test 6: Cloud radiative formula check (1 - 0.6*cclo^3) ---
+    ! Формула теплового баланса: sw_factor = 1 - 0.6 * cclo^3
+    ! где cclo — облачность [0..1].
+    ! Физический смысл: облака отражают коротковолновую радиацию обратно в космос,
+    ! уменьшая нагрев поверхности. Нелинейная 3-я степень: при cclo<0.5 эффект мал,
+    ! при cclo>0.8 — значительное ослабление. 0.6 — эмпирический коэффициент.
+    ! sw_factor ∈ [0.4 (cclo=1), 1.0 (cclo=0)]
     print *, ""
     print *, "--- Test 6: Cloud radiative formula ---"
     cclo_test = (/0.0, 0.25, 0.5, 1.0/)
@@ -140,6 +157,9 @@ program thermo_input_test
     end do
 
     ! --- Test 7: sfal climatology interface (non-negative) ---
+    ! Месячная климатология снегопада [м водн.экв./сутки]
+    ! Значения: Jan=0.85, Feb=0.85, ..., Dec=0.85 (северная Арктика, типичные значения).
+    ! sfal(lll) используется для расчёта теплопотерь на поверхности в heat().
     print *, ""
     print *, "--- Test 7: sfal climatology ---"
     sfal_data = (/0.85, 0.85, 0.83, 0.81, 0.82, 0.78, 0.64, 0.69, 0.84, 0.85, 0.85, 0.85/)
@@ -154,13 +174,15 @@ program thermo_input_test
     if (n_errors .eq. 0) print *, "OK Test 7: all sfal >= 0"
 
     ! --- Test 8: ERA5 variable presence (simulated) ---
+    ! Проверяем маппинг ERA5 переменных на модельные:
+    !   d2m [K] → humid [0..1] — через e_sat(d2m)/e_sat(t2m)
+    !   tcc [0..1] → cloud [0..1] — прямое копирование
+    !   sf  [м water eq.] → snowfall (отложено на Stage 7.1: era5_snowfall_rate)
+    !   t2m [K] → tatm [°C] — вычитание 273.15
+    !   msl [Па] → patm [гПа] — умножение на 0.01
     print *, ""
     print *, "--- Test 8: ERA5 variable mapping ---"
-    ! Проверяем, что переменные соответствуют ожиданиям
     n_checks = n_checks + 1
-    ! d2m [K] -> humid [0,1]
-    ! tcc [0,1] -> cloud [0,1]
-    ! sf [m w.e.] -> snowfall (deferred)
     print *, "OK Test 8: ERA5 variable mapping documented"
 
     ! --- Summary ---

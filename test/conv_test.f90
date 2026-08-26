@@ -2,10 +2,19 @@
 ! Тестовая программа: convective adjustment (этап 3.2).
 ! Проверяет исторический алгоритм конвективного перемешивания:
 !   1. искусственная неустойчивая двухслойная колонка перемешивается;
-!   2. плотностная инверсия уменьшается ниже порога 0.9E-7;
-!   3. интеграл T*DZ1 сохраняется;
-!   4. интеграл S*DZ1 сохраняется;
-!   5. уже устойчивая колонка не изменяется.
+!   2. плотностная инверсия уменьшается ниже порога 0.9E-7 [г/см³];
+!   3. интеграл T*DZ1 сохраняется (закон сохранения тепла);
+!   4. интеграл S*DZ1 сохраняется (закон сохранения солености);
+!   5. уже устойчивая колонка не изменяется (идемпотентность).
+!
+! Формула инверсии: Δρ = RO(T_холод, S_холод) - RO(T_тёпл, S_тёпл) > eps_density
+!   RO(T,S) = 1/(0.698 + aa/bb) - 1.02 [г/см³] — Eckart EOS
+!   eps_density = 0.9e-7 [г/см³] — порог устойчивости
+!
+! Формула проверки сохранения:
+!   Σ_k T(k)*DZ1(k) = const — интеграл по вертикали (взвешенный по полуслоям)
+!   DZ1(k) — толщина полуслоя [см]
+! Допуск: относительный 1e-4 от величины (float32).
 ! ==============================================================================
 
 program conv_test
@@ -13,8 +22,8 @@ program conv_test
     use convective_adjustment, only: convect_column
     implicit none
 
-    integer, parameter :: ks = 18
-    real, parameter :: eps_density = 0.9e-7
+    integer, parameter :: ks = 18      ! число вертикальных уровней (как в param.f90)
+    real, parameter :: eps_density = 0.9e-7  ! порог устойчивости [г/см³] (Eckart EOS float32)
 
     integer :: n_errors, n_checks
     integer :: ki, nmix, k
@@ -29,15 +38,18 @@ program conv_test
     print *, "=================================================="
 
     ! Толщины полуслоёв: монотонно растущие (аналог реальной сетки z)
+    ! DZ1(k) = 500 + 250*(k-1) [см]: от 500 см (1-й уровень) до 4750 см (18-й)
+    ! Описывает Z-координату: DZ1(1)=500, DZ1(2)=750, ..., DZ1(18)=4750 [см]
     do k = 1, ks
         dz1c(k) = 500.0 + 250.0*real(k - 1)
     end do
 
     ! --- 1-2. Неустойчивая двухслойная колонка ---
-    ! Тёплый солёный лёгкий уровень снизу, холодный плотный сверху.
+    ! Тёплый солёный лёгкий уровень снизу, холодный плотный сверху → инверсия.
+    ! RO(2°C, 0.035) > RO(15°C, 0.033) → Δρ > eps_density → перемешивание.
     ki = 2
-    t_in(1) = 2.0; s_in(1) = 0.035   ! плотный сверху
-    t_in(2) = 15.0; s_in(2) = 0.033   ! лёгкий снизу
+    t_in(1) = 2.0; s_in(1) = 0.035   ! плотный сверху (холодный + солёный)
+    t_in(2) = 15.0; s_in(2) = 0.033   ! лёгкий снизу (тёплый + пресный)
     t_out = t_in
     s_out = s_in
     r1 = density_anomaly(t_in(1), s_in(1))
@@ -115,6 +127,8 @@ program conv_test
     end if
 
     ! --- 5. Устойчивая колонка не изменяется ---
+    ! Тёплый лёгкий сверху, холодный плотный снизу → стабильная стратификация.
+    ! RO(18°C, 0.033) < RO(10°C, 0.034) < RO(2°C, 0.035) → нет инверсии → nmix=0.
     ki = 3
     t_in(1) = 18.0; s_in(1) = 0.033   ! лёгкая сверху
     t_in(2) = 10.0; s_in(2) = 0.034
@@ -148,6 +162,8 @@ program conv_test
 
 contains
 
+    ! Проверка сохранения интеграла: |actual - expected| <= rtol
+    ! Относительный допуск: 1e-4 от max(1, |expected|) — покрытие float32 ошибок округления
     subroutine check_cons(actual, expected, label)
         real, intent(in) :: actual, expected
         character(len=*), intent(in) :: label
@@ -165,23 +181,23 @@ contains
         end if
     end subroutine check_cons
 
-    real function sum_dz1_t(n, arr, dz1c)
+    real function sum_dz1_t(n, arr, dz1c_arg)
         integer, intent(in) :: n
-        real, intent(in) :: arr(:), dz1c(:)
-        integer :: k
+        real, intent(in) :: arr(:), dz1c_arg(:)
+        integer :: kk
         sum_dz1_t = 0.0
-        do k = 1, n
-            sum_dz1_t = sum_dz1_t + arr(k)*dz1c(k)
+        do kk = 1, n
+            sum_dz1_t = sum_dz1_t + arr(kk)*dz1c_arg(kk)
         end do
     end function sum_dz1_t
 
-    real function sum_dz1_s(n, arr, dz1c)
+    real function sum_dz1_s(n, arr, dz1c_arg)
         integer, intent(in) :: n
-        real, intent(in) :: arr(:), dz1c(:)
-        integer :: k
+        real, intent(in) :: arr(:), dz1c_arg(:)
+        integer :: kk
         sum_dz1_s = 0.0
-        do k = 1, n
-            sum_dz1_s = sum_dz1_s + arr(k)*dz1c(k)
+        do kk = 1, n
+            sum_dz1_s = sum_dz1_s + arr(kk)*dz1c_arg(kk)
         end do
     end function sum_dz1_s
 

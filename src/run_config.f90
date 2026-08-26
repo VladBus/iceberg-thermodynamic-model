@@ -8,6 +8,18 @@
 ! Зависимости: param (run_id, run_*_dir, era5_input_file).
 ! Ответственность: Инициализация run_id и каталогов прогона ДО начала моделирования;
 !                  используется main и convective_adjustment (guard events CSV).
+!
+! Структура каталогов прогона (Stage 6.2):
+!   data/runs/<run_id>/output/
+!     nc/      — файлы NetCDF (results_day_00.nc, ..., results_day_final.nc)
+!     csv/     — CSV диагностики (daily_diagnostics.csv, convective_guard_events.csv)
+!     txt/     — текстовые отчёты
+!     logs/    — логи запуска
+!     figures/ — графики/фигуры
+!
+! Запуск: fpm run -- <run_id> [era5_file]
+!   <run_id>  — идентификатор прогона (папка в data/runs/)
+!   [era5_file] — путь к processed ERA5 файлу (опционально; по умолчанию param:era5_input_file)
 ! ==============================================================================
 
 module run_config

@@ -13,6 +13,7 @@
 
 module initial_conditions
     use param
+    use initial_ocean_reader
     implicit none
 
 contains
@@ -20,8 +21,9 @@ contains
     subroutine init_ocean()
         integer :: i, j, k
         real :: depth_ratio  ! нормированная глубина [0..1]: 0=поверхность, 1=дно
+        logical :: realistic_ok
 
-        print *, ">>> Initializing synthetic ocean conditions..."
+        print *, ">>> Initializing ocean conditions..."
 
         ! Обнуляем и активные, и ghost-узлы: транспорт читает i+1/j+1.
         t1 = 0.0   ! температура на шаге DT (предыдущий) [°C]
@@ -42,6 +44,28 @@ contains
         y2 = 0.0
         ym1 = 0.0  ! усреднённый уровень моря [см]
         ym2 = 0.0
+
+        ! --- Stage 7.7: реалистичные начальные T/S из файла (EN4.2.2 2020-01) ---
+        call read_initial_ts(t1, t2, s1, s2, kt1, realistic_ok)
+        if (realistic_ok) then
+            ! Фоновое течение [см/с]: 0.20 по X и 0.10 по Y (сохранено как в Stage 7.6C.2)
+            do k = 1, ks
+                do j = 1, js1
+                    do i = 1, is1
+                        if (kt1(i, j) .gt. 0 .and. k .le. kt1(i, j)) then
+                            u2(i, j, k) = 0.20
+                            v2(i, j, k) = 0.10
+                            u1(i, j, k) = u2(i, j, k)
+                            v1(i, j, k) = v2(i, j, k)
+                        end if
+                    end do
+                end do
+            end do
+            print *, ">>> Realistic ocean T/S applied (u/v drift 0.20/0.10 cm/s kept)"
+            return
+        end if
+
+        print *, ">>> Warning: realistic ocean T/S unavailable, using SYNTHETIC fields"
 
         ! --- ЦИКЛ ПО ВЕРТИКАЛЬНЫМ УРОВНЯМ (K = 1..KS=18) ---
         do k = 1, ks

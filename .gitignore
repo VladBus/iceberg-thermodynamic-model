@@ -95,6 +95,7 @@ data/
 *.dat
 *.DAT
 *.bar
+1_*.ice
 *.grib
 *.grib1
 *.grib2

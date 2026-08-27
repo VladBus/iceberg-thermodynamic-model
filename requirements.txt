@@ -10,3 +10,6 @@ matplotlib
 scipy
 pyproj
 rasterio
+# LSP / Development Tools (Fortran)
+fortls
+fprettify

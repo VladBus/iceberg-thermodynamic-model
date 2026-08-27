@@ -83,9 +83,17 @@ DEFAULT_DOMAIN = "barents"
 DEFAULT_TIMES = ["00:00", "06:00", "12:00", "18:00"]
 
 
-def build_request(year, month, area, times, accumulated=False):
-    """Construct the CDS request dict (preserves the validated structure)."""
+def build_request(year, month, area, times, accumulated=False, days=None):
+    """Construct the CDS request dict (preserves the validated structure).
+
+    Args:
+        days: optional iterable of day numbers (1-based, inclusive) to request.
+              Defaults to the full month (backward compatible).
+    """
     ndays = calendar.monthrange(year, month)[1]
+    if days is None:
+        days = range(1, ndays + 1)
+    day_list = [f"{d:02d}" for d in days]
     if accumulated:
         # Snowfall: forecast accumulation from 00/12 UTC analyses, steps 1-24h
         return {
@@ -93,7 +101,7 @@ def build_request(year, month, area, times, accumulated=False):
             "variable": ACCUMULATED_PARAMS,
             "year": [f"{year}"],
             "month": [f"{month:02d}"],
-            "day": [f"{d:02d}" for d in range(1, ndays + 1)],
+            "day": day_list,
             "time": ["00:00", "12:00"],  # Analysis times for forecasts
             "step": [str(h) for h in range(1, 25)],  # 1-24 hour forecasts
             "data_format": "netcdf",
@@ -107,7 +115,7 @@ def build_request(year, month, area, times, accumulated=False):
             "variable": INSTANTANEOUS_PARAMS,
             "year": [f"{year}"],
             "month": [f"{month:02d}"],
-            "day": [f"{d:02d}" for d in range(1, ndays + 1)],
+            "day": day_list,
             "time": times,
             "data_format": "netcdf",
             "download_format": "unarchived",
@@ -166,6 +174,18 @@ def main():
         help="Output .nc path (default: data/input/raw/era5/YYYY/YYYY_MM/era5_YYYY_MM.nc)",
     )
     parser.add_argument(
+        "--start-day",
+        type=int,
+        default=1,
+        help="First day of month to request (inclusive, default 1)",
+    )
+    parser.add_argument(
+        "--end-day",
+        type=int,
+        default=None,
+        help="Last day of month to request (inclusive, default = month length)",
+    )
+    parser.add_argument(
         "--include-snowfall",
         action="store_true",
         help="Also download snowfall (accumulated forecast, separate request)",
@@ -186,12 +206,23 @@ def main():
     )
     out.parent.mkdir(parents=True, exist_ok=True)
 
+    ndays = calendar.monthrange(args.year, args.month)[1]
+    end_day = args.end_day if args.end_day is not None else ndays
+    if not (1 <= args.start_day <= end_day <= ndays):
+        print(
+            f"ERROR: invalid day range {args.start_day}..{end_day} "
+            f"(month has {ndays} days)"
+        )
+        return 1
+    days = range(args.start_day, end_day + 1)
+
     # Download instantaneous variables
     request = build_request(
-        args.year, args.month, area, list(args.time), accumulated=False
+        args.year, args.month, area, list(args.time), accumulated=False, days=days
     )
     print("Dataset :", DATASET)
     print(f"Domain  : {domain_desc}")
+    print(f"Days    : {list(days)}")
     print("Request (instantaneous):", request)
     print("Output  :", out)
 
@@ -203,7 +234,7 @@ def main():
     if args.include_snowfall:
         snow_out = out.with_name("snowfall_" + out.stem.removeprefix("era5_") + ".nc")
         snow_request = build_request(
-            args.year, args.month, area, list(args.time), accumulated=True
+            args.year, args.month, area, list(args.time), accumulated=True, days=days
         )
         print("\nRequest (snowfall, accumulated):", snow_request)
         print("Output  :", snow_out)

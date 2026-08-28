@@ -48,6 +48,7 @@ program main
     use equation_of_state
     use convective_adjustment
     use run_config
+    use geostrophic_init
 
     implicit none
 
@@ -309,6 +310,11 @@ program main
     ! Диагностика уравнения состояния (этап 3.1): расчет RO из T2/S2
     ! в диагностическом режиме. Пока НЕ используется в уравнениях движения.
     call eos_diag()
+
+    ! --- Stage 7.7C: Геострофическая инициализация 3D-скоростей ---
+    ! Использует RO из eos_diag для вычисления геострофического баланса.
+    ! Режим управляется переменной окружения ICEBERG_OCEAN_VELOCITY_INIT.
+    call init_geostrophic_velocity()
 
     ! Записываем состояние океана ДО начала расчета (День 0)
     call write_nc(trim(run_nc_dir)//'/results_day_00.nc')
@@ -1002,7 +1008,7 @@ program main
                         end do
                     end do
 
-                    ! Диагностика 3D-скоростей (этап 3.3): min/max U2,V2 после всех блоков
+                    ! Диагностика 3D-скоростей (этап 3.3): min/max U2,V2 после все�� блоков
                     if (kkk .le. 2) then
                         uu = 0.0
                         vv = 0.0

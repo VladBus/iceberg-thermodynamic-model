@@ -20,6 +20,9 @@ fpm test --flag "-I/usr/include" thermo_input_test   # 8 thermo input checks
 fpm test --flag "-I/usr/include" snowfall_test       # 9 snowfall checks
 fpm test --flag "-I/usr/include" cold_ice_snow_test  # cold ice/snow experiment
 fpm test --flag "-I/usr/include" eos_precision_test  # float32 EOS precision
+fpm test --flag "-I/usr/include" ocean_init_test     # 13 ocean init checks (Stage 7.7)
+fpm test --flag "-I/usr/include" era5_coverage_test  # ERA5 forcing coverage
+fpm test --flag "-I/usr/include" ice_init_test       # real ice initialization chain
 ```
 
 No CI, no lint, no formatter beyond VS Code (`fprettify`/`fortls`). Python tooling uses conda env `iceberg-thermodynamic-model`.
@@ -42,7 +45,7 @@ Conversions only at the NetCDF output boundary (`netcdf_output.f90`). Internal C
 - **ERA5 path:** `era5_input_file` defaults to `data/input/processed/era5/2020/2020_Q1/era5_2020_0103_barents_expanded_merged.nc`. Falls back to legacy if absent.
 - **Grid modes:** `grid_mode_real` (default) reads KOORD.DAT + hhh.bar, `STOP`s if missing. `grid_mode_test` generates synthetic grid TEST ONLY.
 - **Axis conventions:** X ↔ `j` ↔ `u`; Y ↔ `i` ↔ `v`; Y-axis inverted (north at `j=1`).
-- **Key modules:** `netcdf_input` (ERA5 read/bilinear interp), `netcdf_output` (CF-1.10 export), `wind_forcing` (legacy + ERA5), `advection_2d/3d_t/3d_s` (FCT), `barotropic_dynamics`, `shallow_water`, `ice_stress/deform/redis`, `thermodynamics`, `grid_coupling`.
+- **Key modules:** `netcdf_input` (ERA5 read/bilinear interp), `netcdf_output` (CF-1.10 export), `wind_forcing` (legacy + ERA5), `advection_2d/3d_t/3d_s` (FCT), `barotropic_dynamics`, `shallow_water`, `ice_stress/deform/redis`, `thermodynamics`, `grid_coupling`, `initial_ocean_reader` (Stage 7.7 EN4 reader), `initial_conditions`.
 
 ## Constraints (DO NOT)
 
@@ -53,6 +56,7 @@ Conversions only at the NetCDF output boundary (`netcdf_output.f90`). Internal C
 - ❌ Do not use `grid_mode=TEST` basin for production claims.
 - ❌ Do not set `kl1=1` without providing ERA5 d2m/tcc/precip fields.
 - ❌ Before committing, check `.gitignore` — it blocks: `opencode.jsonc`, `.opencode/`, `docs/wiki/`, `data/`, `*.nc`, `*.vtk`, `*.dat`, `*.bak`.
+- ❌ Do not delete root-level symlinks: `KOORD.DAT`, `hhh.bar`, `1_k.ice` — required by model, gitignored, point to `data/input/generated/real_grid/`.
 
 ## Calendar Semantics
 
@@ -91,6 +95,8 @@ ERA5 download: `conda run -n iceberg-thermodynamic-model python python/era5/down
 - **FCT anti-diffusion intentionally disabled** in `advsh` — zeroed X-block intermediates + `CDY*0`.
 - **`grid_mode=TEST`** synthetic grid is NOT a real basin.
 - **Missing input files are normal:** `GRM2`, `FI1DL1.DAT`, `DAV4_5.98`, `1_k.ice` absent; code falls back to synthetic fields.
+- **Thomas algorithm vertical viscosity:** Can reach 8.5×10⁵ cm²/s at k=2 with realistic EN4 init → matrix ill-conditioning → blowup. Do not "fix" without physics review.
+- **Stage 7.7B finding:** Realistic EN4 initialization is dynamically incompatible with zero-initial-velocity state. Requires 3D geostrophic initialization or controlled spin-up (Stage 7.8+).
 
 ## Development Workflow (from promt.md)
 
@@ -150,3 +156,33 @@ Activate: `conda activate iceberg-thermodynamic-model`
 
 - **fortls** — Fortran Language Server (for VS Code `fortls` extension)
 - **fprettify** — Fortran code formatter (for VS Code `fprettify` integration)
+
+### Python Analysis Scripts
+
+All analysis scripts are in `python/analysis/`:
+
+- `run_manifest.py` — required for post-processing
+- `units.py` — unit conversions
+- `stage77a_diagnostics.py` — Stage 7.7A forensic audit
+- `validate_geostrophic.py` — Stage 7.7B geostrophic validation
+- Seasonal, convective, EOS, snowfall, ice diagnostics
+
+### Key Data Paths
+
+| Purpose            | Path                                                                              |
+| ------------------ | --------------------------------------------------------------------------------- |
+| EN4 initial T/S    | `data/input/processed/ocean/initial_ts_2020-01-01.nc`                             |
+| ERA5 forcing       | `data/input/processed/era5/2020/2020_01/era5_2020_01_fullcoverage_d1_4_merged.nc` |
+| Real grid inputs   | `data/input/generated/real_grid/` (symlinked to root)                             |
+| Ice data           | `data/input/generated/real_grid/ice_2020-01-01/`                                  |
+| Diagnostics output | `data/output/diagnostics/stage7.7A/`, `stage7.7B/`                                |
+| Run outputs        | `data/runs/<run_id>/output/nc/`                                                   |
+
+## Stage 7.7B Summary (Stabilization Attempt)
+
+- **Problem:** Realistic EN4 Jan 2020 T/S causes blowup Day 2 (U_max ~ 5,740 m/s → NaN Day 3)
+- **Root cause:** Barotropic adjustment to geostrophic imbalance (50–100×) → vertical viscosity solver failure at ~500m
+- **Tested:** dt1=15–120s, Ah=7.5e6–5e7, geostrophic UP2/VP2 init — all fail
+- **Classification:** C (mechanism understood; no stable config within allowed params)
+- **Report:** `docs/wiki/Stage7.7B_Realistic_Ocean_Stabilization.md`
+- **Next:** 3D geostrophic init + controlled spin-up + viscosity clipping (Stage 7.8+)

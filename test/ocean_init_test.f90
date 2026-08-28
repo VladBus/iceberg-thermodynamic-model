@@ -89,8 +89,8 @@ program ocean_init_test
                     if (t1t(i, j, k) .ne. t2t(i, j, k)) n_land_bad = n_land_bad + 1
                     if (s1t(i, j, k) .ne. s2t(i, j, k)) n_land_bad = n_land_bad + 1
                 else
-                    if (t1t(i, j, k) .ne. 0.0 .or. t2t(i, j, k) .ne. 0.0 . &
-                   or. s1t(i, j, k) .ne. 0.0 .or. s2t(i, j, k) .ne. 0.0) n_land_bad = n_land_bad + 1
+                    if (t1t(i, j, k) .ne. 0.0 .or. t2t(i, j, k) .ne. 0.0 .or. &
+                       s1t(i, j, k) .ne. 0.0 .or. s2t(i, j, k) .ne. 0.0) n_land_bad = n_land_bad + 1
                 end if
             end do
         end do

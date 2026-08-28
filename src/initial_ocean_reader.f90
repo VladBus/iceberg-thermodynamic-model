@@ -183,8 +183,8 @@ contains
             st = nf90_ebaddim                       ! все 3 оси обязаны быть
             return
         end if
-        if (lengths(pos(1)) .ne. ni .or. lengths(pos(2)) .ne. nj . &
-            or. lengths(pos(3)) .ne. nk) then
+        if (lengths(pos(1)) .ne. ni .or. lengths(pos(2)) .ne. nj .or. &
+            lengths(pos(3)) .ne. nk) then
             st = nf90_ebaddim
             return
         end if

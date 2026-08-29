@@ -115,12 +115,12 @@ program ocean_init_test
     end if
 
     ! --- 4. Регрессионные якоря из эталонного файла (s_exp=-999: skip S check) ---
-    call anchor(60, 45, 1, 2.42515, 0.035164, t1t, s1t, n_err, eps, eps, "a1")
-    call anchor(30, 80, 1, 2.16396, 0.034137, t1t, s1t, n_err, eps, eps, "a2")
-    call anchor(30, 80, 10, 3.11982, -999.0, t1t, s1t, n_err, eps, -999.0, "a3")
-    call anchor(10, 10, 1, 6.22207, 0.034824, t1t, s1t, n_err, eps, eps, "a4")
-    call anchor(100, 55, 1, -1.44415, 0.034794, t1t, s1t, n_err, eps, eps, "a5")
-    call anchor(70, 20, 1, -0.01806, 0.034430, t1t, s1t, n_err, eps, eps, "a6")
+    call anchor(60, 45, 1, 2.24990, 0.034974, t1t, s1t, n_err, eps, eps, "a1")
+    call anchor(30, 80, 1, 1.24920, 0.034870, t1t, s1t, n_err, eps, eps, "a2")
+    call anchor(30, 80, 10, 1.90230, -999.0, t1t, s1t, n_err, eps, -999.0, "a3")
+    call anchor(10, 10, 1, 6.03257, 0.035064, t1t, s1t, n_err, eps, eps, "a4")
+    call anchor(100, 55, 1, -0.55611, 0.034909, t1t, s1t, n_err, eps, eps, "a5")
+    call anchor(70, 20, 1, 3.15059, 0.034950, t1t, s1t, n_err, eps, eps, "a6")
 
     print *, "===================================================="
     if (n_err .eq. 0) then

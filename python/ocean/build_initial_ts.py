@@ -28,6 +28,7 @@ Usage
 -----
     python python/ocean/build_initial_ts.py
     python python/ocean/build_initial_ts.py --raw <file> --out <file> --json <file>
+    python python/ocean/build_initial_ts.py --method bilinear
 """
 
 import argparse
@@ -38,6 +39,8 @@ import sys
 import numpy as np
 import xarray as xr
 from scipy.spatial import cKDTree
+from scipy.ndimage import distance_transform_edt
+from scipy.interpolate import RegularGridInterpolator
 
 PROJ_ROOT = pathlib.Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(PROJ_ROOT / "python" / "ice"))
@@ -76,11 +79,47 @@ DEFAULT_JSON = (
 )
 
 
-def eckart_ro(t_c, s_frac, dtype=np.float32):
-    """Eckart density anomaly ro = rho - 1.02 [g/cm3] (float32, model-faithful).
+def fill_land_with_ocean(t_c, s_f):
+    """Fill land points in EN4 data with nearest ocean values before interpolation."""
+    from scipy.ndimage import distance_transform_edt
 
-    src/equation_of_state.f90:55-68 with S as mass fraction (0.033-0.035).
-    """
+    # Create mask of valid ocean points in EN4
+    en4_wet = np.any(np.isfinite(t_c), axis=0)  # (42, 173, 360) -> (173, 360)
+
+    # For each depth level, fill land with nearest ocean value
+    t_filled = np.copy(t_c)
+    s_filled = np.copy(s_f)
+
+    for d in range(42):
+        t_slice = t_c[d]
+        s_slice = s_f[d]
+
+        # Create mask of valid ocean points
+        valid = np.isfinite(t_c[d])
+
+        if not valid.any():
+            continue  # All NaN at this level, skip
+
+        if np.all(valid):
+            continue  # All valid, no land to fill
+
+        # Find nearest valid point for each invalid point
+        invalid = ~valid
+        if not invalid.any():
+            continue  # All valid
+
+        # Use distance transform to find nearest valid point for each invalid point
+        dist, ind = distance_transform_edt(~valid, return_indices=True)
+
+        # Fill invalid points with nearest valid value
+        t_filled[d][~valid] = t_c[d][tuple(ind[:, ~valid])]
+        s_filled[d][~valid] = s_f[d][tuple(ind[:, ~valid])]
+
+    return t_filled, s_filled
+
+
+def eckart_ro(t_c, s_frac, dtype=np.float32):
+    """Eckart density anomaly ro = rho - 1.02 [g/cm3] (float32, model-faithful)."""
     t = np.asarray(t_c, dtype=dtype)
     s = np.asarray(s_frac, dtype=dtype)
     aa = 1779.5 + (11.25 - 0.0745 * t) * t - (3800.0 + 10.0 * t) * s
@@ -167,6 +206,12 @@ def main():
     ap.add_argument("--raw", type=pathlib.Path, default=DEFAULT_RAW)
     ap.add_argument("--out", type=pathlib.Path, default=DEFAULT_OUT)
     ap.add_argument("--json", type=pathlib.Path, default=DEFAULT_JSON)
+    ap.add_argument(
+        "--method",
+        choices=["nearest", "bilinear"],
+        default="nearest",
+        help="Horizontal interpolation method: nearest-neighbor or bilinear",
+    )
     args = ap.parse_args()
 
     g = load_model_grid()
@@ -209,7 +254,100 @@ def main():
         f"mean={dist[wet].mean():.3f} max={dist[wet].max():.3f}"
     )
 
-    t_out, s_out, flag = vertical_regrid(t_c, s_f, d_en4, ilat, ilon, need)
+    # Horizontal interpolation: nearest-neighbor or bilinear
+    if args.method == "bilinear":
+        from scipy.interpolate import RegularGridInterpolator
+
+        # Fill land with nearest ocean values before interpolation
+        t_c, s_f = fill_land_with_ocean(t_c, s_f)
+        # EN4 grid coordinates
+        en4_lat = ds["lat"].values
+        en4_lon = ds["lon"].values
+        # Create bilinear interpolators for each depth level
+        interp_t_vals = np.zeros((42, is1, js1), dtype=np.float32)
+        interp_s_vals = np.zeros((42, is1, js1), dtype=np.float32)
+        for d in range(42):
+            interp_t = RegularGridInterpolator(
+                (en4_lat, en4_lon),
+                t_c[d],
+                method="linear",
+                bounds_error=False,
+                fill_value=np.nan,
+            )
+            interp_s = RegularGridInterpolator(
+                (en4_lat, en4_lon),
+                s_f[d],
+                method="linear",
+                bounds_error=False,
+                fill_value=np.nan,
+            )
+            # Evaluate on model grid
+            points = np.column_stack([lat.ravel(), lon.ravel()])
+            interp_t_vals[d] = interp_t(points).reshape(is1, js1)
+            interp_s_vals[d] = interp_s(points).reshape(is1, js1)
+        # Vertical interpolation to model levels
+        t_out = np.zeros((is1, js1, ks), dtype=np.float32)
+        s_out = np.zeros((is1, js1, ks), dtype=np.float32)
+        Z_M = np.array(
+            [
+                2.5,
+                5.0,
+                7.5,
+                12.5,
+                17.5,
+                25.0,
+                40.0,
+                50.0,
+                62.5,
+                75.0,
+                100.0,
+                125.0,
+                175.0,
+                225.0,
+                275.0,
+                350.0,
+                450.0,
+                550.0,
+            ]
+        )
+        en4_depth = d_en4 / 100.0  # convert to meters
+        for k in range(ks):
+            z_target = Z_M[k]
+            depth_idx = np.searchsorted(d_en4, z_target * 100)  # d_en4 is in cm
+            if depth_idx == 0:
+                t_out[:, :, k] = interp_t_vals[0]
+                s_out[:, :, k] = interp_s_vals[0]
+            elif depth_idx >= len(d_en4):
+                t_out[:, :, k] = interp_t_vals[-1]
+                s_out[:, :, k] = interp_s_vals[-1]
+            else:
+                w = (Z_M[k] - en4_depth[depth_idx - 1]) / (
+                    en4_depth[depth_idx] - en4_depth[depth_idx - 1]
+                )
+                t_out[:, :, k] = (1 - w) * interp_t_vals[
+                    depth_idx - 1
+                ] + w * interp_t_vals[depth_idx]
+                s_out[:, :, k] = (1 - w) * interp_s_vals[
+                    depth_idx - 1
+                ] + w * interp_s_vals[depth_idx]
+        flag = np.zeros((is1, js1, ks), dtype=np.int8)
+    else:
+        # Nearest-neighbor (original)
+        en4_wet = np.any(np.isfinite(t_k), axis=0)
+        en4_rc = np.argwhere(en4_wet)
+        en4_pts = np.column_stack([en4_lat[en4_rc[:, 0]], en4_lon[en4_rc[:, 1]]])
+        tree = cKDTree(en4_pts, compact_nodes=True, balanced_tree=True)
+        model_pts = np.column_stack([lat.ravel(), lon.ravel()])
+        dist, ind = tree.query(model_pts, k=1, workers=-1)
+        dist = dist.reshape(is1, js1)
+        ilat = en4_rc[ind, 0].reshape(is1, js1)
+        ilon = en4_rc[ind, 1].reshape(is1, js1)
+        print(
+            f"NN horizontal distance(deg): min={dist[wet].min():.3f} "
+            f"mean={dist[wet].mean():.3f} max={dist[wet].max():.3f}"
+        )
+
+        t_out, s_out, flag = vertical_regrid(t_c, s_f, d_en4, ilat, ilon, need)
 
     bad = ~np.isfinite(t_out) | ~np.isfinite(s_out)
     n_bad = int(bad.sum())

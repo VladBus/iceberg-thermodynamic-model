@@ -48,7 +48,7 @@ program main
     use equation_of_state
     use convective_adjustment
     use run_config
-    use geostrophic_init
+    use thermal_wind_init
 
     implicit none
 
@@ -311,10 +311,10 @@ program main
     ! в диагностическом режиме. Пока НЕ используется в уравнениях движения.
     call eos_diag()
 
-    ! --- Stage 7.7C: Геострофическая инициализация 3D-скоростей ---
-    ! Использует RO из eos_diag для вычисления геострофического баланса.
-    ! Режим управляется переменной окружения ICEBERG_OCEAN_VELOCITY_INIT.
-    call init_geostrophic_velocity()
+    ! --- Stage 7.9: Thermal-wind initialization with reference level & dynamic height ---
+    ! Uses RO from eos_diag for thermal-wind balance, reference level, and dynamic height SSH.
+    ! Mode controlled by ICEBERG_OCEAN_VELOCITY_INIT env var.
+    call init_thermal_wind()
 
     ! Записываем состояние океана ДО начала расчета (День 0)
     call write_nc(trim(run_nc_dir)//'/results_day_00.nc')

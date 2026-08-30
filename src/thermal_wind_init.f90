@@ -163,8 +163,12 @@ contains
         print *, ">>> Thermal-wind initialization complete. Mode: ", trim(env_str)
     end subroutine init_thermal_wind
 
-    ! ==========================================================================
+! ==========================================================================
     ! Вычисление thermal wind с заданным reference level
+    ! Совпадает с дискретным уравниванием Block 200 (steady state)
+    ! Block 200: V_geo = (C1/f) * sum_x, U_geo = -(C1/f) * sum_y
+    ! где sum_x, sum_y вычисляются с тем же stencil и c8 = 0.25/dx
+    ! Block 200: sum_x(k) = Σ_{m=1..k} [stencil_x(m) + stencil_x(m+1)] * c8 * dz(m)
     ! ==========================================================================
     subroutine compute_thermal_wind(ref_level_k, u_ref, v_ref)
         integer, intent(in) :: ref_level_k
@@ -172,16 +176,12 @@ contains
 
         integer :: i, j, k, ki, ref_k
         real :: f_val
-        real, dimension(18) :: dzs
-        real :: integral_x, integral_y
-        real :: g_si, rho0_si, f_safe, c8, g_m
-        integer :: k_start, k_end, step
+        real :: c8, c1_over_f
+        real, dimension(18) :: sum_x, sum_y
+        real :: a, b, a1, b1, dzz, cc_val
 
-        g_si = 9.81
-        rho0_si = 1025.0  ! кг/м³
-        c8 = 0.25/(1389000.0)  ! 1/cm
-        g_m = 9.81
-        ref_k = ref_level_k  ! 1-based
+        c8 = 0.25/1389000.0  ! 1/cm, тот же что в Block 200
+        ref_k = ref_level_k
 
         ! --- Цикл по U-точкам (i=2..IS, j=2..JS) ---
         do j = 2, JS
@@ -203,54 +203,68 @@ contains
                     cycle
                 end if
 
-                f_safe = f_val
+                c1_over_f = 981.0/f_val  ! C1/f = (g/rho0)/f в CGS
 
-                ! --- Накопленные интегралы от reference level ---
-                ! Сначала вверх от reference level (k < ref_k)
-                integral_x = 0.0
-                integral_y = 0.0
-                do k = ref_k - 1, 1, -1
-                    if (k .gt. ki) cycle
-                    ! grad_x, grad_y на U-точке (4-точечный stencil как в Block 200)
-                    integral_x = integral_x + C8*Dz(k)* &
-                             (RO(i - 1, j, k) + RO(i, j, k) - RO(i - 1, j - 1, k) - RO(i, j - 1, k))
-                    integral_y = integral_y + C8*Dz(k)* &
-                             (RO(i - 1, j - 1, k) + RO(i - 1, j, k) - RO(i, j - 1, k) - RO(i, j, k))
+                ! --- 1. Вычисляем накопленные суммы sum_x, sum_y от поверхности вниз ---
+                ! Используем ТОЧНО тот же stencil и веса, что Block 200:
+                ! sum_x(k) = Σ_{m=1..k} [stencil_x(m) + stencil_x(min(m+1,ki))] * c8 * dz(m)
+                ! sum_y(k) = Σ_{m=1..k} [stencil_y(m) + stencil_y(min(m+1,ki))] * c8 * dz(m)
 
-                    f_safe = FKU(i, j)
-                    if (abs(f_safe) .gt. 1e-12) then
-                        V2(i, j, k) = v_ref*100.0 - (g_m/(RHO0_SI*f_safe))*integral_x*100.0
-                        U2(i, j, k) = u_ref*100.0 + (g_m/(RHO0_SI*f_safe))*integral_y*100.0
-                    else
-                        U2(i, j, k) = u_ref*100.0
-                        V2(i, j, k) = v_ref*100.0
-                    end if
-                end do
-
-                ! На уровне reference level
-                if (ref_k .le. ki) then
-                    U2(i, j, ref_k) = u_ref*100.0
-                    V2(i, j, ref_k) = v_ref*100.0
+                ! k=1: dzz = Dz(1) (толщина первого полного слоя)
+                dzz = Dz(1)
+                a = RO(i - 1, j, 1) + RO(i, j, 1) - RO(i - 1, j - 1, 1) - RO(i, j - 1, 1)
+                b = RO(i - 1, j - 1, 1) + RO(i - 1, j, 1) - RO(i, j - 1, 1) - RO(i, j, 1)
+                if (ki .ge. 2) then
+                    a1 = RO(i - 1, j, 2) + RO(i, j, 2) - RO(i - 1, j - 1, 2) - RO(i, j - 1, 2)
+                    b1 = RO(i - 1, j - 1, 2) + RO(i - 1, j, 2) - RO(i, j - 1, 2) - RO(i, j, 2)
+                else
+                    a1 = a
+                    b1 = b
                 end if
+                cc_val = c8*dzz
+                sum_x(1) = (a + a1)*cc_val
+                sum_y(1) = (b + b1)*cc_val
 
-                ! Вниз от reference level (k > ref_k)
-                integral_x = 0.0
-                integral_y = 0.0
-                do k = ref_k + 1, ki
-                    integral_x = integral_x + C8*Dz(k - 1)* &
-             (RO(i - 1, j, k - 1) + RO(i, j, k - 1) - RO(i - 1, j - 1, k - 1) - RO(i, j - 1, k - 1))
-                    integral_y = integral_y + C8*Dz(k - 1)* &
-             (RO(i - 1, j - 1, k - 1) + RO(i - 1, j, k - 1) - RO(i, j - 1, k - 1) - RO(i, j, k - 1))
-
-                    f_safe = FKU(i, j)
-                    if (abs(f_safe) .gt. 1e-12) then
-                        V2(i, j, k) = v_ref*100.0 + (g_m/(RHO0_SI*f_safe))*integral_x*100.0
-                        U2(i, j, k) = u_ref*100.0 - (g_m/(RHO0_SI*f_safe))*integral_y*100.0
+                ! k=2..ki
+                do k = 2, ki
+                    dzz = Dz(k)
+                    a = RO(i - 1, j, k) + RO(i, j, k) - RO(i - 1, j - 1, k) - RO(i, j - 1, k)
+                    b = RO(i - 1, j - 1, k) + RO(i - 1, j, k) - RO(i, j - 1, k) - RO(i, j, k)
+                    if (k .lt. ki) then
+          a1 = RO(i - 1, j, k + 1) + RO(i, j, k + 1) - RO(i - 1, j - 1, k + 1) - RO(i, j - 1, k + 1)
+          b1 = RO(i - 1, j - 1, k + 1) + RO(i - 1, j, k + 1) - RO(i, j - 1, k + 1) - RO(i, j, k + 1)
                     else
-                        U2(i, j, k) = u_ref*100.0
-                        V2(i, j, k) = v_ref*100.0
+                        a1 = a
+                        b1 = b
                     end if
+                    cc_val = c8*dzz
+                    sum_x(k) = sum_x(k - 1) + (a + a1)*cc_val
+                    sum_y(k) = sum_y(k - 1) + (b + b1)*cc_val
                 end do
+
+                ! --- 2. Геострофические скорости (относительно поверхности) ---
+                ! V_geo = (C1/f) * sum_x,  U_geo = -(C1/f) * sum_y
+                ! C1 = g/rho0 = 981 в CGS
+                do k = 1, ki
+                    V2(i, j, k) = c1_over_f*sum_x(k)
+                    U2(i, j, k) = -c1_over_f*sum_y(k)
+                end do
+
+                ! --- 3. Применяем reference level shift ---
+                ! V(k) = V_geo(k) - V_geo(k_ref) + v_ref
+                ! U(k) = U_geo(k) - U_geo(k_ref) + u_ref
+                if (ref_k .ge. 1 .and. ref_k .le. ki) then
+                    do k = 1, ki
+                        V2(i, j, k) = V2(i, j, k) - V2(i, j, ref_k) + v_ref*100.0
+                        U2(i, j, k) = U2(i, j, k) - U2(i, j, ref_k) + u_ref*100.0
+                    end do
+                else
+                    ! reference level below bottom — везде reference velocity
+                    do k = 1, ki
+                        V2(i, j, k) = v_ref*100.0
+                        U2(i, j, k) = u_ref*100.0
+                    end do
+                end if
 
                 ! Ниже дна — ноль
                 do k = ki + 1, KS

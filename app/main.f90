@@ -89,6 +89,7 @@ program main
     character(len=256) :: day_file       ! Имя суточного NetCDF файл
     character(len=64) :: run_id_arg      ! Аргумент командной строки: run_id
     character(len=256) :: era5_arg       ! Аргумент командной строки: путь ERA5 файла
+    character(len=64) :: env_str         ! Для чтения переменных окружения
     real(8) :: start_sec                 ! Время первого ERA5-среза в секундах с эпохи
     integer :: nperday                   ! Число ERA5-срезов в сутки
     integer :: narg, arglen              ! Количество и длина аргументов командной строки
@@ -707,6 +708,14 @@ program main
                     ! столбцов с guard-срабатыванием).
                     if (iii .eq. 1 .or. iii .eq. 6 .or. iii .eq. mm2) then
                         call ca_probe_inversions('D_after_conv', kkk, iii)
+                    end if
+
+                    ! Post-heat rebalancing: recompute thermal-wind balance from current RO
+                    ! Controlled by ICEBERG_POST_HEAT_REBALANCE environment variable
+                    call get_environment_variable('ICEBERG_POST_HEAT_REBALANCE', env_str)
+                    if (len_trim(env_str) .gt. 0 .and. env_str .eq. 'true') then
+                        print *, ">>> Post-heat rebalancing: recomputing thermal-wind balance from current RO"
+                        call compute_thermal_wind(18, 0.05, 0.02)
                     end if
 
                     ! ====================================================================

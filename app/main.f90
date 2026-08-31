@@ -714,7 +714,7 @@ program main
                     ! Controlled by ICEBERG_POST_HEAT_REBALANCE environment variable
                     call get_environment_variable('ICEBERG_POST_HEAT_REBALANCE', env_str)
                     if (len_trim(env_str) .gt. 0 .and. env_str .eq. 'true') then
-                        print *, ">>> Post-heat rebalancing: recomputing thermal-wind balance from current RO"
+              print *, ">>> Post-heat rebalancing: recomputing thermal-wind balance from current RO"
                         call compute_thermal_wind(18, 0.05, 0.02)
                     end if
 

@@ -32,7 +32,6 @@ module thermal_wind_init
     integer, parameter :: INIT_REFERENCE_LEVEL = 2
     integer, parameter :: INIT_REALISTIC_REF = 3
     integer, parameter :: INIT_DYNAMIC_HEIGHT = 4
-    integer, parameter :: INIT_DISCRETE_SS = 5
 
     ! Глубины reference level [см]
     real, parameter :: REF_SURFACE_CM = 0.0
@@ -104,12 +103,6 @@ contains
             u_ref_val = 0.0
             v_ref_val = 0.0
             use_dynamic_height = .true.
-        case ('discrete_ss')
-            init_mode = INIT_DISCRETE_SS
-            ref_depth_cm = REF_600M_CM
-            u_ref_val = 0.0
-            v_ref_val = 0.0
-            use_dynamic_height = .false.
         case default
             print *, "WARNING: Unknown ICEBERG_OCEAN_VELOCITY_INIT = ", trim(env_str)
             print *, "         Falling back to synthetic drift"
@@ -157,18 +150,6 @@ contains
             if (use_dynamic_height) then
                 call compute_dynamic_height_ssh()
             end if
-
-            ! Инициализация баротропных потоков UP2/VP2
-            call init_barotropic_transports()
-
-        case (INIT_DISCRETE_SS)
-            ! Дискретное состояние равновесия Block 200
-            print *, ">>> Discrete steady-state initialization (Block 200 exact)"
-            call compute_discrete_steady_state(0.05, 0.02)
-
-            ! Инициализация SSH (y2=0 для дискретного равновесия)
-            y2 = 0.0
-            YM2 = 0.0
 
             ! Инициализация баротропных потоков UP2/VP2
             call init_barotropic_transports()
@@ -300,113 +281,8 @@ contains
         call diagnose_thermal_wind()
     end subroutine compute_thermal_wind
 
-! ==========================================================================
-! Вычисление точного дискретного состояния равновесия Block 200
-! Решает: Block200(U,V) = (U,V) для заданного RO
-! Использует точный фактор C1/f (как непрерывный thermal wind)
-! Нижнее ГУ: U=V=0 на дне (k=ki)
-! ==========================================================================
-    subroutine compute_discrete_steady_state(u_ref, v_ref)
-        use param
-        implicit none
-
-        real, intent(in) :: u_ref, v_ref  ! [м/с]
-
-        integer :: i, j, k, ki
-        real :: f_val, factor
-        real :: c8, c1
-        real, dimension(18) :: sum_x, sum_y
-        real :: a, b, a1, b1, dzz, cc_val
-
-        c8 = 0.25/1389000.0  ! 1/cm
-        c1 = 981.0           ! g/rho0 в CGS
-
-        ! --- Цикл по U-точкам (i=2..IS, j=2..JS) ---
-        do j = 2, JS
-            do i = 2, IS
-                ki = KK1(i, j)
-                if (ki .eq. 0) cycle  ! суша
-
-                f_val = FKU(i, j)
-                if (abs(f_val) .lt. 1e-12) then
-                    ! У экватора — ставим нулевую скорость
-                    do k = 1, ki
-                        U2(i, j, k) = 0.0
-                        V2(i, j, k) = 0.0
-                    end do
-                    do k = ki + 1, KS
-                        U2(i, j, k) = 0.0
-                        V2(i, j, k) = 0.0
-                    end do
-                    cycle
-                end if
-
-                ! FACTOR: C1/f (точное дискретное состояние равновесия Block 200)
-                factor = c1/f_val
-
-                ! --- 1. Вычисляем накопленные суммы sum_x, sum_y от поверхности вниз ---
-                ! Используем ТОЧНО тот же stencil и веса, что Block 200
-
-                ! k=1: dzz = Dz(1) (толщина первого полного слоя)
-                dzz = Dz(1)
-                a = RO(i - 1, j, 1) + RO(i, j, 1) - RO(i - 1, j - 1, 1) - RO(i, j - 1, 1)
-                b = RO(i - 1, j - 1, 1) + RO(i - 1, j, 1) - RO(i, j - 1, 1) - RO(i, j, 1)
-                if (ki .ge. 2) then
-                    a1 = RO(i - 1, j, 2) + RO(i, j, 2) - RO(i - 1, j - 1, 2) - RO(i, j - 1, 2)
-                    b1 = RO(i - 1, j - 1, 2) + RO(i - 1, j, 2) - RO(i, j - 1, 2) - RO(i, j, 2)
-                else
-                    a1 = a
-                    b1 = b
-                end if
-                cc_val = c8*dzz
-                sum_x(1) = (a + a1)*cc_val
-                sum_y(1) = (b + b1)*cc_val
-
-                ! k=2..ki
-                do k = 2, ki
-                    dzz = Dz(k)
-                    a = RO(i - 1, j, k) + RO(i, j, k) - RO(i - 1, j - 1, k) - RO(i, j - 1, k)
-                    b = RO(i - 1, j - 1, k) + RO(i - 1, j, k) - RO(i, j - 1, k) - RO(i, j, k)
-                    if (k .lt. ki) then
-          a1 = RO(i - 1, j, k + 1) + RO(i, j, k + 1) - RO(i - 1, j - 1, k + 1) - RO(i, j - 1, k + 1)
-          b1 = RO(i - 1, j - 1, k + 1) + RO(i - 1, j, k + 1) - RO(i, j - 1, k + 1) - RO(i, j, k + 1)
-                    else
-                        a1 = a
-                        b1 = b
-                    end if
-                    cc_val = c8*dzz
-                    sum_x(k) = sum_x(k - 1) + (a + a1)*cc_val
-                    sum_y(k) = sum_y(k - 1) + (b + b1)*cc_val
-                end do
-
-                ! --- 2. Дискретное состояние равновесия Block 200 ---
-                ! V = (C1*sum_x)/f , U = -(C1*sum_y)/f
-                ! Нижнее ГУ: U=V=0 на дне (k=ki)
-                ! Нет reference level shift — нижнее ГУ фиксирует решение однозначно
-                factor = c1/f_val
-                do k = 1, ki
-                    V2(i, j, k) = factor*sum_x(k)
-                    U2(i, j, k) = -factor*sum_y(k)
-                end do
-
-                ! Ниже дна — ноль
-                do k = ki + 1, KS
-                    U2(i, j, k) = 0.0
-                    V2(i, j, k) = 0.0
-                end do
-            end do
-        end do
-
-        ! --- Граничные условия для U2/V2 ---
-        call apply_velocity_bc(U2, V2)
-
-        ! Инициализация u1/v1 = u2/v2
-        u1 = u2
-        v1 = v2
-
-        ! Диагностика
-        call diagnose_thermal_wind()
-    end subroutine compute_discrete_steady_state
+    ! ==========================================================================
+    ! Вычисление SSH из dynamic height
     ! ==========================================================================
     subroutine compute_dynamic_height_ssh()
         integer :: i, j, k, ki, n_wet

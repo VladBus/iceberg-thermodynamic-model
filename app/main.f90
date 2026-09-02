@@ -49,6 +49,7 @@ program main
     use convective_adjustment
     use run_config
     use thermal_wind_init
+    use stage86_diagnostics
 
     implicit none
 
@@ -312,21 +313,12 @@ program main
     ! в диагностическом режиме. Пока НЕ используется в уравнениях движения.
     call eos_diag()
 
-    ! --- Stage 7.9: Thermal-wind initialization with reference level & dynamic height ---
-    ! Uses RO from eos_diag for thermal-wind balance, reference level, and dynamic height SSH.
-    ! Mode controlled by ICEBERG_OCEAN_VELOCITY_INIT env var.
-    call init_thermal_wind()
-
-    ! Записываем состояние океана ДО начала расчета (День 0)
-    call write_nc(trim(run_nc_dir)//'/results_day_00.nc')
-
 ! ====================================================================
 !              ЧТЕНИЕ АТМОСФЕРНОГО ФОРСИНГА ERA5 (NetCDF)
 ! ====================================================================
-! Этап 2/3: чтение и диагностика. Открываем файл полного месяца (январь
-! 2020). Пока это только проверка канала ввода; подключение к физике
-! (wind/tx/ty/dpx/dpy/tatm/patm) выполняется на следующих этапах.
-! При ошибке чтения модель продолжает работу в legacy-режиме (без ERA5).
+! Открываем ERA5 ДО термодинамической инициализации, чтобы dpx/dpy
+! были доступны для compute_discrete_steady_state.
+! ====================================================================
     if (forcing_mode .eq. forcing_mode_era5) then
         call era5_open(trim(era5_input_file), ios)
         if (ios .eq. 0) then
@@ -343,24 +335,54 @@ program main
             mm1 = min(mm1, (era5_ntime - 1)/max(nperday, 1))
             print *, "ERA5: run limited to ", mm1, " days (", era5_ntime, &
                 " time steps, ", nperday, " steps/day)"
+
+            ! Вычисляем начальные поля ветра/давления ДО термодинамической инициализации
+            call era5_wind(start_sec)
+
+            ! Copy ERA5 pressure gradients to working arrays for thermal wind init
+            dpx = dpx1
+            dpy = dpy1
+            tx = tx1
+            ty = ty1
+            windx = windx1
+            windy = windy1
         else
             print *, "WARNING: ERA5 input failed, falling back to legacy forcing."
             forcing_mode = forcing_mode_legacy
         end if
+    else
+        ! Legacy forcing: compute initial wind/pressure
+        pp(:) = p(:, kkb)
+        call wind1()
     end if
+
+    ! Stage 8.6 diagnostics: B = after wind forcing
+    call capture_state('B_wind', 0, 0, u2, v2, w, t2, s2, ro)
+
+    ! --- Stage 7.9: Thermal-wind initialization with reference level & dynamic height ---
+    ! Uses RO from eos_diag for thermal-wind balance, reference level, and dynamic height SSH.
+    ! Mode controlled by ICEBERG_OCEAN_VELOCITY_INIT env var.
+    call init_thermal_wind()
+
+    ! Frozen density test mode
+    call get_environment_variable('ICEBERG_FROZEN_DENSITY', env_str)
+    if (len_trim(env_str) .gt. 0 .and. env_str .eq. 'true') then
+        print *, ">>> FROZEN DENSITY TEST MODE: heat/advection disabled"
+    end if
+
+    ! Frozen wind test mode (for fixed-point verification)
+    call get_environment_variable('ICEBERG_FROZEN_WIND', env_str)
+    if (len_trim(env_str) .gt. 0 .and. env_str .eq. 'true') then
+        print *, ">>> FROZEN WIND TEST MODE: wind forcing frozen at initial values"
+    end if
+
+    ! Записываем состояние океана ДО начала расчета (День 0)
+    call write_nc(trim(run_nc_dir)//'/results_day_00.nc')
 
 ! ====================================================================
 !                    ГЛАВНЫЙ ЦИКЛ ПО ВРЕМЕНИ
 ! ====================================================================
     print *, "Starting Main Integration Loop..."
-
-! Начальное состояние ветра/давления для первого дня
-    pp(:) = p(:, kkb)
-    if (forcing_mode .eq. forcing_mode_era5) then
-        call era5_wind(start_sec)
-    else
-        call wind1()
-    end if
 
 ! --- Initialize ERA5 snowfall accumulation for monthly sfal climatology (Stage 6.6) ---
     sfal_accum = 0.0
@@ -413,16 +435,22 @@ program main
                 ! --- ЦИКЛ ПО СУТКАМ (III = 1..MM2) ---
                 ! MM2 = 12 означает 12 шагов термодинамики за сутки (dt = 3600 с)
                 do iii = 1, mm2
-                    ! 1. Временная интерполяция ветровых напряжений
-                    ! Линейная интерполяция между текущим и следующим днем
-                    if (iii .ne. 1) then
-                        b = real(mm2 - iii + 2)
-                        tx = tx + (tx1 - tx)/b
-                        ty = ty + (ty1 - ty)/b
-                        dpx = dpx + (dpx1 - dpx)/b
-                        dpy = dpy + (dpy1 - dpy)/b
-                        windx = windx + (windx1 - windx)/b
-                        windy = windy + (windy1 - windy)/b
+                    ! Frozen wind test: skip temporal interpolation of wind forcing
+                    call get_environment_variable('ICEBERG_FROZEN_WIND', env_str)
+                    if (len_trim(env_str) .gt. 0 .and. env_str .eq. 'true') then
+                        ! Keep wind forcing at initial values (no interpolation)
+                    else
+                        ! 1. Временная интерполяция ветровых напряжений
+                        ! Линейная интерполяция между текущим и следующим днем
+                        if (iii .ne. 1) then
+                            b = real(mm2 - iii + 2)
+                            tx = tx + (tx1 - tx)/b
+                            ty = ty + (ty1 - ty)/b
+                            dpx = dpx + (dpx1 - dpx)/b
+                            dpy = dpy + (dpy1 - dpy)/b
+                            windx = windx + (windx1 - windx)/b
+                            windy = windy + (windy1 - windy)/b
+                        end if
                     end if
 
                     ! windx/windy хранят см/с, а heat использует модуль скорости в м/с.
@@ -434,12 +462,22 @@ program main
                     v1 = v2
                     u1 = u2
 
-                    ! Термодинамика должна идти с тем же шагом, что и океан.
-                    ! Без ERA5-полей (kl1=0) вызов дал бы деление на patm=0.
-                    if (kl1 .eq. 1) then
-                        call heat(dt, nday, lll)
-                        ! heat меняет категории; динамике льда нужны новые A и h.
-                        call redis()
+                    ! Frozen density test: skip heat and advection
+                    call get_environment_variable('ICEBERG_FROZEN_DENSITY', env_str)
+                    if (len_trim(env_str) .gt. 0 .and. env_str .eq. 'true') then
+                        ! Skip heat, redis, advection, conv_adj - keep density frozen
+                    else
+                        ! Термодинамика должна идти с тем же шагом, что и океан.
+                        ! Без ERA5-полей (kl1=0) вызов дал бы деление на patm=0.
+                        if (kl1 .eq. 1) then
+                            call heat(dt, nday, lll)
+                            ! Stage 8.6 diagnostics: C = after heat()
+                            call capture_state('C_after_heat', kkk, iii, u2, v2, w, t2, s2, ro)
+                            ! heat меняет категории; динамике льда нужны новые A и h.
+                            call redis()
+                            ! Stage 8.6 diagnostics: D = after redis()
+                            call capture_state('D_after_redis', kkk, iii, u2, v2, w, t2, s2, ro)
+                        end if
                     end if
 
                     ! ====================================================================
@@ -678,45 +716,69 @@ program main
                         end do
                     end do
 
-                    ! ====================================================================
-                    !   6. АДВЕКЦИЯ СОЛЕНОСТИ И ТЕМПЕРАТУРЫ В ОКЕАНЕ
-                    ! ====================================================================
-                    ! Метод конечных разностей (FCT — Flux Corrected Transport).
-                    !   advs(dt, c2) — адвекция солености S2 → S1 (3D).
-                    !   advt(dt, c2) — адвекция температуры T2 → T1 (3D).
-                    ! dt [с] — шаг по времени, c2 [безразм.] — коэффициент стабилизации.
-                    ! Используются скорости U2/V2 (из block 210) и вертикальная W.
-                    ! Массивы после вызова: S1/T1 содержат адвектированные поля.
-                    call advs(dt, c2)
-                    call advt(dt, c2)
-
-                    ! Диагностика этапа 4.3 (ТОЛЬКО чтение, не влияет на физику):
-                    ! точка A - плотностные инверсии сразу после адвекции T/S,
-                    ! т.е. на входе в convective adjustment. Опрашивается в
-                    ! нескольких шагах суток, чтобы не засорять консоль.
-                    if (iii .eq. 1 .or. iii .eq. 6 .or. iii .eq. mm2) then
-                        call ca_probe_inversions('A_after_adv', kkk, iii)
-                    end if
-
-                    ! Конвективная коррекция плотностной стратификации (этап 3.2):
-                    ! историческая схема перемешивания при RR(K)-RR(K1) > 0.9E-7.
-                    ! RO пока НЕ используется в уравнениях движения (этапы 3.1-3.2).
-                    call conv_adj(kkk, iii)
-
-                    ! Диагностика этапа 4.3: точка D - остаточные инверсии после
-                    ! convective adjustment (должны быть близки к нулю, кроме
-                    ! столбцов с guard-срабатыванием).
-                    if (iii .eq. 1 .or. iii .eq. 6 .or. iii .eq. mm2) then
-                        call ca_probe_inversions('D_after_conv', kkk, iii)
-                    end if
-
-                    ! Post-heat rebalancing: recompute thermal-wind balance from current RO
-                    ! Controlled by ICEBERG_POST_HEAT_REBALANCE environment variable
-                    call get_environment_variable('ICEBERG_POST_HEAT_REBALANCE', env_str)
+                    ! Frozen density test: skip advection and convective adjustment
+                    call get_environment_variable('ICEBERG_FROZEN_DENSITY', env_str)
                     if (len_trim(env_str) .gt. 0 .and. env_str .eq. 'true') then
-              print *, ">>> Post-heat rebalancing: recomputing thermal-wind balance from current RO"
-                        call compute_thermal_wind(18, 0.05, 0.02)
+                        ! Skip advs, advt, conv_adj - density stays frozen
+                    else
+                        ! ====================================================================
+                        !   6. АДВЕКЦИЯ СОЛЕНОСТИ И ТЕМПЕРАТУРЫ В ОКЕАНЕ
+                        ! ====================================================================
+                        ! Метод конечных разностей (FCT — Flux Corrected Transport).
+                        !   advs(dt, c2) — адвекция солености S2 → S1 (3D).
+                        !   advt(dt, c2) — адвекция температуры T2 → T1 (3D).
+                        ! dt [с] — шаг по времени, c2 [безразм.] — коэффициент стабилизации.
+                        ! Используются скорости U2/V2 (из block 210) и вертикальная W.
+                        ! Массивы после вызова: S1/T1 содержат адвектированные поля.
+                        call advs(dt, c2)
+                        call advt(dt, c2)
+
+                        ! Stage 8.6 diagnostics: E = after ocean advection
+                        call capture_state('E_after_adv', kkk, iii, u2, v2, w, t2, s2, ro)
+
+                        ! Диагностика этапа 4.3 (ТОЛЬКО чтение, не влияет на физику):
+                        ! точка A - плотностные инверсии сразу после адвекции T/S,
+                        ! т.е. на входе в convective adjustment. Опрашивается в
+                        ! нескольких шагах суток, чтобы не засорять консоль.
+                        if (iii .eq. 1 .or. iii .eq. 6 .or. iii .eq. mm2) then
+                            call ca_probe_inversions('A_after_adv', kkk, iii)
+                        end if
+
+                        ! Конвективная коррекция плотностной стратификации (этап 3.2):
+                        ! историческая схема перемешивания при RR(K)-RR(K1) > 0.9E-7.
+                        ! RO пока НЕ используется в уравнениях движения (этапы 3.1-3.2).
+                        call conv_adj(kkk, iii)
+
+                        ! Stage 8.6 diagnostics: F = after convective adjustment
+                        call capture_state('F_after_conv', kkk, iii, u2, v2, w, t2, s2, ro)
+
+                        ! Диагностика этапа 4.3: точка D - остаточные инверсии после
+                        ! convective adjustment (должны быть близки к нулю, кроме
+                        ! столбцов с guard-срабатыванием).
+                        if (iii .eq. 1 .or. iii .eq. 6 .or. iii .eq. mm2) then
+                            call ca_probe_inversions('D_after_conv', kkk, iii)
+                        end if
                     end if
+
+! Stage 8.6 predictor-corrector: recompute discrete steady state from current RO
+                    ! Controlled by ICEBERG_PREDICTOR_CORRECTOR environment variable
+                    call get_environment_variable('ICEBERG_PREDICTOR_CORRECTOR', env_str)
+                    if (len_trim(env_str) .gt. 0 .and. env_str .eq. 'true') then
+               print *, ">>> Predictor-corrector: recomputing discrete steady state from current RO"
+                        ! Update RO from current T2/S2 before recomputing balance
+                        call eos_diag()
+                        call compute_discrete_steady_state(0.05, 0.02)
+                    else
+                        ! Legacy post-heat rebalancing (continuous thermal wind)
+                        call get_environment_variable('ICEBERG_POST_HEAT_REBALANCE', env_str)
+                        if (len_trim(env_str) .gt. 0 .and. env_str .eq. 'true') then
+              print *, ">>> Post-heat rebalancing: recomputing thermal-wind balance from current RO"
+                            call compute_thermal_wind(18, 0.05, 0.02)
+                        end if
+                    end if
+
+                    ! Stage 8.6 diagnostics: G = before Block 200
+                    call capture_velocity_state('G_before_B200', kkk, iii, u1, v1)
 
                     ! ====================================================================
                     !   6b. 3D-ИМПУЛЬС (BLOCK 200): Coriolis + baroclinic + DPX + Laplacian
@@ -810,6 +872,9 @@ program main
                             end do
                         end do
                     end do
+
+                    ! Stage 8.6 diagnostics: H = after Block 200
+                    call capture_velocity_state('H_after_B200', kkk, iii, u2, v2)
 
                     ! ====================================================================
                     !   6c. ВЕРТИКАЛЬНАЯ ВЯЗКОСТЬ (BLOCK 210): Thomas algorithm
@@ -951,6 +1016,9 @@ program main
                         end do
                     end do
 
+                    ! Stage 8.6 diagnostics: I = after Block 210
+                    call capture_velocity_state('I_after_B210', kkk, iii, u2, v2)
+
                     ! ====================================================================
                     !   7. БАРОТРОПНЫЙ РАСЧЁТ МЕЛКОЙ ВОДЫ И УРОВНЯ МОРЯ
                     ! ====================================================================
@@ -1016,6 +1084,9 @@ program main
                             end do
                         end do
                     end do
+
+                    ! Stage 8.6 diagnostics: J = after Block 280
+                    call capture_velocity_state('J_after_B280', kkk, iii, u2, v2)
 
                     ! Диагностика 3D-скоростей (этап 3.3): min/max U2,V2 после все�� блоков
                     if (kkk .le. 2) then

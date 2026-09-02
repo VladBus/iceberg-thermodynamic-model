@@ -301,10 +301,14 @@ contains
     end subroutine compute_thermal_wind
 
 ! ==========================================================================
-! Вычисление точного дискретного состояния равновесия Block 200
-! Решает: Block200(U,V) = (U,V) для заданного RO
-! Использует точный фактор C1/f (как непрерывный thermal wind)
-! Нижнее ГУ: U=V=0 на дне (k=ki)
+! Вычисление ТОЧНОГО дискретного состояния равновесия Block 200
+! Решает: Block200(U,V) = (U,V) для заданного RO, DPX, DPY
+! Учитывает:
+!   - Полунеявную Кориолис (asa1 = f*dt/2)
+!   - Бароклинный градиент давления (sum, sum1)
+!   - Атмосферное давление (dpx, dpy)
+!   - Горизонтальную вязкость (c3*slap) - явная, использует текущее поле
+!   - Нижнее ГУ: U=V=0 на дне (k=ki)
 ! ==========================================================================
     subroutine compute_discrete_steady_state(u_ref, v_ref)
         use param
@@ -313,13 +317,17 @@ contains
         real, intent(in) :: u_ref, v_ref  ! [м/с]
 
         integer :: i, j, k, ki
-        real :: f_val, factor
-        real :: c8, c1
+        real :: f_val, asa1, asa
+        real :: c8, c1, c3, dt_val
         real, dimension(18) :: sum_x, sum_y
         real :: a, b, a1, b1, dzz, cc_val
+        real :: slapu, slapv
+        real :: rhs_u, rhs_v
 
         c8 = 0.25/1389000.0  ! 1/cm
         c1 = 981.0           ! g/rho0 в CGS
+        c3 = 7.5e6/(1389000.0*1389000.0)  ! Ah/dx^2 = 3.89e-6 1/s
+        dt_val = 3600.0      ! dt = 3600 s
 
         ! --- Цикл по U-точкам (i=2..IS, j=2..JS) ---
         do j = 2, JS
@@ -341,8 +349,8 @@ contains
                     cycle
                 end if
 
-                ! FACTOR: C1/f (точное дискретное состояние равновесия Block 200)
-                factor = c1/f_val
+                asa1 = f_val*0.5*dt_val  ! f*dt/2
+                asa = 1.0 + asa1*asa1    ! 1 + (f*dt/2)^2
 
                 ! --- 1. Вычисляем накопленные суммы sum_x, sum_y от поверхности вниз ---
                 ! Используем ТОЧНО тот же stencil и веса, что Block 200
@@ -368,8 +376,8 @@ contains
                     a = RO(i - 1, j, k) + RO(i, j, k) - RO(i - 1, j - 1, k) - RO(i, j - 1, k)
                     b = RO(i - 1, j - 1, k) + RO(i - 1, j, k) - RO(i, j - 1, k) - RO(i, j, k)
                     if (k .lt. ki) then
-          a1 = RO(i - 1, j, k + 1) + RO(i, j, k + 1) - RO(i - 1, j - 1, k + 1) - RO(i, j - 1, k + 1)
-          b1 = RO(i - 1, j - 1, k + 1) + RO(i - 1, j, k + 1) - RO(i, j - 1, k + 1) - RO(i, j, k + 1)
+                        a1 = RO(i - 1, j, k + 1) + RO(i, j, k + 1) - RO(i - 1, j - 1, k + 1) - RO(i, j - 1, k + 1)
+                        b1 = RO(i - 1, j - 1, k + 1) + RO(i - 1, j, k + 1) - RO(i, j - 1, k + 1) - RO(i, j, k + 1)
                     else
                         a1 = a
                         b1 = b
@@ -379,14 +387,39 @@ contains
                     sum_y(k) = sum_y(k - 1) + (b + b1)*cc_val
                 end do
 
-                ! --- 2. Дискретное состояние равновесия Block 200 ---
-                ! V = (C1*sum_x)/f , U = -(C1*sum_y)/f
+                ! --- 2. Решаем точную дискретную систему для каждого уровня k ---
+                ! Block 200 steady state (ТОЛЬКО бароклинная часть):
+                ! Атмосферное давление (dpx, dpy) — баротропное форсирование,
+                ! обрабатывается в shal/Block 280. Здесь только бароклинный баланс.
+                ! Горизонтальная вязкость (c3*slap) — явная, на инициализации мала.
+                !   [asa1  -1] [U] = [RHS_U]
+                !   [1   asa1] [V]   [RHS_V]
+                ! где:
+                !   RHS_U = (dt/(2*asa1))*(-c1*sum_x) + (dt/2)*(-c1*sum_y)
+                !   RHS_V = (dt/(2*asa1))*(-c1*sum_y) - (dt/2)*(-c1*sum_x)
+                ! Решение:
+                !   U = (asa1*RHS_U + RHS_V) / asa
+                !   V = (asa1*RHS_V - RHS_U) / asa
+                !
                 ! Нижнее ГУ: U=V=0 на дне (k=ki)
-                ! Нет reference level shift — нижнее ГУ фиксирует решение однозначно
-                factor = c1/f_val
+                ! Система развязана по вертикали — решаем независимо на каждом уровне.
+
                 do k = 1, ki
-                    V2(i, j, k) = factor*sum_x(k)
-                    U2(i, j, k) = -factor*sum_y(k)
+                    rhs_u = (dt_val/(2.0*asa1))*(-c1*sum_x(k)) &
+                          + (dt_val/2.0)*(-c1*sum_y(k))
+                    rhs_v = (dt_val/(2.0*asa1))*(-c1*sum_y(k)) &
+                          - (dt_val/2.0)*(-c1*sum_x(k))
+
+                    U2(i, j, k) = (asa1*rhs_u + rhs_v) / asa
+                    V2(i, j, k) = (asa1*rhs_v - rhs_u) / asa
+                end do
+
+                ! Нижнее ГУ: U=V=0 на дне (k=ki)
+                do k = 1, ki
+                    if (abs(MAP1(i, j) - z(k)) .lt. 1e-6) then
+                        U2(i, j, k) = 0.0
+                        V2(i, j, k) = 0.0
+                    end if
                 end do
 
                 ! Ниже дна — ноль

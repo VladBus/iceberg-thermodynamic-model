@@ -1,0 +1,75 @@
+# ==============================================================================
+# GitHub Actions CI for AARI Iceberg Thermodynamic & Dynamics Model
+# Runs all Fortran tests (25 tests: 11 iceberg + 14 canonical) on every push/PR
+# Requires: -I/usr/include for netcdf.mod (system package libnetcdff-dev)
+# ==============================================================================
+
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  test:
+    name: Fortran Tests (fpm)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gfortran libnetcdff-dev libnetcdf-dev
+
+      - name: Install fpm (Fortran Package Manager)
+        run: |
+          FPM_VERSION="0.12.0"
+          curl -fsSL "https://github.com/fortran-lang/fpm/releases/download/v${FPM_VERSION}/fpm-${FPM_VERSION}-linux-x86_64.tar.gz" \
+            | tar -xz -C /tmp
+          sudo mv /tmp/fpm /usr/local/bin/fpm
+          fpm --version
+
+      - name: Build and run all tests
+        run: |
+          fpm test --flag "-I/usr/include"
+
+      - name: Build main executable (smoke test)
+        run: |
+          fpm build --flag "-I/usr/include"
+
+  test-python:
+    name: Python Environment Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Miniconda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          activate-environment: iceberg-thermodynamic-model
+          environment-file: environment.yml
+          auto-activate-base: false
+
+      - name: Verify Python imports
+        shell: bash -l {0}
+        run: |
+          conda activate iceberg-thermodynamic-model
+          python -c "import xarray, netCDF4, numpy, pandas, matplotlib, scipy, pyproj, rasterio; print('All core packages imported successfully')"
+
+      - name: Check key analysis scripts exist
+        run: |
+          test -f python/analysis/run_manifest.py && echo "run_manifest.py OK"
+          test -f python/analysis/units.py && echo "units.py OK"
+          test -f python/analysis/run_context.py && echo "run_context.py OK"
+          test -f python/era5/download_era5.py && echo "download_era5.py OK"
+          test -f python/grid/build_real_grid_inputs.py && echo "build_real_grid_inputs.py OK"
+          test -f python/ice/build_initial_ice.py && echo "build_initial_ice.py OK"

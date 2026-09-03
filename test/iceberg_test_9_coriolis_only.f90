@@ -129,8 +129,8 @@ program iceberg_test_9_coriolis_only
 
     ! Проверка 3: Период близок к теории (внутри 15%)
     n_checks = n_checks + 1
-    if (T_inertial_measured .gt. 0.0 .an &
-        d. abs(T_inertial_measured - T_inertial_theory)/T_inertial_theory .lt. 0.15) then
+    if (T_inertial_measured .gt. 0.0 .and. &
+        abs(T_inertial_measured - T_inertial_theory)/T_inertial_theory .lt. 0.15) then
         print *, "OK: Inertial period matches theory within 15%"
     else
         print *, "ERROR: Period mismatch: measured=", T_inertial_measured/3600.0, &

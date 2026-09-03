@@ -66,10 +66,10 @@ contains
             return
         end if
 
-        if (abs(ht(i1, j1) - LAND_MASK_VAL) .lt. EPS_LAND.o &
-            r.abs(ht(i2, j1) - LAND_MASK_VAL) .lt. EPS_LAND &
-            .or. abs(ht(i1, j2) - LAND_MASK_VAL) .lt. EPS_L &
-            AND .or. abs(ht(i2, j2) - LAND_MASK_VAL) .lt. EPS_LAND) then
+        if (abs(ht(i1, j1) - LAND_MASK_VAL) .lt. EPS_LAND .or. &
+            abs(ht(i2, j1) - LAND_MASK_VAL) .lt. EPS_LAND .or. &
+            abs(ht(i1, j2) - LAND_MASK_VAL) .lt. EPS_LAND .or. &
+            abs(ht(i2, j2) - LAND_MASK_VAL) .lt. EPS_LAND) then
             print *, "FORCING WARNING: Iceberg near land"
         end if
 
@@ -235,6 +235,7 @@ contains
         end if
 
         if (draft .ge. prof%z(prof%nlevels)) then
+            ! Extrapolate constant below deepest model level
             select case (field_name)
             case ("temp"); val = prof%temp(prof%nlevels)
             case ("salt"); val = prof%salt(prof%nlevels)
@@ -276,10 +277,17 @@ contains
         integer :: k
         real :: z_top, z_bot, dz_layer, tf, delta_t
         real :: integral, total_depth
+        real :: max_z, temp_deep, salt_deep, tf_deep
 
         integral = 0.0
         total_depth = 0.0
 
+        max_z = prof%z(prof%nlevels)
+        temp_deep = prof%temp(prof%nlevels)
+        salt_deep = prof%salt(prof%nlevels)
+        tf_deep = -54.0*salt_deep
+
+        ! Integrate over model levels
         do k = 1, prof%nlevels
             z_top = prof%z(k) - 0.5*prof%dz(k)
             z_bot = prof%z(k) + 0.5*prof%dz(k)
@@ -298,6 +306,16 @@ contains
 
             total_depth = total_depth + dz_layer
         end do
+
+        ! Extrapolate below max model level to draft
+        if (draft .gt. max_z) then
+            dz_layer = draft - max_z
+            delta_t = temp_deep - tf_deep
+            if (delta_t .gt. 0.0) then
+                integral = integral + delta_t*dz_layer
+            end if
+            total_depth = total_depth + dz_layer
+        end if
 
         if (total_depth .gt. 0.0) then
             delta_t_avg = integral/total_depth
@@ -320,6 +338,9 @@ contains
         integer :: k
         real :: z_top, z_bot, dz_layer
         real :: u_int, v_int, total_dz
+        real :: max_z
+
+        max_z = prof%z(prof%nlevels)
 
         n_layers = 0
         do k = 1, prof%nlevels
@@ -328,6 +349,11 @@ contains
             if (z_top .lt. draft) n_layers = n_layers + 1
             if (z_bot .ge. draft) exit
         end do
+
+        ! Add layer for extrapolation below max model level
+        if (draft .gt. max_z) then
+            n_layers = n_layers + 1
+        end if
 
         if (n_layers .eq. 0) then
             u_avg = 0.0
@@ -343,17 +369,28 @@ contains
         total_dz = 0.0
 
         do k = 1, n_layers
-            z_top = prof%z(k) - 0.5*prof%dz(k)
-            z_bot = prof%z(k) + 0.5*prof%dz(k)
-            if (z_bot .gt. draft) z_bot = draft
-            dz_layer = z_bot - z_top
+            if (k .le. prof%nlevels) then
+                z_top = prof%z(k) - 0.5*prof%dz(k)
+                z_bot = prof%z(k) + 0.5*prof%dz(k)
+                if (z_bot .gt. draft) z_bot = draft
+                dz_layer = z_bot - z_top
 
-            z_layers(k) = 0.5*(z_top + z_bot)
-            u_profile(k) = prof%u(k)
-            v_profile(k) = prof%v(k)
+                z_layers(k) = 0.5*(z_top + z_bot)
+                u_profile(k) = prof%u(k)
+                v_profile(k) = prof%v(k)
+            else
+                ! Extrapolation layer below max model level: zero velocity
+                z_top = max_z
+                z_bot = draft
+                dz_layer = z_bot - z_top
 
-            u_int = u_int + prof%u(k)*dz_layer
-            v_int = v_int + prof%v(k)*dz_layer
+                z_layers(k) = 0.5*(z_top + z_bot)
+                u_profile(k) = 0.0
+                v_profile(k) = 0.0
+            end if
+
+            u_int = u_int + u_profile(k)*dz_layer
+            v_int = v_int + v_profile(k)*dz_layer
             total_dz = total_dz + dz_layer
         end do
 

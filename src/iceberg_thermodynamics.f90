@@ -90,7 +90,7 @@ contains
         delta_t = t_draft - tf_draft
 
         if (delta_t .gt. 0.0) then
-            m_basal = C_BASAL*delta_t/(RHO_ICE*LATENT_HEAT)
+            m_basal = C_BASAL*delta_t
         else
             m_basal = 0.0
             delta_t = 0.0
@@ -108,7 +108,7 @@ contains
         delta_t_avg = depth_averaged_thermal_forcing(prof, draft)
 
         if (delta_t_avg .gt. 0.0) then
-            m_lateral = C_LATERAL*delta_t_avg/(RHO_ICE*LATENT_HEAT)
+            m_lateral = C_LATERAL*delta_t_avg
         else
             m_lateral = 0.0
             delta_t_avg = 0.0

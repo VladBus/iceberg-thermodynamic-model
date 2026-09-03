@@ -11,7 +11,7 @@ program iceberg_test_11_30day_offline
     use initial_ocean_reader, only: read_initial_ts
     use grid_coupling, only: coup1
     use grid_masks, only: ikuv
-    use param, only: is, js, is1, js1, ht, kt1
+    use param, only: is, js, is1, js1, ht, kt1, t1, t2, s1, s2
     implicit none
 
     type(iceberg_state) :: state
@@ -28,6 +28,10 @@ program iceberg_test_11_30day_offline
     real :: bathymetry
     real :: lat, lon
     logical :: realistic_ok, era5_ok, forcing_ok
+    real :: x_model, y_model
+    integer :: i_idx, j_idx
+    logical :: has_nan
+    real :: max_speed, max_melt_b, max_melt_l, budget_error
 
     ! Для вывода траектории
     real, allocatable :: traj_x(:), traj_y(:), traj_lat(:), traj_lon(:)
@@ -57,7 +61,7 @@ program iceberg_test_11_30day_offline
     ! 3. Открытие ERA5
     print *, "Opening ERA5 forcing..."
     call era5_open('data/input/processed/era5/2020/2020_Q1/era5_2020_0103_barents_expanded_merged.nc', ios)
-    if (ios /= 0) then
+    if (ios .ne. 0) then
         print *, "ERROR: Failed to open ERA5 file"
         era5_ok = .false.
     else
@@ -67,37 +71,37 @@ program iceberg_test_11_30day_offline
     end if
 
     ! 4. Инициализация айсберга: ~75N, 30E (Баренцево море)
+    ! Model cell (i=61, j=37) corresponds to lat=75.0, lon=30.14
     lat = 75.0
     lon = 30.0
 
-    real :: x_model, y_model
-    x_model = 0.0
-    y_model = 58.0 * 13890.0
+    x_model = 36.0*13890.0   ! j=37 -> (37-1)*13890
+    y_model = 60.0*13890.0   ! i=61 -> (61-1)*13890
 
     call iceberg_init(state, x_model, y_model, 100.0, 100.0, 100.0, &
                       lat, lon, 0.0, 0.0)
 
     ! 5. Подготовка массивов для записи траектории
     dt = 3600.0
-    nsteps = 24 * 30
+    nsteps = 24*30
 
-    allocate(traj_x(nsteps), traj_y(nsteps), traj_lat(nsteps), traj_lon(nsteps))
-    allocate(geom_L(nsteps), geom_W(nsteps), geom_H(nsteps), geom_M(nsteps))
-    allocate(melt_b(nsteps), melt_l(nsteps), melt_s(nsteps))
-    allocate(vel_u(nsteps), vel_v(nsteps))
+    allocate (traj_x(nsteps), traj_y(nsteps), traj_lat(nsteps), traj_lon(nsteps))
+    allocate (geom_L(nsteps), geom_W(nsteps), geom_H(nsteps), geom_M(nsteps))
+    allocate (melt_b(nsteps), melt_l(nsteps), melt_s(nsteps))
+    allocate (vel_u(nsteps), vel_v(nsteps))
 
-    M0 = 910.0 * 100.0**3
+    M0 = 910.0*100.0**3
     total_budget_loss = 0.0
 
     print *, "Starting 30-day integration..."
     print *, "Initial position: x=", x_model, " y=", y_model, " lat=", lat, " lon=", lon
 
     do step = 1, nsteps
-        model_time_sec = start_sec + real(step) * dt
+        model_time_sec = start_sec + real(step)*dt
 
         ! 5a. Получить океанский профиль на текущей позиции
         call get_ocean_profile(state%x, state%y, state%latitude, state%longitude, &
-                               state%H * 910.0 / 1028.0, ocean_prof, forcing_ok)
+                               state%H*910.0/1028.0, ocean_prof, forcing_ok)
         if (.not. forcing_ok) then
             print *, "WARNING: Ocean profile interpolation failed at step ", step
         end if
@@ -121,10 +125,9 @@ program iceberg_test_11_30day_offline
         end if
 
         ! 5c. Батиметрия на позиции
-        integer :: i_idx, j_idx
         call model_coords_to_indices_local(state%x, state%y, i_idx, j_idx)
-        if (i_idx >= 1 .and. i_idx <= is1 .and. j_idx >= 1 .and. j_idx <= js1) then
-            bathymetry = real(ht(i_idx, j_idx)) * 0.01
+        if (i_idx .ge. 1 .and. i_idx .le. is1 .and. j_idx .ge. 1 .and. j_idx .le. js1) then
+            bathymetry = real(ht(i_idx, j_idx))*0.01
         else
             bathymetry = 500.0
         end if
@@ -151,12 +154,12 @@ program iceberg_test_11_30day_offline
         total_budget_loss = total_budget_loss + diag%total_mass_loss
 
         ! Вывод прогресса
-        if (mod(step, 24) == 0) then
+        if (mod(step, 24) .eq. 0) then
             print *, "Day ", step/24, ": pos=(", state%latitude, ",", state%longitude, &
-                     ") LWH=(", state%L, ",", state%W, ",", state%H, &
-                     ") vel=(", state%u, ",", state%v, &
-                     ") melt=(", diag%m_basal*86400, ",", diag%m_lateral*86400, ",", diag%m_surface*86400, &
-                     ") grounded=", diag%grounded
+                ") LWH=(", state%L, ",", state%W, ",", state%H, &
+                ") vel=(", state%u, ",", state%v, &
+             ") melt=(", diag%m_basal*86400, ",", diag%m_lateral*86400, ",", diag%m_surface*86400, &
+                ") grounded=", diag%grounded
         end if
 
         if (.not. state%active) then
@@ -178,12 +181,11 @@ program iceberg_test_11_30day_offline
 
     ! Проверка 1: Нет NaN
     n_checks = n_checks + 1
-    logical :: has_nan
     has_nan = .false.
     do step = 1, nsteps
-        if (traj_x(step) /= traj_x(step) .or. traj_y(step) /= traj_y(step) .or. &
-            geom_L(step) /= geom_L(step) .or. geom_W(step) /= geom_W(step) .or. &
-            geom_H(step) /= geom_H(step)) then
+        if (traj_x(step) .ne. traj_x(step) .or. traj_y(step) .ne. traj_y(step) . &
+            or. geom_L(step) .ne. geom_L(step) .or. geom_W(step) .ne. geom_W(ste &
+                                                        p) .or. geom_H(step) .ne. geom_H(step)) then
             has_nan = .true.
             exit
         end if
@@ -197,7 +199,7 @@ program iceberg_test_11_30day_offline
 
     ! Проверка 2: Нет отрицательной геометрии
     n_checks = n_checks + 1
-    if (minval(geom_L) > 0.0 .and. minval(geom_W) > 0.0 .and. minval(geom_H) > 0.0) then
+    if (minval(geom_L) .gt. 0.0 .and. minval(geom_W) .gt. 0.0 .and. minval(geom_H) .gt. 0.0) then
         print *, "OK: All geometry positive"
     else
         print *, "ERROR: Negative geometry detected"
@@ -206,7 +208,7 @@ program iceberg_test_11_30day_offline
 
     ! Проверка 3: Масса монотонно убывает
     n_checks = n_checks + 1
-    if (M_final < M0) then
+    if (M_final .lt. M0) then
         print *, "OK: Mass decreased"
     else
         print *, "WARNING: Mass did not decrease"
@@ -214,9 +216,8 @@ program iceberg_test_11_30day_offline
 
     ! Проверка 4: Скорость дрейфа физически правдоподобна
     n_checks = n_checks + 1
-    real :: max_speed
     max_speed = maxval(sqrt(vel_u**2 + vel_v**2))
-    if (max_speed > 0.01 .and. max_speed < 0.5) then
+    if (max_speed .gt. 0.01 .and. max_speed .lt. 0.5) then
         print *, "OK: Drift speed plausible: max = ", max_speed, " m/s"
     else
         print *, "WARNING: Drift speed unusual: max = ", max_speed, " m/s"
@@ -224,22 +225,20 @@ program iceberg_test_11_30day_offline
 
     ! Проверка 5: Скорость плавления правдоподобна
     n_checks = n_checks + 1
-    real :: max_melt_b, max_melt_l
-    max_melt_b = maxval(melt_b) * 86400.0
-    max_melt_l = maxval(melt_l) * 86400.0
-    if (max_melt_b < 5.0 .and. max_melt_l < 5.0) then
+    max_melt_b = maxval(melt_b)*86400.0
+    max_melt_l = maxval(melt_l)*86400.0
+    if (max_melt_b .lt. 5.0 .and. max_melt_l .lt. 5.0) then
         print *, "OK: Melt rates plausible: basal_max=", max_melt_b, &
-                 " lateral_max=", max_melt_l, " m/day"
+            " lateral_max=", max_melt_l, " m/day"
     else
         print *, "WARNING: Melt rates high: basal_max=", max_melt_b, &
-                 " lateral_max=", max_melt_l, " m/day"
+            " lateral_max=", max_melt_l, " m/day"
     end if
 
     ! Проверка 6: Массовый баланс сходится
     n_checks = n_checks + 1
-    real :: budget_error
-    budget_error = abs((M0 - M_final) - total_budget_loss) / M0
-    if (budget_error < 0.01) then
+    budget_error = abs((M0 - M_final) - total_budget_loss)/M0
+    if (budget_error .lt. 0.01) then
         print *, "OK: Mass budget closes (error = ", budget_error*100, "%)"
     else
         print *, "ERROR: Mass budget error = ", budget_error*100, "%"
@@ -257,7 +256,7 @@ program iceberg_test_11_30day_offline
 
     print *, "=================================================="
     print *, "Total checks: ", n_checks, " errors: ", n_errors
-    if (n_errors == 0) then
+    if (n_errors .eq. 0) then
         print *, "SUCCESS: TEST_11 PASSED"
         stop 0
     else
@@ -272,8 +271,8 @@ contains
         integer, intent(out) :: i_idx, j_idx
         real :: dx_model
         dx_model = 13890.0
-        j_idx = int(x_model / dx_model) + 1
-        i_idx = int(y_model / dx_model) + 1
+        j_idx = int(x_model/dx_model) + 1
+        i_idx = int(y_model/dx_model) + 1
     end subroutine model_coords_to_indices_local
 
     subroutine save_trajectory_csv(n, x, y, lat, lon, L, W, H, M, &
@@ -286,19 +285,19 @@ contains
 
         integer :: step, unit, ios
         unit = 10
-        open(unit, file='data/output/diagnostics/stage9.2/test11_trajectory.csv', &
-             status='replace', iostat=ios)
-        if (ios /= 0) return
+        open (unit, file='data/output/diagnostics/stage9.3/test11_trajectory.csv', &
+              status='replace', iostat=ios)
+        if (ios .ne. 0) return
 
         write(unit, '(A)') 'step,time_h,x_m,y_m,lat_deg,lon_deg,L_m,W_m,H_m,M_kg,mb_mday,ml_mday,ms_mday,u_ms,v_ms'
         do step = 1, n
-            write(unit, '(I6,F10.2,2F15.2,2F12.6,3F12.3,F15.2,3F12.6,2F12.6)') &
+            write (unit, '(I6,F10.2,2F15.2,2F12.6,3F12.3,F15.2,3F12.6,2F12.6)') &
                 step, real(step)*1.0, x(step), y(step), lat(step), lon(step), &
                 L(step), W(step), H(step), M(step), &
                 mb(step)*86400.0, ml(step)*86400.0, ms(step)*86400.0, &
                 vu(step), vv(step)
         end do
-        close(unit)
+        close (unit)
         print *, "Trajectory saved to test11_trajectory.csv"
     end subroutine save_trajectory_csv
 

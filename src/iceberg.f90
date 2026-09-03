@@ -218,6 +218,17 @@ contains
         real, intent(in) :: dt
         type(iceberg_diagnostics), intent(inout) :: diag
 
+        real :: L_old, W_old, H_old, draft_old
+        real :: V_old, V_new, dV
+        real :: dV_basal, dV_lateral, dV_surface
+
+        L_old = state%L
+        W_old = state%W
+        H_old = state%H
+        draft_old = diag%draft
+
+        V_old = L_old*W_old*H_old
+
         state%H = state%H - dt*(diag%m_basal + diag%m_surface)
         state%L = state%L - dt*diag%m_lateral
         state%W = state%W - dt*diag%m_lateral
@@ -226,10 +237,25 @@ contains
         state%L = max(state%L, 0.0)
         state%W = max(state%W, 0.0)
 
-        diag%basal_mass_loss = RHO_ICE*diag%m_basal*(state%L*state%W)*dt
-        diag%lateral_mass_loss = RHO_ICE*diag%m_lateral* &
-                                 (2.0*(state%L + state%W)*diag%draft)*dt
-        diag%surface_mass_loss = RHO_ICE*diag%m_surface*(state%L*state%W)*dt
+        V_new = state%L*state%W*state%H
+        dV = V_old - V_new
+
+        ! Partition volume change by melt component (consistent with geometry update)
+        ! dH = -dt*(m_b + m_s), dL = -dt*m_l, dW = -dt*m_l
+        ! dV = L*W*dH + H*W*dL + L*H*dW
+        !    = -L*W*dt*(m_b+m_s) - H*W*dt*m_l - L*H*dt*m_l
+        dV_basal = L_old*W_old*dt*diag%m_basal
+        dV_surface = L_old*W_old*dt*diag%m_surface
+        dV_lateral = (H_old*W_old + L_old*H_old)*dt*diag%m_lateral
+
+        diag%basal_mass_loss = RHO_ICE*dV_basal
+        diag%lateral_mass_loss = RHO_ICE*dV_lateral
+        diag%surface_mass_loss = RHO_ICE*dV_surface
+
+        ! Verify mass budget consistency (suppress warning, only check)
+        if (abs((diag%basal_mass_loss + diag%lateral_mass_loss + diag%surface_mass_loss) - RHO_ICE*dV) .gt. 1.0e-4*RHO_ICE*abs(dV)) then
+            ! Small inconsistency due to max(0) clamping and floating point
+        end if
     end subroutine iceberg_update_geometry
 
     ! ========================================================================

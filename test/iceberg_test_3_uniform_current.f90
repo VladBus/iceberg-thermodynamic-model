@@ -141,9 +141,9 @@ program iceberg_test_3_uniform_current
 
     ! Проверка 5: Геометрия не изменилась
     n_checks = n_checks + 1
-    if (abs(state%L - 100.0) .lt. 1.0e-6 .an &
-        d. abs(state%W - 100.0) .lt. 1.0e-6 &
-        .and. abs(state%H - 100.0) .lt. 1.0e-6) then
+    if (abs(state%L - 100.0) .lt. 1.0e-6 .and. &
+        abs(state%W - 100.0) .lt. 1.0e-6 .and. &
+        abs(state%H - 100.0) .lt. 1.0e-6) then
         print *, "OK: Geometry constant"
     else
         print *, "ERROR: Geometry changed"

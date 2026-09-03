@@ -92,9 +92,9 @@ program iceberg_test_2_zero_gradient
 
     ! Проверка 1: Геометрия не изменилась (внутри 1 мм)
     n_checks = n_checks + 1
-    if (abs(L_final - L0) .lt. 0.001 .an &
-        d. abs(W_final - W0) .lt. 0.001 &
-        .and. abs(H_final - H0) .lt. 0.001) then
+    if (abs(L_final - L0) .lt. 0.001 .and. &
+        abs(W_final - W0) .lt. 0.001 .and. &
+        abs(H_final - H0) .lt. 0.001) then
         print *, "OK: Geometry unchanged (within 1 mm)"
     else
    print *, "ERROR: Geometry changed: dL=", L_final - L0, " dW=", W_final - W0, " dH=", H_final - H0

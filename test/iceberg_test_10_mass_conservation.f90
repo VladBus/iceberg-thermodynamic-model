@@ -104,9 +104,9 @@ program iceberg_test_10_mass_conservation
 
     ! Проверка 2: Все компоненты потерь неотрицательны
     n_checks = n_checks + 1
-    if (diag%basal_mass_loss .ge. 0.0 .and &
-        . diag%lateral_mass_loss .ge. 0.0 .a &
-        nd. diag%surface_mass_loss .ge. 0.0) then
+    if (diag%basal_mass_loss .ge. 0.0 .and. &
+        diag%lateral_mass_loss .ge. 0.0 .and. &
+        diag%surface_mass_loss .ge. 0.0) then
         print *, "OK: All mass loss components non-negative"
     else
         print *, "ERROR: Negative mass loss component"

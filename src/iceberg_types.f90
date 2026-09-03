@@ -20,8 +20,8 @@ module iceberg_types
     real, parameter :: CD_AIR = 1.3e-3
     real, parameter :: CD_WATER = 2.0e-3
 
-    real, parameter :: C_BASAL = 1.0e-4
-    real, parameter :: C_LATERAL = 1.0e-4
+    real, parameter :: C_BASAL = 1.0e-6
+    real, parameter :: C_LATERAL = 1.0e-6
 
     real, parameter :: ALBEDO_ICE = 0.7
     real, parameter :: EMISSIVITY = 0.97

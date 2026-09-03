@@ -65,7 +65,7 @@ contains
         if (diag_level .eq. DIAG_OFF) return
 
         u_max = -huge(0.0); v_max = -huge(0.0); w_max = -huge(0.0)
-        u_min = huge(0.0);  v_min = huge(0.0);  w_min = huge(0.0)
+        u_min = huge(0.0); v_min = huge(0.0); w_min = huge(0.0)
         t_max = -huge(0.0); t_min = huge(0.0)
         s_max = -huge(0.0); s_min = huge(0.0)
         ro_max = -huge(0.0); ro_min = huge(0.0)
@@ -143,10 +143,10 @@ contains
         end do
 
         if (n_wet .gt. 0) then
-            ke = 0.5 * ke / real(n_wet)
+            ke = 0.5*ke/real(n_wet)
         end if
 
-        print *, "STAGE86 [" // trim(tag) // "] d=", kkk, " III=", iii, &
+        print *, "STAGE86 ["//trim(tag)//"] d=", kkk, " III=", iii, &
             " n_wet=", n_wet, &
             " U=[", u_min/100.0, ",", u_max/100.0, "] m/s", &
             " V=[", v_min/100.0, ",", v_max/100.0, "] m/s", &
@@ -162,7 +162,7 @@ contains
         ! Detailed verbose output
         if (diag_level .eq. DIAG_VERBOSE .and. n_wet .gt. 0) then
             print *, "  NaN fractions: U=", real(n_nan_u)/real(n_wet)*100.0, &
-                "% V=", real(n_nan_v)/real(n_wet)*100.0, "% W=", real(n_nan_w)/real(n_wet)*100.0, "%"
+               "% V=", real(n_nan_v)/real(n_wet)*100.0, "% W=", real(n_nan_w)/real(n_wet)*100.0, "%"
             print *, "  T NaN=", real(n_nan_t)/real(n_wet)*100.0, "% S NaN=", &
                 real(n_nan_s)/real(n_wet)*100.0, "% RO NaN=", real(n_nan_ro)/real(n_wet)*100.0, "%"
         end if
@@ -184,7 +184,7 @@ contains
         if (diag_level .eq. DIAG_OFF) return
 
         u_max = -huge(0.0); v_max = -huge(0.0)
-        u_min = huge(0.0);  v_min = huge(0.0)
+        u_min = huge(0.0); v_min = huge(0.0)
         speed_max = -huge(0.0)
         ke = 0.0; mom_x = 0.0; mom_y = 0.0
         n_wet = 0; n_nan_u = 0; n_nan_v = 0
@@ -222,9 +222,9 @@ contains
             end do
         end do
 
-        if (n_wet .gt. 0) ke = 0.5 * ke / real(n_wet)
+        if (n_wet .gt. 0) ke = 0.5*ke/real(n_wet)
 
-        print *, "STAGE86_VEL [" // trim(tag) // "] d=", kkk, " III=", iii, &
+        print *, "STAGE86_VEL ["//trim(tag)//"] d=", kkk, " III=", iii, &
             " n_wet=", n_wet, &
             " U=[", u_min/100.0, ",", u_max/100.0, "] m/s", &
             " V=[", v_min/100.0, ",", v_max/100.0, "] m/s", &

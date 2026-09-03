@@ -1,13 +1,28 @@
 ! ==============================================================================
 ! Модуль: iceberg_forcing
-! Назначение: Интерфейс форсинга для айсберга — горизонтальная и вертикальная
-!             интерполяция океанских и атмосферных профилей на позицию айсберга.
+! Назначение: Интерфейс форсинга для айсберга — горизонтальная (билинейная) и
+!             вертикальная интерполяция океанских и атмосферных профилей
+!             на позицию айсберга.
 ! Физика: Использует существующую инфраструктуру ERA5 (netcdf_input) и
-!         модельную сетку (param/grid_coupling) для билинейной интерполяции.
+!         модельную сетку (param/grid_coupling) для интерполяции.
 !         Вертикальная интерполяция по Z-уровням модели к слоям осадки айсберга.
-! Единицы: Входные поля в единицах модели (CGS для океана, SI для атмосферы).
-!          На выходе — профили в SI (м, °C, массовая доля, м/с).
-! Точность: default real (float32).
+!         Экстраполяция ниже максимального моделируемого уровня (45м) до
+!         осадки (~88м) постоянными значениями T/S и нулевой скоростью.
+!
+! Архитектура:
+!   1. get_ocean_profile - основная рутина:
+!      - Горизонтальная билинейная интерполяция на модельной сетке (CGS→SI)
+!      - Вертикальная интерполяция/экстраполяция к осадке
+!   2. get_atmos_forcing - билинейная интерполяция ERA5 на lat/lon
+!   3. interp_at_draft - вертикальная интерполяция T/S на глубине осадки
+!   4. depth_averaged_thermal_forcing - глубинно-усреднённое ΔT для бокового плавления
+!   5. depth_integrated_currents - глубинно-интегрированные течения (Method A)
+!
+! Единицы:
+!   Вход: CGS для океана (u2/v2 [см/с], z/dz [см]), SI для атмосферы
+!   Выход: SI (u/v [м/с], z/dz [м], temp [°C], salt [кг/кг])
+!
+! Точность: default real (float32). ERA5 билинейная интерполяция в real(8).
 ! ==============================================================================
 
 module iceberg_forcing
@@ -23,15 +38,31 @@ module iceberg_forcing
     ! ========================================================================
     !   КОНСТАНТЫ ИНТЕРПОЛЯЦИИ
     ! ========================================================================
-    real, parameter :: LAND_MASK_VAL = 8888.0
-    real, parameter :: EPS_LAND = 1.0e-8
-    real, parameter :: CM_TO_M = 0.01
-    real, parameter :: M_TO_CM = 100.0
+    real, parameter :: LAND_MASK_VAL = 8888.0   ! Значение land mask в ht/kt1
+    real, parameter :: EPS_LAND = 1.0e-8        ! Эпсилон для сравнения с land mask
+    real, parameter :: CM_TO_M = 0.01           ! Перевод см → м
+    real, parameter :: M_TO_CM = 100.0          ! Перевод м → см
 
 contains
 
     ! ========================================================================
     !   ОСНОВНАЯ ФУНКЦИЯ: ПОЛУЧЕНИЕ ОКЕАНСКОГО ПРОФИЛЯ НА ПОЗИЦИИ АЙСБЕРГА
+    ! ========================================================================
+    ! Последовательность:
+    !   1. Найти индексы 4 соседних T-точек (i1,i2,j1,j2) через model_coords_to_indices
+    !   2. Проверить land mask на 4-х углах (LAND_MASK_VAL ± EPS_LAND)
+    !   3. Вычислить веса билинейной интерполяции (wx, wy, wx1, wy1)
+    !   4. Определить число активных вертикальных уровней kt = min(kt1 4-х ячеек)
+    !   5. Выделить память под профиль (nlevels = kt)
+    !   6. Заполнить профиль: горизонтальная билинейная интерполяция + вертикальные z/dz
+    !   7. Конвертация CGS→SI: u/v × CM_TO_M, z/dz × CM_TO_M
+    !
+    ! Аргументы:
+    !   x_model, y_model - позиция в модельных координатах [м] (intent(in))
+    !   lat, lon         - географическая позиция [°] (intent(in))
+    !   draft            - осадка айсберга [м] (intent(in))
+    !   prof             - выходной профиль океана (intent(out))
+    !   ok               - флаг успеха (intent(out))
     ! ========================================================================
     subroutine get_ocean_profile(x_model, y_model, lat, lon, draft, prof, ok)
         real, intent(in) :: x_model, y_model
@@ -50,14 +81,14 @@ contains
 
         ok = .false.
 
-        ! 1. Найти индексы сетки
+        ! 1. Найти индексы сетки (перевод модельных координат в индексы)
         call model_coords_to_indices(x_model, y_model, i_idx, j_idx, in_domain)
         if (.not. in_domain) then
             print *, "FORCING ERROR: Iceberg position outside model domain"
             return
         end if
 
-        ! 2. Проверить соседние ячейки
+        ! 2. Проверить соседние ячейки (4 угла для билинейной интерполяции)
         i1 = i_idx; i2 = i_idx + 1
         j1 = j_idx; j2 = j_idx + 1
 
@@ -66,6 +97,7 @@ contains
             return
         end if
 
+        ! Land mask check: 8888.0 — суша, используем epsilon сравнение
         if (abs(ht(i1, j1) - LAND_MASK_VAL) .lt. EPS_LAND .or. &
             abs(ht(i2, j1) - LAND_MASK_VAL) .lt. EPS_LAND .or. &
             abs(ht(i1, j2) - LAND_MASK_VAL) .lt. EPS_LAND .or. &
@@ -74,6 +106,7 @@ contains
         end if
 
         ! 3. Веса билинейной интерполяции
+        ! Модельная сетка: равномерная dx = 13890 м
         x_j1 = real(j1 - 1)*13890.0
         x_j2 = real(j2 - 1)*13890.0
         y_i1 = real(i1 - 1)*13890.0
@@ -89,6 +122,7 @@ contains
         wx1 = 1.0 - wx
         wy1 = 1.0 - wy
 
+        ! Клиппинг весов в [0,1]
         wx = max(0.0, min(1.0, wx))
         wy = max(0.0, min(1.0, wy))
         wx1 = 1.0 - wx
@@ -104,7 +138,7 @@ contains
         ocean_depth = real(ht(i1, j1))*CM_TO_M
         effective_draft = min(draft, ocean_depth*0.99)
 
-        ! 5. Выделить память
+        ! 5. Выделить память под профиль
         prof%nlevels = kt
         allocate (prof%z(kt), prof%dz(kt), prof%temp(kt), prof%salt(kt), &
                   prof%u(kt), prof%v(kt))
@@ -116,6 +150,7 @@ contains
 
             prof%temp(k) = bilinear_interp_3d(t2, i1, i2, j1, j2, k, wx, wy, wx1, wy1)
             prof%salt(k) = bilinear_interp_3d(s2, i1, i2, j1, j2, k, wx, wy, wx1, wy1)
+            ! u2/v2 в CGS [см/с] → SI [м/с]: × CM_TO_M
             prof%u(k) = bilinear_interp_3d(u2, i1, i2, j1, j2, k, wx, wy, wx1, wy1)*CM_TO_M
             prof%v(k) = bilinear_interp_3d(v2, i1, i2, j1, j2, k, wx, wy, wx1, wy1)*CM_TO_M
         end do
@@ -124,7 +159,17 @@ contains
     end subroutine get_ocean_profile
 
     ! ========================================================================
-    !   БИЛИНЕЙНАЯ ИНТЕРПОЛЯЦИЯ 3D ПОЛЯ
+    !   БИЛИНЕЙНАЯ ИНТЕРПОЛЯЦИЯ 3D ПОЛЯ (pure function)
+    ! ========================================================================
+    ! Формула: f = (1-wx)(1-wy)*f(i1,j1) + wx(1-wy)*f(i2,j1)
+    !                    + (1-wx)wy*f(i1,j2) + wx*wy*f(i2,j2)
+    ! Используется для t2, s2, u2, v2 на каждом вертикальном уровне k.
+    !
+    ! Аргументы:
+    !   arr   - 3D массив (i1:is1, j1:js1, k) (intent(in))
+    !   i1,i2,j1,j2,k - индексы 4 углов и уровень
+    !   wx,wy,wx1,wy1 - веса билинейной интерполяции
+    !   val   - результат интерполяции
     ! ========================================================================
     pure real function bilinear_interp_3d(arr, i1, i2, j1, j2, k, wx, wy, wx1, wy1) &
         result(val)
@@ -140,6 +185,17 @@ contains
 
     ! ========================================================================
     !   ПРЕОБРАЗОВАНИЕ МОДЕЛЬНЫХ КООРДИНАТ В ИНДЕКСЫ СЕТКИ
+    ! ========================================================================
+    ! Модельная сетка: равномерная dx = 13890 м
+    !   j_idx (X-индекс) = int(x_model/13890) + 1  (1-based)
+    !   i_idx (Y-индекс) = int(y_model/13890) + 1
+    ! in_domain = .TRUE. если 1 ≤ i_idx < is1 и 1 ≤ j_idx < js1
+    ! (нужно 4 соседние ячейки для билинейной интерполяции)
+    !
+    ! Аргументы:
+    !   x_model, y_model - позиция [м]
+    !   i_idx, j_idx     - индексы (выход)
+    !   in_domain        - флаг внутри домена (выход)
     ! ========================================================================
     subroutine model_coords_to_indices(x_model, y_model, i_idx, j_idx, in_domain)
         real, intent(in) :: x_model, y_model
@@ -161,6 +217,23 @@ contains
 
     ! ========================================================================
     !   ПОЛУЧЕНИЕ АТМОСФЕРНОГО ФОРСИНГА ERA5
+    ! ========================================================================
+    ! Билинейная интерполяция ERA5 полей на lat/lon позиции айсберга.
+    ! Временной индекс через era5_find_time_index (real(8) время).
+    ! Все поля интерполируются через era5_bilinear2d (real(8) точность).
+    !
+    ! Переменные ERA5:
+    !   u10, v10  - ветер 10м [м/с]
+    !   t2m, d2m  - температура и точка росы 2м [К]
+    !   tcc       - общая облачность [0-1]
+    !   msl       - давление на уровне моря [Па]
+    !   snowfall  - снегопад [м/с] (экв. воды)
+    !
+    ! Аргументы:
+    !   lat, lon         - позиция [°]
+    !   model_time_sec   - модельное время [с] с эпохи
+    !   atmos            - выходная структура форсинга
+    !   ok               - флаг успеха
     ! ========================================================================
     subroutine get_atmos_forcing(lat, lon, model_time_sec, atmos, ok)
         real, intent(in) :: lat, lon
@@ -216,6 +289,16 @@ contains
     ! ========================================================================
     !   ВЕРТИКАЛЬНАЯ ИНТЕРПОЛЯЦИЯ: T, S НА ГЛУБИНЕ ОСАДКИ
     ! ========================================================================
+    ! Линейная интерполяция по вертикали между уровнями модели.
+    ! Экстраполяция ниже максимального уровня (prof%z(nlevels)) —
+    ! постоянные значения T/S от глубжайшего уровня (Stage 9.3 fix).
+    !
+    ! Аргументы:
+    !   prof       - профиль океана (intent(in))
+    !   draft      - глубина осадки [м] (intent(in))
+    !   field_name - "temp" или "salt" (intent(in))
+    !   val        - интерполированное значение (выход)
+    ! ========================================================================
     function interp_at_draft(prof, draft, field_name) result(val)
         type(ocean_profile), intent(in) :: prof
         real, intent(in) :: draft
@@ -225,6 +308,7 @@ contains
         integer :: k, k1
         real :: z1, z2, w
 
+        ! Выше первого уровня — значение на поверхности
         if (draft .le. prof%z(1)) then
             select case (field_name)
             case ("temp"); val = prof%temp(1)
@@ -234,8 +318,8 @@ contains
             return
         end if
 
+        ! Ниже последнего уровня модели — экстраполяция константой (Stage 9.3 fix)
         if (draft .ge. prof%z(prof%nlevels)) then
-            ! Extrapolate constant below deepest model level
             select case (field_name)
             case ("temp"); val = prof%temp(prof%nlevels)
             case ("salt"); val = prof%salt(prof%nlevels)
@@ -244,6 +328,7 @@ contains
             return
         end if
 
+        ! Внутри профиля — линейная интерполяция
         do k = 1, prof%nlevels - 1
             if (prof%z(k) .le. draft .and. draft .lt. prof%z(k + 1)) then
                 k1 = k
@@ -269,6 +354,17 @@ contains
     ! ========================================================================
     !   ГЛУБИННО-СРЕДНИЙ ТЕРМИЧЕСКИЙ ФОРСИНГ (для бокового плавления)
     ! ========================================================================
+    ! Stage 9.1 §14, Method A:
+    !   ⟨ΔT⟩_D = (1/D) ∫₀ᴰ max(0, T(z) - Tf(z)) dz
+    ! где Tf(z) = -54.0 * S(z) [°C], S — массовая доля.
+    ! Интеграл берётся по вертикали от поверхности до осадки D.
+    ! Если D > max(model z) — экстраполяция постоянными T/S от глубжайшего уровня.
+    !
+    ! Аргументы:
+    !   prof        - профиль океана
+    !   draft       - осадка [м]
+    !   delta_t_avg - глубинно-усреднённое ΔT [°C] (выход)
+    ! ========================================================================
     function depth_averaged_thermal_forcing(prof, draft) result(delta_t_avg)
         type(ocean_profile), intent(in) :: prof
         real, intent(in) :: draft
@@ -287,7 +383,7 @@ contains
         salt_deep = prof%salt(prof%nlevels)
         tf_deep = -54.0*salt_deep
 
-        ! Integrate over model levels
+        ! Интеграл по модельным уровням
         do k = 1, prof%nlevels
             z_top = prof%z(k) - 0.5*prof%dz(k)
             z_bot = prof%z(k) + 0.5*prof%dz(k)
@@ -307,7 +403,7 @@ contains
             total_depth = total_depth + dz_layer
         end do
 
-        ! Extrapolate below max model level to draft
+        ! Экстраполяция ниже максимального модельного уровня до осадки
         if (draft .gt. max_z) then
             dz_layer = draft - max_z
             delta_t = temp_deep - tf_deep
@@ -327,6 +423,24 @@ contains
     ! ========================================================================
     !   ГЛУБИННО-ИНТЕГРИРОВАННЫЕ ТЕЧЕНИЯ (Method A)
     ! ========================================================================
+    ! Stage 9.1 §18, Method A — слой-за-слоем интеграл:
+    !   u_avg = (1/D) ∫₀ᴰ u(z) dz  ≈ Σ u_k * Δz_k / D
+    !   v_avg = (1/D) ∫₀ᴰ v(z) dz  ≈ Σ v_k * Δz_k / D
+    ! Используется для водного трения Method A (слой-за-слоем).
+    ! Возвращает также профили u(z), v(z), z_layers для расчёта сил по слоям.
+    !
+    ! Ниже максимального моделируемого уровня (45м) — экстраполяция
+    ! нулевой скоростью (Stage 9.3 fix).
+    !
+    ! Аргументы:
+    !   prof           - профиль океана (intent(in))
+    !   draft          - осадка [м] (intent(in))
+    !   u_avg, v_avg   - глубинно-усреднённые скорости [м/с] (выход)
+    !   u_profile      - профиль U по слоям [м/с] (выход, allocatable)
+    !   v_profile      - профиль V по слоям [м/с] (выход, allocatable)
+    !   z_layers       - глубины центров слоёв [м] (выход, allocatable)
+    !   n_layers       - число слоёв интегрирования (выход)
+    ! ========================================================================
     subroutine depth_integrated_currents(prof, draft, u_avg, v_avg, &
                                          u_profile, v_profile, z_layers, n_layers)
         type(ocean_profile), intent(in) :: prof
@@ -342,6 +456,7 @@ contains
 
         max_z = prof%z(prof%nlevels)
 
+        ! Подсчёт числа слоёв для интегрирования
         n_layers = 0
         do k = 1, prof%nlevels
             z_top = prof%z(k) - 0.5*prof%dz(k)
@@ -350,7 +465,7 @@ contains
             if (z_bot .ge. draft) exit
         end do
 
-        ! Add layer for extrapolation below max model level
+        ! Добавить слой для экстраполяции ниже max модели
         if (draft .gt. max_z) then
             n_layers = n_layers + 1
         end if
@@ -370,6 +485,7 @@ contains
 
         do k = 1, n_layers
             if (k .le. prof%nlevels) then
+                ! Внутри профиля модели
                 z_top = prof%z(k) - 0.5*prof%dz(k)
                 z_bot = prof%z(k) + 0.5*prof%dz(k)
                 if (z_bot .gt. draft) z_bot = draft
@@ -379,7 +495,7 @@ contains
                 u_profile(k) = prof%u(k)
                 v_profile(k) = prof%v(k)
             else
-                ! Extrapolation layer below max model level: zero velocity
+                ! Экстраполяция ниже max модели: нулевая скорость
                 z_top = max_z
                 z_bot = draft
                 dz_layer = z_bot - z_top

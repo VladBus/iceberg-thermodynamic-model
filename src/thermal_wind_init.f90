@@ -376,8 +376,8 @@ contains
                     a = RO(i - 1, j, k) + RO(i, j, k) - RO(i - 1, j - 1, k) - RO(i, j - 1, k)
                     b = RO(i - 1, j - 1, k) + RO(i - 1, j, k) - RO(i, j - 1, k) - RO(i, j, k)
                     if (k .lt. ki) then
-                        a1 = RO(i - 1, j, k + 1) + RO(i, j, k + 1) - RO(i - 1, j - 1, k + 1) - RO(i, j - 1, k + 1)
-                        b1 = RO(i - 1, j - 1, k + 1) + RO(i - 1, j, k + 1) - RO(i, j - 1, k + 1) - RO(i, j, k + 1)
+          a1 = RO(i - 1, j, k + 1) + RO(i, j, k + 1) - RO(i - 1, j - 1, k + 1) - RO(i, j - 1, k + 1)
+          b1 = RO(i - 1, j - 1, k + 1) + RO(i - 1, j, k + 1) - RO(i, j - 1, k + 1) - RO(i, j, k + 1)
                     else
                         a1 = a
                         b1 = b
@@ -406,12 +406,12 @@ contains
 
                 do k = 1, ki
                     rhs_u = (dt_val/(2.0*asa1))*(-c1*sum_x(k)) &
-                          + (dt_val/2.0)*(-c1*sum_y(k))
+                            + (dt_val/2.0)*(-c1*sum_y(k))
                     rhs_v = (dt_val/(2.0*asa1))*(-c1*sum_y(k)) &
-                          - (dt_val/2.0)*(-c1*sum_x(k))
+                            - (dt_val/2.0)*(-c1*sum_x(k))
 
-                    U2(i, j, k) = (asa1*rhs_u + rhs_v) / asa
-                    V2(i, j, k) = (asa1*rhs_v - rhs_u) / asa
+                    U2(i, j, k) = (asa1*rhs_u + rhs_v)/asa
+                    V2(i, j, k) = (asa1*rhs_v - rhs_u)/asa
                 end do
 
                 ! Нижнее ГУ: U=V=0 на дне (k=ki)

@@ -1,114 +1,175 @@
 ! ==============================================================================
 ! Модуль: iceberg_types
-! Назначение: Базовые типы и константы для модели айсберга.
-!             Выделен в отдельный модуль для разрыва циклических зависимостей.
+! Назначение: Базовые типы и константы для модели индивидуального лагранжевого
+!             айсберга (Stage 9.1 §6, §23). Выделен в отдельный модуль для
+!             разрыва циклических зависимостей между iceberg.f90,
+!             iceberg_geometry.f90, iceberg_forcing.f90, iceberg_thermodynamics.f90,
+!             iceberg_dynamics.f90.
+!
+! Физическая модель: Аисберг представляется как прямоугольный параллелепипед
+! с размерами L (длина) × W (ширина) × H (высота), плавающий в океане.
+! Движение описывается уравнением импульса точки массы. Термодинамика включает
+! базальное, боковое и поверхностное плавление. Форсинг: OFFLINE/PRESCRIBED
+! (ERA5 атмосфера, EN4 океан T/S, IBCAO батиметрия). Двусторонней связи нет.
+!
+! Единицы измерения: ВСЕ внутренние вычисления в СИ (м, с, кг, Па, Вт, Дж, К/°C).
+!                    Преобразование единиц только на границе с форсингом.
+!                    Океаническая модель (param.f90) работает в CGS (см, с, г/см³),
+!                    конвертация происходит в iceberg_forcing.f90.
+!
+! Точность: default real (float32) для совместимости с остальной моделью.
+!           Константы определены как real, parameter (compile-time).
+!
+! Версия: Stage 9.3 (после исправления размерностей C_BASAL/C_LATERAL)
 ! ==============================================================================
 
 module iceberg_types
     implicit none
 
     ! ========================================================================
-    !   КОНСТАНТЫ (Stage 9.1 §6, §23)
+    !   ФИЗИЧЕСКИЕ КОНСТАНТЫ (Stage 9.1 §6, §23)
     ! ========================================================================
-    real, parameter :: RHO_ICE = 910.0
-    real, parameter :: RHO_WATER = 1028.0
-    real, parameter :: RHO_AIR = 1.225
-    real, parameter :: LATENT_HEAT = 334000.0
-    real, parameter :: CP_WATER = 4186.8
-    real, parameter :: GRAVITY = 9.80665
+    ! Плотности [кг/м³]
+    real, parameter :: RHO_ICE = 910.0      ! Плотность льда (стандартное значение)
+    real, parameter :: RHO_WATER = 1028.0     ! Плотность морской воды (С ≈ 34.8 PSU, T ≈ 0°C)
+    real, parameter :: RHO_AIR = 1.225      ! Плотность воздуха при нормальных условиях (15°C, 1013.25 ГПа)
 
-    real, parameter :: CD_AIR = 1.3e-3
-    real, parameter :: CD_WATER = 2.0e-3
+    ! Термодинамические константы
+    real, parameter :: LATENT_HEAT = 334000.0 ! Удельная теплота плавления льда [Дж/кг]
+    real, parameter :: CP_WATER = 4186.8   ! Удельная теплоёмкость воды [Дж/(кг·К)]
 
-    real, parameter :: C_BASAL = 1.0e-6
-    real, parameter :: C_LATERAL = 1.0e-6
+    ! Гравитация
+    real, parameter :: GRAVITY = 9.80665      ! Ускорение свободного падения [м/с²]
 
-    real, parameter :: ALBEDO_ICE = 0.7
-    real, parameter :: EMISSIVITY = 0.97
-    real, parameter :: STEFAN_BOLTZ = 5.670374419e-8
+    ! Коэффициенты лобового сопротивления (drag coefficients) [безразм.]
+    ! Stage 9.1 §18-19, Bigg et al. 1997, Martin & Adcroft 2010
+    real, parameter :: CD_AIR = 1.3e-3      ! Коэффициент аэродинамического сопротивления (воздух-лёд)
+    real, parameter :: CD_WATER = 2.0e-3      ! Коэффициент гидродинамического сопротивления (вода-лёд)
 
-    real, parameter :: T_ICE = -10.0
+    ! Коэффициенты плавления [м/(с·К)]
+    ! Исправлены в Stage 9.3: были 1e-4 [м/с] с делением на (ρᵢ·L_f),
+    ! стало 1e-6 [м/(с·К)] с формулой m = C * ΔT (без деления на ρᵢ·L_f).
+    ! Физический смысл: γ_T = h/(ρᵢ·L_f), где h ≈ 300 Вт/(м²·К) → γ_T ≈ 1e-6.
+    real, parameter :: C_BASAL = 1.0e-6     ! Базальный коэффициент плавления
+    real, parameter :: C_LATERAL = 1.0e-6     ! Боковой коэффициент плавления
+
+    ! Радиационные свойства льда
+    real, parameter :: ALBEDO_ICE = 0.7      ! Альбедо льда [безразм.]
+    real, parameter :: EMISSIVITY = 0.97     ! Эмиссивность льда [безразм.]
+    real, parameter :: STEFAN_BOLTZ = 5.670374419e-8 ! Постоянная Стефана-Больцмана [Вт/(м²·К⁴)]
+
+    ! Внутренняя температура льда (lumped capacitance)
+    real, parameter :: T_ICE = -10.0          ! Температура внутри айсберга [°C]
+
+    ! Минимальная толщина для активного айсберга [м]
     real, parameter :: MIN_THICKNESS = 1.0
 
+    ! Угловая скорость вращения Земли [рад/с]
     real, parameter :: OMEGA = 7.2921150e-5
 
     ! ========================================================================
     !   ТИПЫ СОСТОЯНИЯ
     ! ========================================================================
 
+    ! Профиль океана на позиции айсберга (после интерполяции)
     type :: ocean_profile
-        integer :: nlevels
-        real, allocatable :: z(:)
-        real, allocatable :: dz(:)
-        real, allocatable :: temp(:)
-        real, allocatable :: salt(:)
-        real, allocatable :: u(:)
-        real, allocatable :: v(:)
+        integer :: nlevels                 ! Число вертикальных уровней
+        real, allocatable :: z(:)          ! Глубины центров слоёв [м], размер (nlevels)
+        real, allocatable :: dz(:)         ! Толщины слоёв [м], размер (nlevels)
+        real, allocatable :: temp(:)       ! Температура [°C], размер (nlevels)
+        real, allocatable :: salt(:)       ! Соленость [массовая доля, кг/кг], размер (nlevels)
+        real, allocatable :: u(:)          ! Скорость по X [м/с], размер (nlevels)
+        real, allocatable :: v(:)          ! Скорость по Y [м/с], размер (nlevels)
     end type ocean_profile
 
+    ! Атмосферный форсинг от ERA5 (на позиции айсберга)
     type :: atmos_forcing
-        real :: u10
-        real :: v10
-        real :: t2m
-        real :: d2m
-        real :: tcc
-        real :: msl
-        real :: snowfall
+        real :: u10    ! Скорость ветра по X на 10 м [м/с]
+        real :: v10    ! Скорость ветра по Y на 10 м [м/с]
+        real :: t2m    ! Температура воздуха на 2 м [К]
+        real :: d2m    ! Точка росы на 2 м [К]
+        real :: tcc    ! Общая облачность [доля 0-1]
+        real :: msl    ! Давление на уровне моря [Па]
+        real :: snowfall ! Интенсивность снегопада [м/с] (экв. воды)
     end type atmos_forcing
 
+    ! Диагностические величины (вычисляются на каждом шаге)
     type :: iceberg_diagnostics
-        real :: mass
-        real :: draft
-        real :: freeboard
-        real :: a_waterline
-        real :: a_wet
-        real :: a_sail
+        ! Геометрия
+        real :: mass         ! Масса айсберга [кг]
+        real :: draft        ! Осадка [м]
+        real :: freeboard    ! Надводная часть [м]
+        real :: a_waterline  ! Площадь водной линии (L×W) [м²]
+        real :: a_wet        ! Оромочённая площадь (дно + боковые до осадки) [м²]
+        real :: a_sail       ! Парусная площадь (верх + боковые над водой) [м²]
 
-        real :: m_basal
-        real :: m_lateral
-        real :: m_surface
-        real :: q_net_surface
-        real :: t_draft
-        real :: s_draft
-        real :: tf_draft
+        ! Скорости плавления [м/с]
+        real :: m_basal      ! Базальная скорость плавления
+        real :: m_lateral    ! Боковая скорость плавления
+        real :: m_surface    ! Поверхностная скорость плавления
+        real :: q_net_surface ! Чистый тепловой поток на поверхности [Вт/м²]
 
-        real :: f_wind_x
-        real :: f_wind_y
-        real :: f_water_x
-        real :: f_water_y
-        real :: f_cor_x
-        real :: f_cor_y
-        real :: f_pressure_x
-        real :: f_pressure_y
-        real :: f_fk_x
-        real :: f_fk_y
+        ! Океан на глубине осадки
+        real :: t_draft      ! Температура на глубине осадки [°C]
+        real :: s_draft      ! Соленость на глубине осадки [кг/кг]
+        real :: tf_draft     ! Точка замерзания на глубине осадки [°C]
 
-        logical :: grounded
-        real :: bathymetry
+        ! Силы [Н]
+        real :: f_wind_x     ! Ветровая сила по X
+        real :: f_wind_y     ! Ветровая сила по Y
+        real :: f_water_x    ! Водная сила по X
+        real :: f_water_y    ! Водная сила по Y
+        real :: f_cor_x      ! Сила Кориолиса по X
+        real :: f_cor_y      ! Сила Кориолиса по Y
+        real :: f_pressure_x ! Сила градиента давления по X
+        real :: f_pressure_y ! Сила градиента давления по Y
+        real :: f_fk_x       ! Фруде-Крилов сила по X
+        real :: f_fk_y       ! Фруде-Крилов сила по Y
 
-        real :: basal_mass_loss
-        real :: lateral_mass_loss
-        real :: surface_mass_loss
-        real :: total_mass_loss
+        ! Загрунтование
+        logical :: grounded  ! Флаг загрунтования
+        real :: bathymetry   ! Глубина моря на позиции [м]
+
+        ! Массовый баланс [кг]
+        real :: basal_mass_loss    ! Потеря массы базальным плавлением за шаг
+        real :: lateral_mass_loss  ! Потеря массы боковым плавлением за шаг
+        real :: surface_mass_loss  ! Потеря массы поверхностным плавлением за шаг
+        real :: total_mass_loss    ! Суммарная потеря массы за шаг
     end type iceberg_diagnostics
 
+    ! Прогностическое состояние айсберга (7 переменных)
     type :: iceberg_state
-        real :: x
-        real :: y
-        real :: u
-        real :: v
-        real :: L
-        real :: W
-        real :: H
+        ! Позиция в модельных координатах [м]
+        ! X ось → j (восток), Y ось → i (север, инвертирована)
+        real :: x                 ! Координата X [м]
+        real :: y                 ! Координата Y [м]
 
-        real :: latitude
-        real :: longitude
-        integer :: nstep
-        real :: time
-        logical :: active
-        logical :: grounded
+        ! Скорость дрейфа [м/с]
+        real :: u                 ! Скорость по X
+        real :: v                 ! Скорость по Y
+
+        ! Геометрия [м]
+        real :: L                 ! Длина (вдоль X)
+        real :: W                 ! Ширина (вдоль Y)
+        real :: H                 ! Высота (вертикально)
+
+        ! Географическая позиция [°]
+        ! ВНИМАНИЕ: не обновляется в time stepping (Stage 9.3 limitation)
+        real :: latitude          ! Широта [°]
+        real :: longitude         ! Долгота [°]
+
+        ! Счетчики
+        integer :: nstep          ! Номер шага интегрирования
+        real :: time              ! Модельное время [с]
+
+        ! Флаги
+        logical :: active         ! .TRUE. если айсберг существует
+        logical :: grounded       ! .TRUE. если загрунтован
     end type iceberg_state
 
+    ! ========================================================================
+    !   PUBLIC СИМВОЛЫ
+    ! ========================================================================
     public :: RHO_ICE, RHO_WATER, RHO_AIR, LATENT_HEAT, CP_WATER, GRAVITY
     public :: CD_AIR, CD_WATER
     public :: C_BASAL, C_LATERAL

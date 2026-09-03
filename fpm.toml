@@ -12,3 +12,52 @@ external-modules = ["netcdf"]
 [dependencies]
 stdlib.git = "https://github.com/fortran-lang/stdlib"
 stdlib.branch = "stdlib-fpm"
+
+[executable]
+name = "iceberg_model"
+source-dir = "app"
+main = "iceberg_main.f90"
+
+[test.iceberg_hydrostatic]
+source-dir = "test"
+main = "iceberg_test_1_hydrostatic.f90"
+
+[test.iceberg_zero_gradient]
+source-dir = "test"
+main = "iceberg_test_2_zero_gradient.f90"
+
+#[test.iceberg_uniform_current]
+#source-dir = "test"
+#main = "iceberg_test_3_uniform_current.f90"
+
+#[test.iceberg_vertical_shear]
+#source-dir = "test"
+#main = "iceberg_test_4_vertical_shear.f90"
+
+#[test.iceberg_warm_ocean]
+#source-dir = "test"
+#main = "iceberg_test_5_warm_ocean.f90"
+
+#[test.iceberg_cold_ocean]
+#source-dir = "test"
+#main = "iceberg_test_6_cold_ocean.f90"
+
+#[test.iceberg_vertical_temp_gradient]
+#source-dir = "test"
+#main = "iceberg_test_7_vertical_temp_gradient.f90"
+
+#[test.iceberg_wind_forcing]
+#source-dir = "test"
+#main = "iceberg_test_8_wind_forcing.f90"
+
+#[test.iceberg_coriolis_only]
+#source-dir = "test"
+#main = "iceberg_test_9_coriolis_only.f90"
+
+#[test.iceberg_mass_conservation]
+#source-dir = "test"
+#main = "iceberg_test_10_mass_conservation.f90"
+
+#[test.iceberg_30day_offline]
+#source-dir = "test"
+#main = "iceberg_test_11_30day_offline.f90"

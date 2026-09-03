@@ -133,24 +133,24 @@ program ocean_init_test
 
 contains
 
-    subroutine anchor(i, j, k, t_exp, s_exp, tp, sp, nerr, tol_t, tol_s, tag)
-        integer, intent(in) :: i, j, k
+    subroutine anchor(i_in, j_in, k_in, t_exp, s_exp, tp, sp, nerr, tol_t, tol_s, tag)
+        integer, intent(in) :: i_in, j_in, k_in
         real, intent(in) :: t_exp, s_exp
         real, intent(in) :: tp(is1, js1, ks), sp(is1, js1, ks)
         integer, intent(inout) :: nerr
         real, intent(in) :: tol_t, tol_s
         character(len=*), intent(in) :: tag
         logical :: t_ok, s_ok
-        t_ok = abs(tp(i, j, k) - t_exp) .le. tol_t
-        s_ok = (s_exp .lt. -990.0) .or. (abs(sp(i, j, k) - s_exp) .le. tol_s)
+        t_ok = abs(tp(i_in, j_in, k_in) - t_exp) .le. tol_t
+        s_ok = (s_exp .lt. -990.0) .or. (abs(sp(i_in, j_in, k_in) - s_exp) .le. tol_s)
         if (.not. (t_ok .and. s_ok)) then
             print '("ERROR: anchor ", A, " at (", I0, ",", I0, ",", I0, &
 &              ") T=", F9.5, " (exp ", F9.5, ") S=", F9.6, " (exp ", F9.6, ")")', &
-                tag, i, j, k, tp(i, j, k), t_exp, sp(i, j, k), s_exp
+                tag, i_in, j_in, k_in, tp(i_in, j_in, k_in), t_exp, sp(i_in, j_in, k_in), s_exp
             nerr = nerr + 1
         else
             print '("anchor ", A, " (", I0, ",", I0, ",", I0, ") OK  T=", F9.5, " S=", F9.6)', &
-                tag, i, j, k, tp(i, j, k), sp(i, j, k)
+                tag, i_in, j_in, k_in, tp(i_in, j_in, k_in), sp(i_in, j_in, k_in)
         end if
     end subroutine anchor
 

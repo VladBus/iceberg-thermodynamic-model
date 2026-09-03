@@ -125,7 +125,7 @@ contains
         real, intent(out) :: q_net, m_surface
 
         real :: t_air_k, t_surf_k, t_dew_k
-        real :: p_atm, rho_air, q_air, q_sat
+        real :: p_atm, rho_air_local, q_air, q_sat
         real :: wind_speed
         real :: sw_down, lw_down, lw_up, sh_flux, lh_flux
         real :: cz, decl, hour_angle, cos_zenith
@@ -140,7 +140,7 @@ contains
         t_surf_k = T_ICE + 273.15
 
         p_atm = atmos%msl
-        rho_air = p_atm/(GAS_CONST_AIR*t_air_k)
+        rho_air_local = p_atm/(GAS_CONST_AIR*t_air_k)
 
         wind_speed = sqrt(atmos%u10**2 + atmos%v10**2)
 
@@ -176,12 +176,12 @@ contains
         lw_up = -EMISSIVITY*STEFAN_BOLTZ*t_surf_k**4
 
         ! === ЯВНОЕ ТЕПЛО ===
-        sh_flux = rho_air*SH_COEFF*wind_speed*(t_air_k - t_surf_k)
+        sh_flux = rho_air_local*SH_COEFF*wind_speed*(t_air_k - t_surf_k)
 
         ! === СКРЫТОЕ ТЕПЛО ===
         q_air = 0.622*e_vap/p_atm
         q_sat = 0.622*(SAT_VAPOR_0*10.0**(TETENS_A*(t_surf_k - 273.15)/t_surf_k))/p_atm
-        lh_flux = rho_air*LH_COEFF*wind_speed*LATENT_VAP*(q_air - q_sat)
+        lh_flux = rho_air_local*LH_COEFF*wind_speed*LATENT_VAP*(q_air - q_sat)
 
         ! === ЧИСТЫЙ ТЕПЛОВОЙ ПОТОК ===
         q_net = sw_absorbed + lw_down + lw_up + sh_flux + lh_flux

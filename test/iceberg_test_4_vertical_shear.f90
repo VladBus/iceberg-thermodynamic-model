@@ -169,12 +169,12 @@ program iceberg_test_4_vertical_shear
 contains
 
     ! Method B для сравнения: глубинно-усреднённое течение, только вертикальные стороны
-    subroutine compute_water_force_method_b_sides(state, ocean_prof, a_sides, fx, fy)
+    subroutine compute_water_force_method_b_sides(state, ocean_prof_in, a_sides_in, fx, fy)
         use iceberg_forcing, only: depth_integrated_currents
         use iceberg_types, only: RHO_WATER, CD_WATER
         type(iceberg_state), intent(in) :: state
-        type(ocean_profile), intent(in) :: ocean_prof
-        real, intent(in) :: a_sides
+        type(ocean_profile), intent(in) :: ocean_prof_in
+        real, intent(in) :: a_sides_in
         real, intent(out) :: fx, fy
 
         real, allocatable :: u_prof(:), v_prof(:), z_layers(:)
@@ -182,7 +182,7 @@ contains
         real :: u_avg, v_avg
         real :: du, dv, speed_rel
 
-        call depth_integrated_currents(ocean_prof, state%H*910.0/1028.0, u_avg, v_avg, &
+        call depth_integrated_currents(ocean_prof_in, state%H*910.0/1028.0, u_avg, v_avg, &
                                        u_prof, v_prof, z_layers, n_layers)
 
         if (n_layers .eq. 0) then
@@ -195,8 +195,8 @@ contains
         dv = v_avg - state%v
         speed_rel = sqrt(du**2 + dv**2)
 
-        fx = 0.5*RHO_WATER*CD_WATER*a_sides*speed_rel*du
-        fy = 0.5*RHO_WATER*CD_WATER*a_sides*speed_rel*dv
+        fx = 0.5*RHO_WATER*CD_WATER*a_sides_in*speed_rel*du
+        fy = 0.5*RHO_WATER*CD_WATER*a_sides_in*speed_rel*dv
     end subroutine compute_water_force_method_b_sides
 
 end program iceberg_test_4_vertical_shear

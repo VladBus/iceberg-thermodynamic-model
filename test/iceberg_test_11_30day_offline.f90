@@ -183,9 +183,11 @@ program iceberg_test_11_30day_offline
     n_checks = n_checks + 1
     has_nan = .false.
     do step = 1, nsteps
-        if (traj_x(step) .ne. traj_x(step) .or. traj_y(step) .ne. traj_y(step) . &
-            or. geom_L(step) .ne. geom_L(step) .or. geom_W(step) .ne. geom_W(ste &
-                                                        p) .or. geom_H(step) .ne. geom_H(step)) then
+        if (traj_x(step) .ne. traj_x(step) .or. &
+            traj_y(step) .ne. traj_y(step) .or. &
+            geom_L(step) .ne. geom_L(step) .or. &
+            geom_W(step) .ne. geom_W(step) .or. &
+            geom_H(step) .ne. geom_H(step)) then
             has_nan = .true.
             exit
         end if
@@ -266,36 +268,36 @@ program iceberg_test_11_30day_offline
 
 contains
 
-    subroutine model_coords_to_indices_local(x_model, y_model, i_idx, j_idx)
-        real, intent(in) :: x_model, y_model
-        integer, intent(out) :: i_idx, j_idx
+    subroutine model_coords_to_indices_local(x_model_in, y_model_in, i_idx_in, j_idx_in)
+        real, intent(in) :: x_model_in, y_model_in
+        integer, intent(out) :: i_idx_in, j_idx_in
         real :: dx_model
         dx_model = 13890.0
-        j_idx = int(x_model/dx_model) + 1
-        i_idx = int(y_model/dx_model) + 1
+        j_idx_in = int(x_model_in/dx_model) + 1
+        i_idx_in = int(y_model_in/dx_model) + 1
     end subroutine model_coords_to_indices_local
 
-    subroutine save_trajectory_csv(n, x, y, lat, lon, L, W, H, M, &
-                                   mb, ml, ms, vu, vv)
-        integer, intent(in) :: n
-        real, intent(in) :: x(:), y(:), lat(:), lon(:)
-        real, intent(in) :: L(:), W(:), H(:), M(:)
-        real, intent(in) :: mb(:), ml(:), ms(:)
-        real, intent(in) :: vu(:), vv(:)
+    subroutine save_trajectory_csv(n_in, x_in, y_in, lat_in, lon_in, L_in, W_in, H_in, M_in, &
+                                   mb_in, ml_in, ms_in, vu_in, vv_in)
+        integer, intent(in) :: n_in
+        real, intent(in) :: x_in(:), y_in(:), lat_in(:), lon_in(:)
+        real, intent(in) :: L_in(:), W_in(:), H_in(:), M_in(:)
+        real, intent(in) :: mb_in(:), ml_in(:), ms_in(:)
+        real, intent(in) :: vu_in(:), vv_in(:)
 
-        integer :: step, unit, ios
+        integer :: step_csv, unit, ios_csv
         unit = 10
         open (unit, file='data/output/diagnostics/stage9.3/test11_trajectory.csv', &
-              status='replace', iostat=ios)
-        if (ios .ne. 0) return
+              status='replace', iostat=ios_csv)
+        if (ios_csv .ne. 0) return
 
         write(unit, '(A)') 'step,time_h,x_m,y_m,lat_deg,lon_deg,L_m,W_m,H_m,M_kg,mb_mday,ml_mday,ms_mday,u_ms,v_ms'
-        do step = 1, n
+        do step_csv = 1, n_in
             write (unit, '(I6,F10.2,2F15.2,2F12.6,3F12.3,F15.2,3F12.6,2F12.6)') &
-                step, real(step)*1.0, x(step), y(step), lat(step), lon(step), &
-                L(step), W(step), H(step), M(step), &
-                mb(step)*86400.0, ml(step)*86400.0, ms(step)*86400.0, &
-                vu(step), vv(step)
+ step_csv, real(step_csv)*1.0, x_in(step_csv), y_in(step_csv), lat_in(step_csv), lon_in(step_csv), &
+                L_in(step_csv), W_in(step_csv), H_in(step_csv), M_in(step_csv), &
+                mb_in(step_csv)*86400.0, ml_in(step_csv)*86400.0, ms_in(step_csv)*86400.0, &
+                vu_in(step_csv), vv_in(step_csv)
         end do
         close (unit)
         print *, "Trajectory saved to test11_trajectory.csv"

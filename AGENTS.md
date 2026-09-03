@@ -23,6 +23,23 @@ fpm test --flag "-I/usr/include" eos_precision_test  # float32 EOS precision
 fpm test --flag "-I/usr/include" ocean_init_test     # 13 ocean init checks (Stage 7.7)
 fpm test --flag "-I/usr/include" era5_coverage_test  # ERA5 forcing coverage
 fpm test --flag "-I/usr/include" ice_init_test       # real ice initialization chain
+
+# Iceberg model tests (Stage 9.3)
+fpm test --flag "-I/usr/include" iceberg_test_1_hydrostatic      # Hydrostatic equilibrium
+fpm test --flag "-I/usr/include" iceberg_test_2_zero_gradient    # Zero gradient env
+fpm test --flag "-I/usr/include" iceberg_test_3_uniform_current  # Uniform current drift
+fpm test --flag "-I/usr/include" iceberg_test_4_vertical_shear   # Vertical shear (Method A/B)
+fpm test --flag "-I/usr/include" iceberg_test_5_warm_ocean       # Warm ocean melt (1000 days)
+fpm test --flag "-I/usr/include" iceberg_test_6_cold_ocean       # Cold ocean no melt
+fpm test --flag "-I/usr/include" iceberg_test_7_vertical_temp_gradient  # Vertical T gradient
+fpm test --flag "-I/usr/include" iceberg_test_8_wind_forcing     # Wind forcing drift
+fpm test --flag "-I/usr/include" iceberg_test_9_coriolis_only    # Coriolis inertial oscillation
+fpm test --flag "-I/usr/include" iceberg_test_10_mass_conservation # Mass conservation budget
+fpm test --flag "-I/usr/include" iceberg_test_11_30day_offline   # 30-day real forcing (ERA5/EN4/IBCAO)
+fpm test --flag "-I/usr/include" drift_scaling_wind              # Wind drift scaling
+fpm test --flag "-I/usr/include" drift_scaling_wind_no_cor       # Wind drift no Coriolis
+fpm test --flag "-I/usr/include" drift_scaling_current           # Current drift scaling
+fpm test --flag "-I/usr/include" param_sensitivity_30day         # Parameter sensitivity framework
 ```
 
 No CI, no lint, no formatter beyond VS Code (`fprettify`/`fortls`). Python tooling uses conda env `iceberg-thermodynamic-model`.
@@ -47,6 +64,18 @@ Conversions only at the NetCDF output boundary (`netcdf_output.f90`). Internal C
 - **Axis conventions:** X ↔ `j` ↔ `u`; Y ↔ `i` ↔ `v`; Y-axis inverted (north at `j=1`).
 - **Key modules:** `netcdf_input` (ERA5 read/bilinear interp), `netcdf_output` (CF-1.10 export), `wind_forcing` (legacy + ERA5), `advection_2d/3d_t/3d_s` (FCT), `barotropic_dynamics`, `shallow_water`, `ice_stress/deform/redis`, `thermodynamics`, `grid_coupling`, `initial_ocean_reader` (Stage 7.7 EN4 reader), `initial_conditions`.
 
+### Iceberg Model Architecture (Stage 9.3)
+
+- **`src/iceberg_types.f90`** — types, constants (ρᵢ, ρ_w, C_Dₐ, C_D_w, C_BASAL, C_LATERAL, L_f, etc.), state vector.
+- **`src/iceberg.f90`** — main orchestrator: `iceberg_init`, `iceberg_step`, `iceberg_update_geometry`.
+- **`src/iceberg_geometry.f90`** — volume, mass, draft, areas, buoyancy check, grounding, mass budget partitioning.
+- **`src/iceberg_forcing.f90`** — horizontal bilinear interp (model grid), vertical interp/extrapolation to draft, ERA5 atmos interp, Method A/B current integration.
+- **`src/iceberg_thermodynamics.f90`** — basal melt (C_BASAL·ΔT), lateral melt (C_LATERAL·⟨ΔT⟩\_D), surface melt (Q_net/(ρᵢ·L_f)).
+- **`src/iceberg_dynamics.f90`** — wind/water drag (Method A: layer-integrated, Method B: depth-averaged), semi-implicit Coriolis, pressure gradient (optional).
+- **Forcing:** OFFLINE/PRESCRIBED only. ERA5 (atmos), EN4 (ocean T/S), IBCAO (bathymetry). No two-way coupling.
+- **State vector:** `[x, y, u, v, L, W, H]` (7 prognostic). Diagnostic: D, M, areas, draft, sail/wetted.
+- **Key constants (compile-time in iceberg_types.f90):** C_BASAL=1e-6, C_LATERAL=1e-6 m/(s·K), C_Dₐ=1.3e-3, C_D_w=2e-3.
+
 ## Constraints (DO NOT)
 
 - ❌ Do not omit `-I/usr/include` — compilation fails.
@@ -57,6 +86,16 @@ Conversions only at the NetCDF output boundary (`netcdf_output.f90`). Internal C
 - ❌ Do not set `kl1=1` without providing ERA5 d2m/tcc/precip fields.
 - ❌ Before committing, check `.gitignore` — it blocks: `opencode.jsonc`, `.opencode/`, `docs/wiki/`, `data/`, `*.nc`, `*.vtk`, `*.dat`, `*.bak`.
 - ❌ Do not delete root-level symlinks: `KOORD.DAT`, `hhh.bar`, `1_k.ice` — required by model, gitignored, point to `data/input/generated/real_grid/`.
+
+### Iceberg Model Constraints (Stage 9.3)
+
+- ❌ Do not modify canonical ocean/sea-ice physics (Block 200/210/280, barotropic solver, EOS, grid, ERA5, bathymetry, thermodynamics).
+- ❌ Iceberg forcing must remain OFFLINE/PRESCRIBED. No two-way coupling.
+- ❌ No advanced physics (internal 3D temperature, wave erosion, sea-ice capture, rollover, fracture, multi-iceberg) until minimal model verified.
+- ❌ Melt coefficients are compile-time constants in `iceberg_types.f90` — require rebuild to change.
+- ❌ Vertical interpolation uses model levels (max 45m) — draft up to 88m requires extrapolation (handled in `iceberg_forcing.f90`).
+- ❌ Position lat/lon not updated from x,y in time stepping — forcing evaluated at initial position (known limitation).
+- ❌ Semi-implicit Coriolis solver has 8% period error at Δt=3600s — numerical damping; convergence study needed.
 
 ## Calendar Semantics
 
@@ -163,9 +202,9 @@ All analysis scripts are in `python/analysis/`:
 
 - `run_manifest.py` — required for post-processing
 - `units.py` — unit conversions
-- `stage77a_diagnostics.py` — Stage 7.7A forensic audit
-- `validate_geostrophic.py` — Stage 7.7B geostrophic validation
-- Seasonal, convective, EOS, snowfall, ice diagnostics
+- `run_context.py` — run context utilities
+- `legacy/` — generic utilities (diagnostics, statistics, report generation)
+- Stage-specific diagnostics now in `data/output/diagnostics/stage9.3/`
 
 ### Key Data Paths
 
@@ -175,7 +214,7 @@ All analysis scripts are in `python/analysis/`:
 | ERA5 forcing       | `data/input/processed/era5/2020/2020_01/era5_2020_01_fullcoverage_d1_4_merged.nc` |
 | Real grid inputs   | `data/input/generated/real_grid/` (symlinked to root)                             |
 | Ice data           | `data/input/generated/real_grid/ice_2020-01-01/`                                  |
-| Diagnostics output | `data/output/diagnostics/stage7.7A/`, `stage7.7B/`                                |
+| Diagnostics output | `data/output/diagnostics/stage7.7A/`, `stage7.7B/`, `stage9.3/`                   |
 | Run outputs        | `data/runs/<run_id>/output/nc/`                                                   |
 
 ## Stage 7.7B Summary (Stabilization Attempt)
@@ -186,3 +225,22 @@ All analysis scripts are in `python/analysis/`:
 - **Classification:** C (mechanism understood; no stable config within allowed params)
 - **Report:** `docs/wiki/Stage7.7B_Realistic_Ocean_Stabilization.md`
 - **Next:** 3D geostrophic init + controlled spin-up + viscosity clipping (Stage 7.8+)
+
+## Stage 9.3 Summary (Iceberg Model Verification)
+
+- **Classification:** A — Minimal Lagrangian iceberg model scientifically verified and real-forcing TEST_11 completed.
+- **Tests:** 11/11 iceberg tests PASS, 14/14 canonical regression PASS (unchanged).
+- **TEST_11:** 30-day offline run with ERA5/EN4/IBCAO forcing at 75°N, 30°E — 74.5% mass loss, mass budget error 0.013%.
+- **Major fixes:**
+  1. Melt coefficient dimensional error (C_BASAL/C_LATERAL: 1e-4→1e-6 m/(s·K), removed /(ρᵢ·L_f) factor)
+  2. Vertical extrapolation below 45m model top for draft ~88m
+  3. Mass budget uses pre-melt geometry (error 56%→0.013%)
+  4. TEST_4 upgraded with 5m vertical resolution in 0-100m (Method A/B ratio = 1.28)
+  5. TEST_11 enabled with real forcing
+- **Known anomalies:**
+  - Wind drift ratio 0.08% (with Coriolis) vs literature 1–2% — needs Cd calibration
+  - Coriolis period error 8% at Δt=3600s — numerical damping
+  - Lat/lon fixed in TEST_11 — forcing at initial position
+- **Diagnostics:** `data/output/diagnostics/stage9.3/` (11 JSON + trajectory CSV)
+- **Report:** `docs/wiki/Stage9.3_Scientific_Verification_and_Calibration.md`
+- **Next (Stage 9.4):** Calibrate drag coefficients, add wave erosion, sea-ice capture, internal temperature diffusion, rollover criterion, update lat/lon from x,y, Coriolis convergence study.

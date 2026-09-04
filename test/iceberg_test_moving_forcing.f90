@@ -69,14 +69,14 @@ program iceberg_test_moving_forcing
         call get_synthetic_atmos_forcing(state%x, state%y, model_time_sec, atmos, forcing_ok)
         call get_synthetic_bathymetry(state%x, state%y, bathymetry, forcing_ok)
 
-        ! Проверить, изменилось ли форсинг
-        if (abs(atmos%u10 - prev_u10) .gt. 1e-6 .o &
-            r. abs(atmos%v10 - prev_v10) .gt. 1e-6 &
-            .or. abs(ocean_prof%temp(1) - prev_temp) .gt. 1 &
-            e-6 .or. abs(ocean_prof%salt(1) - prev_salt) .gt &
-            . 1e-6 .or. abs(ocean_prof%u(1) - prev_ocn_u) &
-            .gt. 1e-6 .or. abs(ocean_prof%v(1) - prev_ocn_ &
-                               v) .gt. 1e-6 .or. abs(bathymetry - prev_bathy) .gt. 1e-3) then
+! Проверить, изменилось ли форсинг
+        if (abs(atmos%u10 - prev_u10) .gt. 1e-6 .or. &
+            abs(atmos%v10 - prev_v10) .gt. 1e-6 .or. &
+            abs(ocean_prof%temp(1) - prev_temp) .gt. 1e-6 .or. &
+            abs(ocean_prof%salt(1) - prev_salt) .gt. 1e-6 .or. &
+            abs(ocean_prof%u(1) - prev_ocn_u) .gt. 1e-6 .or. &
+            abs(ocean_prof%v(1) - prev_ocn_v) .gt. 1e-6 .or. &
+            abs(bathymetry - prev_bathy) .gt. 1e-3) then
             forcing_changed = .true.
         end if
 
@@ -111,8 +111,8 @@ program iceberg_test_moving_forcing
 
     ! Проверка: позиция изменилась
     n_checks = n_checks + 1
-    if (abs(state%x - 36.0*13890.0) .gt. 100.0 .o &
-        r. abs(state%y - 60.0*13890.0) .gt. 100.0) then
+    if (abs(state%x - 36.0*13890.0) .gt. 100.0 .or. &
+        abs(state%y - 60.0*13890.0) .gt. 100.0) then
         print *, "OK: Iceberg moved from initial position"
     else
         print *, "FAIL: Iceberg did not move"
@@ -121,8 +121,8 @@ program iceberg_test_moving_forcing
 
     ! Проверка: нет NaN
     n_checks = n_checks + 1
-    if (state%x .eq. state%x .and. state%y .eq. state%y .a &
-        nd. state%u .eq. state%u .and. state%v .eq. state%v) then
+    if (state%x .eq. state%x .and. state%y .eq. state%y .and. &
+        state%u .eq. state%u .and. state%v .eq. state%v) then
         print *, "OK: No NaN in state"
     else
         print *, "FAIL: NaN detected"

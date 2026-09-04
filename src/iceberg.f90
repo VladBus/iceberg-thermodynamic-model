@@ -42,6 +42,8 @@ module iceberg
     use iceberg_thermodynamics
     use iceberg_dynamics
     use iceberg_geometry
+    use iceberg_forcing, only: model_coords_to_latlon
+    use param, only: is, js, is1, js1, ht, kt1, fi, dl
     implicit none
 
 contains
@@ -274,9 +276,26 @@ contains
                                        fk_x, fk_y, diag)
 
             ! 9. Обновление позиции (простой Эйлер, явная схема)
-            ! ВНИМАНИЕ: latitude/longitude НЕ обновляются (Stage 9.3 limitation)
             state%x = state%x + dt*state%u
             state%y = state%y + dt*state%v
+
+            ! 9a. Обновление географических координат из модельных (Stage 9.4A)
+            ! x/y — authoritative coordinates; lat/lon derived via inverse projection
+            ! Проверяем, что модельная сетка инициализирована (fi/dl не нули)
+            if (fi(1,1) .ne. 0.0 .or. dl(1,1) .ne. 0.0) then
+                call model_coords_to_latlon(state%x, state%y, state%latitude, state%longitude, &
+                                            diag%forcing_valid)
+                if (.not. diag%forcing_valid) then
+                    ! Вышли за границы модельной сетки
+                    print *, "WARNING: Iceberg outside model domain at step ", state%nstep
+                    print *, "  x=", state%x, " y=", state%y
+                    state%active = .false.
+                    return
+                end if
+            else
+                ! Сетка не инициализирована (тестовый режим без coup1) - сохраняем исходные lat/lon
+                diag%forcing_valid = .true.
+            end if
         else
             ! Загрунтован: все силы = 0
             diag%f_wind_x = 0.0

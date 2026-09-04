@@ -135,6 +135,9 @@ module iceberg_types
         real :: lateral_mass_loss  ! Потеря массы боковым плавлением за шаг
         real :: surface_mass_loss  ! Потеря массы поверхностным плавлением за шаг
         real :: total_mass_loss    ! Суммарная потеря массы за шаг
+
+        ! Форсинг / границы домена
+        logical :: forcing_valid   ! .TRUE. если позиция внутри домена форсинга
     end type iceberg_diagnostics
 
     ! Прогностическое состояние айсберга (7 переменных)

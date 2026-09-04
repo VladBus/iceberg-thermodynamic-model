@@ -216,6 +216,151 @@ contains
     end subroutine model_coords_to_indices
 
     ! ========================================================================
+    !   ОБРАТНАЯ ПРОЕКЦИЯ: МОДЕЛЬНЫЕ КООРДИНАТЫ → ШИРОТА/ДОЛГОТА
+    ! ========================================================================
+    ! Билинейная интерполяция массивов FI/DL (из KOORD.DAT) на позиции
+    ! айсберга в модельных координатах (x_model, y_model).
+    ! Использует те же 4 соседние T-точки, что и get_ocean_profile.
+    !
+    ! Формула: то же, что bilinear_interp_3d, но для 2D полей fi, dl.
+    !
+    ! Аргументы:
+    !   x_model, y_model - позиция в модельных координатах [м]
+    !   lat, lon         - географическая позиция [°] (выход)
+    !   ok               - флаг успеха (выход)
+    ! ========================================================================
+    subroutine model_coords_to_latlon(x_model, y_model, lat, lon, ok)
+        real, intent(in) :: x_model, y_model
+        real, intent(out) :: lat, lon
+        logical, intent(out) :: ok
+
+        integer :: i_idx, j_idx
+        integer :: i1, i2, j1, j2
+        real :: wx, wy, wx1, wy1
+        logical :: in_domain
+        real :: x_j1, x_j2, y_i1, y_i2
+
+        ok = .false.
+
+        ! 1. Найти индексы сетки (то же, что в get_ocean_profile)
+        call model_coords_to_indices(x_model, y_model, i_idx, j_idx, in_domain)
+        if (.not. in_domain) then
+            return
+        end if
+
+        ! 2. Индексы 4 углов для билинейной интерполяции
+        i1 = i_idx; i2 = i_idx + 1
+        j1 = j_idx; j2 = j_idx + 1
+
+        ! 3. Координаты узлов сетки
+        x_j1 = real(j1 - 1)*13890.0
+        x_j2 = real(j2 - 1)*13890.0
+        y_i1 = real(i1 - 1)*13890.0
+        y_i2 = real(i2 - 1)*13890.0
+
+        if (abs(x_j2 - x_j1) .lt. 1.0 .or. abs(y_i2 - y_i1) .lt. 1.0) then
+            return
+        end if
+
+        ! 4. Веса билинейной интерполяции
+        wx = (x_model - x_j1)/(x_j2 - x_j1)
+        wy = (y_model - y_i1)/(y_i2 - y_i1)
+        wx1 = 1.0 - wx
+        wy1 = 1.0 - wy
+
+        ! Клиппинг весов в [0,1]
+        wx = max(0.0, min(1.0, wx))
+        wy = max(0.0, min(1.0, wy))
+        wx1 = 1.0 - wx
+        wy1 = 1.0 - wy
+
+        ! 5. Билинейная интерполяция FI (широта) и DL (долгота)
+        lat = wx1*wy1*fi(i1, j1) + &
+              wx*wy1*fi(i2, j1) + &
+              wx1*wy*fi(i1, j2) + &
+              wx*wy*fi(i2, j2)
+
+        lon = wx1*wy1*dl(i1, j1) + &
+              wx*wy1*dl(i2, j1) + &
+              wx1*wy*dl(i1, j2) + &
+              wx*wy*dl(i2, j2)
+
+        ! 6. Нормализация долготы в [-180, 180] для консистентности с ERA5
+        ! (ERA5 использует 0..360, но эта функция возвращает [-180,180])
+        if (lon .gt. 180.0) lon = lon - 360.0
+        if (lon .lt. -180.0) lon = lon + 360.0
+
+        ok = .true.
+    end subroutine model_coords_to_latlon
+
+    ! ========================================================================
+    !   ПРЯМАЯ ПРОЕКЦИЯ: ШИРОТА/ДОЛГОТА → МОДЕЛЬНЫЕ КООРДИНАТЫ
+    ! ========================================================================
+    ! Поиск ближайшей точки на модельной сетке по заданной lat/lon.
+    ! Использует билинейный поиск по массивам FI/DL.
+    ! ВАЖНО: эта функция ищет индексы i,j такие, что fi(i,j)≈lat, dl(i,j)≈lon.
+    ! Так как сетка не является регулярной в lat/lon (полярная стереографическая
+    ! проекция EPSG:3996), используем простой поиск по 2D массиву.
+    !
+    ! Аргументы:
+    !   lat, lon         - географическая позиция [°]
+    !   x_model, y_model - позиция в модельных координатах [м] (выход)
+    !   ok               - флаг успеха (выход)
+    ! ========================================================================
+    subroutine latlon_to_model_coords(lat, lon, x_model, y_model, ok)
+        real, intent(in) :: lat, lon
+        real, intent(out) :: x_model, y_model
+        logical, intent(out) :: ok
+
+        integer :: i, j, i_best, j_best
+        real :: min_dist2, dist2
+        real :: lon_normalized
+
+        ok = .false.
+
+        ! Нормализовать долготу к диапазону модели (DL в KOORD.DAT обычно 0..360 или -180..180)
+        ! Определим диапазон DL в массиве модели
+        lon_normalized = lon
+        ! Если DL в модели положительные (0..360), приведём lon к тому же диапазону
+        if (dl(1, 1) .ge. 0.0 .and. lon_normalized .lt. 0.0) then
+            lon_normalized = lon_normalized + 360.0
+        else if (dl(1, 1) .lt. 0.0 .and. lon_normalized .ge. 180.0) then
+            lon_normalized = lon_normalized - 360.0
+        end if
+
+        ! Простой поиск ближайшей точки по евклидову расстоянию в lat/lon
+        ! (не идеально для полярной проекции, но достаточно для инициализации)
+        min_dist2 = 1.0e20
+        i_best = 1
+        j_best = 1
+
+        do i = 1, is1
+            do j = 1, js1
+                ! Пропустить сушу (ht = 8888)
+                if (abs(ht(i, j) - 8888.0) .lt. 1e-8) cycle
+
+                dist2 = (fi(i, j) - lat)**2 + (dl(i, j) - lon_normalized)**2
+                if (dist2 .lt. min_dist2) then
+                    min_dist2 = dist2
+                    i_best = i
+                    j_best = j
+                end if
+            end do
+        end do
+
+        if (min_dist2 .gt. 1.0) then
+            ! Слишком далеко от любой точки сетки (>1 deg ~ 100 km)
+            return
+        end if
+
+        ! Перевести индексы в модельные координаты
+        x_model = real(j_best - 1)*13890.0
+        y_model = real(i_best - 1)*13890.0
+
+        ok = .true.
+    end subroutine latlon_to_model_coords
+
+    ! ========================================================================
     !   ПОЛУЧЕНИЕ АТМОСФЕРНОГО ФОРСИНГА ERA5
     ! ========================================================================
     ! Билинейная интерполяция ERA5 полей на lat/lon позиции айсберга.

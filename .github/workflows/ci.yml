@@ -1,6 +1,6 @@
 # ==============================================================================
 # GitHub Actions CI for AARI Iceberg Thermodynamic & Dynamics Model
-# Runs all Fortran tests (25 tests: 11 iceberg + 14 canonical) on every push/PR
+# Runs all Fortran tests (33 tests: 14 iceberg + 19 canonical) on every push/PR
 # Requires: -I/usr/include for netcdf.mod (system package libnetcdff-dev)
 # ==============================================================================
 

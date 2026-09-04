@@ -205,8 +205,8 @@ contains
         real :: dx_model
         dx_model = 13890.0
 
-        j_idx = int(x_model/dx_model) + 1
-        i_idx = int(y_model/dx_model) + 1
+        j_idx = floor(x_model/dx_model) + 1
+        i_idx = floor(y_model/dx_model) + 1
 
         if (i_idx .lt. 1 .or. i_idx .ge. is1 .or. j_idx .lt. 1 .or. j_idx .ge. js1) then
             in_domain = .false.

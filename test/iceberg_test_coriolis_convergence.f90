@@ -60,7 +60,7 @@ program iceberg_test_coriolis_convergence
 
     dts = [3600.0, 1800.0, 900.0, 600.0, 300.0, 120.0, 60.0]
 
-    print *, "dt[s]    Phase_err[deg]  Amp_err[%]   Energy_err[%]  Period_err[%]"
+    print *, "dt[s]    Phase_drift[deg]  Amp_err[%]   Energy_err[%]  Period_err[%]"
 
     do i = 1, n_dts
         dt = dts(i)
@@ -90,11 +90,8 @@ program iceberg_test_coriolis_convergence
 
         ! === ОШИБКИ ===
 
-        ! 1. Фазовая ошибка (угол между числовым и аналитическим вектором скорости)
-        ! phi_num = atan2(v_num, u_num), phi_ana = atan2(v_ana, u_ana)
-        ! Δphi = phi_num - phi_ana (с unwrap для 5 периодов)
-        phase_errors(i) = compute_phase_error(u_num, v_num, u_ana, v_ana, &
-                                              f_coriolis, model_time)
+        ! 1. Накопленная фазовая дрейф (accumulated phase drift) за 5 периодов
+        phase_errors(i) = compute_phase_drift(u_num, v_num, f_coriolis, model_time)
 
         ! 2. Ошибка амплитуды (модуль скорости)
         amp_errors(i) = (sqrt(u_num**2 + v_num**2) - u0)/u0*100.0
@@ -138,9 +135,9 @@ program iceberg_test_coriolis_convergence
 
     print *, ""
     print *, "Global convergence order (3600->60s):"
-    print *, "  Phase:   ", p_phase_global
-    print *, "  Amplitude:", p_amp_global
-    print *, "  Energy:  ", p_energy_global
+    print *, "  Phase drift: ", p_phase_global
+    print *, "  Amplitude:   ", p_amp_global
+    print *, "  Energy:      ", p_energy_global
 
     ! === ВРЕМЕННЫЕ РЯДЫ ДЛЯ АНАЛИЗА ДЕМПФИРОВАНИЯ ===
     print *, ""
@@ -151,12 +148,12 @@ program iceberg_test_coriolis_convergence
     call output_time_series(60.0, f_coriolis, u0)
 
     ! === ПРОВЕРКИ ===
-    ! Фазовая ошибка должна уменьшаться с dt
+    ! Накопленная фазовая дрейф должна уменьшаться с dt
     n_checks = n_checks + 1
     if (abs(phase_errors(n_dts)) .lt. abs(phase_errors(1))) then
-        print *, "OK: Phase error decreases with dt"
+        print *, "OK: Phase drift decreases with dt"
     else
-        print *, "WARNING: Phase error does not consistently decrease"
+        print *, "WARNING: Phase drift does not consistently decrease"
     end if
 
     ! Амплитудное демпфирование должно уменьшаться (менее отрицательным) с dt
@@ -167,7 +164,7 @@ program iceberg_test_coriolis_convergence
         print *, "WARNING: Amplitude damping behavior unexpected"
     end if
 
-    ! Локальный порядок должен быть ~2 для фазовой ошибки в асимптотическом режиме
+    ! Локальный порядок должен быть ~2 для фазового дрейфа в асимптотическом режиме
     ! Используем 600->300 переход (асимптотический, до round-off)
     n_checks = n_checks + 1
     if (local_p_phase(4) .gt. 1.5 .and. local_p_phase(4) .lt. 2.5) then
@@ -187,7 +184,7 @@ program iceberg_test_coriolis_convergence
 
     ! Период (если измерен) - проверка
     n_checks = n_checks + 1
-    if (period_errors(n_dts) .ne. 0.0 .and. &
+    if (period_errors(n_dts) .ne. -999.0 .and. &
         local_p_period(n_dts - 1) .gt. 0.5 .and. local_p_period(n_dts - 1) .lt. 2.5) then
         print *, "OK: Period error convergence order reasonable"
     else
@@ -237,26 +234,40 @@ contains
     end subroutine init_zero_forcing
 
     ! --------------------------------------------------------------------------
-    ! Фазовая ошибка с unwrap
+    ! Накопленная фазовая дрейф (accumulated phase drift) за время t
     ! --------------------------------------------------------------------------
-    function compute_phase_error(u_num, v_num, u_ana, v_ana, f, t) result(phase_err)
-        real, intent(in) :: u_num, v_num, u_ana, v_ana, f, t
-        real :: phase_err
-        real :: phi_num, phi_ana, delta_phi
+    ! Аналитическое решение: u = u0*cos(f*t), v = -u0*sin(f*t)
+    ! Фаза: phi_ana(t) = -f*t (начиная с phi=0 при t=0, u>0, v=0)
+    ! Числовая фаза из atan2: phi_num_wrapped в [-π, π]
+    ! Нужно развернуть (unwrap) phi_num_wrapped к непрерывной фазе
+    ! --------------------------------------------------------------------------
+    function compute_phase_drift(u_num, v_num, f, t) result(phase_drift)
+        real, intent(in) :: u_num, v_num, f, t
+        real :: phase_drift
+        real :: phi_num_wrapped, phi_ana_cont, phi_num_cont
+        real :: delta_phi_wrapped
+        integer :: n_wraps
 
-        phi_num = atan2(v_num, u_num)
-        phi_ana = atan2(v_ana, u_ana)
+        ! Аналитическая непрерывная фаза
+        phi_ana_cont = -f*t
 
-        ! Unwrap: analytical phase = -f*t (for u0>0, v0=0)
-        ! phi_ana = -f*t + 2π*k, find k that minimizes |phi_num - phi_ana|
-        delta_phi = phi_num - phi_ana
-        delta_phi = delta_phi - 2.0*3.141592653589793*nint(delta_phi/(2.0*3.141592653589793))
+        ! Числовая фаза (завернутая)
+        phi_num_wrapped = atan2(v_num, u_num)
 
-        phase_err = delta_phi*57.2957795  ! convert to degrees
-    end function compute_phase_error
+        ! Развернуть числовую фазу: добавить 2π*k чтобы минимизировать |phi_num_cont - phi_ana_cont|
+        ! phi_num_cont = phi_num_wrapped + 2π*k
+        ! Выбираем k = round((phi_ana_cont - phi_num_wrapped) / (2π))
+        n_wraps = nint((phi_ana_cont - phi_num_wrapped)/(2.0*3.141592653589793))
+        phi_num_cont = phi_num_wrapped + n_wraps*2.0*3.141592653589793
+
+        ! Накопленный фазовый дрейф
+        phase_drift = (phi_num_cont - phi_ana_cont)*57.2957795  ! в градусах
+    end function compute_phase_drift
 
     ! --------------------------------------------------------------------------
     ! Прямое измерение периода через нулевые переходы v(t)
+    ! Измеряем полный период: время между ДВУМЯ последовательными
+    ! переходами v через ноль в ОДНОМ НАПРАВЛЕНИИ (например, отрицательное→положительное)
     ! --------------------------------------------------------------------------
     function compute_period_error_direct(dt, f, u0, nsteps) result(period_err)
         real, intent(in) :: dt, f, u0
@@ -271,7 +282,7 @@ contains
         integer :: step, n_crossings
         real :: v_prev, v_curr, t_cross1, t_cross2
         real :: measured_period
-        logical :: first_cross
+        logical :: first_cross_dir
 
         period_err = -999.0  ! NaN equivalent
 
@@ -282,7 +293,7 @@ contains
         n_crossings = 0
         t_cross1 = -1.0
         t_cross2 = -1.0
-        first_cross = .true.
+        first_cross_dir = .true.
         v_prev = 0.0  ! v0 = 0
 
         do step = 1, nsteps
@@ -291,16 +302,17 @@ contains
 
             v_curr = state%v
 
-            ! Detect zero crossing of v: v_prev * v_curr < 0
-            if (v_prev*v_curr .lt. 0.0) then
-                if (first_cross) then
+            ! Detect zero crossing of v with direction
+            ! We want negative -> positive (same direction each time)
+            if (v_prev .lt. 0.0 .and. v_curr .ge. 0.0) then
+                if (first_cross_dir) then
                     ! Linear interpolation for crossing time
                     t_cross1 = real(step - 1)*dt + dt*abs(v_prev)/(abs(v_prev) + abs(v_curr))
-                    first_cross = .false.
+                    first_cross_dir = .false.
                 else
                     t_cross2 = real(step - 1)*dt + dt*abs(v_prev)/(abs(v_prev) + abs(v_curr))
                     n_crossings = n_crossings + 1
-                    exit  ! Measure one half-period
+                    exit  ! Measured one full period
                 end if
             end if
 
@@ -308,7 +320,7 @@ contains
         end do
 
         if (n_crossings .eq. 1 .and. t_cross1 .gt. 0.0 .and. t_cross2 .gt. t_cross1) then
-            measured_period = 2.0*(t_cross2 - t_cross1)
+            measured_period = t_cross2 - t_cross1
             period_err = (measured_period - 2.0*3.141592653589793/f)/(2.0*3.141592653589793/f)*100.0
         end if
     end function compute_period_error_direct
@@ -378,7 +390,7 @@ contains
               status='replace', iostat=ios)
         if (ios .ne. 0) return
 
-        write (unit, '(A)') 'dt,phase_error_deg,amp_error_pct,energy_error_pct,period_error_pct'
+        write (unit, '(A)') 'dt,phase_drift_deg,amp_error_pct,energy_error_pct,period_error_pct'
         do i = 1, n
             write (unit, '(F8.1,4F16.6)') dts(i), phase_e(i), amp_e(i), energy_e(i), period_e(i)
         end do

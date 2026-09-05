@@ -357,19 +357,19 @@ contains
         real, intent(in) :: x, y
         type(ocean_profile), intent(out) :: ocean_prof_out
 
-        integer :: nlevels, k
+        integer :: nlevels, k_local
         nlevels = 5
         ocean_prof_out%nlevels = nlevels
         allocate (ocean_prof_out%z(nlevels), ocean_prof_out%dz(nlevels), &
                   ocean_prof_out%temp(nlevels), ocean_prof_out%salt(nlevels), &
                   ocean_prof_out%u(nlevels), ocean_prof_out%v(nlevels))
-        do k = 1, nlevels
-            ocean_prof_out%z(k) = real(k)*20.0
-            ocean_prof_out%dz(k) = 20.0
-            ocean_prof_out%temp(k) = -1.0
-            ocean_prof_out%salt(k) = 0.034
-            ocean_prof_out%u(k) = 0.1*sin(nint(x/1e6)/1e6 + real(k)/10.0)
-            ocean_prof_out%v(k) = 0.05*cos(nint(y/1e6)/1e6 + real(k)/10.0)
+        do k_local = 1, nlevels
+            ocean_prof_out%z(k_local) = real(k_local)*20.0
+            ocean_prof_out%dz(k_local) = 20.0
+            ocean_prof_out%temp(k_local) = -1.0
+            ocean_prof_out%salt(k_local) = 0.034
+            ocean_prof_out%u(k_local) = 0.1*sin(nint(x/1e6)/1e6 + real(k_local)/10.0)
+            ocean_prof_out%v(k_local) = 0.05*cos(nint(y/1e6)/1e6 + real(k_local)/10.0)
         end do
     end subroutine get_synthetic_ocean_nearest
 

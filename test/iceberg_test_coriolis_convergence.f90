@@ -241,8 +241,8 @@ contains
     ! Числовая фаза из atan2: phi_num_wrapped в [-π, π]
     ! Нужно развернуть (unwrap) phi_num_wrapped к непрерывной фазе
     ! --------------------------------------------------------------------------
-    function compute_phase_drift(u_num, v_num, f, t) result(phase_drift)
-        real, intent(in) :: u_num, v_num, f, t
+    function compute_phase_drift(u_num_in, v_num_in, f, t) result(phase_drift)
+        real, intent(in) :: u_num_in, v_num_in, f, t
         real :: phase_drift
         real :: phi_num_wrapped, phi_ana_cont, phi_num_cont
         real :: delta_phi_wrapped
@@ -252,7 +252,7 @@ contains
         phi_ana_cont = -f*t
 
         ! Числовая фаза (завернутая)
-        phi_num_wrapped = atan2(v_num, u_num)
+        phi_num_wrapped = atan2(v_num_in, u_num_in)
 
         ! Развернуть числовую фазу: добавить 2π*k чтобы минимизировать |phi_num_cont - phi_ana_cont|
         ! phi_num_cont = phi_num_wrapped + 2π*k
@@ -279,7 +279,7 @@ contains
         type(atmos_forcing) :: atmos_local
         type(iceberg_diagnostics) :: diag_local
 
-        integer :: step, n_crossings
+        integer :: step_local, n_crossings
         real :: v_prev, v_curr, t_cross1, t_cross2
         real :: measured_period
         logical :: first_cross_dir
@@ -296,7 +296,7 @@ contains
         first_cross_dir = .true.
         v_prev = 0.0  ! v0 = 0
 
-        do step = 1, nsteps_in
+        do step_local = 1, nsteps_in
             call iceberg_dynamics_step(state_local, dt_in, ocean_prof_local, atmos_local, &
                                        f_in, 0.0, 0.0, 0.0, 0.0, diag_local)
 
@@ -307,10 +307,10 @@ contains
             if (v_prev .lt. 0.0 .and. v_curr .ge. 0.0) then
                 if (first_cross_dir) then
                     ! Linear interpolation for crossing time
-                    t_cross1 = real(step - 1)*dt_in + dt_in*abs(v_prev)/(abs(v_prev) + abs(v_curr))
+                    t_cross1 = real(step_local - 1)*dt_in + dt_in*abs(v_prev)/(abs(v_prev) + abs(v_curr))
                     first_cross_dir = .false.
                 else
-                    t_cross2 = real(step - 1)*dt_in + dt_in*abs(v_prev)/(abs(v_prev) + abs(v_curr))
+                    t_cross2 = real(step_local - 1)*dt_in + dt_in*abs(v_prev)/(abs(v_prev) + abs(v_curr))
                     n_crossings = n_crossings + 1
                     exit  ! Measured one full period
                 end if
@@ -321,7 +321,7 @@ contains
 
         if (n_crossings .eq. 1 .and. t_cross1 .gt. 0.0 .and. t_cross2 .gt. t_cross1) then
             measured_period = t_cross2 - t_cross1
-            period_err = (measured_period - 2.0*3.141592653589793/f_in)/(2.0*3.141592653589793/f_in)*100.0
+      period_err = (measured_period - 2.0*3.141592653589793/f_in)/(2.0*3.141592653589793/f_in)*100.0
         end if
     end function compute_period_error_direct
 
@@ -350,7 +350,7 @@ contains
         dt_int = nint(dt_in)
         write (dt_str, '(I0)') dt_int
 
-  open (99, file='data/output/diagnostics/stage9.4c/coriolis_ts_dt'//trim(adjustl(dt_str))//'.csv', &
+ open (99, file='data/output/diagnostics/stage9.4c/coriolis_ts_dt'//trim(adjustl(dt_str))//'.csv', &
               status='replace')
         write (99, '(A)') 'dt,step,time_h,u,v,speed,energy,phi_deg'
 
@@ -399,7 +399,7 @@ contains
         write (unit, '(A)') 'local_order,dt_i,dt_ip1,p_phase,p_amp,p_energy,p_period'
         do i_local = 1, n - 1
             write (unit, '(A,2F8.1,4F10.4)') 'local', dts_in(i_local), dts_in(i_local + 1), &
-                    p_phase(i_local), p_amp(i_local), p_energy(i_local), p_period(i_local)
+                p_phase(i_local), p_amp(i_local), p_energy(i_local), p_period(i_local)
         end do
 
         write (unit, '(A)') ''

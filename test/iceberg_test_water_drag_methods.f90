@@ -427,8 +427,8 @@ contains
 
 ! Method B dynamics step (копия из iceberg_dynamics.f90)
     subroutine iceberg_dynamics_step_method_b(state_in, dt_in, ocean_prof_in, atmos_in, &
-                                               f_coriolis_in, grad_eta_x_in, grad_eta_y_in, &
-                                               fk_x_in, fk_y_in, diag_inout)
+                                              f_coriolis_in, grad_eta_x_in, grad_eta_y_in, &
+                                              fk_x_in, fk_y_in, diag_inout)
         type(iceberg_state), intent(inout) :: state_in
         real, intent(in) :: dt_in
         type(ocean_profile), intent(in) :: ocean_prof_in

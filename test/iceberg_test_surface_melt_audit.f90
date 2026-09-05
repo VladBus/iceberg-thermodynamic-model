@@ -248,47 +248,47 @@ program iceberg_test_surface_melt_audit
 
 contains
 
-    subroutine init_zero_ocean(ocean_prof)
-        type(ocean_profile), intent(out) :: ocean_prof
+    subroutine init_zero_ocean(ocean_prof_out)
+        type(ocean_profile), intent(out) :: ocean_prof_out
         integer :: nlevels
         nlevels = 1
-        ocean_prof%nlevels = nlevels
-        allocate (ocean_prof%z(nlevels), ocean_prof%dz(nlevels), &
-                  ocean_prof%temp(nlevels), ocean_prof%salt(nlevels), &
-                  ocean_prof%u(nlevels), ocean_prof%v(nlevels))
-        ocean_prof%z(1) = 10.0
-        ocean_prof%dz(1) = 10.0
-        ocean_prof%temp(1) = -1.0
-        ocean_prof%salt(1) = 0.034
-        ocean_prof%u(1) = 0.0
-        ocean_prof%v(1) = 0.0
+        ocean_prof_out%nlevels = nlevels
+        allocate (ocean_prof_out%z(nlevels), ocean_prof_out%dz(nlevels), &
+                  ocean_prof_out%temp(nlevels), ocean_prof_out%salt(nlevels), &
+                  ocean_prof_out%u(nlevels), ocean_prof_out%v(nlevels))
+        ocean_prof_out%z(1) = 10.0
+        ocean_prof_out%dz(1) = 10.0
+        ocean_prof_out%temp(1) = -1.0
+        ocean_prof_out%salt(1) = 0.034
+        ocean_prof_out%u(1) = 0.0
+        ocean_prof_out%v(1) = 0.0
     end subroutine init_zero_ocean
 
-    subroutine write_audit_row(unit, case_name, atmos, q_net, m_surf, expected)
-        integer, intent(in) :: unit
+    subroutine write_audit_row(unit_in, case_name, atmos_in, q_net_in, m_surf_in, expected_in)
+        integer, intent(in) :: unit_in
         character(len=*), intent(in) :: case_name
-        type(atmos_forcing), intent(in) :: atmos
-        real, intent(in) :: q_net, m_surf, expected
+        type(atmos_forcing), intent(in) :: atmos_in
+        real, intent(in) :: q_net_in, m_surf_in, expected_in
         real :: ratio
 
-        if (expected .gt. 1e-12) then
-            ratio = m_surf/expected
+        if (expected_in .gt. 1e-12) then
+            ratio = m_surf_in/expected_in
         else
             ratio = 0.0
         end if
 
-        write (unit, '(A,F8.2,F8.2,F6.2,F10.1,2F8.2,2F10.3,3F12.6,2F12.6,F10.4)') &
-            case_name, atmos%t2m, atmos%d2m, atmos%tcc, atmos%msl, &
-            atmos%u10, atmos%v10, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, q_net, m_surf, expected, ratio
+        write (unit_in, '(A,F8.2,F8.2,F6.2,F10.1,2F8.2,2F10.3,3F12.6,2F12.6,F10.4)') &
+            case_name, atmos_in%t2m, atmos_in%d2m, atmos_in%tcc, atmos_in%msl, &
+            atmos_in%u10, atmos_in%v10, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, q_net_in, m_surf_in, expected_in, ratio
     end subroutine write_audit_row
 
     ! --------------------------------------------------------------------------
     ! Decompose surface flux into components (replicates compute_surface_melt logic)
     ! --------------------------------------------------------------------------
-    subroutine decompose_surface_flux(state, atmos, diag)
-        type(iceberg_state), intent(in) :: state
-        type(atmos_forcing), intent(in) :: atmos
-        type(iceberg_diagnostics), intent(inout) :: diag
+    subroutine decompose_surface_flux(state_in, atmos_in, diag_inout)
+        type(iceberg_state), intent(in) :: state_in
+        type(atmos_forcing), intent(in) :: atmos_in
+        type(iceberg_diagnostics), intent(inout) :: diag_inout
 
         real :: t_air_k, t_surf_k, t_dew_k
         real :: p_atm, rho_air_local, q_air, q_sat
@@ -302,24 +302,24 @@ contains
         real :: sw_absorbed
 
         ! Input parameters
-        t_air_k = atmos%t2m
-        t_dew_k = atmos%d2m
+        t_air_k = atmos_in%t2m
+        t_dew_k = atmos_in%d2m
         t_surf_k = T_ICE + 273.15  ! 263.15 K
 
-        p_atm = atmos%msl
+        p_atm = atmos_in%msl
         rho_air_local = p_atm/(GAS_CONST_AIR*t_air_k)
 
-        wind_speed = sqrt(atmos%u10**2 + atmos%v10**2)
+        wind_speed = sqrt(atmos_in%u10**2 + atmos_in%v10**2)
 
         ! === SHORTWAVE ===
-        lat_rad = state%latitude/57.2957795
+        lat_rad = state_in%latitude/57.2957795
         decl = 0.0
         dec_rad = decl/57.2957795
         hour_angle = 0.0
         cos_zenith = sin(lat_rad)*sin(dec_rad) + cos(lat_rad)*cos(dec_rad)*cos(hour_angle)
         cos_zenith = max(0.0, cos_zenith)
 
-        sw_down = SOLAR_CONSTANT*cos_zenith**2*(1.0 - CLOUD_COEFF*atmos%tcc**3)
+        sw_down = SOLAR_CONSTANT*cos_zenith**2*(1.0 - CLOUD_COEFF*atmos_in%tcc**3)
 
         rad_b1 = (cos_zenith + 2.7)*1.0e-5
         rad_b2 = 1.085*cos_zenith + 0.1
@@ -336,7 +336,7 @@ contains
 
         ! === LONGWAVE ===
         lw_down = LW_EMISS*t_air_k**4* &
-                  (1.0 + LW_CLOUD_FACTOR*atmos%tcc)* &
+                  (1.0 + LW_CLOUD_FACTOR*atmos_in%tcc)* &
                   (1.0 - LW_HUMID_COEFF*exp(-LW_HUMID_EXP*(273.15 - t_air_k)**2))
 
         lw_up = -EMISSIVITY*STEFAN_BOLTZ*t_surf_k**4
@@ -350,14 +350,14 @@ contains
         lh_flux = rho_air_local*LH_COEFF*wind_speed*LATENT_VAP*(q_air - q_sat)
 
         ! === NET ===
-        diag%q_net_surface = sw_absorbed + lw_down + lw_up + sh_flux + lh_flux
+        diag_inout%q_net_surface = sw_absorbed + lw_down + lw_up + sh_flux + lh_flux
 
         ! Store components in diagnostics (we'll reuse unused fields)
-        diag%m_basal = sw_absorbed
-        diag%m_lateral = lw_down
-        diag%m_surface = lw_up
-        diag%t_draft = sh_flux
-        diag%s_draft = lh_flux
+        diag_inout%m_basal = sw_absorbed
+        diag_inout%m_lateral = lw_down
+        diag_inout%m_surface = lw_up
+        diag_inout%t_draft = sh_flux
+        diag_inout%s_draft = lh_flux
 
         print *, "Component breakdown [W/m2]:"
         print *, "  SW_absorbed (SW↓*(1-α)):  ", sw_absorbed
@@ -365,8 +365,8 @@ contains
         print *, "  LW_up (ice emission):     ", lw_up
         print *, "  SH (sensible):            ", sh_flux
         print *, "  LH (latent):              ", lh_flux
-        print *, "  Q_net:                    ", diag%q_net_surface
-        print *, "  m_surface: ", diag%q_net_surface/(RHO_ICE*LATENT_HEAT)*86400.0, " m/day"
+        print *, "  Q_net:                    ", diag_inout%q_net_surface
+        print *, "  m_surface: ", diag_inout%q_net_surface/(RHO_ICE*LATENT_HEAT)*86400.0, " m/day"
     end subroutine decompose_surface_flux
 
 end program iceberg_test_surface_melt_audit

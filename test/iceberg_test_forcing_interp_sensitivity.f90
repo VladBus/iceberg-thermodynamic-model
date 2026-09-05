@@ -274,102 +274,102 @@ program iceberg_test_forcing_interp_sensitivity
 
 contains
 
-    subroutine init_synthetic_forcing(ocean_prof, atmos)
-        type(ocean_profile), intent(out) :: ocean_prof
-        type(atmos_forcing), intent(out) :: atmos
+    subroutine init_synthetic_forcing(ocean_prof_out, atmos_out)
+        type(ocean_profile), intent(out) :: ocean_prof_out
+        type(atmos_forcing), intent(out) :: atmos_out
 
-        integer :: nlevels
+        integer :: nlevels, k
         nlevels = 5
-        ocean_prof%nlevels = nlevels
-        allocate (ocean_prof%z(nlevels), ocean_prof%dz(nlevels), &
-                  ocean_prof%temp(nlevels), ocean_prof%salt(nlevels), &
-                  ocean_prof%u(nlevels), ocean_prof%v(nlevels))
+        ocean_prof_out%nlevels = nlevels
+        allocate (ocean_prof_out%z(nlevels), ocean_prof_out%dz(nlevels), &
+                  ocean_prof_out%temp(nlevels), ocean_prof_out%salt(nlevels), &
+                  ocean_prof_out%u(nlevels), ocean_prof_out%v(nlevels))
         do k = 1, nlevels
-            ocean_prof%z(k) = real(k)*20.0
-            ocean_prof%dz(k) = 20.0
-            ocean_prof%temp(k) = -1.0
-            ocean_prof%salt(k) = 0.034
-            ocean_prof%u(k) = 0.1*sin(real(k)/10.0)
-            ocean_prof%v(k) = 0.05*cos(real(k)/10.0)
+            ocean_prof_out%z(k) = real(k)*20.0
+            ocean_prof_out%dz(k) = 20.0
+            ocean_prof_out%temp(k) = -1.0
+            ocean_prof_out%salt(k) = 0.034
+            ocean_prof_out%u(k) = 0.1*sin(real(k)/10.0)
+            ocean_prof_out%v(k) = 0.05*cos(real(k)/10.0)
         end do
 
-        atmos%u10 = 5.0
-        atmos%v10 = 2.0
-        atmos%t2m = 253.15
-        atmos%d2m = 253.15
-        atmos%tcc = 0.5
-        atmos%msl = 101325.0
-        atmos%snowfall = 0.0
+        atmos_out%u10 = 5.0
+        atmos_out%v10 = 2.0
+        atmos_out%t2m = 253.15
+        atmos_out%d2m = 253.15
+        atmos_out%tcc = 0.5
+        atmos_out%msl = 101325.0
+        atmos_out%snowfall = 0.0
     end subroutine init_synthetic_forcing
 
-    subroutine get_synthetic_atmos_bilinear(lat, lon, atmos)
+    subroutine get_synthetic_atmos_bilinear(lat, lon, atmos_out)
         real, intent(in) :: lat, lon
-        type(atmos_forcing), intent(out) :: atmos
+        type(atmos_forcing), intent(out) :: atmos_out
 
-        atmos%u10 = 10.0*sin(lat/57.2957795)
-        atmos%v10 = 5.0*cos(lon/57.2957795)
-        atmos%t2m = 260.0 - 10.0*sin(lat/57.2957795)
-        atmos%d2m = atmos%t2m - 2.0
-        atmos%tcc = 0.5
-        atmos%msl = 101325.0
-        atmos%snowfall = 0.0
+        atmos_out%u10 = 10.0*sin(lat/57.2957795)
+        atmos_out%v10 = 5.0*cos(lon/57.2957795)
+        atmos_out%t2m = 260.0 - 10.0*sin(lat/57.2957795)
+        atmos_out%d2m = atmos_out%t2m - 2.0
+        atmos_out%tcc = 0.5
+        atmos_out%msl = 101325.0
+        atmos_out%snowfall = 0.0
     end subroutine get_synthetic_atmos_bilinear
 
-    subroutine get_synthetic_atmos_nearest(lat, lon, atmos)
+    subroutine get_synthetic_atmos_nearest(lat, lon, atmos_out)
         real, intent(in) :: lat, lon
-        type(atmos_forcing), intent(out) :: atmos
+        type(atmos_forcing), intent(out) :: atmos_out
 
         ! Округление до ближайшего целого градуса (mock nearest)
         real :: lat_nn, lon_nn
         lat_nn = nint(lat)
         lon_nn = nint(lon)
 
-        atmos%u10 = 10.0*sin(lat_nn/57.2957795)
-        atmos%v10 = 5.0*cos(lon_nn/57.2957795)
-        atmos%t2m = 260.0 - 10.0*sin(lat_nn/57.2957795)
-        atmos%d2m = atmos%t2m - 2.0
-        atmos%tcc = 0.5
-        atmos%msl = 101325.0
-        atmos%snowfall = 0.0
+        atmos_out%u10 = 10.0*sin(lat_nn/57.2957795)
+        atmos_out%v10 = 5.0*cos(lon_nn/57.2957795)
+        atmos_out%t2m = 260.0 - 10.0*sin(lat_nn/57.2957795)
+        atmos_out%d2m = atmos_out%t2m - 2.0
+        atmos_out%tcc = 0.5
+        atmos_out%msl = 101325.0
+        atmos_out%snowfall = 0.0
     end subroutine get_synthetic_atmos_nearest
 
-    subroutine get_synthetic_ocean_bilinear(x, y, ocean_prof)
+    subroutine get_synthetic_ocean_bilinear(x, y, ocean_prof_out)
         real, intent(in) :: x, y
-        type(ocean_profile), intent(out) :: ocean_prof
+        type(ocean_profile), intent(out) :: ocean_prof_out
 
         integer :: nlevels, k
         nlevels = 5
-        ocean_prof%nlevels = nlevels
-        allocate (ocean_prof%z(nlevels), ocean_prof%dz(nlevels), &
-                  ocean_prof%temp(nlevels), ocean_prof%salt(nlevels), &
-                  ocean_prof%u(nlevels), ocean_prof%v(nlevels))
+        ocean_prof_out%nlevels = nlevels
+        allocate (ocean_prof_out%z(nlevels), ocean_prof_out%dz(nlevels), &
+                  ocean_prof_out%temp(nlevels), ocean_prof_out%salt(nlevels), &
+                  ocean_prof_out%u(nlevels), ocean_prof_out%v(nlevels))
         do k = 1, nlevels
-            ocean_prof%z(k) = real(k)*20.0
-            ocean_prof%dz(k) = 20.0
-            ocean_prof%temp(k) = -1.0
-            ocean_prof%salt(k) = 0.034
-            ocean_prof%u(k) = 0.1*sin(x/1e6 + real(k)/10.0)
-            ocean_prof%v(k) = 0.05*cos(y/1e6 + real(k)/10.0)
+            ocean_prof_out%z(k) = real(k)*20.0
+            ocean_prof_out%dz(k) = 20.0
+            ocean_prof_out%temp(k) = -1.0
+            ocean_prof_out%salt(k) = 0.034
+            ocean_prof_out%u(k) = 0.1*sin(x/1e6 + real(k)/10.0)
+            ocean_prof_out%v(k) = 0.05*cos(y/1e6 + real(k)/10.0)
         end do
     end subroutine get_synthetic_ocean_bilinear
 
-    subroutine get_synthetic_ocean_nearest(x, y, ocean_prof)
+    subroutine get_synthetic_ocean_nearest(x, y, ocean_prof_out)
         real, intent(in) :: x, y
-        type(ocean_profile), intent(out) :: ocean_prof
+        type(ocean_profile), intent(out) :: ocean_prof_out
 
         integer :: nlevels, k
         nlevels = 5
-        ocean_prof%nlevels = nlevels
-        allocate (ocean_prof%z(nlevels), ocean_prof%dz(nlevels), &
-                  ocean_prof%temp(nlevels), ocean_prof%salt(nlevels), &
-                  ocean_prof%u(nlevels), ocean_prof%v(nlevels))
+        ocean_prof_out%nlevels = nlevels
+        allocate (ocean_prof_out%z(nlevels), ocean_prof_out%dz(nlevels), &
+                  ocean_prof_out%temp(nlevels), ocean_prof_out%salt(nlevels), &
+                  ocean_prof_out%u(nlevels), ocean_prof_out%v(nlevels))
         do k = 1, nlevels
-            ocean_prof%z(k) = real(k)*20.0
-            ocean_prof%dz(k) = 20.0
-            ocean_prof%temp(k) = -1.0
-            ocean_prof%salt(k) = 0.034
-            ocean_prof%u(k) = 0.1*sin(nint(x/1e6)/1e6 + real(k)/10.0)
-            ocean_prof%v(k) = 0.05*cos(nint(y/1e6)/1e6 + real(k)/10.0)
+            ocean_prof_out%z(k) = real(k)*20.0
+            ocean_prof_out%dz(k) = 20.0
+            ocean_prof_out%temp(k) = -1.0
+            ocean_prof_out%salt(k) = 0.034
+            ocean_prof_out%u(k) = 0.1*sin(nint(x/1e6)/1e6 + real(k)/10.0)
+            ocean_prof_out%v(k) = 0.05*cos(nint(y/1e6)/1e6 + real(k)/10.0)
         end do
     end subroutine get_synthetic_ocean_nearest
 

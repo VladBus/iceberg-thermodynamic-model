@@ -153,30 +153,30 @@ program iceberg_test_moving_coriolis
 
 contains
 
-    subroutine init_zero_forcing(ocean_prof, atmos)
-        type(ocean_profile), intent(out) :: ocean_prof
-        type(atmos_forcing), intent(out) :: atmos
+    subroutine init_zero_forcing(ocean_prof_out, atmos_out)
+        type(ocean_profile), intent(out) :: ocean_prof_out
+        type(atmos_forcing), intent(out) :: atmos_out
 
         integer :: nlevels
         nlevels = 1
-        ocean_prof%nlevels = nlevels
-        allocate (ocean_prof%z(nlevels), ocean_prof%dz(nlevels), &
-                  ocean_prof%temp(nlevels), ocean_prof%salt(nlevels), &
-                  ocean_prof%u(nlevels), ocean_prof%v(nlevels))
-        ocean_prof%z(1) = 10.0
-        ocean_prof%dz(1) = 10.0
-        ocean_prof%temp(1) = -1.0
-        ocean_prof%salt(1) = 0.034
-        ocean_prof%u(1) = 0.0
-        ocean_prof%v(1) = 0.0
+        ocean_prof_out%nlevels = nlevels
+        allocate (ocean_prof_out%z(nlevels), ocean_prof_out%dz(nlevels), &
+                  ocean_prof_out%temp(nlevels), ocean_prof_out%salt(nlevels), &
+                  ocean_prof_out%u(nlevels), ocean_prof_out%v(nlevels))
+        ocean_prof_out%z(1) = 10.0
+        ocean_prof_out%dz(1) = 10.0
+        ocean_prof_out%temp(1) = -1.0
+        ocean_prof_out%salt(1) = 0.034
+        ocean_prof_out%u(1) = 0.0
+        ocean_prof_out%v(1) = 0.0
 
-        atmos%u10 = 0.0
-        atmos%v10 = 0.0
-        atmos%t2m = 253.15
-        atmos%d2m = 253.15
-        atmos%tcc = 0.0
-        atmos%msl = 101325.0
-        atmos%snowfall = 0.0
+        atmos_out%u10 = 0.0
+        atmos_out%v10 = 0.0
+        atmos_out%t2m = 253.15
+        atmos_out%d2m = 253.15
+        atmos_out%tcc = 0.0
+        atmos_out%msl = 101325.0
+        atmos_out%snowfall = 0.0
     end subroutine init_zero_forcing
 
 end program iceberg_test_moving_coriolis

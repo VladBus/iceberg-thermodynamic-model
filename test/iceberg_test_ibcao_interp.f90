@@ -224,15 +224,15 @@ program iceberg_test_ibcao_interp
 
 contains
 
-    subroutine model_coords_to_indices(x_model, y_model, i_idx, j_idx, in_domain)
-        real, intent(in) :: x_model, y_model
-        integer, intent(out) :: i_idx, j_idx
+    subroutine model_coords_to_indices(x_model_in, y_model_in, i_idx_out, j_idx_out, in_domain)
+        real, intent(in) :: x_model_in, y_model_in
+        integer, intent(out) :: i_idx_out, j_idx_out
         logical, intent(out) :: in_domain
         real :: dx_model
         dx_model = 13890.0
-        j_idx = int(x_model/dx_model) + 1
-        i_idx = int(y_model/dx_model) + 1
-        if (i_idx .lt. 1 .or. i_idx .ge. is1 .or. j_idx .lt. 1 .or. j_idx .ge. js1) then
+        j_idx_out = int(x_model_in/dx_model) + 1
+        i_idx_out = int(y_model_in/dx_model) + 1
+        if (i_idx_out .lt. 1 .or. i_idx_out .ge. is1 .or. j_idx_out .lt. 1 .or. j_idx_out .ge. js1) then
             in_domain = .false.
         else
             in_domain = .true.

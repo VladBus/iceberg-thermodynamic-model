@@ -194,29 +194,29 @@ program iceberg_test_surface_energy_balance
 
 contains
 
-    subroutine init_zero_ocean(ocean_prof)
-        type(ocean_profile), intent(out) :: ocean_prof
+    subroutine init_zero_ocean(ocean_prof_out)
+        type(ocean_profile), intent(out) :: ocean_prof_out
         integer :: nlevels
         nlevels = 1
-        ocean_prof%nlevels = nlevels
-        allocate (ocean_prof%z(nlevels), ocean_prof%dz(nlevels), &
-                  ocean_prof%temp(nlevels), ocean_prof%salt(nlevels), &
-                  ocean_prof%u(nlevels), ocean_prof%v(nlevels))
-        ocean_prof%z(1) = 10.0
-        ocean_prof%dz(1) = 10.0
-        ocean_prof%temp(1) = -1.0
-        ocean_prof%salt(1) = 0.034
-        ocean_prof%u(1) = 0.0
-        ocean_prof%v(1) = 0.0
+        ocean_prof_out%nlevels = nlevels
+        allocate (ocean_prof_out%z(nlevels), ocean_prof_out%dz(nlevels), &
+                  ocean_prof_out%temp(nlevels), ocean_prof_out%salt(nlevels), &
+                  ocean_prof_out%u(nlevels), ocean_prof_out%v(nlevels))
+        ocean_prof_out%z(1) = 10.0
+        ocean_prof_out%dz(1) = 10.0
+        ocean_prof_out%temp(1) = -1.0
+        ocean_prof_out%salt(1) = 0.034
+        ocean_prof_out%u(1) = 0.0
+        ocean_prof_out%v(1) = 0.0
     end subroutine init_zero_ocean
 
     ! Replicate production compute_surface_melt logic to extract components
-    subroutine decompose_surface_flux_prod(state, atmos, diag, &
+    subroutine decompose_surface_flux_prod(state_in, atmos_in, diag_inout, &
                                            sw_abs, lw_down, lw_up, sh_flux, lh_flux, &
                                            q_net, m_surf)
-        type(iceberg_state), intent(in) :: state
-        type(atmos_forcing), intent(in) :: atmos
-        type(iceberg_diagnostics), intent(inout) :: diag
+        type(iceberg_state), intent(in) :: state_in
+        type(atmos_forcing), intent(in) :: atmos_in
+        type(iceberg_diagnostics), intent(inout) :: diag_inout
         real, intent(out) :: sw_abs, lw_down, lw_up, sh_flux, lh_flux
         real, intent(out) :: q_net, m_surf
 
@@ -230,24 +230,24 @@ contains
         real :: e_sat_air, e_sat_dew, rh
         real :: q_air, q_sat
 
-        t_air_k = atmos%t2m
-        t_dew_k = atmos%d2m
+        t_air_k = atmos_in%t2m
+        t_dew_k = atmos_in%d2m
         t_surf_k = T_ICE + 273.15
 
-        p_atm = atmos%msl
+        p_atm = atmos_in%msl
         rho_air_local = p_atm/(GAS_CONST_AIR*t_air_k)
 
-        wind_speed = sqrt(atmos%u10**2 + atmos%v10**2)
+        wind_speed = sqrt(atmos_in%u10**2 + atmos_in%v10**2)
 
         ! === SHORTWAVE ===
-        lat_rad = state%latitude/57.2957795
+        lat_rad = state_in%latitude/57.2957795
         decl = 0.0
         dec_rad = decl/57.2957795
         hour_angle = 0.0
         cos_zenith = sin(lat_rad)*sin(dec_rad) + cos(lat_rad)*cos(dec_rad)*cos(hour_angle)
         cos_zenith = max(0.0, cos_zenith)
 
-        sw_abs = SOLAR_CONSTANT*cos_zenith**2*(1.0 - CLOUD_COEFF*atmos%tcc**3)
+        sw_abs = SOLAR_CONSTANT*cos_zenith**2*(1.0 - CLOUD_COEFF*atmos_in%tcc**3)
 
         rad_b1 = (cos_zenith + 2.7)*1.0e-5
         rad_b2 = 1.085*cos_zenith + 0.1
@@ -264,7 +264,7 @@ contains
 
         ! === LONGWAVE ===
         lw_down = LW_EMISS*t_air_k**4* &
-                  (1.0 + LW_CLOUD_FACTOR*atmos%tcc)* &
+                  (1.0 + LW_CLOUD_FACTOR*atmos_in%tcc)* &
                   (1.0 - LW_HUMID_COEFF*exp(-LW_HUMID_EXP*(273.15 - t_air_k)**2))
 
         lw_up = -EMISSIVITY*STEFAN_BOLTZ*t_surf_k**4

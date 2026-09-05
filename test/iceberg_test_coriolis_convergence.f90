@@ -207,30 +207,30 @@ program iceberg_test_coriolis_convergence
 
 contains
 
-    subroutine init_zero_forcing(ocean_prof, atmos)
-        type(ocean_profile), intent(out) :: ocean_prof
-        type(atmos_forcing), intent(out) :: atmos
+    subroutine init_zero_forcing(ocean_prof_out, atmos_out)
+        type(ocean_profile), intent(out) :: ocean_prof_out
+        type(atmos_forcing), intent(out) :: atmos_out
 
         integer :: nlevels
         nlevels = 1
-        ocean_prof%nlevels = nlevels
-        allocate (ocean_prof%z(nlevels), ocean_prof%dz(nlevels), &
-                  ocean_prof%temp(nlevels), ocean_prof%salt(nlevels), &
-                  ocean_prof%u(nlevels), ocean_prof%v(nlevels))
-        ocean_prof%z(1) = 10.0
-        ocean_prof%dz(1) = 10.0
-        ocean_prof%temp(1) = -1.0
-        ocean_prof%salt(1) = 0.034
-        ocean_prof%u(1) = 0.0
-        ocean_prof%v(1) = 0.0
+        ocean_prof_out%nlevels = nlevels
+        allocate (ocean_prof_out%z(nlevels), ocean_prof_out%dz(nlevels), &
+                  ocean_prof_out%temp(nlevels), ocean_prof_out%salt(nlevels), &
+                  ocean_prof_out%u(nlevels), ocean_prof_out%v(nlevels))
+        ocean_prof_out%z(1) = 10.0
+        ocean_prof_out%dz(1) = 10.0
+        ocean_prof_out%temp(1) = -1.0
+        ocean_prof_out%salt(1) = 0.034
+        ocean_prof_out%u(1) = 0.0
+        ocean_prof_out%v(1) = 0.0
 
-        atmos%u10 = 0.0
-        atmos%v10 = 0.0
-        atmos%t2m = 253.15
-        atmos%d2m = 253.15
-        atmos%tcc = 0.0
-        atmos%msl = 101325.0
-        atmos%snowfall = 0.0
+        atmos_out%u10 = 0.0
+        atmos_out%v10 = 0.0
+        atmos_out%t2m = 253.15
+        atmos_out%d2m = 253.15
+        atmos_out%tcc = 0.0
+        atmos_out%msl = 101325.0
+        atmos_out%snowfall = 0.0
     end subroutine init_zero_forcing
 
     ! --------------------------------------------------------------------------
@@ -269,15 +269,15 @@ contains
     ! Измеряем полный период: время между ДВУМЯ последовательными
     ! переходами v через ноль в ОДНОМ НАПРАВЛЕНИИ (например, отрицательное→положительное)
     ! --------------------------------------------------------------------------
-    function compute_period_error_direct(dt, f, u0, nsteps) result(period_err)
-        real, intent(in) :: dt, f, u0
-        integer, intent(in) :: nsteps
+    function compute_period_error_direct(dt_in, f_in, u0_in, nsteps_in) result(period_err)
+        real, intent(in) :: dt_in, f_in, u0_in
+        integer, intent(in) :: nsteps_in
         real :: period_err
 
-        type(iceberg_state) :: state
-        type(ocean_profile) :: ocean_prof
-        type(atmos_forcing) :: atmos
-        type(iceberg_diagnostics) :: diag
+        type(iceberg_state) :: state_local
+        type(ocean_profile) :: ocean_prof_local
+        type(atmos_forcing) :: atmos_local
+        type(iceberg_diagnostics) :: diag_local
 
         integer :: step, n_crossings
         real :: v_prev, v_curr, t_cross1, t_cross2
@@ -286,9 +286,9 @@ contains
 
         period_err = -999.0  ! NaN equivalent
 
-        call iceberg_init(state, 0.0, 0.0, 100.0, 100.0, 100.0, &
-                          75.0, 0.0, u0, 0.0)
-        call init_zero_forcing(ocean_prof, atmos)
+        call iceberg_init(state_local, 0.0, 0.0, 100.0, 100.0, 100.0, &
+                          75.0, 0.0, u0_in, 0.0)
+        call init_zero_forcing(ocean_prof_local, atmos_local)
 
         n_crossings = 0
         t_cross1 = -1.0
@@ -296,21 +296,21 @@ contains
         first_cross_dir = .true.
         v_prev = 0.0  ! v0 = 0
 
-        do step = 1, nsteps
-            call iceberg_dynamics_step(state, dt, ocean_prof, atmos, &
-                                       f, 0.0, 0.0, 0.0, 0.0, diag)
+        do step = 1, nsteps_in
+            call iceberg_dynamics_step(state_local, dt_in, ocean_prof_local, atmos_local, &
+                                       f_in, 0.0, 0.0, 0.0, 0.0, diag_local)
 
-            v_curr = state%v
+            v_curr = state_local%v
 
             ! Detect zero crossing of v with direction
             ! We want negative -> positive (same direction each time)
             if (v_prev .lt. 0.0 .and. v_curr .ge. 0.0) then
                 if (first_cross_dir) then
                     ! Linear interpolation for crossing time
-                    t_cross1 = real(step - 1)*dt + dt*abs(v_prev)/(abs(v_prev) + abs(v_curr))
+                    t_cross1 = real(step - 1)*dt_in + dt_in*abs(v_prev)/(abs(v_prev) + abs(v_curr))
                     first_cross_dir = .false.
                 else
-                    t_cross2 = real(step - 1)*dt + dt*abs(v_prev)/(abs(v_prev) + abs(v_curr))
+                    t_cross2 = real(step - 1)*dt_in + dt_in*abs(v_prev)/(abs(v_prev) + abs(v_curr))
                     n_crossings = n_crossings + 1
                     exit  ! Measured one full period
                 end if
@@ -321,51 +321,51 @@ contains
 
         if (n_crossings .eq. 1 .and. t_cross1 .gt. 0.0 .and. t_cross2 .gt. t_cross1) then
             measured_period = t_cross2 - t_cross1
-            period_err = (measured_period - 2.0*3.141592653589793/f)/(2.0*3.141592653589793/f)*100.0
+            period_err = (measured_period - 2.0*3.141592653589793/f_in)/(2.0*3.141592653589793/f_in)*100.0
         end if
     end function compute_period_error_direct
 
     ! --------------------------------------------------------------------------
     ! Вывод временных рядов для анализа демпфирования
     ! --------------------------------------------------------------------------
-    subroutine output_time_series(dt, f, u0)
-        real, intent(in) :: dt, f, u0
+    subroutine output_time_series(dt_in, f_in, u0_in)
+        real, intent(in) :: dt_in, f_in, u0_in
 
-        type(iceberg_state) :: state
-        type(ocean_profile) :: ocean_prof
-        type(atmos_forcing) :: atmos
-        type(iceberg_diagnostics) :: diag
+        type(iceberg_state) :: state_local
+        type(ocean_profile) :: ocean_prof_local
+        type(atmos_forcing) :: atmos_local
+        type(iceberg_diagnostics) :: diag_local
 
         integer :: step, nsteps
         real :: model_time, u, v, speed, energy, phi
         integer :: dt_int
         character(len=20) :: dt_str
 
-        nsteps = int(5*2.0*3.141592653589793/f/dt + 0.5)
+        nsteps = int(5*2.0*3.141592653589793/f_in/dt_in + 0.5)
 
-        call iceberg_init(state, 0.0, 0.0, 100.0, 100.0, 100.0, &
-                          75.0, 0.0, u0, 0.0)
-        call init_zero_forcing(ocean_prof, atmos)
+        call iceberg_init(state_local, 0.0, 0.0, 100.0, 100.0, 100.0, &
+                          75.0, 0.0, u0_in, 0.0)
+        call init_zero_forcing(ocean_prof_local, atmos_local)
 
-        dt_int = nint(dt)
+        dt_int = nint(dt_in)
         write (dt_str, '(I0)') dt_int
 
- open (99, file='data/output/diagnostics/stage9.4c/coriolis_ts_dt'//trim(adjustl(dt_str))//'.csv', &
+  open (99, file='data/output/diagnostics/stage9.4c/coriolis_ts_dt'//trim(adjustl(dt_str))//'.csv', &
               status='replace')
         write (99, '(A)') 'dt,step,time_h,u,v,speed,energy,phi_deg'
 
         do step = 1, nsteps
-            call iceberg_dynamics_step(state, dt, ocean_prof, atmos, &
-                                       f, 0.0, 0.0, 0.0, 0.0, diag)
-            model_time = real(step)*dt
+            call iceberg_dynamics_step(state_local, dt_in, ocean_prof_local, atmos_local, &
+                                       f_in, 0.0, 0.0, 0.0, 0.0, diag_local)
+            model_time = real(step)*dt_in
 
-            u = state%u
-            v = state%v
+            u = state_local%u
+            v = state_local%v
             speed = sqrt(u**2 + v**2)
             energy = 0.5*(u**2 + v**2)
             phi = atan2(v, u)*57.2957795
 
-          write (99, '(F8.1,I6,F10.3,5F12.6)') dt, step, model_time/3600.0, u, v, speed, energy, phi
+          write (99, '(F8.1,I6,F10.3,5F12.6)') dt_in, step, model_time/3600.0, u, v, speed, energy, phi
         end do
 
         close (99)
@@ -399,7 +399,7 @@ contains
         write (unit, '(A)') 'local_order,dt_i,dt_ip1,p_phase,p_amp,p_energy,p_period'
         do i = 1, n - 1
             write (unit, '(A,2F8.1,4F10.4)') 'local', dts(i), dts(i + 1), &
-                p_phase(i), p_amp(i), p_energy(i), p_period(i)
+                    p_phase(i), p_amp(i), p_energy(i), p_period(i)
         end do
 
         write (unit, '(A)') ''

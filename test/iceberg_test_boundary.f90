@@ -178,26 +178,26 @@ program iceberg_test_boundary
 
 contains
 
-    subroutine iceberg_step_boundary_test(state, dt, diag)
-        type(iceberg_state), intent(inout) :: state
-        real, intent(in) :: dt
-        type(iceberg_diagnostics), intent(out) :: diag
+    subroutine iceberg_step_boundary_test(state_in, dt_in, diag_out)
+        type(iceberg_state), intent(inout) :: state_in
+        real, intent(in) :: dt_in
+        type(iceberg_diagnostics), intent(out) :: diag_out
 
         real :: lat, lon
 
         ! Просто обновляем позицию и проверяем границы (как в iceberg_step)
-        state%x = state%x + dt*state%u
-        state%y = state%y + dt*state%v
+        state_in%x = state_in%x + dt_in*state_in%u
+        state_in%y = state_in%y + dt_in*state_in%v
 
         ! Попытка обновить lat/lon - должна вернуть ok=.false. за границей
-        call model_coords_to_latlon(state%x, state%y, lat, lon, diag%forcing_valid)
+        call model_coords_to_latlon(state_in%x, state_in%y, lat, lon, diag_out%forcing_valid)
 
-        if (.not. diag%forcing_valid) then
-            state%active = .false.
+        if (.not. diag_out%forcing_valid) then
+            state_in%active = .false.
         end if
 
-        state%nstep = state%nstep + 1
-        state%time = state%time + dt
+        state_in%nstep = state_in%nstep + 1
+        state_in%time = state_in%time + dt_in
     end subroutine iceberg_step_boundary_test
 
 end program iceberg_test_boundary

@@ -172,32 +172,32 @@ program iceberg_test_discrete_momentum
 
 contains
 
-    subroutine init_forcing(ocean_prof, atmos)
-        type(ocean_profile), intent(out) :: ocean_prof
-        type(atmos_forcing), intent(out) :: atmos
+    subroutine init_forcing(ocean_prof_out, atmos_out)
+        type(ocean_profile), intent(out) :: ocean_prof_out
+        type(atmos_forcing), intent(out) :: atmos_out
 
         integer :: nlevels, k
         nlevels = 5
-        ocean_prof%nlevels = nlevels
-        allocate (ocean_prof%z(nlevels), ocean_prof%dz(nlevels), &
-                  ocean_prof%temp(nlevels), ocean_prof%salt(nlevels), &
-                  ocean_prof%u(nlevels), ocean_prof%v(nlevels))
+        ocean_prof_out%nlevels = nlevels
+        allocate (ocean_prof_out%z(nlevels), ocean_prof_out%dz(nlevels), &
+                  ocean_prof_out%temp(nlevels), ocean_prof_out%salt(nlevels), &
+                  ocean_prof_out%u(nlevels), ocean_prof_out%v(nlevels))
         do k = 1, nlevels
-            ocean_prof%z(k) = real(k)*20.0
-            ocean_prof%dz(k) = 20.0
-            ocean_prof%temp(k) = -1.0
-            ocean_prof%salt(k) = 0.034
-            ocean_prof%u(k) = 0.1*sin(real(k)/10.0)
-            ocean_prof%v(k) = 0.05*cos(real(k)/10.0)
+            ocean_prof_out%z(k) = real(k)*20.0
+            ocean_prof_out%dz(k) = 20.0
+            ocean_prof_out%temp(k) = -1.0
+            ocean_prof_out%salt(k) = 0.034
+            ocean_prof_out%u(k) = 0.1*sin(real(k)/10.0)
+            ocean_prof_out%v(k) = 0.05*cos(real(k)/10.0)
         end do
 
-        atmos%u10 = 10.0
-        atmos%v10 = 2.0
-        atmos%t2m = 253.15
-        atmos%d2m = 253.15
-        atmos%tcc = 0.5
-        atmos%msl = 101325.0
-        atmos%snowfall = 0.0
+        atmos_out%u10 = 10.0
+        atmos_out%v10 = 2.0
+        atmos_out%t2m = 253.15
+        atmos_out%d2m = 253.15
+        atmos_out%tcc = 0.5
+        atmos_out%msl = 101325.0
+        atmos_out%snowfall = 0.0
     end subroutine init_forcing
 
 end program iceberg_test_discrete_momentum

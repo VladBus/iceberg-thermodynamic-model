@@ -144,92 +144,92 @@ contains
     ! --------------------------------------------------------------------------
     ! Синтетический океанский профиль — пространственно меняющийся (по x,y)
     ! --------------------------------------------------------------------------
-    subroutine get_synthetic_ocean_profile(x_model, y_model, prof, ok)
-        real, intent(in) :: x_model, y_model
-        type(ocean_profile), intent(out) :: prof
-        logical, intent(out) :: ok
+    subroutine get_synthetic_ocean_profile(x_model_in, y_model_in, prof_out, ok_out)
+        real, intent(in) :: x_model_in, y_model_in
+        type(ocean_profile), intent(out) :: prof_out
+        logical, intent(out) :: ok_out
 
         real :: x_nd, y_nd
         integer :: k, nlevels
 
-        ok = .true.
+        ok_out = .true.
         nlevels = 5
-        prof%nlevels = nlevels
-        allocate (prof%z(nlevels), prof%dz(nlevels), prof%temp(nlevels), &
-                  prof%salt(nlevels), prof%u(nlevels), prof%v(nlevels))
+        prof_out%nlevels = nlevels
+        allocate (prof_out%z(nlevels), prof_out%dz(nlevels), prof_out%temp(nlevels), &
+                  prof_out%salt(nlevels), prof_out%u(nlevels), prof_out%v(nlevels))
 
         ! Нормализованные координаты для вариации
-        x_nd = x_model/1000000.0
-        y_nd = y_model/1000000.0
+        x_nd = x_model_in/1000000.0
+        y_nd = y_model_in/1000000.0
 
         do k = 1, nlevels
-            prof%z(k) = real(k)*10.0  ! 10, 20, 30, 40, 50 m
-            prof%dz(k) = 10.0
+            prof_out%z(k) = real(k)*10.0  ! 10, 20, 30, 40, 50 m
+            prof_out%dz(k) = 10.0
 
             ! Температура: меняется с x и глубиной
-            prof%temp(k) = 2.0 + 0.5*sin(x_nd) - 0.02*prof%z(k)
+            prof_out%temp(k) = 2.0 + 0.5*sin(x_nd) - 0.02*prof_out%z(k)
 
             ! Соленость: меняется с y
-            prof%salt(k) = 0.0345 + 0.0005*cos(y_nd)
+            prof_out%salt(k) = 0.0345 + 0.0005*cos(y_nd)
 
             ! Течения: меняются с x,y
-            prof%u(k) = 0.1*sin(x_nd)*(1.0 - prof%z(k)/100.0)
-            prof%v(k) = 0.1*cos(y_nd)*(1.0 - prof%z(k)/100.0)
+            prof_out%u(k) = 0.1*sin(x_nd)*(1.0 - prof_out%z(k)/100.0)
+            prof_out%v(k) = 0.1*cos(y_nd)*(1.0 - prof_out%z(k)/100.0)
         end do
     end subroutine get_synthetic_ocean_profile
 
     ! --------------------------------------------------------------------------
     ! Синтетический атмосферный форсинг — пространственно меняющийся (по x,y)
     ! --------------------------------------------------------------------------
-    subroutine get_synthetic_atmos_forcing(x_model, y_model, model_time_sec, atmos, ok)
-        real, intent(in) :: x_model, y_model, model_time_sec
-        type(atmos_forcing), intent(out) :: atmos
-        logical, intent(out) :: ok
+    subroutine get_synthetic_atmos_forcing(x_model_in, y_model_in, model_time_sec_in, atmos_out, ok_out)
+        real, intent(in) :: x_model_in, y_model_in, model_time_sec_in
+        type(atmos_forcing), intent(out) :: atmos_out
+        logical, intent(out) :: ok_out
 
         real :: x_nd, y_nd
 
-        ok = .true.
-        x_nd = x_model/1000000.0
-        y_nd = y_model/1000000.0
+        ok_out = .true.
+        x_nd = x_model_in/1000000.0
+        y_nd = y_model_in/1000000.0
 
         ! Ветер: меняется с x,y
-        atmos%u10 = 10.0*sin(x_nd) + 2.0*cos(y_nd)
-        atmos%v10 = 5.0*cos(y_nd) - 3.0*sin(x_nd)
+        atmos_out%u10 = 10.0*sin(x_nd) + 2.0*cos(y_nd)
+        atmos_out%v10 = 5.0*cos(y_nd) - 3.0*sin(x_nd)
 
         ! Температура: меняется с x
-        atmos%t2m = 260.0 - 5.0*sin(x_nd)
-        atmos%d2m = atmos%t2m - 2.0
-        atmos%tcc = 0.5 + 0.2*sin(x_nd)
-        atmos%msl = 101325.0 + 500.0*cos(y_nd)
-        atmos%snowfall = 0.0
+        atmos_out%t2m = 260.0 - 5.0*sin(x_nd)
+        atmos_out%d2m = atmos_out%t2m - 2.0
+        atmos_out%tcc = 0.5 + 0.2*sin(x_nd)
+        atmos_out%msl = 101325.0 + 500.0*cos(y_nd)
+        atmos_out%snowfall = 0.0
     end subroutine get_synthetic_atmos_forcing
 
     ! --------------------------------------------------------------------------
     ! Синтетическая батиметрия — пространственно меняющаяся (по x,y)
     ! --------------------------------------------------------------------------
-    subroutine get_synthetic_bathymetry(x_model, y_model, bathymetry, ok)
-        real, intent(in) :: x_model, y_model
-        real, intent(out) :: bathymetry
-        logical, intent(out) :: ok
+    subroutine get_synthetic_bathymetry(x_model_in, y_model_in, bathymetry_out, ok_out)
+        real, intent(in) :: x_model_in, y_model_in
+        real, intent(out) :: bathymetry_out
+        logical, intent(out) :: ok_out
 
         real :: y_nd
 
-        ok = .true.
-        y_nd = y_model/1000000.0
+        ok_out = .true.
+        y_nd = y_model_in/1000000.0
 
-        bathymetry = 500.0 + 100.0*cos(y_nd)
+        bathymetry_out = 500.0 + 100.0*cos(y_nd)
     end subroutine get_synthetic_bathymetry
 
     ! --------------------------------------------------------------------------
     ! Упрощенный шаг интегрирования для синтетического теста
     ! --------------------------------------------------------------------------
-    subroutine iceberg_step_synthetic(state, dt, ocean_prof, atmos, bathymetry, diag)
-        type(iceberg_state), intent(inout) :: state
-        real, intent(in) :: dt
-        type(ocean_profile), intent(in) :: ocean_prof
-        type(atmos_forcing), intent(in) :: atmos
-        real, intent(in) :: bathymetry
-        type(iceberg_diagnostics), intent(out) :: diag
+    subroutine iceberg_step_synthetic(state_in, dt_in, ocean_prof_in, atmos_in, bathymetry_in, diag_out)
+        type(iceberg_state), intent(inout) :: state_in
+        real, intent(in) :: dt_in
+        type(ocean_profile), intent(in) :: ocean_prof_in
+        type(atmos_forcing), intent(in) :: atmos_in
+        real, intent(in) :: bathymetry_in
+        type(iceberg_diagnostics), intent(out) :: diag_out
 
         real :: mass, f_coriolis
         real :: f_wind_x, f_wind_y, f_water_x, f_water_y
@@ -240,54 +240,54 @@ contains
         integer :: k
 
         ! Геометрия
-        mass = 910.0*state%L*state%W*state%H
-        draft = state%H*910.0/1028.0
-        freeboard = state%H - draft
-        a_sail = state%L*state%W + 2.0*(state%L + state%W)*freeboard
-        a_wet = state%L*state%W + 2.0*(state%L + state%W)*draft
+        mass = 910.0*state_in%L*state_in%W*state_in%H
+        draft = state_in%H*910.0/1028.0
+        freeboard = state_in%H - draft
+        a_sail = state_in%L*state_in%W + 2.0*(state_in%L + state_in%W)*freeboard
+        a_wet = state_in%L*state_in%W + 2.0*(state_in%L + state_in%W)*draft
 
         ! Ветровая сила
-        u_rel = atmos%u10 - state%u
-        v_rel = atmos%v10 - state%v
+        u_rel = atmos_in%u10 - state_in%u
+        v_rel = atmos_in%v10 - state_in%v
         speed_rel = sqrt(u_rel**2 + v_rel**2)
         f_wind_x = 0.5*1.225*1.3e-3*a_sail*speed_rel*u_rel
         f_wind_y = 0.5*1.225*1.3e-3*a_sail*speed_rel*v_rel
 
         ! Водная сила (упрощенно: глубинно-усредненная)
         u_avg = 0.0; v_avg = 0.0
-        do k = 1, ocean_prof%nlevels
-            u_avg = u_avg + ocean_prof%u(k)*ocean_prof%dz(k)
-            v_avg = v_avg + ocean_prof%v(k)*ocean_prof%dz(k)
+        do k = 1, ocean_prof_in%nlevels
+            u_avg = u_avg + ocean_prof_in%u(k)*ocean_prof_in%dz(k)
+            v_avg = v_avg + ocean_prof_in%v(k)*ocean_prof_in%dz(k)
         end do
-        u_avg = u_avg/sum(ocean_prof%dz)
-        v_avg = v_avg/sum(ocean_prof%dz)
+        u_avg = u_avg/sum(ocean_prof_in%dz)
+        v_avg = v_avg/sum(ocean_prof_in%dz)
 
         f_water_x = 0.5*1028.0*2.0e-3*a_wet* &
-                    sqrt((u_avg - state%u)**2 + (v_avg - state%v)**2)*(u_avg - state%u)
+                    sqrt((u_avg - state_in%u)**2 + (v_avg - state_in%v)**2)*(u_avg - state_in%u)
         f_water_y = 0.5*1028.0*2.0e-3*a_wet* &
-                    sqrt((u_avg - state%u)**2 + (v_avg - state%v)**2)*(v_avg - state%v)
+                    sqrt((u_avg - state_in%u)**2 + (v_avg - state_in%v)**2)*(v_avg - state_in%v)
 
         ! Кориолис
-        f_coriolis = 2.0*7.2921150e-5*sin(state%latitude/57.2957795)
+        f_coriolis = 2.0*7.2921150e-5*sin(state_in%latitude/57.2957795)
 
         ! Полунеявная схема
         fx_noncor = f_wind_x + f_water_x
         fy_noncor = f_wind_y + f_water_y
-        u_old = state%u
-        v_old = state%v
-        A_mat = 1.0 + (dt*f_coriolis)**2
-        state%u = (u_old + dt*fx_noncor/mass + dt*f_coriolis*v_old)/A_mat
-        state%v = (v_old + dt*fy_noncor/mass - dt*f_coriolis*u_old)/A_mat
+        u_old = state_in%u
+        v_old = state_in%v
+        A_mat = 1.0 + (dt_in*f_coriolis)**2
+        state_in%u = (u_old + dt_in*fx_noncor/mass + dt_in*f_coriolis*v_old)/A_mat
+        state_in%v = (v_old + dt_in*fy_noncor/mass - dt_in*f_coriolis*u_old)/A_mat
 
         ! Обновление позиции
-        state%x = state%x + dt*state%u
-        state%y = state%y + dt*state%v
+        state_in%x = state_in%x + dt_in*state_in%u
+        state_in%y = state_in%y + dt_in*state_in%v
 
         ! НЕ обновляем lat/lon (fi/dl = 0 в этом тесте)
-        diag%forcing_valid = .true.
+        diag_out%forcing_valid = .true.
 
-        state%nstep = state%nstep + 1
-        state%time = state%time + dt
+        state_in%nstep = state_in%nstep + 1
+        state_in%time = state_in%time + dt_in
     end subroutine iceberg_step_synthetic
 
 end program iceberg_test_moving_forcing

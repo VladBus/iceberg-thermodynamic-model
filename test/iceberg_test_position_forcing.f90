@@ -297,54 +297,54 @@ contains
     ! --------------------------------------------------------------------------
     ! Synthetic ocean profile — spatially varying
     ! --------------------------------------------------------------------------
-    subroutine get_synthetic_ocean_profile(x_model, y_model, prof, ok)
-        real, intent(in) :: x_model, y_model
-        type(ocean_profile), intent(out) :: prof
-        logical, intent(out) :: ok
+    subroutine get_synthetic_ocean_profile(x_model_in, y_model_in, prof_out, ok_out)
+        real, intent(in) :: x_model_in, y_model_in
+        type(ocean_profile), intent(out) :: prof_out
+        logical, intent(out) :: ok_out
 
         real :: x_nd, y_nd
         integer :: k, nlevels
 
-        ok = .true.
+        ok_out = .true.
         nlevels = 5
-        prof%nlevels = nlevels
-        allocate (prof%z(nlevels), prof%dz(nlevels), prof%temp(nlevels), &
-                  prof%salt(nlevels), prof%u(nlevels), prof%v(nlevels))
+        prof_out%nlevels = nlevels
+        allocate (prof_out%z(nlevels), prof_out%dz(nlevels), prof_out%temp(nlevels), &
+                  prof_out%salt(nlevels), prof_out%u(nlevels), prof_out%v(nlevels))
 
-        x_nd = x_model/1000000.0
-        y_nd = y_model/1000000.0
+        x_nd = x_model_in/1000000.0
+        y_nd = y_model_in/1000000.0
 
         do k = 1, nlevels
-            prof%z(k) = real(k)*10.0
-            prof%dz(k) = 10.0
-            prof%temp(k) = 2.0 + 0.5*sin(x_nd) - 0.02*prof%z(k)
-            prof%salt(k) = 0.0345 + 0.0005*cos(y_nd)
-            prof%u(k) = 0.1*sin(x_nd)*(1.0 - prof%z(k)/100.0)
-            prof%v(k) = 0.1*cos(y_nd)*(1.0 - prof%z(k)/100.0)
+            prof_out%z(k) = real(k)*10.0
+            prof_out%dz(k) = 10.0
+            prof_out%temp(k) = 2.0 + 0.5*sin(x_nd) - 0.02*prof_out%z(k)
+            prof_out%salt(k) = 0.0345 + 0.0005*cos(y_nd)
+            prof_out%u(k) = 0.1*sin(x_nd)*(1.0 - prof_out%z(k)/100.0)
+            prof_out%v(k) = 0.1*cos(y_nd)*(1.0 - prof_out%z(k)/100.0)
         end do
     end subroutine get_synthetic_ocean_profile
 
     ! --------------------------------------------------------------------------
     ! Synthetic atmos forcing — spatially varying
     ! --------------------------------------------------------------------------
-    subroutine get_synthetic_atmos_forcing(x_model, y_model, model_time_sec, atmos, ok)
-        real, intent(in) :: x_model, y_model, model_time_sec
-        type(atmos_forcing), intent(out) :: atmos
-        logical, intent(out) :: ok
+    subroutine get_synthetic_atmos_forcing(x_model_in, y_model_in, model_time_sec_in, atmos_out, ok_out)
+        real, intent(in) :: x_model_in, y_model_in, model_time_sec_in
+        type(atmos_forcing), intent(out) :: atmos_out
+        logical, intent(out) :: ok_out
 
         real :: x_nd, y_nd
 
-        ok = .true.
-        x_nd = x_model/1000000.0
-        y_nd = y_model/1000000.0
+        ok_out = .true.
+        x_nd = x_model_in/1000000.0
+        y_nd = y_model_in/1000000.0
 
-        atmos%u10 = 10.0*sin(x_nd) + 2.0*cos(y_nd)
-        atmos%v10 = 5.0*cos(y_nd) - 3.0*sin(x_nd)
-        atmos%t2m = 260.0 - 5.0*sin(x_nd)
-        atmos%d2m = atmos%t2m - 2.0
-        atmos%tcc = 0.5 + 0.2*sin(x_nd)
-        atmos%msl = 101325.0 + 500.0*cos(y_nd)
-        atmos%snowfall = 0.0
+        atmos_out%u10 = 10.0*sin(x_nd) + 2.0*cos(y_nd)
+        atmos_out%v10 = 5.0*cos(y_nd) - 3.0*sin(x_nd)
+        atmos_out%t2m = 260.0 - 5.0*sin(x_nd)
+        atmos_out%d2m = atmos_out%t2m - 2.0
+        atmos_out%tcc = 0.5 + 0.2*sin(x_nd)
+        atmos_out%msl = 101325.0 + 500.0*cos(y_nd)
+        atmos_out%snowfall = 0.0
     end subroutine get_synthetic_atmos_forcing
 
 end program iceberg_test_position_forcing

@@ -439,31 +439,31 @@ contains
         character(len=*), intent(in) :: case_str_in
         real, intent(in) :: fx_a_in, fy_a_in, fx_b_in, fy_b_in, speed_a_in, speed_b_in
         integer, intent(in) :: unit_in
-        real :: ratio, ratio_x, ratio_y
+        real :: ratio_local, ratio_x_local, ratio_y_local
 
         if (abs(fx_a_in) .gt. 1e-12) then
-            ratio_x = fx_b_in/fx_a_in
+            ratio_x_local = fx_b_in/fx_a_in
         else
-            ratio_x = 0.0
+            ratio_x_local = 0.0
         end if
         if (abs(fy_a_in) .gt. 1e-12) then
-            ratio_y = fy_b_in/fy_a_in
+            ratio_y_local = fy_b_in/fy_a_in
         else
-            ratio_y = 0.0
+            ratio_y_local = 0.0
         end if
         if (speed_a_in .gt. 1e-12) then
-            ratio = speed_b_in/speed_a_in
+            ratio_local = speed_b_in/speed_a_in
         else
-            ratio = 0.0
+            ratio_local = 0.0
         end if
 
-        print *, "  Method A: Fx=", fx_a_in, " Fy=", fy_a_in, " speed=", speed_a_in
+print *, "  Method A: Fx=", fx_a_in, " Fy=", fy_a_in, " speed=", speed_a_in
         print *, "  Method B: Fx=", fx_b_in, " Fy=", fy_b_in, " speed=", speed_b_in
-        print *, "  Ratio B/A: speed=", ratio, " Fx=", ratio_x, " Fy=", ratio_y
+        print *, "  Ratio B/A: speed=", ratio_local, " Fx=", ratio_x_local, " Fy=", ratio_y_local
 
         if (unit_in .gt. 0) then
             write (unit_in, '(A,F12.3,F12.3,F12.3,F12.3,F12.3,F12.3,F12.3,F12.3,F12.3)') &
-    case_str_in, fx_a_in, fy_a_in, fx_b_in, fy_b_in, speed_a_in, speed_b_in, ratio, ratio_x, ratio_y
+                case_str_in, fx_a_in, fy_a_in, fx_b_in, fy_b_in, speed_a_in, speed_b_in, ratio_local, ratio_x_local, ratio_y_local
         end if
     end subroutine print_result
 

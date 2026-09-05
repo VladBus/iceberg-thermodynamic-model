@@ -133,16 +133,16 @@ program iceberg_test_wind_drift_sensitivity
 
 contains
 
-subroutine run_case(unit_in, cd_air_in, cd_water_in, cor_on_in, &
-                         latitude_in, f_coriolis_in, wind_speed_in, dt_in, nsteps_in, &
-                         terminal_u_out, terminal_v_out, terminal_speed_out, drift_ratio_out, mass_out, &
-                         fx_wind_out, fx_water_out, fx_cor_out)
+    subroutine run_case(unit_in, cd_air_in, cd_water_in, cor_on_in, &
+                        latitude_in, f_coriolis_in, wind_speed_in, dt_in, nsteps_in, &
+                    terminal_u_out, terminal_v_out, terminal_speed_out, drift_ratio_out, mass_out, &
+                        fx_wind_out, fx_water_out, fx_cor_out)
         integer, intent(in) :: unit_in
         real, intent(in) :: cd_air_in, cd_water_in
         logical, intent(in) :: cor_on_in
         real, intent(in) :: latitude_in, f_coriolis_in, wind_speed_in, dt_in
         integer, intent(in) :: nsteps_in
-        real, intent(out) :: terminal_u_out, terminal_v_out, terminal_speed_out, drift_ratio_out, mass_out
+  real, intent(out) :: terminal_u_out, terminal_v_out, terminal_speed_out, drift_ratio_out, mass_out
         real, intent(out) :: fx_wind_out, fx_water_out, fx_cor_out
 
         type(iceberg_state) :: state_local
@@ -184,7 +184,7 @@ subroutine run_case(unit_in, cd_air_in, cd_water_in, cor_on_in, &
         fx_cor_out = diag_local%f_cor_x
     end subroutine run_case
 
-subroutine init_zero_forcing(ocean_prof_out, atmos_out)
+    subroutine init_zero_forcing(ocean_prof_out, atmos_out)
         type(ocean_profile), intent(out) :: ocean_prof_out
         type(atmos_forcing), intent(out) :: atmos_out
 
@@ -212,8 +212,8 @@ subroutine init_zero_forcing(ocean_prof_out, atmos_out)
 
     ! Упрощенная версия iceberg_dynamics_step с кастомными CD
     subroutine iceberg_dynamics_step_custom(state_in, dt_in, ocean_prof_in, atmos_in, &
-                                             f_coriolis_in, grad_eta_x_in, grad_eta_y_in, &
-                                             fk_x_in, fk_y_in, diag_inout, cd_air_in, cd_water_in)
+                                            f_coriolis_in, grad_eta_x_in, grad_eta_y_in, &
+                                            fk_x_in, fk_y_in, diag_inout, cd_air_in, cd_water_in)
         type(iceberg_state), intent(inout) :: state_in
         real, intent(in) :: dt_in
         type(ocean_profile), intent(in) :: ocean_prof_in
@@ -223,7 +223,7 @@ subroutine init_zero_forcing(ocean_prof_out, atmos_out)
         type(iceberg_diagnostics), intent(inout) :: diag_inout
         real, intent(in) :: cd_air_in, cd_water_in
 
-        real :: mass
+        real :: mass_local
         real :: f_wind_x, f_wind_y
         real :: f_water_x, f_water_y
         real :: f_cor_x, f_cor_y
@@ -236,8 +236,8 @@ subroutine init_zero_forcing(ocean_prof_out, atmos_out)
         real :: u_avg, v_avg
         integer :: k_local
 
-        mass = 910.0*state_in%L*state_in%W*state_in%H
-        diag_inout%mass = mass
+        mass_local = 910.0*state_in%L*state_in%W*state_in%H
+        diag_inout%mass = mass_local
 
         ! Wind force with custom CD_AIR
         draft = state_in%H*910.0/1028.0
@@ -274,8 +274,8 @@ subroutine init_zero_forcing(ocean_prof_out, atmos_out)
         diag_inout%f_water_y = f_water_y
 
         ! Coriolis force
-        f_cor_x = mass*f_coriolis_in*state_in%v
-        f_cor_y = -mass*f_coriolis_in*state_in%u
+        f_cor_x = mass_local*f_coriolis_in*state_in%v
+        f_cor_y = -mass_local*f_coriolis_in*state_in%u
         diag_inout%f_cor_x = f_cor_x
         diag_inout%f_cor_y = f_cor_y
 
@@ -295,8 +295,8 @@ subroutine init_zero_forcing(ocean_prof_out, atmos_out)
 
         A_mat = 1.0 + (dt_in*f_coriolis_in)**2
 
-        state_in%u = (u_old + dt_in*fx_noncor/mass + dt_in*f_coriolis_in*v_old)/A_mat
-        state_in%v = (v_old + dt_in*fy_noncor/mass - dt_in*f_coriolis_in*u_old)/A_mat
+        state_in%u = (u_old + dt_in*fx_noncor/mass_local + dt_in*f_coriolis_in*v_old)/A_mat
+        state_in%v = (v_old + dt_in*fy_noncor/mass_local - dt_in*f_coriolis_in*u_old)/A_mat
     end subroutine iceberg_dynamics_step_custom
 
 end program iceberg_test_wind_drift_sensitivity

@@ -1,8 +1,9 @@
 # Model Equation Ledger — Математическая спецификация текущей модели
 
-**Дата:** 2026-09-05  
-**Commit:** cef2a5a "Stage 9.4C.2 — Surface Energy Balance & Latent Heat Correction"  
-**Версия модели:** Stage 9.4C.2 Baseline
+**Дата:** 2026-09-06  
+**Physics baseline commit:** cef2a5a "Stage 9.4C.2 — Surface Energy Balance & Latent Heat Correction"  
+**Current repository baseline:** 294762e (Stage 9.4C.3-R1, documentation/cleanup)  
+**Версия модели:** Stage 9.4C.3-R1 (documentation correction only; production physics unchanged from Stage 9.4C.2)
 
 ---
 
@@ -115,10 +116,10 @@ y^(n+1) = y^n + v^n · Δt
 
 ### 2.5 Константы
 
-| Константа | Значение | Единицы | Назначение         |
-| --------- | -------- | ------- | ------------------ |
-| DX        | 5000.0   | m       | Размер ячейки по X |
-| DY        | 5000.0   | m       | Размер ячейки по Y |
+| Константа | Значение  | Единицы | Назначение         |
+| --------- | --------- | ------- | ------------------ |
+| DX        | 13890.0   | m       | Размер ячейки по X |
+| DY        | 13890.0   | m       | Размер ячейки по Y |
 
 ### 2.6 Численная схема
 
@@ -150,8 +151,8 @@ Subroutines: iceberg_step, model_coords_to_indices
 
 ### 2.11 Ограничения
 
-- lat/lon не обновляются из x,y в time stepping (known limitation)
-- Forcing оценивается в начальной позиции (TEST_11)
+- Преобразование модельных координат в географические координаты через билинейную интерполяцию географической сетки модели (массивы FI/DL из KOORD.DAT)
+- lat/lon не обновляются из x,y в time stepping (known limitation) — используются для диагностики, forcing интерполируется по текущим x,y
 
 ---
 
@@ -527,7 +528,7 @@ m_surface = max(0, Q_net) / (ρ_ice · L_f)
 
 | Константа       | Значение  | Единицы   | Назначение                              |
 | --------------- | --------- | --------- | --------------------------------------- |
-| SOLAR_CONSTANT  | 1361.0    | W/m²      | Солнечная константа                     |
+| SOLAR_CONSTANT  | 1353.0    | W/m²      | Солнечная константа                     |
 | ALBEDO_ICE      | 0.6       | -         | Альбедо льда                            |
 | EMISSIVITY      | 0.97      | -         | Эмиссивность льда                       |
 | STEFAN_BOLTZ    | 5.67e-8   | W/(m²·K⁴) | Константа Стефана-Больцмана             |
@@ -723,7 +724,7 @@ Timestep loop (Δt = 3600 s):
 
 | Block              | Legacy Formula   | Modern Target                          |
 | ------------------ | ---------------- | -------------------------------------- |
-| Solar geometry     | decl=0, hour=0   | Astronomical δ, H, daily integration   |
+| Solar geometry     | decl=0, hour=0   | Astronomical δ, H; daily integration for diagnostics |
 | LH coefficient     | 0.6650735        | C_E (neutral/stability-dependent)      |
 | Surface temp       | Fixed -10°C      | Prognostic T_surface                   |
 | q_sat              | Water saturation | Ice saturation (Murphy-Koop)           |

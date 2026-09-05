@@ -1,8 +1,9 @@
 # Статус физических блоков модели (Model Physics Status)
 
-**Дата:** 2026-09-05  
-**Commit:** cef2a5a "Stage 9.4C.2 — Surface Energy Balance & Latent Heat Correction"  
-**FPM версия:** 0.13.0-alpha  
+**Дата:** 2026-09-06  
+**Physics baseline commit:** cef2a5a "Stage 9.4C.2 — Surface Energy Balance & Latent Heat Correction"  
+**Current repository baseline:** 294762e (Stage 9.4C.3-R1, documentation/cleanup)  
+**FPM версия:** 0.13.0 (local & CI aligned)  
 **Test targets:** 41  
 **Tests PASS:** 41 / 41
 
@@ -89,9 +90,9 @@ cos_zenith = cos(latitude)
 Q_SH = rho_air * SH_COEFF * U * (T_air - T_surf)
 ```
 
-где `SH_COEFF` — legacy коэффициент.
+где `SH_COEFF = 1.7068` (legacy Stanton number, dimensionless).
 
-**Проблема:** Коэффициент не имеет современной интерпретации.
+**Проблема:** Коэффициент не имеет современной интерпретации как bulk transfer coefficient.
 
 **Решение:** Stage 10.3 — bulk formulation с C_H.
 
@@ -197,12 +198,12 @@ m_surface = max(Q_net, 0) / (rho_ice * L_f)
 
 ## FPM/CI Reproducibility
 
-| Environment | FPM Version  | Test Discovery           |
-| ----------- | ------------ | ------------------------ |
-| Local       | 0.13.0-alpha | Auto (41 targets)        |
-| CI (GitHub) | 0.12.0       | Требует explicit listing |
+| Environment | FPM Version | Test Discovery           |
+| ----------- | ----------- | ------------------------ |
+| Local       | 0.13.0      | Auto (41 targets)        |
+| CI (GitHub) | 0.13.0      | Auto (41 targets)        |
 
-**Action required:** Обновить CI на FPM 0.13.0+ или добавить explicit test list в fpm.toml.
+**Status:** ✅ Aligned — CI updated to FPM 0.13.0.
 
 ---
 
@@ -219,13 +220,14 @@ m_surface = max(Q_net, 0) / (rho_ice * L_f)
 
 | Requirement              | Status                     |
 | ------------------------ | -------------------------- |
-| Baseline frozen          | ✅ cef2a5a                 |
-| Equation Ledger          | 🔄 Creating (this stage)   |
-| Physics Status           | 🔄 Creating (this file)    |
-| Modernization Plan       | 🔄 Creating (this stage)   |
-| CI/FPM aligned           | ❌ Pending                 |
+| Physics baseline frozen  | ✅ cef2a5a                 |
+| Current repo baseline    | ✅ 294762e                 |
+| Equation Ledger          | ✅ Complete (Stage 9.4C.3) |
+| Physics Status           | ✅ Complete (this file)    |
+| Modernization Plan       | ✅ Complete (Stage 9.4C.3) |
+| CI/FPM aligned           | ✅ 0.13.0 both             |
 | Independent tests        | ✅ 4 new tests PASS        |
 | TEST_11 baseline         | ✅ Documented              |
 | Legacy blocks identified | ✅ All B-blocks catalogued |
 
-**Stage 10 readiness:** READY после завершения документации и CI alignment.
+**Stage 10 readiness:** READY after documentation corrections (this R1).

@@ -1,8 +1,9 @@
 # Stage 10 — План физической модернизации модели айсберга
 
-**Дата:** 2026-09-05  
-**Baseline commit:** cef2a5a "Stage 9.4C.2 — Surface Energy Balance & Latent Heat Correction"  
-**Статус:** Готов к выполнению после завершения Stage 9.4C.3
+**Дата:** 2026-09-06  
+**Physics baseline commit:** cef2a5a "Stage 9.4C.2 — Surface Energy Balance & Latent Heat Correction"  
+**Current repository baseline:** 294762e (Stage 9.4C.3-R1, documentation/cleanup)  
+**Статус:** Готов к выполнению после завершения Stage 9.4C.3-R1
 
 ---
 
@@ -17,7 +18,7 @@
 
 ---
 
-## 10.1 — SOLAR RADIATION (Солнечная радиация)
+## 10.1.1 — SOLAR GEOMETRY (Астрономическая солнечная геометрия)
 
 ### Цель
 
@@ -34,7 +35,7 @@ cos_zenith = cos(latitude)
 ### Legacy блок
 
 - `src/iceberg_thermodynamics.f90`: `compute_surface_melt` → солнечная геометрия
-- Константы: `SOLAR_CONSTANT = 1361.0`
+- Константы: `SOLAR_CONSTANT = 1353.0`
 
 ### Направление модернизации
 
@@ -66,9 +67,10 @@ cos_zenith = cos(latitude)
    if cos(θ_z) <= 0: SW↓ = 0
    ```
 
-5. **Daily integration** для production forcing:
-   - Интегрировать cos(θ_z) по времени за сутки
-   - Учесть polar day / polar night корректно
+5. **Instantaneous/timestep-averaged SW flux** для production forcing:
+   - Вычислять cos(θ_z) на каждом timestep с текущими UTC и координатами
+   - Polar day / polar night: cos(θ_z) ≤ 0 → SW↓ = 0
+   - Daily integration — только для диагностики/валидации (суточный энергетический баланс)
 
 ### Необходимые данные
 
@@ -88,8 +90,34 @@ cos_zenith = cos(latitude)
 ### Ограничения
 
 - Не использовать ERA5 radiation fields (SSRD/STRD) пока не будет отдельного решения
-- Shortwave 계산 через солнечную константу + атмосферная прозрачность
-- `f_atm` (атмосферная прозрачность) — legacy эмпирика, оставить как есть в 10.1
+- Shortwave расчёт через солнечную константу + атмосферная прозрачность
+- `f_atm` (атмосферная прозрачность) — legacy эмпирика, оставить как есть в 10.1.1
+- **Atmospheric attenuation / cloud parameterization** — отдельный вопрос (10.1.2), не менять в 10.1.1
+
+---
+
+## 10.1.2 — ATMOSPHERIC ATTENUATION / CLOUD PARAMETERIZATION (Атмосферное ослабление / облачность)
+
+### Цель
+
+Обеспечить физически обоснованную параметризацию атмосферной прозрачности для коротковолнового излучения.
+
+### Legacy блок
+
+- `src/iceberg_thermodynamics.f90`: `compute_surface_melt` → атмосферная прозрачность
+- Константы: `CLOUD_COEFF = 0.6`, `rad_b1`, `rad_b2`, `e_vap` formulation
+
+### Направление модернизации
+
+1. **Atmospheric transmissivity** — заменить эмпирическую формулу на документально обоснованную параметризацию (например, Bird & Riordan 1986, или простая линейная зависимость от tcc с документированным коэффициентом)
+2. **Cloud optical depth** — связать tcc с коэффициентом пропускания SW
+3. **Water vapor absorption** — физическая зависимость от e_vap, а не эмпирическая
+
+### Ограничения
+
+- Не использовать ERA5 radiation fields (SSRD/STRD) пока не будет отдельного решения
+- Краткосрочно: оставить legacy эмпирику с пометкой "legacy", документировать коэффициенты
+- Долгосрочно: отдельный этап после валидации солнечной геометрии
 
 ---
 
@@ -172,6 +200,7 @@ real :: T_surface  ! Прогностическая температура по�
 ### Legacy блок
 
 - `src/iceberg_thermodynamics.f90`: `compute_surface_melt`
+- Legacy значения: `SH_COEFF = 1.7068`, `LH_COEFF = 0.6650735`
 
 ### Направление модернизации
 
@@ -204,6 +233,8 @@ C_H = C_E = κ² / [ln(z/z_0)]²
 ```
 C_H = C_E = 1.5e-3  (документированный neutral bulk coefficient)
 ```
+
+*Примечание: текущее legacy SH_COEFF = 1.7068 — это Stanton number (dimensionless), не bulk C_H. При ρ_air≈1.2, c_p≈1004: C_H = SH_COEFF/(ρ_air·c_p_air) ≈ 1.4e-3.*
 
 **Stability correction (опционально, если данных достаточно):**
 
@@ -462,17 +493,18 @@ Q_lateral = ρ_water · c_pw · γ_T · U_rel · ⟨T_water - T_freeze⟩_D · A
 ## Dependencies Between Stages
 
 ```
-10.1 (Solar) ──────┐
-                   ├──→ 10.2 (T_surface needs Q_SW, Q_LW)
-10.3 (Turbulent) ──┘       │
-                           ├──→ 10.4 (Phase change needs T_surface, Q_SH, Q_LH)
-10.5 (Ocean forcing) ──────┤
-                           ├──→ 10.6 (Basal melt needs ocean T, U_rel)
-10.7 (Lateral melt) ←──────┘
-                           ↓
+10.1.1 (Solar geometry) ──────┐
+                               ├──→ 10.2 (T_surface needs Q_SW, Q_LW)
+10.1.2 (Atmospheric atten.) ──┘       │
+10.3 (Turbulent) ─────────────────────┘       │
+                                              ├──→ 10.4 (Phase change needs T_surface, Q_SH, Q_LH)
+10.5 (Ocean forcing) ────────────────────────┤
+                                              ├──→ 10.6 (Basal melt needs ocean T, U_rel)
+10.7 (Lateral melt) ←────────────────────────┘
+                                              ↓
 10.8 (Integrated coupling) ←── all above
-                           ↓
-10.9 (Validation) ←──────── all above
+                                              ↓
+10.9 (Validation) ←──────────── all above
 ```
 
 ---

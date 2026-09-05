@@ -1,6 +1,6 @@
 # ==============================================================================
 # GitHub Actions CI for AARI Iceberg Thermodynamic & Dynamics Model
-# Runs all Fortran tests via fpm auto-discovery (40 targets: 28 iceberg + 12 canonical, 37 with assertions)
+# Runs all Fortran tests via fpm auto-discovery (41 targets: 28 iceberg + 13 canonical, 37 with assertions)
 # Requires: -I/usr/include for netcdf.mod (system package libnetcdff-dev)
 # ==============================================================================
 
@@ -29,7 +29,7 @@ jobs:
 
       - name: Install fpm (Fortran Package Manager)
         run: |
-          FPM_VERSION="0.12.0"
+          FPM_VERSION="0.13.0"
           curl -fsSL "https://github.com/fortran-lang/fpm/releases/download/v${FPM_VERSION}/fpm-${FPM_VERSION}-linux-x86_64.tar.gz" \
             | tar -xz -C /tmp
           sudo mv /tmp/fpm /usr/local/bin/fpm

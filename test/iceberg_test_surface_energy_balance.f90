@@ -47,7 +47,7 @@ program iceberg_test_surface_energy_balance
                                      sw_abs, lw_down, lw_up, sh_flux, lh_flux, &
                                      q_net_prod, m_surf_prod)
 
-    ! Sum components independently
+    ! Sum components independently (using same variable names as outputs)
     q_net_sum = sw_abs + lw_down + lw_up + sh_flux + lh_flux
 
     print *, "Case 1: Arctic summer (0°C, 50% cloud, 5 m/s)"
@@ -212,12 +212,12 @@ contains
 
     ! Replicate production compute_surface_melt logic to extract components
     subroutine decompose_surface_flux_prod(state_in, atmos_in, diag_inout, &
-                                           sw_abs, lw_down, lw_up, sh_flux, lh_flux, &
+                                           sw_abs_out, lw_down_out, lw_up_out, sh_flux_out, lh_flux_out, &
                                            q_net, m_surf)
         type(iceberg_state), intent(in) :: state_in
         type(atmos_forcing), intent(in) :: atmos_in
         type(iceberg_diagnostics), intent(inout) :: diag_inout
-        real, intent(out) :: sw_abs, lw_down, lw_up, sh_flux, lh_flux
+        real, intent(out) :: sw_abs_out, lw_down_out, lw_up_out, sh_flux_out, lh_flux_out
         real, intent(out) :: q_net, m_surf
 
         real :: t_air_k, t_surf_k, t_dew_k
@@ -247,7 +247,7 @@ contains
         cos_zenith = sin(lat_rad)*sin(dec_rad) + cos(lat_rad)*cos(dec_rad)*cos(hour_angle)
         cos_zenith = max(0.0, cos_zenith)
 
-        sw_abs = SOLAR_CONSTANT*cos_zenith**2*(1.0 - CLOUD_COEFF*atmos_in%tcc**3)
+        sw_abs_out = SOLAR_CONSTANT*cos_zenith**2*(1.0 - CLOUD_COEFF*atmos_in%tcc**3)
 
         rad_b1 = (cos_zenith + 2.7)*1.0e-5
         rad_b2 = 1.085*cos_zenith + 0.1
@@ -257,28 +257,28 @@ contains
         rh = min(1.0, max(0.0, e_sat_dew/e_sat_air))
         e_vap = rh*e_sat_air
 
-        sw_abs = sw_abs/(rad_b1*e_vap + rad_b2)
+        sw_abs_out = sw_abs_out/(rad_b1*e_vap + rad_b2)
 
         albedo = ALBEDO_ICE
-        sw_abs = sw_abs*(1.0 - albedo)
+        sw_abs_out = sw_abs_out*(1.0 - albedo)
 
         ! === LONGWAVE ===
-        lw_down = LW_EMISS*t_air_k**4* &
+        lw_down_out = LW_EMISS*t_air_k**4* &
                   (1.0 + LW_CLOUD_FACTOR*atmos_in%tcc)* &
                   (1.0 - LW_HUMID_COEFF*exp(-LW_HUMID_EXP*(273.15 - t_air_k)**2))
 
-        lw_up = -EMISSIVITY*STEFAN_BOLTZ*t_surf_k**4
+        lw_up_out = -EMISSIVITY*STEFAN_BOLTZ*t_surf_k**4
 
         ! === SENSIBLE HEAT ===
-        sh_flux = rho_air_local*SH_COEFF*wind_speed*(t_air_k - t_surf_k)
+        sh_flux_out = rho_air_local*SH_COEFF*wind_speed*(t_air_k - t_surf_k)
 
         ! === LATENT HEAT ===
         q_air = 0.622*e_vap/p_atm
         q_sat = 0.622*(SAT_VAPOR_0*10.0**(TETENS_A*(t_surf_k - 273.15)/t_surf_k))/p_atm
-        lh_flux = rho_air_local*LH_COEFF*wind_speed*LATENT_VAP*(q_air - q_sat)
+        lh_flux_out = rho_air_local*LH_COEFF*wind_speed*LATENT_VAP*(q_air - q_sat)
 
         ! === NET ===
-        q_net = sw_abs + lw_down + lw_up + sh_flux + lh_flux
+        q_net = sw_abs_out + lw_down_out + lw_up_out + sh_flux_out + lh_flux_out
 
         if (q_net .gt. 0.0) then
             m_surf = q_net/(RHO_ICE*LATENT_HEAT)

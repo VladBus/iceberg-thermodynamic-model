@@ -183,14 +183,14 @@ contains
         real, intent(in) :: dt_in
         type(iceberg_diagnostics), intent(out) :: diag_out
 
-        real :: lat, lon
+        real :: lat_local, lon_local
 
         ! Просто обновляем позицию и проверяем границы (как в iceberg_step)
         state_in%x = state_in%x + dt_in*state_in%u
         state_in%y = state_in%y + dt_in*state_in%v
 
         ! Попытка обновить lat/lon - должна вернуть ok=.false. за границей
-        call model_coords_to_latlon(state_in%x, state_in%y, lat, lon, diag_out%forcing_valid)
+        call model_coords_to_latlon(state_in%x, state_in%y, lat_local, lon_local, diag_out%forcing_valid)
 
         if (.not. diag_out%forcing_valid) then
             state_in%active = .false.

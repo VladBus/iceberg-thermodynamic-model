@@ -336,12 +336,12 @@ contains
         type(atmos_forcing) :: atmos_local
         type(iceberg_diagnostics) :: diag_local
 
-        integer :: step, nsteps
-        real :: model_time, u, v, speed, energy, phi
+        integer :: step_local, nsteps_local
+        real :: model_time_local, u, v, speed, energy, phi
         integer :: dt_int
         character(len=20) :: dt_str
 
-        nsteps = int(5*2.0*3.141592653589793/f_in/dt_in + 0.5)
+        nsteps_local = int(5*2.0*3.141592653589793/f_in/dt_in + 0.5)
 
         call iceberg_init(state_local, 0.0, 0.0, 100.0, 100.0, 100.0, &
                           75.0, 0.0, u0_in, 0.0)
@@ -354,10 +354,10 @@ contains
               status='replace')
         write (99, '(A)') 'dt,step,time_h,u,v,speed,energy,phi_deg'
 
-        do step = 1, nsteps
+        do step_local = 1, nsteps_local
             call iceberg_dynamics_step(state_local, dt_in, ocean_prof_local, atmos_local, &
                                        f_in, 0.0, 0.0, 0.0, 0.0, diag_local)
-            model_time = real(step)*dt_in
+            model_time_local = real(step_local)*dt_in
 
             u = state_local%u
             v = state_local%v
@@ -365,7 +365,7 @@ contains
             energy = 0.5*(u**2 + v**2)
             phi = atan2(v, u)*57.2957795
 
-          write (99, '(F8.1,I6,F10.3,5F12.6)') dt_in, step, model_time/3600.0, u, v, speed, energy, phi
+          write (99, '(F8.1,I6,F10.3,5F12.6)') dt_in, step_local, model_time_local/3600.0, u, v, speed, energy, phi
         end do
 
         close (99)
@@ -378,28 +378,28 @@ contains
     ! --------------------------------------------------------------------------
     ! Запись CSV с результатами сходимости
     ! --------------------------------------------------------------------------
-    subroutine write_convergence_csv(dts, phase_e, amp_e, energy_e, period_e, &
+    subroutine write_convergence_csv(dts_in, phase_e, amp_e, energy_e, period_e, &
                                      p_phase, p_amp, p_energy, p_period, n)
-        real, intent(in) :: dts(n), phase_e(n), amp_e(n), energy_e(n), period_e(n)
+        real, intent(in) :: dts_in(n), phase_e(n), amp_e(n), energy_e(n), period_e(n)
         real, intent(in) :: p_phase(n - 1), p_amp(n - 1), p_energy(n - 1), p_period(n - 1)
         integer, intent(in) :: n
 
-        integer :: unit, ios, i
+        integer :: unit, ios, i_local
 
         open (unit, file='data/output/diagnostics/stage9.4c/coriolis_convergence.csv', &
               status='replace', iostat=ios)
         if (ios .ne. 0) return
 
         write (unit, '(A)') 'dt,phase_drift_deg,amp_error_pct,energy_error_pct,period_error_pct'
-        do i = 1, n
-            write (unit, '(F8.1,4F16.6)') dts(i), phase_e(i), amp_e(i), energy_e(i), period_e(i)
+        do i_local = 1, n
+            write (unit, '(F8.1,4F16.6)') dts_in(i_local), phase_e(i_local), amp_e(i_local), energy_e(i_local), period_e(i_local)
         end do
 
         write (unit, '(A)') ''
         write (unit, '(A)') 'local_order,dt_i,dt_ip1,p_phase,p_amp,p_energy,p_period'
-        do i = 1, n - 1
-            write (unit, '(A,2F8.1,4F10.4)') 'local', dts(i), dts(i + 1), &
-                    p_phase(i), p_amp(i), p_energy(i), p_period(i)
+        do i_local = 1, n - 1
+            write (unit, '(A,2F8.1,4F10.4)') 'local', dts_in(i_local), dts_in(i_local + 1), &
+                    p_phase(i_local), p_amp(i_local), p_energy(i_local), p_period(i_local)
         end do
 
         write (unit, '(A)') ''

@@ -21,6 +21,7 @@
 module iceberg_thermodynamics
     use iceberg_types
     use iceberg_forcing, only: interp_at_draft, depth_averaged_thermal_forcing
+    use param, only: nat
     implicit none
 
     ! ========================================================================
@@ -41,7 +42,118 @@ module iceberg_thermodynamics
     real, parameter :: WATER_ALBEDO = 0.06       ! Альбедо воды
     real, parameter :: WATER_EMISS = 0.97       ! Эмиссивность воды
 
+    ! ========================================================================
+    !   АСТРОНОМИЧЕСКИЕ КОНСТАНТЫ (Stage 10.1.1)
+    ! ========================================================================
+    real, parameter :: DEG2RAD = 0.017453292519943295  ! π/180
+    real, parameter :: RAD2DEG = 57.29577951308232     ! 180/π
+    real, parameter :: SECONDS_PER_DAY = 86400.0
+    real, parameter :: HOURS_PER_DAY = 24.0
+    real, parameter :: DEG_PER_HOUR = 15.0             ! 360°/24h
+
 contains
+
+    ! ========================================================================
+    !   СОЛНЕЧНАЯ ГЕОМЕТРИЯ (Stage 10.1.1)
+    ! ========================================================================
+    ! Вычисляет солнечную геометрию для заданного времени и позиции.
+    ! Использует формулу Спенсера (1971) для склонения Солнца.
+    !
+    ! Аргументы:
+    !   year, month, day, hour  - референс-дата (UTC) начала моделирования
+    !   model_time_sec          - модельное время [с] от референс-даты
+    !   latitude_deg, longitude_deg - географическая позиция [°]
+    !   cos_zenith              - cos(солнечный зенитный угол) (выход)
+    !   declination_rad         - солнечное склонение [рад] (выход, optional)
+    !   hour_angle_rad          - часовой угол [рад] (выход, optional)
+    ! ========================================================================
+    subroutine solar_geometry(year, month, day, hour, &
+                              model_time_sec, &
+                              latitude_deg, longitude_deg, &
+                              cos_zenith, &
+                              declination_rad, hour_angle_rad)
+        integer, intent(in) :: year, month, day, hour
+        real, intent(in) :: model_time_sec
+        real, intent(in) :: latitude_deg, longitude_deg
+        real, intent(out) :: cos_zenith
+        real, intent(out), optional :: declination_rad, hour_angle_rad
+
+        real :: current_time_sec
+        integer :: day_of_year
+        real :: gamma, decl_rad, eq_time_min
+        real :: utc_hour, local_solar_time, hour_angle_deg, hour_angle_rad_local
+        real :: lat_rad
+        integer :: days_in_month(12)
+        integer :: m_local, d_local
+        real :: total_days
+
+        ! Дни в месяцах (невисокосный год, корректировка для високосных ниже)
+        days_in_month = (/31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31/)
+
+        ! Текущее абсолютное время в секундах от начала референс-дня
+        current_time_sec = real(hour)*3600.0 + model_time_sec
+
+        ! Вычисление дня года (1-365/366)
+        ! Учитываем полные дни, прошедшие от референс-даты
+        total_days = current_time_sec/SECONDS_PER_DAY
+        day_of_year = day + int(total_days)
+
+        ! Корректировка для високосного года
+        if (mod(year, 4) .eq. 0 .and. (mod(year, 100) .ne. 0 .or. mod(year, 400) .eq. 0)) then
+            days_in_month(2) = 29
+        end if
+
+        ! Нормализация day_of_year в диапазон 1..365(366)
+        do while (day_of_year .gt. 365 + (days_in_month(2) - 28))
+            day_of_year = day_of_year - 365 - (days_in_month(2) - 28)
+        end do
+        do while (day_of_year .lt. 1)
+            day_of_year = day_of_year + 365 + (days_in_month(2) - 28)
+        end do
+
+        ! Угол Γ = 2π * (day_of_year - 1) / 365
+        gamma = 2.0*3.141592653589793*real(day_of_year - 1)/365.0
+
+        ! Склонение Солнца по Спенсеру (1971) [рад]
+        decl_rad = 0.006918 - 0.399912*cos(gamma) + 0.070257*sin(gamma) &
+                   - 0.006758*cos(2.0*gamma) + 0.000907*sin(2.0*gamma) &
+                   - 0.002697*cos(3.0*gamma) + 0.00148*sin(3.0*gamma)
+
+        ! Уравнение времени (минуты) - приближение Спенсера
+        eq_time_min = 229.18*(0.000075 + 0.001868*cos(gamma) - 0.032077*sin(gamma) &
+                              - 0.014615*cos(2.0*gamma) - 0.040849*sin(2.0*gamma))
+
+        ! UTC час с дробной частью
+        utc_hour = real(hour) + mod(current_time_sec, SECONDS_PER_DAY)/3600.0
+
+        ! Местное солнечное время = UTC + longitude/15 + eq_time/60
+        ! longitude > 0 на востоке
+        local_solar_time = utc_hour + longitude_deg/DEG_PER_HOUR + eq_time_min/60.0
+
+        ! Часовой угол H = 15° * (local_solar_time - 12) [градусы]
+        hour_angle_deg = DEG_PER_HOUR*(local_solar_time - 12.0)
+
+        ! Нормализация часового угла в [-180, 180]
+        do while (hour_angle_deg .gt. 180.0)
+            hour_angle_deg = hour_angle_deg - 360.0
+        end do
+        do while (hour_angle_deg .lt. -180.0)
+            hour_angle_deg = hour_angle_deg + 360.0
+        end do
+
+        hour_angle_rad_local = hour_angle_deg*DEG2RAD
+        lat_rad = latitude_deg*DEG2RAD
+
+        ! cos(zenith) = sin(φ)sin(δ) + cos(φ)cos(δ)cos(H)
+      cos_zenith = sin(lat_rad)*sin(decl_rad) + cos(lat_rad)*cos(decl_rad)*cos(hour_angle_rad_local)
+
+        ! Clamp к [-1, 1] для числовой стабильности
+        cos_zenith = max(-1.0, min(1.0, cos_zenith))
+
+        ! Опциональные выходы
+        if (present(declination_rad)) declination_rad = decl_rad
+        if (present(hour_angle_rad)) hour_angle_rad = hour_angle_rad_local
+    end subroutine solar_geometry
 
     ! ========================================================================
     !   ГЛАВНАЯ ПОДПРОГРАММА ТЕРМОДИНАМИКИ
@@ -84,7 +196,8 @@ contains
         diag%m_lateral = m_lateral
 
         ! 3. Поверхностное плавление
-        call compute_surface_melt(state, atmos, diag, q_net, m_surface)
+        call compute_surface_melt(state, atmos, diag, q_net, m_surface, &
+                                  nat(1), nat(2), nat(3), nat(4))
 
         diag%q_net_surface = q_net
         diag%m_surface = m_surface
@@ -157,7 +270,7 @@ contains
     end subroutine compute_lateral_melt
 
     ! ========================================================================
-    !   ПОВЕРХНОСТНОЕ ПЛАВЛЕНИЕ (Stage 9.1 §15)
+    !   ПОВЕРХНОСТНОЕ ПЛАВЛЕНИЕ (Stage 9.1 §15 + Stage 10.1.1 solar geometry)
     ! ========================================================================
     ! m_s = max(0, Q_net) / (ρ_ice * L_f)
     ! Q_net = SW_absorbed + LW_down + LW_up + SH + LH
@@ -165,6 +278,7 @@ contains
     ! Компоненты Q_net [Вт/м²]:
     !   1. SW_absorbed = SW_down * (1 - α_ice)   — поглощённая коротковолновая
     !      SW_down = SOLAR_CONST * cos²(zenith) * (1 - CLOUD_COEFF*tcc³) / (rad_b1*e_vap + rad_b2)
+    !      cos(zenith) вычисляется через астрономическую солнечную геометрию (Stage 10.1.1)
     !   2. LW_down = LW_EMISS * t_air⁴ * (1 + LW_CLOUD_FACTOR*tcc) *
     !                (1 - LW_HUMID_COEFF*exp(-LW_HUMID_EXP*(273.15-t_air)²))
     !   3. LW_up = -ε_ice * σ * t_surf⁴          — исходящая длинноволновая
@@ -177,26 +291,28 @@ contains
     ! q_sat = 0.622 * e_sat(t_surf) / p_atm
     !
     ! Аргументы:
-    !   state       - состояние (latitude для солнечного зенита)
+    !   state       - состояние (latitude, longitude, time для солнечной геометрии)
     !   atmos       - атмосферный форсинг
     !   diag        - диагностики (обновляется q_net_surface)
     !   q_net       - чистый тепловой поток [Вт/м²] (выход)
     !   m_surface   - поверхностная скорость плавления [м/с] (выход)
+    !   year, month, day, hour - референс-дата (UTC) начала моделирования
     ! ========================================================================
-    subroutine compute_surface_melt(state, atmos, diag, q_net, m_surface)
+    subroutine compute_surface_melt(state, atmos, diag, q_net, m_surface, &
+                                    year, month, day, hour)
         type(iceberg_state), intent(in) :: state
         type(atmos_forcing), intent(in) :: atmos
         type(iceberg_diagnostics), intent(inout) :: diag
         real, intent(out) :: q_net, m_surface
+        integer, intent(in) :: year, month, day, hour
 
         real :: t_air_k, t_surf_k, t_dew_k
         real :: p_atm, rho_air_local, q_air, q_sat
         real :: wind_speed
         real :: sw_down, lw_down, lw_up, sh_flux, lh_flux
-        real :: cz, decl, hour_angle, cos_zenith
+        real :: cos_zenith
         real :: rad_b1, rad_b2, e_vap
         real :: albedo
-        real :: lat_rad, dec_rad
         real :: e_sat_air, e_sat_dew, rh
         real :: sw_absorbed
 
@@ -211,29 +327,31 @@ contains
         wind_speed = sqrt(atmos%u10**2 + atmos%v10**2)
 
         ! === КОРОТКОВОЛНОВАЯ РАДИАЦИЯ (Shortwave) ===
-        lat_rad = state%latitude/57.2957795  ! градусы → радианы
-        decl = 0.0                           ! склонение Солнца (упрощение: экватор)
-        dec_rad = decl/57.2957795
+        ! Солнечная геометрия (Stage 10.1.1): астрономическая формула
+        call solar_geometry(year, month, day, hour, &
+                            state%time, &
+                            state%latitude, state%longitude, &
+                            cos_zenith)
 
-        hour_angle = 0.0  ! локальный полдень (упрощение)
-        ! cos(zenith) = sin(φ)sin(δ) + cos(φ)cos(δ)cos(h)
-        cos_zenith = sin(lat_rad)*sin(dec_rad) + cos(lat_rad)*cos(dec_rad)*cos(hour_angle)
-        cos_zenith = max(0.0, cos_zenith)  ! только дневное
+        ! Polar night/day handling: cos_zenith <= 0 -> no solar radiation
+        if (cos_zenith .le. 0.0) then
+            sw_down = 0.0
+        else
+            ! Входящая коротковолновая радиация с облачностью
+            sw_down = SOLAR_CONSTANT*cos_zenith**2*(1.0 - CLOUD_COEFF*atmos%tcc**3)
 
-        ! Входящая коротковолновая радиация с облачностью
-        sw_down = SOLAR_CONSTANT*cos_zenith**2*(1.0 - CLOUD_COEFF*atmos%tcc**3)
+            ! Эмпирическая коррекция атмосферной пропускания (legacy HEAT)
+            rad_b1 = (cos_zenith + 2.7)*1.0e-5
+            rad_b2 = 1.085*cos_zenith + 0.1
 
-        ! Эмпирическая коррекция атмосферной пропускания (legacy HEAT)
-        rad_b1 = (cos_zenith + 2.7)*1.0e-5
-        rad_b2 = 1.085*cos_zenith + 0.1
+            ! Парциальное давление водяного пара
+            e_sat_air = SAT_VAPOR_0*10.0**(TETENS_A*(t_air_k - 273.15)/t_air_k)
+            e_sat_dew = SAT_VAPOR_0*10.0**(TETENS_A*(t_dew_k - 273.15)/t_dew_k)
+            rh = min(1.0, max(0.0, e_sat_dew/e_sat_air))  ! относительная влажность [0-1]
+            e_vap = rh*e_sat_air
 
-        ! Парциальное давление водяного пара
-        e_sat_air = SAT_VAPOR_0*10.0**(TETENS_A*(t_air_k - 273.15)/t_air_k)
-        e_sat_dew = SAT_VAPOR_0*10.0**(TETENS_A*(t_dew_k - 273.15)/t_dew_k)
-        rh = min(1.0, max(0.0, e_sat_dew/e_sat_air))  ! относительная влажность [0-1]
-        e_vap = rh*e_sat_air
-
-        sw_down = sw_down/(rad_b1*e_vap + rad_b2)  ! итоговое SW_down
+            sw_down = sw_down/(rad_b1*e_vap + rad_b2)  ! итоговое SW_down
+        end if
 
         albedo = ALBEDO_ICE
         sw_absorbed = sw_down*(1.0 - albedo)  ! поглощённая SW

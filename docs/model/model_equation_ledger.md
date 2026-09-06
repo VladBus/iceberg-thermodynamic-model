@@ -470,12 +470,17 @@ SW↓ = S₀ · cos²(θ_z) · (1 - C_cloud · tcc³) / (rad_b1 · e_vap + rad_b
 SW_abs = SW↓ · (1 - α_ice)
 
 где:
-  S₀ = SOLAR_CONSTANT = 1361 W/m²
-  cos(θ_z) = cos(latitude)  ! decl=0, hour_angle=0
+  S₀ = SOLAR_CONSTANT = 1353 W/m²
+  cos(θ_z) = sin(φ)sin(δ) + cos(φ)cos(δ)cos(H)  ! астрономическая геометрия (Stage 10.1.1)
+  δ = 0.006918 - 0.399912·cos(Γ) + 0.070257·sin(Γ) - ...  ! Спенсер (1971)
+  Γ = 2π·(day_of_year - 1)/365
+  H = 15°·(local_solar_time - 12)  ! часовой угол
+  local_solar_time = UTC + lon/15 + eq_time/60
   rad_b1 = (cos_zenith + 2.7) · 1e-5
   rad_b2 = 1.085 · cos_zenith + 0.1
   e_vap = RH · e_sat(T_air)
   RH = e_sat(T_dew) / e_sat(T_air)
+  Polar night/day: cos(θ_z) ≤ 0 → SW↓ = 0
 ```
 
 **Longwave (LW):**
@@ -549,6 +554,8 @@ m_surface = max(0, Q_net) / (ρ_ice · L_f)
 
 - Explicit evaluation каждый timestep
 - T_surf = T_ICE = -10.0°C (fixed, no feedback)
+- Solar geometry: астрономическая (Stage 10.1.1) — declination δ, hour angle H, cos(θ_z) каждый timestep
+- Polar night/day: cos(θ_z) ≤ 0 → SW↓ = 0
 - max(0, Q_net) предотвращает отрицательное таяние
 
 ### 8.7 Реализация

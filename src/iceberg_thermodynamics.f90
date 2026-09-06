@@ -177,14 +177,14 @@ contains
     ! Вызывает три компонента плавления и сохраняет результаты в diag.
     !
     ! Аргументы:
-    !   state       - состояние айсберга (intent(in))
+    !   state       - состояние айсберга (intent(inout), T_surface обновляется)
     !   dt          - шаг по времени [с] (intent(in))
     !   ocean_prof  - профиль океана (intent(in))
     !   atmos       - атмосферный форсинг (intent(in))
-    !   diag        - диагностики (intent(inout), обновляются m_*, q_net)
+    !   diag        - диагностики (intent(inout), обновляются m_*, q_net, t_surface)
     ! ========================================================================
     subroutine iceberg_thermodynamics_step(state, dt, ocean_prof, atmos, diag)
-        type(iceberg_state), intent(in) :: state
+        type(iceberg_state), intent(inout) :: state
         real, intent(in) :: dt
         type(ocean_profile), intent(in) :: ocean_prof
         type(atmos_forcing), intent(in) :: atmos
@@ -212,7 +212,7 @@ contains
         diag%m_lateral = m_lateral
 
         ! 3. Поверхностное плавление
-        call compute_surface_melt(state, atmos, diag, q_net, m_surface, &
+        call compute_surface_melt(state, atmos, diag, q_net, m_surface, dt, &
                                   nat(1), nat(2), nat(3), nat(4))
 
         diag%q_net_surface = q_net
@@ -285,41 +285,50 @@ contains
         end if
     end subroutine compute_lateral_melt
 
+! ========================================================================
+    !   ПОВЕРХНОСТНОЕ ПЛАВЛЕНИЕ С ПРОГНОСТИЧЕСКОЙ ТЕМПЕРАТУРОЙ (Stage 10.2)
     ! ========================================================================
-    !   ПОВЕРХНОСТНОЕ ПЛАВЛЕНИЕ (Stage 9.1 §15 + Stage 10.1.1 solar geometry)
+    ! C_eff dT_surface/dt = Q_net_non_melt
+    ! C_eff = rho_ice * c_ice * h_eff
+    ! Q_net_non_melt = SW_abs + LW_down + LW_up + SH + LH
+    !
+    ! Phase change logic:
+    !   if T_surface < T_melt:
+    !       dT = Q_net_non_melt * dt / C_eff
+    !       T_surface_new = T_surface + dT
+    !       if T_surface_new >= T_melt:
+    !           excess_energy = Q_net_non_melt - C_eff * (T_melt - T_surface) / dt
+    !           m_surface = max(excess_energy, 0) / (rho_ice * L_f)
+    !           T_surface = T_melt
+    !       else:
+    !           m_surface = 0
+    !   else:  ! T_surface >= T_melt
+    !       T_surface = T_melt
+    !       m_surface = max(Q_net_non_melt, 0) / (rho_ice * L_f)
+    !
+    ! Components:
+    !   SW_abs = SW_down * (1 - albedo)
+    !   LW_down = LW_EMISS * t_air^4 * (1 + LW_CLOUD_FACTOR*tcc) * ...
+    !   LW_up = -ε_ice * σ * t_surf^4
+    !   SH = rho_air * SH_COEFF * |V| * (t_air - t_surf)
+    !   LH = rho_air * LH_COEFF * |V| * L_v * (q_air - q_sat)
+    !   t_surf = state%T_surface [°C], converted to K for radiation
+    !
+    ! Arguments:
+    !   state       - state with T_surface [°C] (intent(inout), updated)
+    !   atmos       - atmospheric forcing
+    !   diag        - diagnostics (updated q_net_surface, t_surface)
+    !   q_net       - net heat flux [W/m²] (output)
+    !   m_surface   - surface melt rate [m/s] (output)
+    !   year, month, day, hour - reference date (UTC)
     ! ========================================================================
-    ! m_s = max(0, Q_net) / (ρ_ice * L_f)
-    ! Q_net = SW_absorbed + LW_down + LW_up + SH + LH
-    !
-    ! Компоненты Q_net [Вт/м²]:
-    !   1. SW_absorbed = SW_down * (1 - α_ice)   — поглощённая коротковолновая
-    !      SW_down = SOLAR_CONST * cos²(zenith) * (1 - CLOUD_COEFF*tcc³) / (rad_b1*e_vap + rad_b2)
-    !      cos(zenith) вычисляется через астрономическую солнечную геометрию (Stage 10.1.1)
-    !   2. LW_down = LW_EMISS * t_air⁴ * (1 + LW_CLOUD_FACTOR*tcc) *
-    !                (1 - LW_HUMID_COEFF*exp(-LW_HUMID_EXP*(273.15-t_air)²))
-    !   3. LW_up = -ε_ice * σ * t_surf⁴          — исходящая длинноволновая
-    !   4. SH = ρ_air * SH_COEFF * |V_wind| * (t_air - t_surf)  — явное тепло
-    !   5. LH = ρ_air * LH_COEFF * |V_wind| * L_v * (q_air - q_sat) — скрытое тепло
-    !
-    ! t_surf = T_ICE + 273.15 = 263.15 К
-    ! ρ_air = p_atm / (R_air * t_air)
-    ! q_air = 0.622 * e_vap / p_atm
-    ! q_sat = 0.622 * e_sat(t_surf) / p_atm
-    !
-    ! Аргументы:
-    !   state       - состояние (latitude, longitude, time для солнечной геометрии)
-    !   atmos       - атмосферный форсинг
-    !   diag        - диагностики (обновляется q_net_surface)
-    !   q_net       - чистый тепловой поток [Вт/м²] (выход)
-    !   m_surface   - поверхностная скорость плавления [м/с] (выход)
-    !   year, month, day, hour - референс-дата (UTC) начала моделирования
-    ! ========================================================================
-    subroutine compute_surface_melt(state, atmos, diag, q_net, m_surface, &
+    subroutine compute_surface_melt(state, atmos, diag, q_net, m_surface, dt, &
                                     year, month, day, hour)
-        type(iceberg_state), intent(in) :: state
+        type(iceberg_state), intent(inout) :: state
         type(atmos_forcing), intent(in) :: atmos
         type(iceberg_diagnostics), intent(inout) :: diag
         real, intent(out) :: q_net, m_surface
+        real, intent(in) :: dt
         integer, intent(in) :: year, month, day, hour
 
         real :: t_air_k, t_surf_k, t_dew_k
@@ -335,16 +344,21 @@ contains
         real :: air_mass, tau_rayleigh
         real :: t_rayleigh, t_water_vap, t_aerosol, t_clear, t_cloud
         real :: precipitable_water_cm
+        ! --- Stage 10.2: prognostic surface temperature ---
+        real :: c_eff, q_net_non_melt, excess_energy
+        real :: t_surf_new
 
         ! Входные параметры
         t_air_k = atmos%t2m
         t_dew_k = atmos%d2m
-        t_surf_k = T_ICE + 273.15  ! 263.15 К
 
         p_atm = atmos%msl
         rho_air_local = p_atm/(GAS_CONST_AIR*t_air_k)  ! ρ_air = p/(R*T) [кг/м³]
 
         wind_speed = sqrt(atmos%u10**2 + atmos%v10**2)
+
+        ! Effective heat capacity of surface layer
+        c_eff = RHO_ICE*C_ICE*H_EFF  ! J/(m² K)
 
         ! === КОРОТКОВОЛНОВАЯ РАДИАЦИЯ (Shortwave) ===
         ! Солнечная геометрия (Stage 10.1.1): астрономическая формула
@@ -358,7 +372,7 @@ contains
         e_sat_air = SAT_VAPOR_0*10.0**(TETENS_A*(t_air_k - 273.15)/t_air_k)
         e_sat_dew = SAT_VAPOR_0*10.0**(TETENS_A*(t_dew_k - 273.15)/t_dew_k)
         rh = min(1.0, max(0.0, e_sat_dew/e_sat_air))  ! relative humidity [0-1]
-        e_vap = rh * e_sat_air  ! [Pa]
+        e_vap = rh*e_sat_air  ! [Pa]
         q_air = 0.622*e_vap/p_atm
 
         ! Polar night/day handling: cos_zenith <= 0 -> no solar radiation
@@ -389,44 +403,44 @@ contains
             ! Final SW_down bounded to <= TOA flux.
 
             ! Top-of-atmosphere solar flux on horizontal surface
-            sw_toa = SOLAR_CONSTANT * cos_zenith
+            sw_toa = SOLAR_CONSTANT*cos_zenith
 
             ! Air mass (Kasten & Young 1989 approximation for large zenith angles)
             ! m = 1 / (cos_zenith + 0.50572 * (96.07995 - zenith_deg)^-1.6364)
             ! For simplicity, use m = 1/cos_zenith with cap at 40 (zenith ~88.5 deg)
-            air_mass = 1.0 / cos_zenith
+            air_mass = 1.0/cos_zenith
             if (air_mass .gt. 40.0) air_mass = 40.0
 
             ! Rayleigh scattering transmittance
             ! tau_rayleigh scales with surface pressure
-            tau_rayleigh = TAU_RAYLEIGH_0 * (p_atm / 101325.0)
-            t_rayleigh = exp(-tau_rayleigh * air_mass)
+            tau_rayleigh = TAU_RAYLEIGH_0*(p_atm/101325.0)
+            t_rayleigh = exp(-tau_rayleigh*air_mass)
             t_rayleigh = max(0.0, min(1.0, t_rayleigh))
 
             ! Water vapor absorption (Lacis & Hansen 1974 broadband approximation)
             ! Precipitable water w [cm] estimated from surface vapor pressure
             ! w = PRECIP_WATER_SCALE * (e_vap / 100.0) * (101325.0 / p_atm)
             ! where e_vap [Pa] -> hPa via /100
-            precipitable_water_cm = PRECIP_WATER_SCALE * (e_vap / 100.0) * (101325.0 / p_atm)
+            precipitable_water_cm = PRECIP_WATER_SCALE*(e_vap/100.0)*(101325.0/p_atm)
             precipitable_water_cm = max(0.0, precipitable_water_cm)
 
             ! T_water_vap = 1 - WV_ABSORP_COEFF * w^WV_ABSORP_EXP
-            t_water_vap = 1.0 - WV_ABSORP_COEFF * (precipitable_water_cm ** WV_ABSORP_EXP)
+            t_water_vap = 1.0 - WV_ABSORP_COEFF*(precipitable_water_cm**WV_ABSORP_EXP)
             t_water_vap = max(0.0, min(1.0, t_water_vap))
 
             ! Aerosol transmittance (Arctic background, empirical)
             t_aerosol = AEROSOL_TRANS_ARCTIC
 
             ! Clear-sky transmittance
-            t_clear = t_rayleigh * t_water_vap * t_aerosol
+            t_clear = t_rayleigh*t_water_vap*t_aerosol
             t_clear = max(0.0, min(1.0, t_clear))
 
             ! Cloud transmittance: linear in tcc
-            t_cloud = 1.0 - CLOUD_TRANS_COEFF * atmos%tcc
+            t_cloud = 1.0 - CLOUD_TRANS_COEFF*atmos%tcc
             t_cloud = max(0.0, min(1.0, t_cloud))
 
             ! Final downward SW at surface
-            sw_down = sw_toa * t_clear * t_cloud
+            sw_down = sw_toa*t_clear*t_cloud
 
             ! Bound check: SW_down cannot exceed TOA flux
             sw_down = min(sw_down, sw_toa)
@@ -435,6 +449,9 @@ contains
 
         albedo = ALBEDO_ICE
         sw_absorbed = sw_down*(1.0 - albedo)  ! поглощённая SW
+
+        ! Current surface temperature in Kelvin for radiation calculations
+        t_surf_k = state%T_surface + 273.15
 
         ! === ДЛИННОВОЛНОВАЯ РАДИАЦИЯ (Longwave) ===
         ! Входящая LW: эмпирическая формула (legacy HEAT)
@@ -456,14 +473,43 @@ contains
         ! LH = ρ_air * C_E * |V| * L_v * (q_air - q_sat)
         lh_flux = rho_air_local*LH_COEFF*wind_speed*LATENT_VAP*(q_air - q_sat)
 
-        ! === ЧИСТЫЙ ТЕПЛОВОЙ ПОТОК ===
-        q_net = sw_absorbed + lw_down + lw_up + sh_flux + lh_flux
+        ! === NET NON-MELT HEAT FLUX ===
+        q_net_non_melt = sw_absorbed + lw_down + lw_up + sh_flux + lh_flux
 
-        if (q_net .gt. 0.0) then
-            m_surface = q_net/(RHO_ICE*LATENT_HEAT)
+        ! === PROGNOSTIC SURFACE TEMPERATURE WITH PHASE CHANGE (Stage 10.2) ===
+        if (state%T_surface .lt. T_MELT) then
+            ! Surface below melting point: temperature evolution
+            t_surf_new = state%T_surface + q_net_non_melt*dt/c_eff
+
+            if (t_surf_new .ge. T_MELT) then
+                ! Crossed melting point within timestep
+                ! Energy used to reach T_melt
+                excess_energy = q_net_non_melt - c_eff*(T_MELT - state%T_surface)/dt
+                state%T_surface = T_MELT
+                if (excess_energy .gt. 0.0) then
+                    m_surface = excess_energy/(RHO_ICE*LATENT_HEAT)
+                else
+                    m_surface = 0.0
+                end if
+            else
+                ! Still below melting point
+                state%T_surface = t_surf_new
+                m_surface = 0.0
+            end if
         else
-            m_surface = 0.0
+            ! Surface at or above melting point
+            state%T_surface = T_MELT
+            if (q_net_non_melt .gt. 0.0) then
+                m_surface = q_net_non_melt/(RHO_ICE*LATENT_HEAT)
+            else
+                m_surface = 0.0
+            end if
         end if
+
+        ! Total net flux for diagnostics (includes melt energy)
+        q_net = q_net_non_melt - m_surface*RHO_ICE*LATENT_HEAT/dt
+
+        diag%t_surface = state%T_surface
     end subroutine compute_surface_melt
 
     ! ========================================================================

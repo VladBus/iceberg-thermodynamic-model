@@ -77,7 +77,7 @@ program iceberg_test_surface_melt_audit
     atmos%v10 = 0.0
     atmos%snowfall = 0.0
 
-    call compute_surface_melt(state, atmos, diag, q_net, m_surface, &
+    call compute_surface_melt(state, atmos, diag, q_net, m_surface, dt, &
                               nat(1), nat(2), nat(3), nat(4))
 
     expected_melt = 0.0
@@ -122,7 +122,7 @@ program iceberg_test_surface_melt_audit
     atmos%u10 = 0.0
     atmos%v10 = 0.0
 
-    call compute_surface_melt(state, atmos, diag, q_net, m_surface, &
+    call compute_surface_melt(state, atmos, diag, q_net, m_surface, dt, &
                               nat(1), nat(2), nat(3), nat(4))
 
     ! Analytical expectation
@@ -160,7 +160,7 @@ program iceberg_test_surface_melt_audit
     atmos%u10 = 5.0
     atmos%v10 = 0.0
 
-    call compute_surface_melt(state, atmos, diag, q_net, m_surface, &
+    call compute_surface_melt(state, atmos, diag, q_net, m_surface, dt, &
                               nat(1), nat(2), nat(3), nat(4))
 
     expected_melt = max(0.0, q_net)/(RHO_ICE*LATENT_HEAT)
@@ -201,7 +201,7 @@ program iceberg_test_surface_melt_audit
     atmos%u10 = 0.0
     atmos%v10 = 0.0
 
-    call compute_surface_melt(state, atmos, diag, q_net, m_surface, &
+    call compute_surface_melt(state, atmos, diag, q_net, m_surface, dt, &
                               nat(1), nat(2), nat(3), nat(4))
 
     expected_melt = max(0.0, q_net)/(RHO_ICE*LATENT_HEAT)

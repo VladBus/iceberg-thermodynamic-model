@@ -76,6 +76,7 @@ contains
         state%time = 0.0
         state%active = .true.
         state%grounded = .false.
+        state%T_surface = T_ICE  ! Initialize prognostic surface temperature to legacy value
 
         if (present(u0)) then
             state%u = u0
@@ -117,6 +118,7 @@ contains
         geom%a_waterline = state%L*state%W
         geom%a_wet = state%L*state%W + 2.0*(state%L + state%W)*geom%draft
         geom%a_sail = state%L*state%W + 2.0*(state%L + state%W)*geom%freeboard
+        geom%t_surface = state%T_surface  ! Store current surface temperature
     end subroutine iceberg_compute_geometry
 
     ! ========================================================================
@@ -282,7 +284,7 @@ contains
             ! 9a. Обновление географических координат из модельных (Stage 9.4A)
             ! x/y — authoritative coordinates; lat/lon derived via inverse projection
             ! Проверяем, что модельная сетка инициализирована (fi/dl не нули)
-            if (fi(1,1) .ne. 0.0 .or. dl(1,1) .ne. 0.0) then
+            if (fi(1, 1) .ne. 0.0 .or. dl(1, 1) .ne. 0.0) then
                 call model_coords_to_latlon(state%x, state%y, state%latitude, state%longitude, &
                                             diag%forcing_valid)
                 if (.not. diag%forcing_valid) then

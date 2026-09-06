@@ -38,6 +38,11 @@ module iceberg_types
     real, parameter :: LATENT_HEAT = 334000.0 ! Удельная теплота плавления льда [Дж/кг]
     real, parameter :: CP_WATER = 4186.8   ! Удельная теплоёмкость воды [Дж/(кг·К)]
 
+    ! Прогностическая температура поверхности (Stage 10.2)
+    real, parameter :: C_ICE = 2100.0        ! Удельная теплоёмкость льда [Дж/(кг·К)]
+    real, parameter :: H_EFF = 0.5           ! Эффективная толщина поверхностного слоя [м]
+    real, parameter :: T_MELT = 0.0          ! Температура плавления [°C]
+
     ! Гравитация
     real, parameter :: GRAVITY = 9.80665      ! Ускорение свободного падения [м/с²]
 
@@ -108,6 +113,7 @@ module iceberg_types
         real :: m_lateral    ! Боковая скорость плавления
         real :: m_surface    ! Поверхностная скорость плавления
         real :: q_net_surface ! Чистый тепловой поток на поверхности [Вт/м²]
+        real :: t_surface    ! Температура поверхности [°C] (Stage 10.2)
 
         ! Океан на глубине осадки
         real :: t_draft      ! Температура на глубине осадки [°C]
@@ -140,7 +146,7 @@ module iceberg_types
         logical :: forcing_valid   ! .TRUE. если позиция внутри домена форсинга
     end type iceberg_diagnostics
 
-    ! Прогностическое состояние айсберга (7 переменных)
+    ! Прогностическое состояние айсберга (8 переменных)
     type :: iceberg_state
         ! Позиция в модельных координатах [м]
         ! X ось → j (восток), Y ось → i (север, инвертирована)
@@ -161,6 +167,9 @@ module iceberg_types
         real :: latitude          ! Широта [°]
         real :: longitude         ! Долгота [°]
 
+        ! Прогностическая температура поверхности [°C] (Stage 10.2)
+        real :: T_surface         ! Температура поверхности льда
+
         ! Счетчики
         integer :: nstep          ! Номер шага интегрирования
         real :: time              ! Модельное время [с]
@@ -178,6 +187,7 @@ module iceberg_types
     public :: C_BASAL, C_LATERAL
     public :: ALBEDO_ICE, EMISSIVITY, STEFAN_BOLTZ
     public :: T_ICE, MIN_THICKNESS
+    public :: C_ICE, H_EFF, T_MELT
     public :: OMEGA
     public :: ocean_profile, atmos_forcing, iceberg_diagnostics, iceberg_state
 

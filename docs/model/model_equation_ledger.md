@@ -461,12 +461,12 @@ Subroutines: compute_lateral_melt
 
 Энергетический баланс верхней поверхности айсберга, определяющий поверхностное таяние.
 
-### 8.2 Непрерывные уравнения (Legacy Production)
+### 8.2 Непрерывные уравнения (Stage 10.1.1 + 10.1.2)
 
-**Shortwave (SW):**
+**Shortwave (SW) — Astronomical geometry (Stage 10.1.1) + Atmospheric attenuation (Stage 10.1.2):**
 
 ```
-SW↓ = S₀ · cos²(θ_z) · (1 - C_cloud · tcc³) / (rad_b1 · e_vap + rad_b2)
+SW↓ = S₀ · cos(θ_z) · T_clear · T_cloud
 SW_abs = SW↓ · (1 - α_ice)
 
 где:
@@ -476,11 +476,25 @@ SW_abs = SW↓ · (1 - α_ice)
   Γ = 2π·(day_of_year - 1)/365
   H = 15°·(local_solar_time - 12)  ! часовой угол
   local_solar_time = UTC + lon/15 + eq_time/60
-  rad_b1 = (cos_zenith + 2.7) · 1e-5
-  rad_b2 = 1.085 · cos_zenith + 0.1
-  e_vap = RH · e_sat(T_air)
-  RH = e_sat(T_dew) / e_sat(T_air)
+  eq_time = 229.18·(0.000075 + 0.001868·cos(Γ) - 0.032077·sin(Γ) - ...)  ! Спенсер (1971)
   Polar night/day: cos(θ_z) ≤ 0 → SW↓ = 0
+
+  ! Atmospheric attenuation (Stage 10.1.2):
+  T_clear = T_rayleigh · T_water_vapor · T_aerosol
+  T_rayleigh = exp(-τ_rayleigh · m)
+  τ_rayleigh = 0.09 · (p_atm / 101325 Pa)  ! sea-level optical depth
+  m = 1 / cos(θ_z)  ! air mass (capped at 40)
+  T_water_vapor = 1 - 0.077 · w^0.3  ! Lacis & Hansen (1974) broadband
+  w [cm] = 0.1 · (e_vap / 100) · (101325 / p_atm)  ! precipitable water from surface e_vap
+  T_aerosol = 0.93  ! Arctic background (empirical, legacy)
+  T_cloud = 1 - 0.75 · tcc  ! linear cloud transmittance (overcast → 25% of clear)
+
+  All transmittances bounded to [0, 1]. SW↓ ≤ S₀ · max(cos(θ_z), 0).
+```
+
+**Legacy SW (replaced in Stage 10.1.2):**
+```
+SW↓_legacy = S₀ · cos²(θ_z) · (1 - 0.6·tcc³) / ((cos_zenith+2.7)·1e-5·e_vap + 1.085·cos_zenith+0.1)
 ```
 
 **Longwave (LW):**
@@ -533,22 +547,29 @@ m_surface = max(0, Q_net) / (ρ_ice · L_f)
 
 | Константа       | Значение  | Единицы   | Назначение                              |
 | --------------- | --------- | --------- | --------------------------------------- |
-| SOLAR_CONSTANT  | 1353.0    | W/m²      | Солнечная константа                     |
-| ALBEDO_ICE      | 0.6       | -         | Альбедо льда                            |
-| EMISSIVITY      | 0.97      | -         | Эмиссивность льда                       |
-| STEFAN_BOLTZ    | 5.67e-8   | W/(m²·K⁴) | Константа Стефана-Больцмана             |
-| C_CLOUD         | 0.75      | -         | Cloud coefficient (SW)                  |
-| LW_EMISS        | 0.78      | -         | Атмосферная эмиссивность (LW)           |
-| LW_CLOUD_FACTOR | 0.25      | -         | Cloud factor (LW)                       |
-| LW_HUMID_COEFF  | 0.25      | -         | Humidity correction (LW)                |
-| LW_HUMID_EXP    | 0.06      | -         | Humidity exponent (LW)                  |
-| SH_COEFF        | 1.5e-3    | -         | Sensible heat transfer coeff            |
-| LH_COEFF        | 0.6650735 | -         | **Legacy latent heat coeff**            |
-| LATENT_VAP      | 2.5e6     | J/kg      | Латентная теплота испарения (L_v)       |
-| SAT_VAPOR_0     | 610.78    | Pa        | Насыщенное парциальное давление при 0°C |
-| TETENS_A        | 8.61503   | -         | Коэффициент Тетенса                     |
-| GAS_CONST_AIR   | 287.0     | J/(kg·K)  | Газовая постоянная сухого воздуха       |
-| EPSILON         | 0.622     | -         | Молекулярное соотношение H₂O/air        |
+| SOLAR_CONSTANT         | 1353.0    | W/m²      | Солнечная константа                              |
+| ALBEDO_ICE             | 0.6       | -         | Альбедо льда                                     |
+| EMISSIVITY             | 0.97      | -         | Эмиссивность льда                                |
+| STEFAN_BOLTZ           | 5.67e-8   | W/(m²·K⁴) | Константа Стефана-Больцмана                      |
+| C_CLOUD                | 0.75      | -         | Cloud coefficient (SW, legacy)                   |
+| LW_EMISS               | 0.78      | -         | Атмосферная эмиссивность (LW)                    |
+| LW_CLOUD_FACTOR        | 0.25      | -         | Cloud factor (LW)                                |
+| LW_HUMID_COEFF         | 0.25      | -         | Humidity correction (LW)                         |
+| LW_HUMID_EXP           | 0.06      | -         | Humidity exponent (LW)                           |
+| SH_COEFF               | 1.5e-3    | -         | Sensible heat transfer coeff                     |
+| LH_COEFF               | 0.6650735 | -         | **Legacy latent heat coeff**                     |
+| LATENT_VAP             | 2.5e6     | J/kg      | Латентная теплота испарения (L_v)                |
+| SAT_VAPOR_0            | 610.78    | Pa        | Насыщенное парциальное давление при 0°C          |
+| TETENS_A               | 8.61503   | -         | Коэффициент Тетенса                              |
+| GAS_CONST_AIR          | 287.0     | J/(kg·K)  | Газовая постоянная сухого воздуха                |
+| EPSILON                | 0.622     | -         | Молекулярное соотношение H₂O/air                 |
+| ! Stage 10.1.2: Atmospheric attenuation constants
+| TAU_RAYLEIGH_0         | 0.09      | -         | Rayleigh optical depth at sea level (p=1013.25 hPa) |
+| AEROSOL_TRANS_ARCTIC   | 0.93      | -         | Arctic background aerosol transmittance (empirical) |
+| CLOUD_TRANS_COEFF      | 0.75      | -         | Cloud transmittance coefficient (T_cloud = 1 - C*tcc) |
+| WV_ABSORP_COEFF        | 0.077     | -         | Water vapor absorption coefficient (Lacis & Hansen 1974) |
+| WV_ABSORP_EXP          | 0.3       | -         | Water vapor absorption exponent (Lacis & Hansen 1974) |
+| PRECIP_WATER_SCALE     | 0.1       | cm/(hPa)  | Precipitable water scale from surface e_vap (empirical) |
 
 ### 8.6 Численная схема
 
@@ -557,6 +578,7 @@ m_surface = max(0, Q_net) / (ρ_ice · L_f)
 - Solar geometry: астрономическая (Stage 10.1.1) — declination δ, hour angle H, cos(θ_z) каждый timestep
 - Polar night/day: cos(θ_z) ≤ 0 → SW↓ = 0
 - max(0, Q_net) предотвращает отрицательное таяние
+- SW atmospheric attenuation: T_clear = T_rayleigh·T_water_vapor·T_aerosol; T_cloud = 1 - 0.75·tcc (Stage 10.1.2)
 
 ### 8.7 Реализация
 
@@ -585,12 +607,13 @@ Subroutines: compute_surface_melt, saturation_vapor_pressure, ...
 
 ### 8.11 Ограничения (КРИТИЧЕСКИЕ — Stage 10 targets)
 
-1. **Solar geometry:** decl=0, hour_angle=0 → нет суточного/сезонного цикла
-2. **LH_COEFF:** 0.6650735 — legacy, ~443× modern C_E, no citation
-3. **T_ICE:** Fixed -10°C → нет condensation heating feedback
-4. **q_sat:** Water saturation formula at ice surface (5–18% error)
-5. **L_v vs L_s:** Uses L_v for ice-vapor exchange
-6. **No phase partitioning:** All Q_net > 0 → melt (no sublimation/deposition)
+1. **Solar geometry:** FIXED in Stage 10.1.1 — astronomical δ, H, cos(θ_z) now time-dependent
+2. **Atmospheric attenuation (SW):** PARTIALLY FIXED in Stage 10.1.2 — broadband parameterization with documented coefficients; CLOUD_TRANS_COEFF=0.75, AEROSOL_TRANS_ARCTIC=0.93 (empirical legacy), PRECIP_WATER_SCALE=0.1 (empirical). NOT using ERA5 SSRD/STRD.
+3. **LH_COEFF:** 0.6650735 — legacy, ~443× modern C_E, no citation
+4. **T_ICE:** Fixed -10°C → нет condensation heating feedback
+5. **q_sat:** Water saturation formula at ice surface (5–18% error)
+6. **L_v vs L_s:** Uses L_v for ice-vapor exchange
+7. **No phase partitioning:** All Q_net > 0 → melt (no sublimation/deposition)
 
 ---
 

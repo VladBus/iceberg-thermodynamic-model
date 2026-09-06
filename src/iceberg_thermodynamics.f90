@@ -28,7 +28,7 @@ module iceberg_thermodynamics
     !   КОНСТАНТЫ ДЛЯ ПОВЕРХНОСТНОГО ТЕПЛОВОГО БАЛАНСА (адаптированы из legacy HEAT)
     ! ========================================================================
     real, parameter :: SOLAR_CONSTANT = 1353.0     ! Солнечная постоянная [Вт/м²]
-    real, parameter :: CLOUD_COEFF = 0.6        ! Коэффициент затухания от облаков
+    real, parameter :: CLOUD_COEFF = 0.6        ! Коэффициент затухания от облаков (legacy)
     real, parameter :: LW_EMISS = 5.4999e-8  ! Эффективная эмиссивность атмосферы [Вт/(м²·К⁴)]
     real, parameter :: LW_CLOUD_FACTOR = 0.275      ! Фактор облачности для LW
     real, parameter :: LW_HUMID_COEFF = 0.261      ! Коэффициент влажности для LW
@@ -41,6 +41,22 @@ module iceberg_thermodynamics
     real, parameter :: TETENS_A = 8.61503    ! Константа Тетенса для e_sat
     real, parameter :: WATER_ALBEDO = 0.06       ! Альбедо воды
     real, parameter :: WATER_EMISS = 0.97       ! Эмиссивность воды
+
+    ! ========================================================================
+    !   АТМОСФЕРНАЯ ПРОПУСКАЮЩАЯ СПОСОБНОСТЬ КОРОТКОВОЛНОВОЙ РАДИАЦИИ (Stage 10.1.2)
+    ! ========================================================================
+    ! Broadband parameterization using ERA5 inputs (tcc, t2m, d2m, msl).
+    ! Based on simple physical approximations (Rayleigh, water vapor, aerosol).
+    ! Cloud transmittance: linear in tcc.
+    ! NOT using ERA5 SSRD/STRD — offline parameterization only.
+    ! Coefficients documented below; legacy empirical values marked.
+    ! ========================================================================
+    real, parameter :: TAU_RAYLEIGH_0 = 0.09        ! Оптическая толщина Релея на уровне моря (p=1013.25 hPa)
+    real, parameter :: AEROSOL_TRANS_ARCTIC = 0.93  ! Атмосферная прозрачность от аэрозолей (Arctic background, legacy empirical)
+    real, parameter :: CLOUD_TRANS_COEFF = 0.75     ! Коэффициент облачной пропускания: T_cloud = 1 - C*tcc (overcast ~25% of clear)
+    real, parameter :: WV_ABSORP_COEFF = 0.077      ! Коэффициент поглощения водяным паром (Lacis & Hansen 1974 approx)
+    real, parameter :: WV_ABSORP_EXP = 0.3          ! Показатель для водяного пара (Lacis & Hansen 1974)
+    real, parameter :: PRECIP_WATER_SCALE = 0.1     ! Масштаб для оценки выпадаемой воды из e_vap [cm/(hPa)] (empirical)
 
     ! ========================================================================
     !   АСТРОНОМИЧЕСКИЕ КОНСТАНТЫ (Stage 10.1.1)
@@ -311,10 +327,14 @@ contains
         real :: wind_speed
         real :: sw_down, lw_down, lw_up, sh_flux, lh_flux
         real :: cos_zenith
-        real :: rad_b1, rad_b2, e_vap
         real :: albedo
-        real :: e_sat_air, e_sat_dew, rh
+        real :: e_sat_air, e_sat_dew, rh, e_vap
         real :: sw_absorbed
+        ! --- Stage 10.1.2: SW atmospheric attenuation diagnostics ---
+        real :: sw_toa
+        real :: air_mass, tau_rayleigh
+        real :: t_rayleigh, t_water_vap, t_aerosol, t_clear, t_cloud
+        real :: precipitable_water_cm
 
         ! Входные параметры
         t_air_k = atmos%t2m
@@ -336,21 +356,78 @@ contains
         ! Polar night/day handling: cos_zenith <= 0 -> no solar radiation
         if (cos_zenith .le. 0.0) then
             sw_down = 0.0
+            sw_toa = 0.0
+            t_clear = 0.0
+            t_cloud = 0.0
         else
-            ! Входящая коротковолновая радиация с облачностью
-            sw_down = SOLAR_CONSTANT*cos_zenith**2*(1.0 - CLOUD_COEFF*atmos%tcc**3)
+            ! === ATMOSPHERIC ATTENUATION (Stage 10.1.2) ===
+            ! Broadband parameterization: SW_down = S0 * cos_zenith * T_clear * T_cloud
+            ! where:
+            !   S0 * cos_zenith       = TOA solar flux on horizontal surface
+            !   T_clear               = clear-sky atmospheric transmittance
+            !   T_cloud               = cloud transmittance (function of tcc)
+            !
+            ! Clear-sky transmittance components:
+            !   T_rayleigh  = exp(-tau_rayleigh * air_mass)  ! Rayleigh scattering
+            !   T_water_vap = 1 - WV_ABSORP_COEFF * w^WV_ABSORP_EXP  ! Water vapor absorption
+            !   T_aerosol   = AEROSOL_TRANS_ARCTIC  ! Background aerosol (empirical)
+            !   T_clear = T_rayleigh * T_water_vap * T_aerosol
+            !
+            ! Cloud transmittance:
+            !   T_cloud = 1 - CLOUD_TRANS_COEFF * tcc
+            !   overcast (tcc=1) -> ~25% of clear-sky flux
+            !
+            ! All transmittances bounded to [0, 1].
+            ! Final SW_down bounded to <= TOA flux.
 
-            ! Эмпирическая коррекция атмосферной пропускания (legacy HEAT)
-            rad_b1 = (cos_zenith + 2.7)*1.0e-5
-            rad_b2 = 1.085*cos_zenith + 0.1
+            ! Top-of-atmosphere solar flux on horizontal surface
+            sw_toa = SOLAR_CONSTANT * cos_zenith
 
-            ! Парциальное давление водяного пара
+            ! Air mass (Kasten & Young 1989 approximation for large zenith angles)
+            ! m = 1 / (cos_zenith + 0.50572 * (96.07995 - zenith_deg)^-1.6364)
+            ! For simplicity, use m = 1/cos_zenith with cap at 40 (zenith ~88.5 deg)
+            air_mass = 1.0 / cos_zenith
+            if (air_mass .gt. 40.0) air_mass = 40.0
+
+            ! Rayleigh scattering transmittance
+            ! tau_rayleigh scales with surface pressure
+            tau_rayleigh = TAU_RAYLEIGH_0 * (p_atm / 101325.0)
+            t_rayleigh = exp(-tau_rayleigh * air_mass)
+            t_rayleigh = max(0.0, min(1.0, t_rayleigh))
+
+            ! Water vapor absorption (Lacis & Hansen 1974 broadband approximation)
+            ! Precipitable water w [cm] estimated from surface vapor pressure
+            ! w = PRECIP_WATER_SCALE * (e_vap / 100.0) * (101325.0 / p_atm)
+            ! where e_vap [Pa] -> hPa via /100
             e_sat_air = SAT_VAPOR_0*10.0**(TETENS_A*(t_air_k - 273.15)/t_air_k)
             e_sat_dew = SAT_VAPOR_0*10.0**(TETENS_A*(t_dew_k - 273.15)/t_dew_k)
-            rh = min(1.0, max(0.0, e_sat_dew/e_sat_air))  ! относительная влажность [0-1]
-            e_vap = rh*e_sat_air
+            rh = min(1.0, max(0.0, e_sat_dew/e_sat_air))  ! relative humidity [0-1]
+            e_vap = rh * e_sat_air  ! [Pa]
 
-            sw_down = sw_down/(rad_b1*e_vap + rad_b2)  ! итоговое SW_down
+            precipitable_water_cm = PRECIP_WATER_SCALE * (e_vap / 100.0) * (101325.0 / p_atm)
+            precipitable_water_cm = max(0.0, precipitable_water_cm)
+
+            ! T_water_vap = 1 - WV_ABSORP_COEFF * w^WV_ABSORP_EXP
+            t_water_vap = 1.0 - WV_ABSORP_COEFF * (precipitable_water_cm ** WV_ABSORP_EXP)
+            t_water_vap = max(0.0, min(1.0, t_water_vap))
+
+            ! Aerosol transmittance (Arctic background, empirical)
+            t_aerosol = AEROSOL_TRANS_ARCTIC
+
+            ! Clear-sky transmittance
+            t_clear = t_rayleigh * t_water_vap * t_aerosol
+            t_clear = max(0.0, min(1.0, t_clear))
+
+            ! Cloud transmittance: linear in tcc
+            t_cloud = 1.0 - CLOUD_TRANS_COEFF * atmos%tcc
+            t_cloud = max(0.0, min(1.0, t_cloud))
+
+            ! Final downward SW at surface
+            sw_down = sw_toa * t_clear * t_cloud
+
+            ! Bound check: SW_down cannot exceed TOA flux
+            sw_down = min(sw_down, sw_toa)
+            sw_down = max(0.0, sw_down)
         end if
 
         albedo = ALBEDO_ICE

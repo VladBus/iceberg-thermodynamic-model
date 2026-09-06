@@ -18,7 +18,7 @@
 
 ---
 
-## 10.1.1 — SOLAR GEOMETRY (Астрономическая солнечная геометрия)
+## 10.1.1 — SOLAR GEOMETRY (Астрономическая солнечная геометрия) ✅ COMPLETE
 
 ### Цель
 
@@ -96,7 +96,7 @@ cos_zenith = cos(latitude)
 
 ---
 
-## 10.1.2 — ATMOSPHERIC ATTENUATION / CLOUD PARAMETERIZATION (Атмосферное ослабление / облачность)
+## 10.1.2 — ATMOSPHERIC ATTENUATION / CLOUD PARAMETERIZATION (Атмосферное ослабление / облачность) ✅ COMPLETE
 
 ### Цель
 
@@ -563,9 +563,9 @@ Q_lateral = ρ_water · c_pw · γ_T · U_rel · ⟨T_water - T_freeze⟩_D · A
 
 ## Success Criteria for Stage 10 Completion
 
-1. ✅ Solar radiation modernized (10.1)
-2. ✅ Solar geometry physically time-dependent (10.1)
-3. ✅ Surface temperature prognostic (10.2)
+1. ✅ Solar geometry modernized (10.1.1) — astronomical δ, H, cos(θ_z) time-dependent
+2. ✅ Atmospheric attenuation modernized (10.1.2) — broadband SW parameterization, documented coefficients
+3. ⬜ Surface temperature prognostic (10.2)
 4. ✅ Turbulent sensible heat documented (10.3)
 5. ✅ Turbulent moisture exchange documented (10.3)
 6. ✅ Ice saturation vapor pressure used (10.3)

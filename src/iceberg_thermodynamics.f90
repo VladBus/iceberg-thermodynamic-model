@@ -353,6 +353,14 @@ contains
                             state%latitude, state%longitude, &
                             cos_zenith)
 
+        ! === ATMOSPHERIC VAPOR PRESSURE (always needed for LH, independent of solar geometry) ===
+        ! Compute e_vap, rh, q_air before SW branch so they are valid day and night
+        e_sat_air = SAT_VAPOR_0*10.0**(TETENS_A*(t_air_k - 273.15)/t_air_k)
+        e_sat_dew = SAT_VAPOR_0*10.0**(TETENS_A*(t_dew_k - 273.15)/t_dew_k)
+        rh = min(1.0, max(0.0, e_sat_dew/e_sat_air))  ! relative humidity [0-1]
+        e_vap = rh * e_sat_air  ! [Pa]
+        q_air = 0.622*e_vap/p_atm
+
         ! Polar night/day handling: cos_zenith <= 0 -> no solar radiation
         if (cos_zenith .le. 0.0) then
             sw_down = 0.0
@@ -399,11 +407,6 @@ contains
             ! Precipitable water w [cm] estimated from surface vapor pressure
             ! w = PRECIP_WATER_SCALE * (e_vap / 100.0) * (101325.0 / p_atm)
             ! where e_vap [Pa] -> hPa via /100
-            e_sat_air = SAT_VAPOR_0*10.0**(TETENS_A*(t_air_k - 273.15)/t_air_k)
-            e_sat_dew = SAT_VAPOR_0*10.0**(TETENS_A*(t_dew_k - 273.15)/t_dew_k)
-            rh = min(1.0, max(0.0, e_sat_dew/e_sat_air))  ! relative humidity [0-1]
-            e_vap = rh * e_sat_air  ! [Pa]
-
             precipitable_water_cm = PRECIP_WATER_SCALE * (e_vap / 100.0) * (101325.0 / p_atm)
             precipitable_water_cm = max(0.0, precipitable_water_cm)
 
@@ -448,7 +451,7 @@ contains
 
         ! === СКРЫТОЕ ТЕПЛО (Latent Heat) ===
         ! q = 0.622 * e / p
-        q_air = 0.622*e_vap/p_atm
+        ! q_air already computed before solar geometry branch (valid day/night)
         q_sat = 0.622*(SAT_VAPOR_0*10.0**(TETENS_A*(t_surf_k - 273.15)/t_surf_k))/p_atm
         ! LH = ρ_air * C_E * |V| * L_v * (q_air - q_sat)
         lh_flux = rho_air_local*LH_COEFF*wind_speed*LATENT_VAP*(q_air - q_sat)

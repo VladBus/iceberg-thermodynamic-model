@@ -33,9 +33,29 @@ module iceberg_thermodynamics
     real, parameter :: LW_CLOUD_FACTOR = 0.275      ! Фактор облачности для LW
     real, parameter :: LW_HUMID_COEFF = 0.261      ! Коэффициент влажности для LW
     real, parameter :: LW_HUMID_EXP = 7.77e-4    ! Показатель влажности для LW
-    real, parameter :: SH_COEFF = 1.7068     ! Коэффициент явного теплообмена (Stanton)
-    real, parameter :: LH_COEFF = 0.6650735  ! Коэффициент скрытого теплообмена (Dalton)
-    real, parameter :: LATENT_VAP = 2.5e6      ! Удельная теплота парообразования воды [Дж/кг]
+
+    ! Legacy SH/LH coefficients (HEAT model) — retained for reference/compatibility
+    ! SH_COEFF = 1.7068  (behaves like Stanton number, dimensionless)
+    ! LH_COEFF = 0.6650735  (~443x standard bulk C_E ≈ 0.0015)
+    ! LATENT_VAP = 2.5e6  (vaporization; used for ice-vapor exchange in legacy)
+    ! SAT_VAPOR_0 = 610.78, TETENS_A = 8.61503  (Tetens water saturation)
+    ! T_ICE = -10.0°C (fixed surface temp, no feedback)
+    ! Water saturation formula at ice surface -> 5-18% q_sat error at T < 0°C
+    ! L_v instead of L_s -> -13% energy error for sublimation/deposition
+    ! Net legacy LH = 327-403x standard bulk formula
+
+    ! Modern bulk coefficients (Stage 10.3) — used in compute_surface_melt
+    ! C_H = C_E = kappa^2 / ln(z/z0)^2  (Andreas et al. 2010, Arctic sea ice)
+    ! kappa = 0.4, z = 10 m, z0 = 1e-4 m -> C_H = C_E = 1.5e-3
+    ! CP_AIR = 1004.0 J/(kg·K), L_S = 2.835e6 J/kg (sublimation at 0°C)
+    ! Ice saturation: Murphy & Koop (2005) formulation
+    ! Sign convention: Q_SH > 0 = atmosphere heats iceberg
+    !                 Q_LH > 0 = vapor flux supplies energy to surface
+    ! Stage 10.3: Q_LH is ENERGY FLUX ONLY; no mass change from sublimation/deposition
+
+    real, parameter :: SH_COEFF = 1.7068     ! Legacy: Stanton number (dimensionless)
+    real, parameter :: LH_COEFF = 0.6650735  ! Legacy: Dalton number (dimensionless)
+    real, parameter :: LATENT_VAP = 2.5e6      ! Legacy: latent heat of vaporization [Дж/кг]
     real, parameter :: GAS_CONST_AIR = 287.0      ! Газовая постоянная сухого воздуха [Дж/(кг·К)]
     real, parameter :: SAT_VAPOR_0 = 610.78     ! Насыщенное парциальное давление при 0°C [Па]
     real, parameter :: TETENS_A = 8.61503    ! Константа Тетенса для e_sat
@@ -463,15 +483,25 @@ contains
         lw_up = -EMISSIVITY*STEFAN_BOLTZ*t_surf_k**4
 
         ! === ЯВНОЕ ТЕПЛО (Sensible Heat) ===
-        ! SH = ρ_air * C_H * |V| * (T_air - T_surf)
-        sh_flux = rho_air_local*SH_COEFF*wind_speed*(t_air_k - t_surf_k)
+        ! Stage 10.3: Modern bulk formulation
+        ! Q_SH = rho_air * CP_AIR * C_H * U * (T_air - T_surface)
+        ! C_H = C_H_NEUTRAL = 1.5e-3 (Andreas et al. 2010, Arctic sea ice)
+        ! Sign: Q_SH > 0 -> atmosphere heats iceberg
+        sh_flux = rho_air_local*CP_AIR*C_H_NEUTRAL*wind_speed*(t_air_k - t_surf_k)
 
         ! === СКРЫТОЕ ТЕПЛО (Latent Heat) ===
-        ! q = 0.622 * e / p
-        ! q_air already computed before solar geometry branch (valid day/night)
-        q_sat = 0.622*(SAT_VAPOR_0*10.0**(TETENS_A*(t_surf_k - 273.15)/t_surf_k))/p_atm
-        ! LH = ρ_air * C_E * |V| * L_v * (q_air - q_sat)
-        lh_flux = rho_air_local*LH_COEFF*wind_speed*LATENT_VAP*(q_air - q_sat)
+        ! Stage 10.3: Modern bulk formulation with ice saturation
+        ! Q_LH = rho_air * L_S * C_E * U * (q_air - q_sat_ice)
+        ! C_E = C_E_NEUTRAL = 1.5e-3
+        ! L_S = 2.835e6 J/kg (latent heat of sublimation at 0°C)
+        ! q_sat_ice = saturation specific humidity over ICE (Murphy & Koop 2005)
+        ! q_air = 0.622 * e_vap / p_atm (from ERA5 d2m/t2m, computed before solar branch)
+        ! Sign: Q_LH > 0 -> vapor flux supplies energy to surface (condensation/deposition)
+        !       Q_LH < 0 -> vapor flux removes energy from surface (sublimation)
+        ! Stage 10.3: Q_LH is ENERGY FLUX ONLY; no mass change from sublimation/deposition
+        ! (Stage 10.4 will partition Q_LH into mass fluxes)
+        q_sat = saturation_vapor_pressure_ice(t_surf_k) / p_atm * 0.622
+        lh_flux = rho_air_local*L_S*C_E_NEUTRAL*wind_speed*(q_air - q_sat)
 
         ! === NET NON-MELT HEAT FLUX ===
         q_net_non_melt = sw_absorbed + lw_down + lw_up + sh_flux + lh_flux
@@ -516,6 +546,35 @@ contains
 
         diag%t_surface = state%T_surface
     end subroutine compute_surface_melt
+
+    ! ========================================================================
+    !   НАСЫЩЕННОЕ ПАРЦИАЛЬНОЕ ДАВЛЕНИЕ НАД ЛЁДОМ (Murphy & Koop 2005)
+    ! ========================================================================
+    ! Формула Мерфи и Купа (2005) для насыщенного парциального давления
+    ! водяного пара над плоским интерфейсом лед-воздух.
+    ! Диапазон применимости: 50–273 K (для Арктики: 180–273 K).
+    ! Источник: Murphy D.M., Koop T. (2005) "Review of the vapour pressures
+    ! of ice and supercooled water for atmospheric applications"
+    ! QJRMS, 131, 1539-1565. Equation (10).
+    !
+    ! ln(e_sat_ice) = A - B/T + C*ln(T) - D*T
+    ! где:
+    !   A = 9.550426
+    !   B = 5723.265
+    !   C = 3.53068
+    !   D = 0.00728332
+    ! e_sat в [Па], T в [К]
+    !
+    ! Аргументы:
+    !   T_k - температура [К] (intent(in))
+    !   e_sat_ice - насыщенное парциальное давление над льдом [Па] (выход)
+    ! ========================================================================
+    pure real function saturation_vapor_pressure_ice(T_k) result(e_sat_ice)
+        real, intent(in) :: T_k
+
+        e_sat_ice = exp(MURPHY_KOOP_A - MURPHY_KOOP_B/T_k &
+                        + MURPHY_KOOP_C*log(T_k) - MURPHY_KOOP_D*T_k)
+    end function saturation_vapor_pressure_ice
 
     ! ========================================================================
     !   ТОЧКА ЗАМЕРЗАНИЯ (Legacy HEAT formula)

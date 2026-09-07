@@ -504,19 +504,42 @@ LW↓ = ε_a · σ · T_air⁴ · (1 + LW_cloud · tcc) · (1 - LW_humid · exp(
 LW↑ = -ε_ice · σ · T_surf⁴
 ```
 
-**Sensible Heat (SH):**
+**Sensible Heat (SH) — Stage 10.3 Modern Bulk Formulation:**
 
 ```
 ρ_air = p_atm / (R_air · T_air)
-Q_SH = ρ_air · SH_COEFF · |V_a| · (T_air - T_surf)
+Q_SH = ρ_air · CP_AIR · C_H · |V_a| · (T_air - T_surf)
+
+C_H = C_H_NEUTRAL = 1.5e-3  ! Neutral bulk transfer coefficient (Andreas et al. 2010, Arctic sea ice)
+CP_AIR = 1004.0 J/(kg·K)    ! Specific heat of dry air
+Sign: Q_SH > 0 -> atmosphere heats surface
 ```
 
-**Latent Heat (LH):**
+**Latent Heat (LH) — Stage 10.3 Modern Bulk Formulation:**
 
 ```
 q_air = 0.622 · e_vap / p_atm
-q_sat = 0.622 · e_sat_water(T_surf) / p_atm   ! WATER saturation at ICE surface
-Q_LH = ρ_air · LH_COEFF · |V_a| · L_v · (q_air - q_sat)
+q_sat_ice = 0.622 · e_sat_ice(T_surf) / p_atm  ! ICE saturation (Murphy & Koop 2005)
+Q_LH = ρ_air · L_S · C_E · |V_a| · (q_air - q_sat_ice)
+
+C_E = C_E_NEUTRAL = 1.5e-3   ! Neutral bulk transfer coefficient
+L_S = 2.835e6 J/kg           ! Latent heat of sublimation at 0°C
+e_sat_ice = exp(A - B/T + C·ln(T) - D·T)  ! Murphy & Koop (2005), Eq. 10
+    A = 9.550426, B = 5723.265, C = 3.53068, D = 0.00728332
+    T in [K], e_sat in [Pa], valid 50-273 K
+Sign: Q_LH > 0 -> vapor flux supplies energy to surface (condensation/deposition)
+      Q_LH < 0 -> vapor flux removes energy from surface (sublimation)
+Stage 10.3: Q_LH is ENERGY FLUX ONLY; no mass change from sublimation/deposition
+```
+
+**Legacy SH/LH (retained for reference):**
+```
+Q_SH_legacy = ρ_air · SH_COEFF · |V_a| · (T_air - T_surf)
+    SH_COEFF = 1.7068  ! Stanton number (dimensionless)
+Q_LH_legacy = ρ_air · LH_COEFF · |V_a| · L_v · (q_air - q_sat_water)
+    LH_COEFF = 0.6650735  ! ~443x standard C_E
+    L_v = 2.5e6 J/kg  ! Vaporization (not sublimation)
+    q_sat_water = water saturation at ice surface (5-18% error at T < 0°C)
 ```
 
 **Net & Melt:**
@@ -570,15 +593,28 @@ m_surface = max(0, Q_net) / (ρ_ice · L_f)
 | WV_ABSORP_COEFF        | 0.077     | -         | Water vapor absorption coefficient (Lacis & Hansen 1974) |
 | WV_ABSORP_EXP          | 0.3       | -         | Water vapor absorption exponent (Lacis & Hansen 1974) |
 | PRECIP_WATER_SCALE     | 0.1       | cm/(hPa)  | Precipitable water scale from surface e_vap (empirical) |
+| ! Stage 10.3: Modern turbulent exchange
+| CP_AIR                 | 1004.0    | J/(kg·K)  | Specific heat of dry air                          |
+| L_S                    | 2.835e6   | J/kg      | Latent heat of sublimation at 0°C                 |
+| C_H_NEUTRAL            | 1.5e-3    | -         | Neutral bulk transfer coeff (Andreas et al. 2010)  |
+| C_E_NEUTRAL            | 1.5e-3    | -         | Neutral bulk transfer coeff for moisture          |
+| VON_KARMAN             | 0.4       | -         | Von Karman constant                               |
+| Z0_ICE                 | 1.0e-4    | m         | Roughness length for smooth ice (Andreas et al. 2010) |
+| MURPHY_KOOP_A          | 9.550426  | -         | Murphy & Koop (2005) ice saturation A             |
+| MURPHY_KOOP_B          | 5723.265  | K         | Murphy & Koop (2005) ice saturation B             |
+| MURPHY_KOOP_C          | 3.53068   | -         | Murphy & Koop (2005) ice saturation C             |
+| MURPHY_KOOP_D          | 0.00728332| 1/K       | Murphy & Koop (2005) ice saturation D             |
 
 ### 8.6 Численная схема
 
 - Explicit evaluation каждый timestep
-- T_surf = T_ICE = -10.0°C (fixed, no feedback)
+- T_surf = state%T_surface (prognostic, Stage 10.2)
 - Solar geometry: астрономическая (Stage 10.1.1) — declination δ, hour angle H, cos(θ_z) каждый timestep
 - Polar night/day: cos(θ_z) ≤ 0 → SW↓ = 0
 - max(0, Q_net) предотвращает отрицательное таяние
 - SW atmospheric attenuation: T_clear = T_rayleigh·T_water_vapor·T_aerosol; T_cloud = 1 - 0.75·tcc (Stage 10.1.2)
+- SH/LH: Modern bulk formulation with ice saturation (Stage 10.3)
+- L_S = 2.835e6 J/kg used for vapor exchange energy flux (no mass change in Stage 10.3)
 
 ### 8.7 Реализация
 

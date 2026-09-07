@@ -48,7 +48,7 @@ program iceberg_test_surface_latent_reference
     ! Reference constants (standard bulk)
     real :: C_E_REF       ! Dalton number for moisture, typically 0.0015
     real :: L_V           ! Latent heat of vaporization
-    real :: L_S           ! Latent heat of sublimation
+    ! L_S now from iceberg_types module
 
     ! Derived
     real :: SAT_VAPOR_0_ICE  ! 611.15 Pa at 0°C for ice
@@ -79,7 +79,7 @@ program iceberg_test_surface_latent_reference
     ! Reference constants
     C_E_REF = 0.0015      ! Standard neutral bulk transfer coefficient for moisture
     L_V = 2.501e6         ! Latent heat of vaporization at 0°C [J/kg]
-    L_S = 2.835e6         ! Latent heat of sublimation at 0°C [J/kg]
+    ! L_S = 2.835e6 from iceberg_types module
     SAT_VAPOR_0_ICE = 611.15  ! Saturation vapor pressure over ice at 0°C [Pa]
     TETENS_A_ICE = 9.5      ! Approximate constant for ice saturation (Tetens-like)
 
@@ -168,7 +168,7 @@ program iceberg_test_surface_latent_reference
         ! Reference latent heat flux (using L_v and ice saturation)
         lh_flux_ref = rho_air_calc*C_E_REF*wind_speed*L_V*dq_ref
 
-        ! Also compute with L_s
+        ! Also compute with L_s (from iceberg_types module)
         lh_flux_ref_Ls = rho_air_calc*C_E_REF*wind_speed*L_S*dq_ref
 
         ! Output

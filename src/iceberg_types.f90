@@ -73,6 +73,52 @@ module iceberg_types
     real, parameter :: OMEGA = 7.2921150e-5
 
     ! ========================================================================
+    !   MODERN TURBULENT HEAT/MOISTURE EXCHANGE (Stage 10.3)
+    ! ========================================================================
+    ! Sensible heat:
+    !   Q_SH = rho_air * CP_AIR * C_H * U * (T_air - T_surface)
+    ! Latent heat (vapor exchange):
+    !   Q_LH = rho_air * L_S * C_E * U * (q_air - q_sat_ice)
+    !
+    ! Neutral bulk coefficients (Andreas et al. 2010, Arctic sea ice):
+    !   C_H = C_E = kappa^2 / [ln(z/z0)]^2
+    !   kappa = 0.4 (von Karman constant)
+    !   z = 10 m (measurement height)
+    !   z0 = 1e-4 m (roughness length for smooth ice, Andreas et al. 2010)
+    !   -> C_H = C_E = 1.5e-3
+    !
+    ! Legacy values (from HEAT model):
+    !   SH_COEFF = 1.7068  -> behaves like Stanton number (dimensionless)
+    !   LH_COEFF = 0.6650735 -> ~443x standard C_E (0.0015)
+    !   L_v = 2.5e6 (vaporization) used for ice-vapor exchange
+    !   Water saturation formula at ice surface (5-18% error at T < 0°C)
+    !
+    ! Modern formulation uses:
+    !   CP_AIR = 1004.0 J/(kg·K)  -- specific heat of dry air
+    !   L_S = 2.835e6 J/kg        -- latent heat of sublimation at 0°C
+    !   C_H = C_E = 1.5e-3        -- neutral bulk transfer coefficients
+    !   q_sat_ice = saturation vapor pressure over ice (Murphy & Koop 2005)
+    !   Sign convention: Q_SH > 0 = atmosphere heats iceberg
+    !                    Q_LH > 0 = vapor flux supplies energy to surface
+    !   Stage 10.3: Q_LH is ENERGY FLUX ONLY; no mass change from sublimation/deposition
+
+    real, parameter :: CP_AIR = 1004.0         ! Удельная теплоёмкость сухого воздуха [Дж/(кг·К)]
+    real, parameter :: L_S = 2.835e6           ! Удельная теплота сублимации льда [Дж/кг] (при 0°C)
+    real, parameter :: VON_KARMAN = 0.4        ! Константа Кармана [безразм.]
+    real, parameter :: Z0_ICE = 1.0e-4         ! Длина шероховатости для гладкого льда [м] (Andreas et al. 2010)
+    real, parameter :: Z_REF = 10.0            ! Высота измерения ветра [м] (ERA5 u10/v10)
+    ! Neutral bulk transfer coefficient: C_H = C_E = kappa^2 / ln(z/z0)^2
+    real, parameter :: C_H_NEUTRAL = 1.5e-3    ! Neutral bulk transfer coeff for sensible heat [безразм.]
+    real, parameter :: C_E_NEUTRAL = 1.5e-3    ! Neutral bulk transfer coeff for latent heat [безразм.]
+
+    ! Saturation vapor pressure over ice (Murphy & Koop 2005)
+    ! Valid range: 50-273 K; used for 180-273 K (Arctic)
+    real, parameter :: MURPHY_KOOP_A = 9.550426
+    real, parameter :: MURPHY_KOOP_B = 5723.265
+    real, parameter :: MURPHY_KOOP_C = 3.53068
+    real, parameter :: MURPHY_KOOP_D = 0.00728332
+
+    ! ========================================================================
     !   ТИПЫ СОСТОЯНИЯ
     ! ========================================================================
 
@@ -188,6 +234,8 @@ module iceberg_types
     public :: ALBEDO_ICE, EMISSIVITY, STEFAN_BOLTZ
     public :: T_ICE, MIN_THICKNESS
     public :: C_ICE, H_EFF, T_MELT
+    public :: CP_AIR, L_S, VON_KARMAN, Z0_ICE, Z_REF, C_H_NEUTRAL, C_E_NEUTRAL
+    public :: MURPHY_KOOP_A, MURPHY_KOOP_B, MURPHY_KOOP_C, MURPHY_KOOP_D
     public :: OMEGA
     public :: ocean_profile, atmos_forcing, iceberg_diagnostics, iceberg_state
 

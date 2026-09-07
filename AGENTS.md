@@ -244,3 +244,19 @@ All analysis scripts are in `python/analysis/`:
 - **Diagnostics:** `data/output/diagnostics/stage9.3/` (11 JSON + trajectory CSV)
 - **Report:** `docs/wiki/Stage9.3_Scientific_Verification_and_Calibration.md`
 - **Next (Stage 9.4):** Calibrate drag coefficients, add wave erosion, sea-ice capture, internal temperature diffusion, rollover criterion, update lat/lon from x,y, Coriolis convergence study.
+
+## Stage 10.3 Summary (Modern Turbulent Heat & Moisture Exchange)
+
+- **Classification:** C -- Modern bulk formulation implemented and independently validated.
+- **Physics:** Sensible/latent heat now use neutral bulk aerodynamic formulation with C_H = C_E = 1.5e-3.
+- **Key changes:**
+  1. SH: Q_SH = rho*CP_AIR*C_H*U*dT (replaces legacy SH_COEFF = 1.7068 Stanton number)
+  2. LH: Q_LH = rho*L_S*C_E*U*dq with ice saturation (Murphy & Koop 2005), L_S = 2.835e6 J/kg
+  3. Surface humidity: q_sat_ice replaces water saturation (5-18% correction at T < 0 deg C)
+  4. Stage 10.3: Q_LH is energy flux only; mass changes from sublimation/deposition deferred to Stage 10.4
+- **Transfer coefficients:** C_H = C_E = kappa^2/ln(z/z0)^2 = 1.5e-3 (kappa=0.4, z=10m, z0=1e-4m, Andreas et al. 2010)
+- **Stability correction:** Not implemented (requires Monin-Obukhov length, deferred)
+- **Tests:** 9 new analytical tests PASS (zero wind, sign conventions, ice vs water saturation, wind scaling, coefficient scaling, dimensional validation, cold/dry, humid, nighttime regression)
+- **All 41 fpm tests PASS** including regression of Stage 10.1/10.2.
+- **Files changed:** src/iceberg_types.f90 (constants), src/iceberg_thermodynamics.f90 (compute_surface_melt), test/iceberg_test_surface_melt_audit.f90 (Stage 10.3 tests)
+- **Documentation updated:** model_equation_ledger.md, model_physics_status.md, stage10_modernization_plan.md

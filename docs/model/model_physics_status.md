@@ -82,43 +82,69 @@ cos_zenith = cos(latitude)
 
 ---
 
-### 17. Sensible heat — **B (Stage 10.3)**
+### 17. Sensible heat — **C (Stage 10.3 ✅)**
 
-**Текущая формулировка:**
+**Современная формулировка (Stage 10.3):**
 
 ```
-Q_SH = rho_air * SH_COEFF * U * (T_air - T_surf)
+Q_SH = ρ_air · CP_AIR · C_H · U · (T_air - T_surf)
+ρ_air = p_atm / (R_air · T_air)
+CP_AIR = 1004.0 J/(kg·K)
+C_H = C_H_NEUTRAL = 1.5e-3  ! Neutral bulk (Andreas et al. 2010, Arctic sea ice)
+Sign: Q_SH > 0 -> atmosphere heats iceberg
 ```
 
-где `SH_COEFF = 1.7068` (legacy Stanton number, dimensionless).
+**Legacy (retained for reference):**
+```
+SH_COEFF = 1.7068  ! Stanton number (dimensionless), Q_SH = ρ·SH_COEFF·U·ΔT
+```
 
-**Проблема:** Коэффициент не имеет современной интерпретации как bulk transfer coefficient.
-
-**Решение:** Stage 10.3 — bulk formulation с C_H.
+**Решено в Stage 10.3:** Bulk formulation с современным C_H.
 
 ---
 
-### 18. Latent heat — **B (Stage 10.3/10.4)**
+### 18. Latent heat — **C (Stage 10.3 ✅)** / **B (Stage 10.4 pending)**
 
-**Текущая формулировка:**
+**Современная формулировка (Stage 10.3):**
 
 ```
-LH_COEFF = 0.6650735           ! legacy, нет цитирования
-q_sat = water_saturation(T_surf)  ! water formula at ice surface
-L_v = 2.5e6 J/kg                  ! vaporization, не sublimation
-T_ICE = -10.0°C (const)           ! нет обратной связи
+Q_LH = ρ_air · L_S · C_E · U · (q_air - q_sat_ice)
+ρ_air = p_atm / (R_air · T_air)
+q_air = 0.622 · e_vap / p_atm  (from ERA5 d2m/t2m)
+q_sat_ice = 0.622 · e_sat_ice(T_surf) / p_atm  ! ICE saturation
+e_sat_ice = Murphy & Koop (2005), Eq. 10, valid 50–273 K
+L_S = 2.835e6 J/kg  ! Latent heat of sublimation at 0°C
+C_E = C_E_NEUTRAL = 1.5e-3  ! Neutral bulk (Andreas et al. 2010)
+Sign: Q_LH > 0 -> vapor flux supplies energy (condensation/deposition)
+      Q_LH < 0 -> vapor flux removes energy (sublimation)
+Stage 10.3: Q_LH is ENERGY FLUX ONLY; no mass change from sublimation/deposition
 ```
 
-**Факторы экстремальности:**
+**Legacy (retained for reference):**
+```
+LH_COEFF = 0.6650735  ! ~443× standard C_E
+L_v = 2.5e6 J/kg      ! Vaporization (not sublimation)
+q_sat = water_saturation  ! 5–18% error at T < 0°C
+```
 
-- LH_COEFF ≈ 443× стандартного C_E (0.0015)
-- Fixed T_ICE блокирует condensation heating feedback
-- Water saturation переоценивает q_sat на 5–18% при T < 0°C
-- L_v вместо L_s даёт -13% к энергии
+**Решено в Stage 10.3:** Modern bulk с C_E, ice saturation (Murphy & Koop 2005), L_s.
+**Остается для Stage 10.4:** Разделение sublimation/deposition/melting с массовыми изменениями.
 
-**Независимый бенчмарк:** Model LH = 327–403× standard bulk formula.
+---
 
-**Решение:** Stage 10.3 — modern bulk с C_E, ice saturation, L_s. Stage 10.4 — разделение sublimation/deposition/melting.
+### 19. Surface temperature — **C (Stage 10.2 ✅)**
+
+**Современная формулировка (Stage 10.2):**
+
+```
+T_surface — prognostic
+C_eff = ρ_ice · c_ice · h_eff = 955500 J/(m²·K)
+dT/dt = Q_net_non_melt / C_eff  (T_surface < 0°C)
+T_surface = 0°C + excess → melt  (crossing melting point)
+m_surface = max(Q_net_non_melt, 0) / (ρ_ice · L_f)  (T_surface ≥ 0°C)
+```
+
+**Решено в Stage 10.2:** Prognostic T_surface с C_eff·dT/dt = Q_net_non_melt.
 
 ---
 

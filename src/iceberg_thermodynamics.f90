@@ -498,10 +498,15 @@ contains
             end if
         else
             ! Surface at or above melting point
-            state%T_surface = T_MELT
             if (q_net_non_melt .gt. 0.0) then
+                ! Positive energy -> melt, surface stays at T_MELT
+                state%T_surface = T_MELT
                 m_surface = q_net_non_melt/(RHO_ICE*LATENT_HEAT)
             else
+                ! Negative energy -> surface cools below T_MELT
+                ! (no melt, temperature drops)
+                t_surf_new = state%T_surface + q_net_non_melt*dt/c_eff
+                state%T_surface = min(T_MELT, t_surf_new)
                 m_surface = 0.0
             end if
         end if

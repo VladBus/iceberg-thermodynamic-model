@@ -80,12 +80,20 @@ module iceberg_types
     ! Latent heat (vapor exchange):
     !   Q_LH = rho_air * L_S * C_E * U * (q_air - q_sat_ice)
     !
-    ! Neutral bulk coefficients (Andreas et al. 2010, Arctic sea ice):
+    ! Neutral bulk coefficients (theoretical logarithmic formulation):
     !   C_H = C_E = kappa^2 / [ln(z/z0)]^2
     !   kappa = 0.4 (von Karman constant)
     !   z = 10 m (measurement height)
     !   z0 = 1e-4 m (roughness length for smooth ice, Andreas et al. 2010)
-    !   -> C_H = C_E = 1.5e-3
+    !   Theoretical value: C = 0.4^2 / ln(10/1e-4)^2 ≈ 1.21e-3
+    !
+    ! Actual production coefficient (Stage 10.3):
+    !   C_H = C_E = 1.5e-3  -- fixed neutral bulk transfer coefficient
+    !   This value is a documented model parameter for the neutral bulk
+    !   formulation. It is NOT the direct result of kappa^2/ln(z/z0)^2
+    !   with z0=1e-4 m (which gives ~1.21e-3). The logarithmic relation
+    !   is retained only as theoretical context. No stability correction
+    !   is implemented in Stage 10.3.
     !
     ! Legacy values (from HEAT model):
     !   SH_COEFF = 1.7068  -> behaves like Stanton number (dimensionless)
@@ -96,7 +104,7 @@ module iceberg_types
     ! Modern formulation uses:
     !   CP_AIR = 1004.0 J/(kg·K)  -- specific heat of dry air
     !   L_S = 2.835e6 J/kg        -- latent heat of sublimation at 0°C
-    !   C_H = C_E = 1.5e-3        -- neutral bulk transfer coefficients
+    !   C_H = C_E = 1.5e-3        -- fixed neutral bulk transfer coefficients
     !   q_sat_ice = saturation vapor pressure over ice (Murphy & Koop 2005)
     !   Sign convention: Q_SH > 0 = atmosphere heats iceberg
     !                    Q_LH > 0 = vapor flux supplies energy to surface
@@ -107,7 +115,8 @@ module iceberg_types
     real, parameter :: VON_KARMAN = 0.4        ! Константа Кармана [безразм.]
     real, parameter :: Z0_ICE = 1.0e-4         ! Длина шероховатости для гладкого льда [м] (Andreas et al. 2010)
     real, parameter :: Z_REF = 10.0            ! Высота измерения ветра [м] (ERA5 u10/v10)
-    ! Neutral bulk transfer coefficient: C_H = C_E = kappa^2 / ln(z/z0)^2
+    ! Neutral bulk transfer coefficient (theoretical: kappa^2/ln(z/z0)^2 ≈ 1.21e-3;
+    ! production uses fixed value 1.5e-3 as documented model parameter)
     real, parameter :: C_H_NEUTRAL = 1.5e-3    ! Neutral bulk transfer coeff for sensible heat [безразм.]
     real, parameter :: C_E_NEUTRAL = 1.5e-3    ! Neutral bulk transfer coeff for latent heat [безразм.]
 

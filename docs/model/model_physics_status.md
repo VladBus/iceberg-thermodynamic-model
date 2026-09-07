@@ -1,8 +1,8 @@
 # Статус физических блоков модели (Model Physics Status)
 
-**Дата:** 2026-09-06  
-**Physics baseline commit:** cef2a5a "Stage 9.4C.2 — Surface Energy Balance & Latent Heat Correction"  
-**Current repository baseline:** 294762e (Stage 9.4C.3-R1, documentation/cleanup)  
+**Дата:** 2026-09-07  
+**Physics baseline commit:** a1fc859 "Correct Stage 10.2 analytical validation"  
+**Current repository stage:** Stage 10.3 — corrective validation  
 **FPM версия:** 0.13.0 (local & CI aligned)  
 **Test targets:** 41  
 **Tests PASS:** 41 / 41
@@ -90,8 +90,15 @@ cos_zenith = cos(latitude)
 Q_SH = ρ_air · CP_AIR · C_H · U · (T_air - T_surf)
 ρ_air = p_atm / (R_air · T_air)
 CP_AIR = 1004.0 J/(kg·K)
-C_H = C_H_NEUTRAL = 1.5e-3  ! Neutral bulk (Andreas et al. 2010, Arctic sea ice)
+C_H = C_H_NEUTRAL = 1.5e-3  ! Fixed neutral bulk coefficient (model parameter)
 Sign: Q_SH > 0 -> atmosphere heats iceberg
+```
+
+**Theoretical context (not direct derivation):**
+```
+Neutral bulk from logarithmic law: C_H = κ² / ln(z/z₀)²
+κ = 0.4, z = 10 m, z₀ = 1e-4 m → C ≈ 1.21e-3
+Production uses fixed C_H = 1.5e-3 (documented parameter)
 ```
 
 **Legacy (retained for reference):**
@@ -114,10 +121,17 @@ q_air = 0.622 · e_vap / p_atm  (from ERA5 d2m/t2m)
 q_sat_ice = 0.622 · e_sat_ice(T_surf) / p_atm  ! ICE saturation
 e_sat_ice = Murphy & Koop (2005), Eq. 10, valid 50–273 K
 L_S = 2.835e6 J/kg  ! Latent heat of sublimation at 0°C
-C_E = C_E_NEUTRAL = 1.5e-3  ! Neutral bulk (Andreas et al. 2010)
+C_E = C_E_NEUTRAL = 1.5e-3  ! Fixed neutral bulk coefficient (model parameter)
 Sign: Q_LH > 0 -> vapor flux supplies energy (condensation/deposition)
       Q_LH < 0 -> vapor flux removes energy (sublimation)
 Stage 10.3: Q_LH is ENERGY FLUX ONLY; no mass change from sublimation/deposition
+```
+
+**Theoretical context (not direct derivation):**
+```
+Neutral bulk from logarithmic law: C_E = κ² / ln(z/z₀)²
+κ = 0.4, z = 10 m, z₀ = 1e-4 m → C ≈ 1.21e-3
+Production uses fixed C_E = 1.5e-3 (documented parameter)
 ```
 
 **Legacy (retained for reference):**
@@ -203,8 +217,9 @@ m_surface = max(Q_net, 0) / (rho_ice * L_f)
 | iceberg_test_surface_latent_reference | Reference benchmark (diagnostic) | PASS   |
 | iceberg_test_solar_radiation_geometry | Geometry comparison              | PASS   |
 | iceberg_test_surface_energy_balance   | Flux closure                     | PASS   |
+| iceberg_test_surface_melt_audit       | Full audit (26 checks)           | PASS   |
 
-**Все 4 новых теста PASS.** Infrastructure готова для Stage 10 validation.
+**Все 41 тестов PASS.** Infrastructure готова для Stage 10 validation.
 
 ---
 
@@ -233,27 +248,30 @@ m_surface = max(Q_net, 0) / (rho_ice * L_f)
 
 ---
 
-## Production Physics Changed in Stage 9.4C.2
+## Production Physics Changed in Stage 10.3
 
-**NO** — Production physics НЕ изменена. Добавлены только:
+**YES** — Production physics ИЗМЕНЕНА в Stage 10.3:
 
-- 4 независимых теста
-- Документация (Stage 9.4C.2 report)
+- Sensible heat: Q_SH = ρ·CP_AIR·C_H·U·ΔT (CP_AIR=1004, C_H=1.5e-3)
+- Latent heat: Q_LH = ρ·L_S·C_E·U·Δq (L_S=2.835e6, C_E=1.5e-3, ice saturation)
+- Ice saturation: Murphy & Koop (2005) formulation
+- Q_LH is energy flux only (no mass change until Stage 10.4)
+- Prognostic T_surface used for all surface fluxes
 
 ---
 
-## Stage 10 Entry Readiness
+## Stage 10 Readiness (post Stage 10.3 corrective validation)
 
 | Requirement              | Status                     |
 | ------------------------ | -------------------------- |
-| Physics baseline frozen  | ✅ cef2a5a                 |
-| Current repo baseline    | ✅ 294762e                 |
-| Equation Ledger          | ✅ Complete (Stage 9.4C.3) |
+| Physics baseline frozen  | ✅ a1fc859                 |
+| Current repo stage       | ✅ Stage 10.3 corrective   |
+| Equation Ledger          | ✅ Complete (Stage 10.3)   |
 | Physics Status           | ✅ Complete (this file)    |
-| Modernization Plan       | ✅ Complete (Stage 9.4C.3) |
+| Modernization Plan       | ✅ Complete (Stage 10.3)   |
 | CI/FPM aligned           | ✅ 0.13.0 both             |
-| Independent tests        | ✅ 4 new tests PASS        |
+| Independent tests        | ✅ 41 tests PASS           |
 | TEST_11 baseline         | ✅ Documented              |
 | Legacy blocks identified | ✅ All B-blocks catalogued |
 
-**Stage 10 readiness:** READY after documentation corrections (this R1).
+**Stage 10 readiness:** Stage 10.3 complete with corrective validation. Ready for Stage 10.4.

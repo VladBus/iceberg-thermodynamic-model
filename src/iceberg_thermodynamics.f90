@@ -45,8 +45,11 @@ module iceberg_thermodynamics
     ! Net legacy LH = 327-403x standard bulk formula
 
     ! Modern bulk coefficients (Stage 10.3) — used in compute_surface_melt
-    ! C_H = C_E = kappa^2 / ln(z/z0)^2  (Andreas et al. 2010, Arctic sea ice)
-    ! kappa = 0.4, z = 10 m, z0 = 1e-4 m -> C_H = C_E = 1.5e-3
+    ! Theoretical neutral bulk: C_H = C_E = kappa^2 / ln(z/z0)^2
+    !   kappa = 0.4, z = 10 m, z0 = 1e-4 m -> theoretical C ≈ 1.21e-3
+    ! Production uses fixed neutral bulk coefficients:
+    !   C_H = C_E = 1.5e-3  (documented model parameter)
+    !   NOT derived from kappa^2/ln(z/z0)^2 with z0=1e-4 m
     ! CP_AIR = 1004.0 J/(kg·K), L_S = 2.835e6 J/kg (sublimation at 0°C)
     ! Ice saturation: Murphy & Koop (2005) formulation
     ! Sign convention: Q_SH > 0 = atmosphere heats iceberg

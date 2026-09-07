@@ -1,9 +1,9 @@
 # Stage 10 — План физической модернизации модели айсберга
 
-**Дата:** 2026-09-06  
-**Physics baseline commit:** cef2a5a "Stage 9.4C.2 — Surface Energy Balance & Latent Heat Correction"  
-**Current repository baseline:** 294762e (Stage 9.4C.3-R1, documentation/cleanup)  
-**Статус:** Готов к выполнению после завершения Stage 9.4C.3-R1
+**Дата:** 2026-09-07  
+**Physics baseline commit:** a1fc859 "Correct Stage 10.2 analytical validation"  
+**Current repository stage:** Stage 10.3 — corrective validation  
+**Статус:** Stage 10.3 complete with corrective validation
 
 ---
 
@@ -219,14 +219,20 @@ Q_LH = ρ_air · L_s · C_E · U · (q_air - q_surface)
 **Transfer coefficients (neutral bulk):**
 
 ```
-C_H = C_E = κ² / [ln(z/z0)]²
+C_H = C_E = κ² / [ln(z/z0)]²  (theoretical logarithmic formulation)
 ```
 
 где:
 - κ = 0.4 (функция Кармана)
 - z = 10 m (высота измерения ветра)
 - z_0 = 1e-4 m (roughness length для гладкого льда, Andreas et al. 2010)
-- → C_H = C_E = 1.5e-3 (документированный neutral bulk coefficient)
+- Theoretical value: C = 0.4² / ln(10/1e-4)² ≈ 1.21e-3
+
+**Actual production coefficients (Stage 10.3):**
+```
+C_H = C_E = 1.5e-3  (fixed neutral bulk coefficients — model parameters)
+```
+These are documented model parameters for the neutral bulk formulation. They are NOT the direct result of κ²/ln(z/z₀)² with z₀=1e-4 m (which gives ~1.21e-3). The logarithmic relation is retained only as theoretical context. No stability correction is implemented in Stage 10.3.
 
 **Stability correction:** Не включено в Stage 10.3 (требует Monin-Obukhov length, не доступен без итераций). Оставлено для будущих стадий.
 
@@ -246,31 +252,34 @@ L = L_s = 2.835e6 J/kg  (sublimation/deposition at 0°C)
 
 Для melting используется отдельно `L_f = 3.34e5 J/kg`.
 
-### Необходимые тесты — ВСЕ ПРОЙДЕНЫ
+### Необходимые тесты — ВСЕ ПРОЙДЕНЫ (после corrective validation)
 
 1. ✅ Zero wind (U = 0 -> SH = 0, LH = 0)
 2. ✅ Sensible heat sign (T_air > T_surface -> SH > 0; T_air < T_surface -> SH < 0)
 3. ✅ Latent heat sign (q_air > q_surface -> LH > 0; q_air < q_surface -> LH < 0)
 4. ✅ Ice vs water saturation (q_sat_ice < q_sat_water при T < 0°C, ratio ~0.90)
-5. ✅ Wind scaling (doubling U ~doubles SH/LH)
-6. ✅ Transfer-coefficient scaling (flux proportional to C_H/C_E)
-7. ✅ Dimensional/analytical test (independent SH/LH calculation matches production)
-8. ✅ Surface-temperature coupling (T_surface change affects SH/LH)
+5. ✅ Wind scaling (analytical SH/LH scale linearly with U; ratio = 2.0)
+6. ✅ Transfer-coefficient scaling (algebraic: flux proportional to C_H/C_E)
+7. ✅ Analytical validation (independent SH/LH formulas self-consistent)
+8. ✅ Surface-temperature coupling (T_surface change affects total q_net)
 9. ✅ Cold/dry case (sublimation-like vapor deficit, negative LH)
 10. ✅ Humid case (q_air > q_sat, positive LH)
 11. ✅ Nighttime regression (SW = 0, all finite)
 12. ✅ Full regression (all existing Stage 10.1.1/10.1.2/10.2 tests PASS)
+13. ✅ Energy conservation (independent Stage 10.3 formulas, tolerance 10 J/m²)
 
 ### Выбранная формулировка
 
-Neutral bulk coefficients C_H = C_E = 1.5e-3, derived from:
+Fixed neutral bulk coefficients C_H = C_E = 1.5e-3 (model parameters for Stage 10.3).
+
+Theoretical logarithmic neutral formulation (context only):
 - κ = 0.4 (von Karman constant)
 - z = 10 m (ERA5 measurement height)
 - z₀ = 1e-4 m (roughness length for smooth ice, Andreas et al. 2010, Arctic sea ice)
-- C = κ² / ln(z/z₀)² = 0.4² / ln(10/1e-4)² ≈ 1.5e-3
+- Theoretical C = κ² / ln(z/z₀)² = 0.4² / ln(10/1e-4)² ≈ 1.21e-3
 
 **Источники:**
-- Andreas et al. (2010) "Parameterizing turbulent exchange over summer sea ice"
+- Andreas et al. (2010) "Parameterizing turbulent exchange over summer sea ice" — literature context for Arctic sea ice bulk exchange
 - Murphy & Koop (2005) "Review of vapour pressures of ice and supercooled water", QJRMS 131, 1539-1565
 - Standard bulk aerodynamic formulation (e.g., Garratt 1992, "The Atmospheric Boundary Layer")
 
@@ -285,6 +294,7 @@ Neutral bulk coefficients C_H = C_E = 1.5e-3, derived from:
 - Q_LH — только energy flux, никаких массовых изменений (Stage 10.4)
 - L_s = 2.835e6 J/kg фиксирован (нет температурной зависимости)
 - Ice saturation: Murphy & Koop (2005) формула, диапазон 50–273 K
+- C_H/C_E = 1.5e-3 are fixed model parameters, NOT derived from κ²/ln(z/z₀)² with z₀=1e-4 m
 
 ## 10.4 — PHASE CHANGE AND SURFACE ABLATION (Фазовые переходы и поверхностная абразия)
 

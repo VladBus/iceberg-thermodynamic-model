@@ -1,9 +1,9 @@
 # Model Equation Ledger — Математическая спецификация текущей модели
 
-**Дата:** 2026-09-06  
-**Physics baseline commit:** cef2a5a "Stage 9.4C.2 — Surface Energy Balance & Latent Heat Correction"  
-**Current repository baseline:** 294762e (Stage 9.4C.3-R1, documentation/cleanup)  
-**Версия модели:** Stage 9.4C.3-R1 (documentation correction only; production physics unchanged from Stage 9.4C.2)
+**Дата:** 2026-09-07  
+**Physics baseline commit:** a1fc859 "Correct Stage 10.2 analytical validation"  
+**Current repository stage:** Stage 10.3 — corrective validation  
+**Model version:** Stage 10.3 corrective validation (production physics from f82c527 + corrective fixes)
 
 ---
 
@@ -510,7 +510,7 @@ LW↑ = -ε_ice · σ · T_surf⁴
 ρ_air = p_atm / (R_air · T_air)
 Q_SH = ρ_air · CP_AIR · C_H · |V_a| · (T_air - T_surf)
 
-C_H = C_H_NEUTRAL = 1.5e-3  ! Neutral bulk transfer coefficient (Andreas et al. 2010, Arctic sea ice)
+C_H = C_H_NEUTRAL = 1.5e-3  ! Fixed neutral bulk transfer coefficient (model parameter)
 CP_AIR = 1004.0 J/(kg·K)    ! Specific heat of dry air
 Sign: Q_SH > 0 -> atmosphere heats surface
 ```
@@ -522,7 +522,7 @@ q_air = 0.622 · e_vap / p_atm
 q_sat_ice = 0.622 · e_sat_ice(T_surf) / p_atm  ! ICE saturation (Murphy & Koop 2005)
 Q_LH = ρ_air · L_S · C_E · |V_a| · (q_air - q_sat_ice)
 
-C_E = C_E_NEUTRAL = 1.5e-3   ! Neutral bulk transfer coefficient
+C_E = C_E_NEUTRAL = 1.5e-3   ! Fixed neutral bulk transfer coefficient (model parameter)
 L_S = 2.835e6 J/kg           ! Latent heat of sublimation at 0°C
 e_sat_ice = exp(A - B/T + C·ln(T) - D·T)  ! Murphy & Koop (2005), Eq. 10
     A = 9.550426, B = 5723.265, C = 3.53068, D = 0.00728332
@@ -531,6 +531,19 @@ Sign: Q_LH > 0 -> vapor flux supplies energy to surface (condensation/deposition
       Q_LH < 0 -> vapor flux removes energy from surface (sublimation)
 Stage 10.3: Q_LH is ENERGY FLUX ONLY; no mass change from sublimation/deposition
 ```
+
+**Theoretical context (not used directly in production):**
+```
+Neutral bulk transfer coefficient from logarithmic law:
+  C_H = C_E = κ² / [ln(z/z₀)]²
+  κ = 0.4 (von Karman constant)
+  z = 10 m (measurement height)
+  z₀ = 1e-4 m (roughness length for smooth ice, Andreas et al. 2010)
+  → C = 0.4² / ln(10/1e-4)² ≈ 1.21e-3
+```
+This theoretical value (≈1.21e-3) differs from the production fixed coefficient (1.5e-3).
+The logarithmic relation is retained as theoretical context only.
+No stability correction (Monin-Obukhov) is implemented in Stage 10.3.
 
 **Legacy SH/LH (retained for reference):**
 ```
@@ -596,8 +609,8 @@ m_surface = max(0, Q_net) / (ρ_ice · L_f)
 | ! Stage 10.3: Modern turbulent exchange
 | CP_AIR                 | 1004.0    | J/(kg·K)  | Specific heat of dry air                          |
 | L_S                    | 2.835e6   | J/kg      | Latent heat of sublimation at 0°C                 |
-| C_H_NEUTRAL            | 1.5e-3    | -         | Neutral bulk transfer coeff (Andreas et al. 2010)  |
-| C_E_NEUTRAL            | 1.5e-3    | -         | Neutral bulk transfer coeff for moisture          |
+| C_H_NEUTRAL            | 1.5e-3    | -         | Fixed neutral bulk coefficient (model parameter; literature-context documented) |
+| C_E_NEUTRAL            | 1.5e-3    | -         | Fixed neutral bulk coefficient; same formulation  |
 | VON_KARMAN             | 0.4       | -         | Von Karman constant                               |
 | Z0_ICE                 | 1.0e-4    | m         | Roughness length for smooth ice (Andreas et al. 2010) |
 | MURPHY_KOOP_A          | 9.550426  | -         | Murphy & Koop (2005) ice saturation A             |
@@ -645,11 +658,12 @@ Subroutines: compute_surface_melt, saturation_vapor_pressure, ...
 
 1. **Solar geometry:** FIXED in Stage 10.1.1 — astronomical δ, H, cos(θ_z) now time-dependent
 2. **Atmospheric attenuation (SW):** PARTIALLY FIXED in Stage 10.1.2 — broadband parameterization with documented coefficients; CLOUD_TRANS_COEFF=0.75, AEROSOL_TRANS_ARCTIC=0.93 (empirical legacy), PRECIP_WATER_SCALE=0.1 (empirical). NOT using ERA5 SSRD/STRD.
-3. **LH_COEFF:** 0.6650735 — legacy, ~443× modern C_E, no citation
-4. **T_ICE:** Fixed -10°C → нет condensation heating feedback
-5. **q_sat:** Water saturation formula at ice surface (5–18% error)
-6. **L_v vs L_s:** Uses L_v for ice-vapor exchange
-7. **No phase partitioning:** All Q_net > 0 → melt (no sublimation/deposition)
+3. **SH/LH coefficients:** C_H = C_E = 1.5e-3 fixed neutral bulk coefficients (model parameters). NOT derived from kappa²/ln²(z/z₀) with z₀=1e-4 m (which gives ~1.21e-3). Theoretical logarithmic relation retained as context only.
+4. **Stability correction:** NOT implemented (no Monin-Obukhov length, requires implicit scheme).
+5. **T_ICE:** Fixed -10°C → нет condensation heating feedback (replaced by prognostic T_surface in Stage 10.2)
+6. **q_sat:** FIXED in Stage 10.3 — now uses ice saturation (Murphy & Koop 2005).
+7. **L_v vs L_s:** FIXED in Stage 10.3 — now uses L_s = 2.835e6 J/kg for sublimation/deposition energy flux.
+8. **No phase partitioning:** Stage 10.3 — Q_LH is energy flux only; no mass change from sublimation/deposition (Stage 10.4).
 
 ---
 

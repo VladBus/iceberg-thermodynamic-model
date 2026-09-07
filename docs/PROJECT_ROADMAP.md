@@ -1,8 +1,8 @@
 # PROJECT ROADMAP — Iceberg Thermodynamic Model
 
 **Last Updated:** 2026-09-07  
-**Current Stage:** Stage 10.3 Complete — Modern Turbulent Heat & Moisture Exchange  
-**Repository Baseline:** a1fc859 "Correct Stage 10.2 analytical validation" + Stage 10.3 changes
+**Current Stage:** Stage 10.3 — Corrective Validation  
+**Repository Baseline:** a1fc859 "Correct Stage 10.2 analytical validation" + f82c527 "Stage 10.3" + corrective fixes
 
 ---
 
@@ -23,8 +23,8 @@ Complete the iceberg model scientifically before expanding scope.
 
 ### Stage 10.3 — Modern Turbulent Heat & Moisture Exchange
 | Substage | Status | Description |
-|----------|--------|-------------|
-| 10.3 | ✅ DONE | Neutral bulk SH/LH with C_H=C_E=1.5e-3, ice saturation, L_s=2.835e6 J/kg |
+|----------|-------------------|-------------|
+| 10.3 | ✅ DONE (corrective validation) | Neutral bulk SH/LH with C_H=C_E=1.5e-3, ice saturation, L_s=2.835e6 J/kg |
 
 ### Stage 10.4 — Phase Change & Surface Ablation
 | Substage | Status | Description |
@@ -227,8 +227,8 @@ Do not create multiple competing roadmaps.
 |----------|-------|--------|
 | CP_AIR | 1004.0 J/(kg·K) | Standard |
 | L_S | 2.835e6 J/kg | Sublimation at 0°C |
-| C_H_NEUTRAL | 1.5e-3 | Andreas et al. 2010, Arctic sea ice |
-| C_E_NEUTRAL | 1.5e-3 | Same as C_H |
+| C_H_NEUTRAL | 1.5e-3 | Fixed neutral bulk coefficient (model parameter; literature-context documented) |
+| C_E_NEUTRAL | 1.5e-3 | Fixed neutral bulk coefficient; same formulation |
 | MURPHY_KOOP A-D | 9.550426, 5723.265, 3.53068, 0.00728332 | Murphy & Koop (2005) |
 
 ### Remaining Limitations

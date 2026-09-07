@@ -145,43 +145,69 @@ q_sat = water_saturation  ! 5–18% error at T < 0°C
 
 ---
 
-### 19. Surface temperature — **C (Stage 10.2 ✅)**
+### 19. Surface temperature — **C (Stage 10.2 ✅ / Stage 10.4.1 corrected)**
 
-**Современная формулировка (Stage 10.2):**
+**Современная формулировка (Stage 10.2 + 10.4.1 corrective):**
 
 ```
 T_surface — prognostic
 C_eff = ρ_ice · c_ice · h_eff = 955500 J/(m²·K)
-dT/dt = Q_net_non_melt / C_eff  (T_surface < 0°C)
-T_surface = 0°C + excess → melt  (crossing melting point)
-m_melt = max(Q_net_non_melt - Q_LH, 0) / (ρ_ice · L_f)  (T_surface ≥ 0°C)
+
+Q_nonlatent = SW_abs + LW_down + LW_up + SH
+Q_LH = m_vapor · L_S
+Q_surface = Q_nonlatent + Q_LH
+
+T_surface < T_melt:
+    dT/dt = Q_surface / C_eff
+    if T_surface_new ≥ T_melt:
+        excess_energy = Q_surface - C_eff · (T_melt - T_surface) / Δt
+        Q_melt = max(excess_energy, 0)
+        T_surface = T_melt
+    else:
+        Q_melt = 0
+
+T_surface ≥ T_melt:
+    T_surface = T_melt
+    Q_melt = max(Q_surface, 0)
+    m_melt = Q_melt / (ρ_ice · L_f)
 ```
 
-**Решено в Stage 10.2:** Prognostic T_surface с C_eff·dT/dt = Q_net_non_melt.
+**Решено в Stage 10.2:** Prognostic T_surface с C_eff·dT/dt = Q_surface.
+**Исправлено в Stage 10.4.1:** Q_surface включает Q_LH (не вычитает его).
 
 ---
 
 ### 20. Phase change (surface) — **C (Stage 10.4 ✅)**
 
-**Современная формулировка (Stage 10.4):**
+**Современная формулировка (Stage 10.4.1 — CORRECTIVE):**
 
 ```
-Q_net_non_melt = Q_SW + Q_LW + Q_SH + Q_LH
-Q_LH = m_vapor · L_S
+Q_nonlatent = Q_SW + Q_LW + Q_SH            ! Non-latent fluxes (NO LH)
+Q_LH = m_vapor · L_S                        ! Latent heat flux
 m_vapor = ρ_air · C_E · U · (q_air - q_sat_ice)  [kg/(m²·s)]
+Q_surface = Q_nonlatent + Q_LH              ! Total surface energy
 
-Q_melt = max(Q_net_non_melt - Q_LH, 0)  [W/m²]
+Sign convention:
+  m_vapor < 0 -> sublimation -> Q_LH < 0 -> ENERGY SINK
+  m_vapor > 0 -> deposition  -> Q_LH > 0 -> ENERGY SOURCE
+
+Q_melt = max(Q_surface, 0)  [W/m²]  (at T_surface = T_melt)
 m_melt = Q_melt / (ρ_ice · L_f)  [m/s]
 
-Sublimation: m_vapor < 0 (q_air < q_sat_ice) -> mass loss
-Deposition: m_vapor > 0 (q_air > q_sat_ice) -> mass gain
+Sublimation: m_vapor < 0 (q_air < q_sat_ice) -> mass loss, energy sink
+Deposition: m_vapor > 0 (q_air > q_sat_ice) -> mass gain, energy source
 Melting: m_melt > 0 (T_surface = 0°C, Q_melt > 0) -> mass loss
 
 Height change: dH/dt = -(m_melt + m_vapor/ρ_ice)
 Mass change: ΔM = -(M_melt + M_vapor)
+
+Note: Vapor mass flux and latent heat flux are TWO REPRESENTATIONS
+of the SAME phase-change process, NOT two independent energy sources.
+Q_LH = m_vapor · L_S  and  ΔM_vapor = m_vapor · A_top · Δt
+use identical m_vapor.
 ```
 
-**Решено в Stage 10.4:** Energy-consistent partitioning of surface energy into melting, sublimation, and deposition with explicit mass fluxes.
+**Решено в Stage 10.4.1:** Corrective energy partitioning — Q_nonlatent + Q_LH = Q_surface (no double counting). Sublimation is energy sink, deposition is energy source. Melting uses full Q_surface.
 
 ---
 

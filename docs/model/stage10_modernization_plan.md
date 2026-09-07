@@ -290,10 +290,10 @@ Theoretical logarithmic neutral formulation (context only):
 
 ### Ограничения
 
-- Neutral bulk coefficients только (нет stability correction)
-- Q_LH — только energy flux, никаких массовых изменений (Stage 10.4)
-- L_s = 2.835e6 J/kg фиксирован (нет температурной зависимости)
-- Ice saturation: Murphy & Koop (2005) формула, диапазон 50–273 K
+- Neutral bulk coefficients only (no stability correction)
+- Q_LH — energy flux only, no mass change (Stage 10.3)
+- L_s = 2.835e6 J/kg fixed (no T-dependence)
+- Ice saturation: Murphy & Koop (2005), range 50–273 K
 - C_H/C_E = 1.5e-3 are fixed model parameters, NOT derived from κ²/ln(z/z₀)² with z₀=1e-4 m
 
 ## 10.4 — PHASE CHANGE AND SURFACE ABLATION (Фазовые переходы и поверхностная абразия)
@@ -310,52 +310,62 @@ Theoretical logarithmic neutral formulation (context only):
 
 - `src/iceberg_thermodynamics.f90`: `m_surface = max(Q_net, 0) / (ρ_ice · L_f)`
 
-### Направление модернизации
+### Направление модернизации — Stage 10.4 (INCORRECT) → Stage 10.4.1 (CORRECTIVE)
 
-**Energy budget partitioning:**
+**Stage 10.4 (incorrect — cancelled Q_LH):**
 
 ```
 Q_available = Q_SW + Q_LW↓ + Q_LW↑ + Q_SH + Q_LH
+Q_melt = max(Q_available - Q_LH, 0)  ! WRONG: Q_LH cancelled, wrong sign for sublimation
 ```
 
-**Case 1: T_surface < T_melt**
+**Stage 10.4.1 (corrective — proper energy partition):**
 
 ```
-if Q_LH < 0 (sublimation):
-    m_subl = |Q_LH| / (ρ_ice · L_s)
-    m_melt = 0
-    m_deposition = 0
-else:  # Q_LH >= 0 (deposition)
-    m_deposition = Q_LH / (ρ_ice · L_s)
-    m_subl = 0
-    m_melt = 0
+Q_nonlatent = Q_SW + Q_LW↓ + Q_LW↑ + Q_SH       ! Non-latent fluxes (NO LH)
+m_vapor = ρ_air · C_E · U · (q_air - q_sat_ice) [kg/(m²·s)]
+Q_LH = m_vapor · L_S                            ! Latent heat flux
+Q_surface = Q_nonlatent + Q_LH                  ! Total surface energy
+
+Sign convention:
+  m_vapor < 0 -> sublimation -> Q_LH < 0 -> ENERGY SINK
+  m_vapor > 0 -> deposition  -> Q_LH > 0 -> ENERGY SOURCE
+
+Case 1: T_surface < T_melt
+  dT = Q_surface · Δt / C_eff
+  T_surface_new = T_surface + dT
+  if T_surface_new ≥ T_melt:
+      excess_energy = Q_surface - C_eff · (T_melt - T_surface) / Δt
+      Q_melt = max(excess_energy, 0)
+  else:
+      Q_melt = 0
+
+Case 2: T_surface = T_melt
+  Q_melt = max(Q_surface, 0)
+
+m_melt = Q_melt / (ρ_ice · L_f)
+
+Vapor mass flux (sublimation/deposition):
+m_vapor = ρ_air · C_E · U · (q_air - q_sat_ice)  [kg/(m²·s)]
+Sign: m_vapor < 0 -> sublimation (mass loss, energy sink)
+      m_vapor > 0 -> deposition (mass gain, energy source)
+
+Mass update:
+ΔM = -M_melt - M_vapor
 ```
 
-**Case 2: T_surface = T_melt**
+### Необходимые тесты — ALL PASS (Stage 10.4.1 corrective validation)
 
-```
-Q_melt = Q_available - Q_LH  # energy available for melting
-if Q_melt > 0:
-    m_melt = Q_melt / (ρ_ice · L_f)
-else:
-    m_melt = 0
-m_subl/m_deposition as above based on Q_LH sign
-```
-
-**Mass update:**
-
-```
-ΔM = -M_subl - M_melt + M_deposition
-```
-
-### Необходимые тесты
-
-1. Pure sublimation (dry air, cold surface)
-2. Pure deposition (humid air, cold surface)
-3. Pure melting (T_surface = 0°C, positive Q_net)
-4. Combined: sublimation + melting
-5. Energy conservation: Σ(energy) = Σ(mass · L)
-6. Mass conservation: ΔM = geometry change
+1. ✅ Zero LH baseline
+2. ✅ Sublimation: q_air < q_sat_ice, Q_LH < 0, Q_melt LOWER than zero-LH case
+3. ✅ Deposition: q_air > q_sat_ice, Q_LH > 0, Q_melt HIGHER than zero-LH case
+4. ✅ Latent energy identity: Q_LH = m_vapor · L_S
+5. ✅ Energy monotonicity: Q_melt_sub < Q_melt_zero < Q_melt_dep
+6. ✅ Below-freezing surface: negative Q_surface cools T_surface, zero melt
+7. ✅ Crossing 0°C: sensible heating + residual phase-change energy partition
+8. ✅ At 0°C: positive Q_surface -> melt; negative Q_surface -> cooling; zero -> no change
+9. ✅ Mass/energy consistency: vapor mass and latent energy use same m_vapor, L_S
+10. ✅ Regression: all existing Stage 10.1.1, 10.1.2, 10.2, 10.3 tests PASS
 
 ---
 

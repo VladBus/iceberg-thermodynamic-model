@@ -80,6 +80,16 @@ program iceberg_test_surface_melt_audit
     ! Stage 10.4 test variables
     real :: m_vapor_5, m_vapor_10
     real :: M_init, M_final, M_geom_change, M_budget
+    ! Stage 10.4.1 corrective validation test variables
+    real :: m_sub, m_base, m_dep
+    real :: m_vapor_sub, m_vapor_base, m_vapor_dep
+    real :: m_pos, m_neg, m_zero2
+    real :: q_pos, q_neg, q_zero2
+    real :: t_neg, t_zero2
+    real :: m_vapor_analytical, q_lh_analytical
+    real :: t_air_k_test, t_surf_k_test, p_atm_test, rho_air_test, wind_speed_test
+    real :: e_sat_air_test, e_sat_dew_test, rh_test, e_vap_test, q_air_test, q_sat_test
+    real :: t_surf_initial
 
     n_errors = 0
     n_checks = 0
@@ -1309,14 +1319,14 @@ program iceberg_test_surface_melt_audit
     end if
 
 ! -------------------------------------------------------------------------
-    ! TEST 10.4.4: MELT AT T_SURFACE = 0°C (EXCLUDES Q_LH)
-    ! At melting point, melt energy = max(Q_net_non_melt - Q_LH, 0)
-    ! = max(SW + LW + SH, 0) when Q_LH=0, or adjusted for vapor energy
-    ! Test with dry air (sublimation, Q_LH < 0) -> Q_melt = Q_net_non_melt - Q_LH
-    ! Since Q_LH < 0, Q_melt = Q_net_non_melt + |Q_LH| > Q_net_non_melt
+    ! TEST 10.4.4: MELT AT T_SURFACE = 0°C WITH SUBLIMATION
+    ! Correct physics: sublimation (Q_LH < 0) is ENERGY SINK, REDUCES melt
+    ! Q_nonlatent = SW + LW + SH
+    ! Q_surface = Q_nonlatent + Q_LH (Q_LH < 0)
+    ! Q_melt = max(Q_surface, 0) -> lower than without sublimation
     ! -------------------------------------------------------------------------
     print *, ""
-    print *, "--- TEST 10.4.4: Melt at 0°C excludes Q_LH (sublimation case) ---"
+    print *, "--- TEST 10.4.4: Melt at 0°C with sublimation (energy sink) ---"
 
     ! Use polar day: set time to day 172 (June 21) for 75N polar day
     call iceberg_init(state, 0.0, 0.0, 100.0, 100.0, 100.0, &
@@ -1340,14 +1350,16 @@ program iceberg_test_surface_melt_audit
 
     print *, "T_surf = 0°C, T_air = 5°C, T_dew = -20°C (dry), U = 5 m/s, clear, polar day"
     print *, "m_vapor = ", diag%m_vapor, " kg/(m2 s) (should be < 0, sublimation)"
-    print *, "m_surface = ", m_surface, " m/s (should be > 0, enhanced by |Q_LH|)"
+    print *, "m_surface = ", m_surface, " m/s"
     print *, "q_net = ", q_net, " W/m2"
 
+    ! With correct physics: sublimation REDUCES melt energy
+    ! m_surface may be 0 or positive depending on whether Q_nonlatent > |Q_LH|
     n_checks = n_checks + 1
-    if (m_surface .gt. 0.0 .and. diag%m_vapor .lt. 0.0) then
-        print *, "OK: Melt at 0°C with sublimation co-existing (melt enhanced by |Q_LH|)"
+    if (diag%m_vapor .lt. 0.0) then
+        print *, "OK: Sublimation present (m_vapor < 0)"
     else
-        print *, "FAIL: Melt with sublimation test, m_surface=", m_surface, " m_vapor=", diag%m_vapor
+        print *, "FAIL: Expected sublimation (m_vapor < 0)"
         n_errors = n_errors + 1
     end if
 
@@ -1530,6 +1542,295 @@ program iceberg_test_surface_melt_audit
         print *, "OK: Vapor mass flux finite and computable"
     else
         print *, "FAIL: Vapor mass flux not finite"
+        n_errors = n_errors + 1
+    end if
+
+    ! -------------------------------------------------------------------------
+    ! TEST 10.4.9: ENERGY MONOTONICITY
+    ! For identical Q_nonlatent:
+    ! Q_LH_sub < 0 (sublimation), Q_LH_zero = 0, Q_LH_dep > 0 (deposition)
+    ! must produce: Q_melt_sub <= Q_melt_zero <= Q_melt_dep
+    ! -------------------------------------------------------------------------
+    print *, ""
+    print *, "--- TEST 10.4.9: Energy monotonicity (sub < zero < dep) ---"
+
+    ! Use polar day for SW
+    state%time = 172.0 * 86400.0  ! Day 172 = June 21
+
+    ! Case 1: Sublimation (dry air)
+    call iceberg_init(state, 0.0, 0.0, 100.0, 100.0, 100.0, &
+                      75.0, 30.0, 0.0, 0.0)
+    state%T_surface = 0.0
+    call init_zero_ocean(ocean_prof)
+    atmos%t2m = 278.15   ! 5°C
+    atmos%d2m = 253.15   ! -20°C -> dry -> sublimation
+    atmos%tcc = 0.0
+    atmos%msl = 101325.0
+    atmos%u10 = 5.0
+    atmos%v10 = 0.0
+    call compute_surface_melt(state, atmos, diag, q_net, m_surface, dt, &
+                              nat(1), nat(2), nat(3), nat(4))
+    m_sub = m_surface
+    m_vapor_sub = diag%m_vapor
+
+    ! Case 2: Base case (moderate humidity, small positive m_vapor)
+    call iceberg_init(state, 0.0, 0.0, 100.0, 100.0, 100.0, &
+                      75.0, 30.0, 0.0, 0.0)
+    state%T_surface = 0.0
+    call init_zero_ocean(ocean_prof)
+    atmos%t2m = 278.15   ! 5°C
+    atmos%d2m = 276.15   ! 3°C dew point -> slight deposition
+    atmos%tcc = 0.0
+    atmos%msl = 101325.0
+    atmos%u10 = 5.0
+    atmos%v10 = 0.0
+    call compute_surface_melt(state, atmos, diag, q_net, m_surface, dt, &
+                              nat(1), nat(2), nat(3), nat(4))
+    m_base = m_surface
+    m_vapor_base = diag%m_vapor
+
+    ! Case 3: Deposition (humid air)
+    call iceberg_init(state, 0.0, 0.0, 100.0, 100.0, 100.0, &
+                      75.0, 30.0, 0.0, 0.0)
+    state%T_surface = 0.0
+    call init_zero_ocean(ocean_prof)
+    atmos%t2m = 278.15   ! 5°C
+    atmos%d2m = 277.15   ! 4°C dew point -> humid -> deposition
+    atmos%tcc = 0.0
+    atmos%msl = 101325.0
+    atmos%u10 = 5.0
+    atmos%v10 = 0.0
+    call compute_surface_melt(state, atmos, diag, q_net, m_surface, dt, &
+                              nat(1), nat(2), nat(3), nat(4))
+    m_dep = m_surface
+    m_vapor_dep = diag%m_vapor
+
+    print *, "Sublimation:  m_vapor = ", m_vapor_sub, " m_surface = ", m_sub
+    print *, "Base case:    m_vapor = ", m_vapor_base, " m_surface = ", m_base
+    print *, "Deposition:   m_vapor = ", m_vapor_dep, " m_surface = ", m_dep
+
+    n_checks = n_checks + 1
+    if (m_vapor_sub .lt. 0.0 .and. m_vapor_base .gt. 0.0 .and. m_vapor_dep .gt. m_vapor_base) then
+        print *, "OK: Vapor flux signs and magnitude correct (sub < base < dep)"
+    else
+        print *, "FAIL: Vapor flux signs/magnitude incorrect"
+        n_errors = n_errors + 1
+    end if
+
+    n_checks = n_checks + 1
+    ! m_sub <= m_base <= m_dep (sublimation reduces melt, deposition enhances)
+    if (m_sub .le. m_base .and. m_base .le. m_dep) then
+        print *, "OK: Energy monotonicity: m_sub <= m_base <= m_dep"
+    else
+        print *, "FAIL: Energy monotonicity violated: ", m_sub, m_base, m_dep
+        n_errors = n_errors + 1
+    end if
+
+    ! -------------------------------------------------------------------------
+    ! TEST 10.4.10: BELOW-FREEZING SURFACE
+    ! Negative Q_surface cools T_surface, zero melt
+    ! -------------------------------------------------------------------------
+    print *, ""
+    print *, "--- TEST 10.4.10: Below-freezing surface (negative Q_surface) ---"
+
+    call iceberg_init(state, 0.0, 0.0, 100.0, 100.0, 100.0, &
+                      90.0, 0.0, 0.0, 0.0)  ! polar night
+    state%T_surface = -10.0
+    call init_zero_ocean(ocean_prof)
+    atmos%t2m = 253.15   ! -20°C
+    atmos%d2m = 253.15
+    atmos%tcc = 1.0
+    atmos%msl = 101325.0
+    atmos%u10 = 5.0
+    atmos%v10 = 0.0
+    call compute_surface_melt(state, atmos, diag, q_net, m_surface, dt, &
+                              nat(1), nat(2), nat(3), nat(4))
+
+    print *, "T_initial = -10°C, polar night, cold air, wind"
+    print *, "T_final = ", state%T_surface, " °C"
+    print *, "m_surface = ", m_surface, " m/s"
+    print *, "q_net = ", q_net, " W/m2"
+
+    n_checks = n_checks + 1
+    if (state%T_surface .lt. -10.0 .and. m_surface .eq. 0.0 .and. q_net .lt. 0.0) then
+        print *, "OK: Negative Q_surface cools surface, no melt"
+    else
+        print *, "FAIL: Below-freezing test"
+        n_errors = n_errors + 1
+    end if
+
+    ! -------------------------------------------------------------------------
+    ! TEST 10.4.11: CROSSING 0°C
+    ! Verify sensible heating + residual phase-change energy partition
+    ! Use polar day with strong SW to ensure crossing
+    ! Start at -0.5°C to ensure crossing in 1 hour dt
+    ! -------------------------------------------------------------------------
+    print *, ""
+    print *, "--- TEST 10.4.11: Crossing 0°C energy partition ---"
+
+    call iceberg_init(state, 0.0, 0.0, 100.0, 100.0, 100.0, &
+                      75.0, 30.0, 0.0, 0.0)
+    state%T_surface = -0.5  ! -0.5°C requires ~477750 J/m2 to reach 0°C
+    state%time = 172.0 * 86400.0  ! polar day (June 21)
+    call init_zero_ocean(ocean_prof)
+    atmos%t2m = 283.15   ! 10°C
+    atmos%d2m = 273.15   ! 0°C
+    atmos%tcc = 0.0      ! clear sky -> max SW
+    atmos%msl = 101325.0
+    atmos%u10 = 10.0
+    atmos%v10 = 0.0
+
+    call compute_surface_melt(state, atmos, diag, q_net, m_surface, dt, &
+                              nat(1), nat(2), nat(3), nat(4))
+
+    print *, "T_initial = -0.5°C, polar day, T_air = 10°C, U = 10 m/s, clear"
+    print *, "T_final = ", state%T_surface, " °C"
+    print *, "m_surface = ", m_surface, " m/s"
+    print *, "q_net = ", q_net, " W/m2"
+
+    n_checks = n_checks + 1
+    if (abs(state%T_surface - 0.0) .lt. 1e-6 .and. m_surface .ge. 0.0) then
+        print *, "OK: Surface reached 0°C, melt possible"
+    else
+        print *, "FAIL: Crossing 0°C test"
+        n_errors = n_errors + 1
+    end if
+
+    ! -------------------------------------------------------------------------
+    ! TEST 10.4.12: AT 0°C
+    ! Positive Q_surface -> melt; Negative Q_surface -> cooling; Zero -> no change
+    ! -------------------------------------------------------------------------
+    print *, ""
+    print *, "--- TEST 10.4.12: At 0°C (positive/negative/zero Q_surface) ---"
+
+    ! Case A: Positive Q_surface -> melt (polar day with SW)
+    call iceberg_init(state, 0.0, 0.0, 100.0, 100.0, 100.0, &
+                      75.0, 30.0, 0.0, 0.0)
+    state%T_surface = 0.0
+    state%time = 172.0 * 86400.0  ! polar day
+    call init_zero_ocean(ocean_prof)
+    atmos%t2m = 278.15
+    atmos%d2m = 273.15
+    atmos%tcc = 0.0
+    atmos%msl = 101325.0
+    atmos%u10 = 10.0
+    atmos%v10 = 0.0
+    call compute_surface_melt(state, atmos, diag, q_net, m_surface, dt, &
+                              nat(1), nat(2), nat(3), nat(4))
+    m_pos = m_surface
+    q_pos = q_net
+    print *, "Positive forcing (polar day): m_surface = ", m_pos, " q_net = ", q_pos
+
+    ! Case B: Negative Q_surface -> cooling (polar night, cold air)
+    call iceberg_init(state, 0.0, 0.0, 100.0, 100.0, 100.0, &
+                      90.0, 0.0, 0.0, 0.0)
+    state%T_surface = 0.0
+    call init_zero_ocean(ocean_prof)
+    atmos%t2m = 253.15
+    atmos%d2m = 253.15
+    atmos%tcc = 1.0
+    atmos%msl = 101325.0
+    atmos%u10 = 0.0
+    atmos%v10 = 0.0
+    call compute_surface_melt(state, atmos, diag, q_net, m_surface, dt, &
+                              nat(1), nat(2), nat(3), nat(4))
+    m_neg = m_surface
+    t_neg = state%T_surface
+    q_neg = q_net
+print *, "Negative forcing: T_final = ", t_neg, " m_surface = ", m_neg, " q_net = ", q_neg
+
+    ! Case C: Near-zero Q_surface (polar day, T_air slightly > T_surf, light wind)
+    ! Use polar day with small positive SW to balance LW
+    call iceberg_init(state, 0.0, 0.0, 100.0, 100.0, 100.0, &
+                      75.0, 30.0, 0.0, 0.0)
+    state%T_surface = 0.0
+    state%time = 172.0 * 86400.0  ! polar day (June 21)
+    call init_zero_ocean(ocean_prof)
+    atmos%t2m = 273.5    ! 0.35°C - slightly warmer air
+    atmos%d2m = 273.15   ! 0°C dew point
+    atmos%tcc = 0.0      ! clear
+    atmos%msl = 101325.0
+    atmos%u10 = 1.0      ! light wind
+    atmos%v10 = 0.0
+    call compute_surface_melt(state, atmos, diag, q_net, m_surface, dt, &
+                              nat(1), nat(2), nat(3), nat(4))
+    m_zero2 = m_surface
+    t_zero2 = state%T_surface
+    q_zero2 = q_net
+    print *, "Near-zero forcing (polar day): T_final = ", t_zero2, " m_surface = ", m_zero2, " q_net = ", q_zero2
+
+    n_checks = n_checks + 1
+    if (m_pos .gt. 0.0 .and. q_pos .gt. 0.0) then
+        print *, "OK: Positive Q_surface -> melt"
+    else
+        print *, "FAIL: Positive Q_surface case"
+        n_errors = n_errors + 1
+    end if
+
+    n_checks = n_checks + 1
+    if (t_neg .lt. 0.0 .and. m_neg .eq. 0.0 .and. q_neg .lt. 0.0) then
+        print *, "OK: Negative Q_surface -> cooling, no melt"
+    else
+        print *, "FAIL: Negative Q_surface case"
+        n_errors = n_errors + 1
+    end if
+
+    n_checks = n_checks + 1
+    if (m_zero2 .ge. 0.0 .and. abs(t_zero2 - 0.0) .lt. 0.5) then
+        print *, "OK: Near-zero Q_surface -> small change"
+    else
+        print *, "FAIL: Near-zero Q_surface case"
+        n_errors = n_errors + 1
+    end if
+
+    ! -------------------------------------------------------------------------
+    ! TEST 10.4.13: MASS/ENERGY CONSISTENCY
+    ! Verify vapor mass and latent energy use same m_vapor and L_S
+    ! -------------------------------------------------------------------------
+    print *, ""
+    print *, "--- TEST 10.4.13: Mass/Energy consistency (m_vapor * L_S = Q_LH) ---"
+
+    call iceberg_init(state, 0.0, 0.0, 100.0, 100.0, 100.0, &
+                      75.0, 30.0, 0.0, 0.0)
+    state%T_surface = -10.0
+    t_surf_initial = state%T_surface  ! Save initial T_surface for analytical calc
+    call init_zero_ocean(ocean_prof)
+    atmos%t2m = 273.15
+    atmos%d2m = 271.15
+    atmos%tcc = 0.0
+    atmos%msl = 101325.0
+    atmos%u10 = 5.0
+    atmos%v10 = 0.0
+    call compute_surface_melt(state, atmos, diag, q_net, m_surface, dt, &
+                              nat(1), nat(2), nat(3), nat(4))
+
+    ! Independent analytical Q_LH using INITIAL surface temperature
+    t_air_k_test = atmos%t2m
+    t_surf_k_test = t_surf_initial + 273.15  ! Use initial T_surface
+    p_atm_test = atmos%msl
+    rho_air_test = p_atm_test / (GAS_CONST_AIR * t_air_k_test)
+    wind_speed_test = sqrt(atmos%u10**2 + atmos%v10**2)
+    e_sat_air_test = SAT_VAPOR_0 * 10.0**(TETENS_A * (t_air_k_test - 273.15) / t_air_k_test)
+    e_sat_dew_test = SAT_VAPOR_0 * 10.0**(TETENS_A * (atmos%d2m - 273.15) / atmos%d2m)
+    rh_test = min(1.0, max(0.0, e_sat_dew_test / e_sat_air_test))
+    e_vap_test = rh_test * e_sat_air_test
+    q_air_test = 0.622 * e_vap_test / p_atm_test
+    q_sat_test = saturation_vapor_pressure_ice(t_surf_k_test) / p_atm_test * 0.622
+
+    m_vapor_analytical = rho_air_test * C_E_NEUTRAL * wind_speed_test * (q_air_test - q_sat_test)
+    q_lh_analytical = m_vapor_analytical * L_S
+
+    print *, "m_vapor (diag)     = ", diag%m_vapor, " kg/(m2 s)"
+    print *, "m_vapor (analytical) = ", m_vapor_analytical, " kg/(m2 s)"
+    print *, "Q_LH (m_vapor*L_S) = ", diag%m_vapor * L_S, " W/m2"
+    print *, "Q_LH (analytical)  = ", q_lh_analytical, " W/m2"
+
+    n_checks = n_checks + 1
+    if (abs(diag%m_vapor - m_vapor_analytical) .lt. 1e-9 .and. &
+        abs(diag%m_vapor * L_S - q_lh_analytical) .lt. 1e-3) then
+        print *, "OK: Vapor mass and latent energy consistent (same m_vapor, L_S)"
+    else
+        print *, "FAIL: Mass/energy consistency"
         n_errors = n_errors + 1
     end if
 

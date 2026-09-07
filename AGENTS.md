@@ -279,3 +279,26 @@ All analysis scripts are in `python/analysis/`:
 - **All 41 fpm tests PASS** including regression of Stage 10.1-10.3.
 - **Files changed:** src/iceberg_types.f90 (vapor diagnostics), src/iceberg_thermodynamics.f90 (phase change logic), src/iceberg.f90 (mass budget), src/iceberg_geometry.f90 (mass budget), test/iceberg_test_surface_melt_audit.f90 (8 new tests)
 - **Documentation updated:** model_equation_ledger.md, model_physics_status.md, stage10_modernization_plan.md
+
+## Stage 10.4.1 Summary (Corrective Energy Partition)
+
+- **Classification:** C -- Corrective energy partitioning of latent heat.
+- **Critical bug fixed:** Previous Stage 10.4 had `Q_net_non_melt = SW + LW + SH + LH` then `Q_melt = max(Q_net_non_melt - LH, 0)`, which cancelled LH and inverted sublimation energy sign.
+- **Correct physics (Stage 10.4.1):**
+  1. Q_nonlatent = SW_abs + LW_down + LW_up + SH  (NO LH)
+  2. m_vapor = rho_air * C_E * U * (q_air - q_sat_ice) [kg/(m2 s)]
+  3. Q_LH = m_vapor * L_S [W/m2]
+  4. Q_surface = Q_nonlatent + Q_LH
+  5. Sign: m_vapor < 0 -> sublimation -> Q_LH < 0 -> ENERGY SINK
+       m_vapor > 0 -> deposition  -> Q_LH > 0 -> ENERGY SOURCE
+  6. T_surface < T_melt: dT = Q_surface * dt / C_eff
+     If crossing T_melt: excess_energy = Q_surface - C_eff*(T_melt - T_surface)/dt
+     Q_melt = max(excess_energy, 0)
+  7. T_surface = T_melt: Q_melt = max(Q_surface, 0)
+  8. m_melt = Q_melt / (rho_ice * L_f)
+  9. dH/dt = -(m_melt + m_vapor/rho_ice)
+  10. Mass budget includes vapor mass change
+- **Vapor mass flux and latent heat flux are TWO REPRESENTATIONS of the SAME phase-change process** (not two independent energy sources).
+- **Tests:** 10 new Stage 10.4.1 corrective validation tests PASS (zero LH, sublimation, deposition, monotonicity, latent identity, below-freezing, crossing 0°C, at 0°C, mass/energy consistency, regression).
+- **All 41 fpm tests PASS** including regression of Stage 10.1-10.4.
+- **Files changed:** src/iceberg_thermodynamics.f90 (compute_surface_melt energy partition), docs/model/model_equation_ledger.md, docs/model/model_physics_status.md, docs/model/stage10_modernization_plan.md, docs/PROJECT_ROADMAP.md, AGENTS.md

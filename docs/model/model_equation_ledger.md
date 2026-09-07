@@ -555,45 +555,55 @@ Q_LH_legacy = ρ_air · LH_COEFF · |V_a| · L_v · (q_air - q_sat_water)
     q_sat_water = water saturation at ice surface (5-18% error at T < 0°C)
 ```
 
-**Net & Melt (Stage 10.4 — Phase Change Partitioning):**
+**Net & Melt (Stage 10.4.1 — Corrective Energy Partition):**
 
 ```
-Q_net_non_melt = SW_abs + LW↓ + LW↑ + Q_SH + Q_LH
-
+Q_nonlatent = SW_abs + LW↓ + LW↑ + Q_SH           ! Non-latent energy fluxes
 q_air = 0.622 · e_vap / p_atm
-q_sat_ice = 0.622 · e_sat_ice(T_surf) / p_atm  ! ICE saturation (Murphy & Koop 2005)
+q_sat_ice = 0.622 · e_sat_ice(T_surf) / p_atm     ! ICE saturation (Murphy & Koop 2005)
 m_vapor = ρ_air · C_E · |V_a| · (q_air - q_sat_ice)  [kg/(m²·s)]  ! vapor mass flux
-Q_LH = m_vapor · L_S  [W/m²]  ! latent heat flux, consistent with Stage 10.3
+Q_LH = m_vapor · L_S  [W/m²]                       ! latent heat flux, consistent with Stage 10.3
+Q_surface = Q_nonlatent + Q_LH                     ! Total energy available at surface
 
-Q_melt = max(Q_net_non_melt - Q_LH, 0)  [W/m²]  ! energy available for melting
+Sign convention:
+  m_vapor < 0 -> sublimation -> Q_LH < 0 -> energy SINK
+  m_vapor > 0 -> deposition  -> Q_LH > 0 -> energy SOURCE
+
+Q_melt = max(Q_surface, 0)  [W/m²]  ! energy available for melting at T_surface = 0°C
 m_melt = Q_melt / (ρ_ice · L_f)  [m/s]  ! surface melt rate (liquid water)
 
-Q_net = Q_net_non_melt - m_melt · ρ_ice · L_f / Δt  [W/m²]  ! residual flux for diagnostics
+Q_net = Q_surface - m_melt · ρ_ice · L_f / Δt  [W/m²]  ! residual flux for diagnostics
 ```
 
-**Phase Change Logic:**
+**Phase Change Logic (Corrected Stage 10.4.1):**
 
 ```
 if T_surface < T_melt:
-    dT = Q_net_non_melt · Δt / C_eff
+    dT = Q_surface · Δt / C_eff
     T_surface_new = T_surface + dT
     if T_surface_new ≥ T_melt:
-        excess_energy = Q_net_non_melt - C_eff · (T_melt - T_surface) / Δt
-        Q_melt = max(excess_energy - Q_LH, 0)
+        ! Crossed melting point: partition timestep energy
+        excess_energy = Q_surface - C_eff · (T_melt - T_surface) / Δt
+        Q_melt = max(excess_energy, 0)
         m_melt = Q_melt / (ρ_ice · L_f)
         T_surface = T_melt
     else:
         m_melt = 0
 else:  ! T_surface ≥ T_melt
     T_surface = T_melt
-    Q_melt = max(Q_net_non_melt - Q_LH, 0)
+    Q_melt = max(Q_surface, 0)
     m_melt = Q_melt / (ρ_ice · L_f)
 
 Vapor mass flux (sublimation/deposition):
 m_vapor = ρ_air · C_E · |V_a| · (q_air - q_sat_ice)  [kg/(m²·s)]
-Sign: m_vapor < 0 -> sublimation (mass loss)
-      m_vapor > 0 -> deposition (mass gain)
+Sign: m_vapor < 0 -> sublimation (mass loss, energy sink)
+      m_vapor > 0 -> deposition (mass gain, energy source)
 Mass change from vapor: ΔM_vapor = m_vapor · A_top · Δt
+
+Note: Vapor mass flux and latent heat flux are two representations
+of the SAME phase-change process, NOT two independent energy sources.
+Q_LH = m_vapor · L_S  and  ΔM_vapor = m_vapor · A_top · Δt
+use identical m_vapor.
 ```
 
 ### 8.3 Дискретные уравнения
@@ -710,8 +720,14 @@ dH/dt = -(m_melt + m_vapor/ρ_ice)
 ```
 
 where m_vapor = ρ_air · C_E · |V_a| · (q_air - q_sat_ice) [kg/(m²·s)]
-m_vapor < 0 -> sublimation (mass loss, thickness decreases)
-m_vapor > 0 -> deposition (mass gain, thickness increases)
+Q_LH = m_vapor · L_S
+Sign convention:
+  m_vapor < 0 -> sublimation (mass loss, thickness decreases, Q_LH < 0 energy sink)
+  m_vapor > 0 -> deposition (mass gain, thickness increases, Q_LH > 0 energy source)
+
+Q_surface = Q_nonlatent + Q_LH  ! total surface energy
+Q_melt = max(Q_surface, 0)  at T_surface = T_melt
+m_melt = Q_melt / (ρ_ice · L_f)
 
 ### 9.2 Дискретное уравнение
 
@@ -783,10 +799,23 @@ Timestep loop (Δt = 3600 s):
    b. Lateral melt (Explicit)
    c. Surface energy balance (Explicit):
       i. Compute Q_SW, Q_LW, Q_SH, Q_LH
-      ii. Compute m_vapor = ρ_air · C_E · |V_a| · (q_air - q_sat_ice)
-      iii. Compute Q_melt = max(Q_net_non_melt - Q_LH, 0)
-      iv. Compute m_melt = Q_melt / (ρ_ice · L_f)
-      v. Compute m_surface = m_melt
+      ii. Compute Q_nonlatent = SW_abs + LW_down + LW_up + SH
+      iii. Compute m_vapor = ρ_air · C_E · |V_a| · (q_air - q_sat_ice)
+      iv. Compute Q_LH = m_vapor · L_S
+      v. Compute Q_surface = Q_nonlatent + Q_LH
+      vi. Prognostic T_surface update:
+          if T_surface < T_melt:
+              dT = Q_surface · Δt / C_eff
+              T_surface_new = T_surface + dT
+              if T_surface_new ≥ T_melt:
+                  excess_energy = Q_surface - C_eff · (T_melt - T_surface) / Δt
+                  Q_melt = max(excess_energy, 0)
+              else:
+                  Q_melt = 0
+          else:
+              Q_melt = max(Q_surface, 0)
+      vii. Compute m_melt = Q_melt / (ρ_ice · L_f)
+      viii. m_surface = m_melt
    d. Update H (from m_surface + m_vapor/ρ_ice)
    e. Update L, W (from lateral melt)
    f. Update geometry (mass, draft, areas)

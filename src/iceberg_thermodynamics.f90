@@ -5,18 +5,27 @@
 !   Базальное (дно):     m_b = C_BASAL * max(0, T(D) - Tf(D))                [м/с]
 !   Боковое (стороны):   m_l = C_LATERAL * ⟨max(0, T - Tf)⟩_D                 [м/с]
 !                         где ⟨...⟩_D = (1/D) ∫₀ᴰ max(0, T(z) - Tf(z)) dz
-!   Поверхностное (верх): Stage 10.4 разделяет процессы:
+!   Поверхностное (верх): Stage 10.4.1 разделяет процессы (corrective):
 !     m_vapor = ρ_air * C_E * U * (q_air - q_sat_ice)  [кг/(м²·с)] — сублимация/осаждение
 !     Q_LH = m_vapor * L_S                               [Вт/м²] — латентный тепловой поток
-!     Q_melt = max(Q_net_non_melt - Q_LH, 0)             [Вт/м²] — энергия для плавления
+!     Q_nonlatent = SW_abs + LW_down + LW_up + SH        [Вт/м²] — нефлагентная энергия
+!     Q_surface = Q_nonlatent + Q_LH                     [Вт/м²] — полная поверхностная энергия
+!     Q_melt = max(Q_surface, 0) при T_surface = T_melt  [Вт/м²] — энергия для плавления
 !     m_surface = Q_melt / (ρ_ice * L_f)                 [м/с] — скорость плавления
-!   Q_net_non_melt = SW↓(1-α) + LW↓ - LW↑ + SH + LH
 !   Tf = -54.0 * S  [°C], где S — массовая доля [кг/кг] (S=0.035 → Tf=-1.89°C)
+!   Подпись: m_vapor < 0 -> сублимация (Q_LH < 0, потеря энергии)
+!            m_vapor > 0 -> осаждение (Q_LH > 0, источник энергии)
 !
 ! Исправления Stage 9.3:
 !   - C_BASAL, C_LATERAL: были 1e-4 [м/с] с делением на (ρᵢ·L_f),
 !     стало 1e-6 [м/(с·К)] с формулой m = C * ΔT (без деления).
 !   - Физический смысл: γ_T = h/(ρᵢ·L_f), где h ≈ 300 Вт/(м²·К) → γ_T ≈ 1e-6.
+!
+! Исправления Stage 10.4.1:
+!   - Предыдущая формула Q_net_non_melt включала LH, а потом вычитала LH -> ошибка
+!   - Правильная: Q_nonlatent (без LH) + Q_LH = Q_surface
+!   - Sublimation (Q_LH < 0) уменьшает доступную энергию для плавления
+!   - Deposition (Q_LH > 0) увеличивает доступную энергию для плавления
 !
 ! Единицы: SI (м, с, кг, К/°C, Вт/м²).
 ! Точность: default real (float32).
@@ -313,33 +322,35 @@ contains
     end subroutine compute_lateral_melt
 
 ! ========================================================================
-    !   ПОВЕРХНОСТНОЕ ПЛАВЛЕНИЕ С ПРОГНОСТИЧЕСКОЙ ТЕМПЕРАТУРОЙ (Stage 10.2 + 10.4)
+    !   ПОВЕРХНОСТНОЕ ПЛАВЛЕНИЕ С ПРОГНОСТИЧЕСКОЙ ТЕМПЕРАТУРОЙ (Stage 10.2 + 10.4.1)
     ! ========================================================================
-    ! C_eff dT_surface/dt = Q_net_non_melt
-    ! C_eff = rho_ice * c_ice * h_eff
-    ! Q_net_non_melt = SW_abs + LW_down + LW_up + SH + LH
+    ! Stage 10.4.1 CORRECTIVE ENERGY PARTITION:
+    ! Q_nonlatent = SW_abs + LW_down + LW_up + SH       (no LH)
+    ! Q_LH = m_vapor * L_S                               [W/m2]
+    ! Q_surface = Q_nonlatent + Q_LH                     [total surface energy]
+    ! C_eff dT_surface/dt = Q_surface   (T_surface < T_melt)
     !
-    ! Phase change logic:
+    ! Phase change logic (correct):
     !   if T_surface < T_melt:
-    !       dT = Q_net_non_melt * dt / C_eff
+    !       dT = Q_surface * dt / C_eff
     !       T_surface_new = T_surface + dT
     !       if T_surface_new >= T_melt:
-    !           excess_energy = Q_net_non_melt - C_eff * (T_melt - T_surface) / dt
-    !           Q_melt = max(excess_energy - Q_LH, 0)  ! Stage 10.4: exclude Q_LH from melt energy
+    !           excess_energy = Q_surface - C_eff * (T_melt - T_surface) / dt
+    !           Q_melt = max(excess_energy, 0)  ! residual after reaching T_melt
     !           m_surface = Q_melt / (rho_ice * L_f)
     !           T_surface = T_melt
     !       else:
     !           m_surface = 0
     !   else:  ! T_surface >= T_melt
     !       T_surface = T_melt
-    !       Q_melt = max(Q_net_non_melt - Q_LH, 0)  ! Stage 10.4: only SW+LW+SH available for melting
+    !       Q_melt = max(Q_surface, 0)  ! full Q_surface available for melt
     !       m_surface = Q_melt / (rho_ice * L_f)
     !
     ! Vapor mass flux (Stage 10.4):
     !   m_vapor = rho_air * C_E * U * (q_air - q_sat_ice)  [kg/(m²·s)]
     !   Q_LH = m_vapor * L_S
-    !   Sign: m_vapor < 0 -> sublimation (mass loss)
-    !         m_vapor > 0 -> deposition (mass gain)
+    !   Sign: m_vapor < 0 -> sublimation (mass loss, Q_LH < 0 energy sink)
+    !         m_vapor > 0 -> deposition (mass gain, Q_LH > 0 energy source)
     !
     ! Components:
     !   SW_abs = SW_down * (1 - albedo)
@@ -353,7 +364,7 @@ contains
     !   state       - state with T_surface [°C] (intent(inout), updated)
     !   atmos       - atmospheric forcing
     !   diag        - diagnostics (updated q_net_surface, t_surface, m_vapor)
-    !   q_net       - net heat flux [W/m²] (output)
+    !   q_net       - net heat flux [W/m²] (output, residual after melt)
     !   m_surface   - surface melt rate [m/s] (output)
     !   year, month, day, hour - reference date (UTC)
     ! ========================================================================
@@ -380,10 +391,11 @@ contains
         real :: t_rayleigh, t_water_vap, t_aerosol, t_clear, t_cloud
         real :: precipitable_water_cm
         ! --- Stage 10.2: prognostic surface temperature ---
-        real :: c_eff, q_net_non_melt, excess_energy
+        real :: c_eff, excess_energy
         real :: t_surf_new
-        ! --- Stage 10.4: vapor mass flux ---
+        ! --- Stage 10.4: vapor mass flux and energy partition ---
         real :: m_vapor, q_melt
+        real :: q_nonlatent, q_lh, q_surface
 
         ! Входные параметры
         t_air_k = atmos%t2m
@@ -526,21 +538,40 @@ contains
         ! Q_LH = m_vapor * L_S
         m_vapor = rho_air_local*C_E_NEUTRAL*wind_speed*(q_air - q_sat)
 
-        ! === NET NON-MELT HEAT FLUX ===
-        q_net_non_melt = sw_absorbed + lw_down + lw_up + sh_flux + lh_flux
+        ! === ENERGY PARTITION (Stage 10.4.1 corrective) ===
+        ! Q_nonlatent = SW_abs + LW_down + LW_up + SH   (no LH)
+        ! Q_LH = m_vapor * L_S  [W/m2]
+        ! Q_surface = Q_nonlatent + Q_LH  [total energy available at surface]
+        ! 
+        ! Sign convention:
+        !   m_vapor < 0 -> sublimation -> Q_LH < 0 -> energy sink
+        !   m_vapor > 0 -> deposition  -> Q_LH > 0 -> energy source
+        !
+        ! T_surface < T_melt:  use Q_surface for sensible warming
+        ! T_surface crosses T_melt: partition energy into sensible + residual
+        ! T_surface = T_melt:  Q_melt = max(Q_surface, 0)
+        !
+        ! This replaces the previous incorrect:
+        !   Q_net_non_melt = SW + LW + SH + LH
+        !   Q_melt = max(Q_net_non_melt - Q_LH, 0)  -- WRONG: LH cancelled, wrong sign
 
-        ! === PROGNOSTIC SURFACE TEMPERATURE WITH PHASE CHANGE (Stage 10.2 + 10.4) ===
+        q_nonlatent = sw_absorbed + lw_down + lw_up + sh_flux
+        q_lh = lh_flux
+        q_surface = q_nonlatent + q_lh
+
+        ! === PROGNOSTIC SURFACE TEMPERATURE WITH CORRECT ENERGY PARTITION ===
         if (state%T_surface .lt. T_MELT) then
-            ! Surface below melting point: temperature evolution
-            t_surf_new = state%T_surface + q_net_non_melt*dt/c_eff
+            ! Surface below melting point: temperature evolution with full Q_surface
+            t_surf_new = state%T_surface + q_surface*dt/c_eff
 
             if (t_surf_new .ge. T_MELT) then
                 ! Crossed melting point within timestep
-                ! Energy used to reach T_melt
-                excess_energy = q_net_non_melt - c_eff*(T_MELT - state%T_surface)/dt
+                ! Energy used for sensible warming to T_melt
+                ! Residual energy available for melting
+                excess_energy = q_surface - c_eff*(T_MELT - state%T_surface)/dt
                 state%T_surface = T_MELT
-                ! Stage 10.4: melt energy excludes Q_LH (vapor energy)
-                q_melt = max(excess_energy - lh_flux, 0.0)
+                ! Melt energy = max(residual, 0)
+                q_melt = max(excess_energy, 0.0)
                 if (q_melt .gt. 0.0) then
                     m_surface = q_melt/(RHO_ICE*LATENT_HEAT)
                 else
@@ -553,23 +584,22 @@ contains
             end if
         else
             ! Surface at or above melting point
-            ! Stage 10.4: melt energy excludes Q_LH (vapor energy)
-            q_melt = max(q_net_non_melt - lh_flux, 0.0)
+            ! T_surface = T_melt, full Q_surface available for melt
+            q_melt = max(q_surface, 0.0)
             if (q_melt .gt. 0.0) then
                 ! Positive energy -> melt, surface stays at T_MELT
                 state%T_surface = T_MELT
                 m_surface = q_melt/(RHO_ICE*LATENT_HEAT)
             else
                 ! Negative energy -> surface cools below T_MELT
-                ! (no melt, temperature drops)
-                t_surf_new = state%T_surface + q_net_non_melt*dt/c_eff
+                t_surf_new = state%T_surface + q_surface*dt/c_eff
                 state%T_surface = min(T_MELT, t_surf_new)
                 m_surface = 0.0
             end if
         end if
 
         ! Total net flux for diagnostics (includes melt energy)
-        q_net = q_net_non_melt - m_surface*RHO_ICE*LATENT_HEAT/dt
+        q_net = q_surface - m_surface*RHO_ICE*LATENT_HEAT/dt
 
         ! Store vapor mass flux in diagnostics
         diag%m_vapor = m_vapor

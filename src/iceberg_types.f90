@@ -20,7 +20,7 @@
 ! Точность: default real (float32) для совместимости с остальной моделью.
 !           Константы определены как real, parameter (compile-time).
 !
-! Версия: Stage 9.3 (после исправления размерностей C_BASAL/C_LATERAL)
+! Версия: Stage 10.4 (после добавления фазового разделения поверхностного таяния)
 ! ==============================================================================
 
 module iceberg_types
@@ -109,6 +109,8 @@ module iceberg_types
     !   Sign convention: Q_SH > 0 = atmosphere heats iceberg
     !                    Q_LH > 0 = vapor flux supplies energy to surface
     !   Stage 10.3: Q_LH is ENERGY FLUX ONLY; no mass change from sublimation/deposition
+!   Stage 10.4: Q_LH partitioned into vapor mass flux (m_vapor = rho_air * C_E * U * (q_air - q_sat_ice))
+!               and melt energy (Q_melt = max(Q_net_non_melt - Q_LH, 0))
 
     real, parameter :: CP_AIR = 1004.0         ! Удельная теплоёмкость сухого воздуха [Дж/(кг·К)]
     real, parameter :: L_S = 2.835e6           ! Удельная теплота сублимации льда [Дж/кг] (при 0°C)
@@ -166,7 +168,8 @@ module iceberg_types
         ! Скорости плавления [м/с]
         real :: m_basal      ! Базальная скорость плавления
         real :: m_lateral    ! Боковая скорость плавления
-        real :: m_surface    ! Поверхностная скорость плавления
+        real :: m_surface    ! Поверхностная скорость плавления (melting)
+        real :: m_vapor      ! Скорость массы паровой фазы (сублимация/осаждение) [кг/(м²·с)]
         real :: q_net_surface ! Чистый тепловой поток на поверхности [Вт/м²]
         real :: t_surface    ! Температура поверхности [°C] (Stage 10.2)
 
@@ -194,8 +197,9 @@ module iceberg_types
         ! Массовый баланс [кг]
         real :: basal_mass_loss    ! Потеря массы базальным плавлением за шаг
         real :: lateral_mass_loss  ! Потеря массы боковым плавлением за шаг
-        real :: surface_mass_loss  ! Потеря массы поверхностным плавлением за шаг
-        real :: total_mass_loss    ! Суммарная потеря массы за шаг
+        real :: surface_mass_loss  ! Потеря массы поверхностным плавлением (melting) за шаг
+        real :: vapor_mass_loss    ! Изменение массы сублимацией/осаждением за шаг (отриц. = сублимация, полож. = осад)
+        real :: total_mass_loss    ! Суммарное изменение массы за шаг (с учётом vapor)
 
         ! Форсинг / границы домена
         logical :: forcing_valid   ! .TRUE. если позиция внутри домена форсинга

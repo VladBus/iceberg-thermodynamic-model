@@ -555,11 +555,45 @@ Q_LH_legacy = ρ_air · LH_COEFF · |V_a| · L_v · (q_air - q_sat_water)
     q_sat_water = water saturation at ice surface (5-18% error at T < 0°C)
 ```
 
-**Net & Melt:**
+**Net & Melt (Stage 10.4 — Phase Change Partitioning):**
 
 ```
-Q_net = SW_abs + LW↓ + LW↑ + Q_SH + Q_LH
-m_surface = max(0, Q_net) / (ρ_ice · L_f)
+Q_net_non_melt = SW_abs + LW↓ + LW↑ + Q_SH + Q_LH
+
+q_air = 0.622 · e_vap / p_atm
+q_sat_ice = 0.622 · e_sat_ice(T_surf) / p_atm  ! ICE saturation (Murphy & Koop 2005)
+m_vapor = ρ_air · C_E · |V_a| · (q_air - q_sat_ice)  [kg/(m²·s)]  ! vapor mass flux
+Q_LH = m_vapor · L_S  [W/m²]  ! latent heat flux, consistent with Stage 10.3
+
+Q_melt = max(Q_net_non_melt - Q_LH, 0)  [W/m²]  ! energy available for melting
+m_melt = Q_melt / (ρ_ice · L_f)  [m/s]  ! surface melt rate (liquid water)
+
+Q_net = Q_net_non_melt - m_melt · ρ_ice · L_f / Δt  [W/m²]  ! residual flux for diagnostics
+```
+
+**Phase Change Logic:**
+
+```
+if T_surface < T_melt:
+    dT = Q_net_non_melt · Δt / C_eff
+    T_surface_new = T_surface + dT
+    if T_surface_new ≥ T_melt:
+        excess_energy = Q_net_non_melt - C_eff · (T_melt - T_surface) / Δt
+        Q_melt = max(excess_energy - Q_LH, 0)
+        m_melt = Q_melt / (ρ_ice · L_f)
+        T_surface = T_melt
+    else:
+        m_melt = 0
+else:  ! T_surface ≥ T_melt
+    T_surface = T_melt
+    Q_melt = max(Q_net_non_melt - Q_LH, 0)
+    m_melt = Q_melt / (ρ_ice · L_f)
+
+Vapor mass flux (sublimation/deposition):
+m_vapor = ρ_air · C_E · |V_a| · (q_air - q_sat_ice)  [kg/(m²·s)]
+Sign: m_vapor < 0 -> sublimation (mass loss)
+      m_vapor > 0 -> deposition (mass gain)
+Mass change from vapor: ΔM_vapor = m_vapor · A_top · Δt
 ```
 
 ### 8.3 Дискретные уравнения
@@ -667,25 +701,29 @@ Subroutines: compute_surface_melt, saturation_vapor_pressure, ...
 
 ---
 
-## 9. SURFACE MELT → GEOMETRY UPDATE
+## 9. SURFACE MELT → GEOMETRY UPDATE (Stage 10.4 updated)
 
 ### 9.1 Непрерывное уравнение
 
 ```
-dH/dt = -m_surface
+dH/dt = -(m_melt + m_vapor/ρ_ice)
 ```
+
+where m_vapor = ρ_air · C_E · |V_a| · (q_air - q_sat_ice) [kg/(m²·s)]
+m_vapor < 0 -> sublimation (mass loss, thickness decreases)
+m_vapor > 0 -> deposition (mass gain, thickness increases)
 
 ### 9.2 Дискретное уравнение
 
 ```
-H^(n+1) = H^n - m_surface · Δt
+H^(n+1) = H^n - (m_melt + m_vapor/ρ_ice) · Δt
 ```
 
 ### 9.3 Массовый баланс
 
 ```
 M_budget = M_geometry = ρ_ice · L · W · H
-Mass_loss = M_basal + M_lateral + M_surface
+Mass_loss = M_basal + M_lateral + M_surface + M_vapor
 Error = |M_geometry - M_budget| / M_initial < 0.013%
 ```
 
@@ -703,19 +741,22 @@ Subroutines: iceberg_update_geometry
 
 ---
 
-## 10. MASS CONSERVATION
+## 10. MASS CONSERVATION (Stage 10.4 updated)
 
 ### 10.1 Уравнение
 
 ```
-M^(n+1) = M^n - (M_basal + M_lateral + M_surface) · Δt
+M^(n+1) = M^n - (M_basal + M_lateral + M_surface + M_vapor) · Δt
 ```
+
+where M_vapor = m_vapor · A_top · Δt
+m_vapor = ρ_air · C_E · |V_a| · (q_air - q_sat_ice) [kg/(m²·s)]
 
 ### 10.2 Диагностика
 
 ```
 M_geometry = ρ_ice · L · W · H
-M_budget = M_initial - Σ(M_melt_components)
+M_budget = M_initial - Σ(M_melt_components) - M_vapor
 Relative_error = |M_geometry - M_budget| / M_initial
 ```
 
@@ -740,8 +781,13 @@ Timestep loop (Δt = 3600 s):
 4. Thermodynamics:
    a. Basal melt (Explicit)
    b. Lateral melt (Explicit)
-   c. Surface energy balance (Explicit) → m_surface
-   d. Update H (from m_surface)
+   c. Surface energy balance (Explicit):
+      i. Compute Q_SW, Q_LW, Q_SH, Q_LH
+      ii. Compute m_vapor = ρ_air · C_E · |V_a| · (q_air - q_sat_ice)
+      iii. Compute Q_melt = max(Q_net_non_melt - Q_LH, 0)
+      iv. Compute m_melt = Q_melt / (ρ_ice · L_f)
+      v. Compute m_surface = m_melt
+   d. Update H (from m_surface + m_vapor/ρ_ice)
    e. Update L, W (from lateral melt)
    f. Update geometry (mass, draft, areas)
 5. Diagnostics output

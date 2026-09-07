@@ -2,7 +2,7 @@
 
 **Дата:** 2026-09-07  
 **Physics baseline commit:** a1fc859 "Correct Stage 10.2 analytical validation"  
-**Current repository stage:** Stage 10.3 — corrective validation  
+**Current repository stage:** Stage 10.4 — Phase Change Partitioning  
 **FPM версия:** 0.13.0 (local & CI aligned)  
 **Test targets:** 41  
 **Tests PASS:** 41 / 41
@@ -41,10 +41,10 @@
 | 14  | **Surface energy (общий)**     | Q_net = Q_SW + Q_LW↓ + Q_LW↑ + Q_SH + Q_LH                   | B      | Модернизация поэтапно     |
 | 15  | **Shortwave radiation**        | decl=0, hour_angle=0 (permanent equinox/noon)                | B      | **Stage 10.1**            |
 | 16  | **Longwave radiation**         | LW_down = ε_a·σ·T_air⁴·(1+...), LW_up = -ε_i·σ·T_surf⁴       | B      | Модернизация в Stage 10.1 |
-| 17  | **Sensible heat**              | Q_SH = ρₐ·C_H·U·(T_air - T_surf)                             | B      | **Stage 10.3**            |
-| 18  | **Latent heat**                | LH_COEFF=0.6650735, water saturation, L_v, fixed T_ICE       | B      | **Stage 10.3/10.4**       |
-| 19  | **Surface temperature**        | T_ICE = -10.0°C (константа, нет прогностики)                 | B      | **Stage 10.2**            |
-| 20  | **Phase change (surface)**     | m_surf = max(Q_net,0)/(ρ_ice·L_f) — нет разделения процессов | B      | **Stage 10.4**            |
+| 17  | **Sensible heat**              | Q_SH = ρₐ·C_H·U·(T_air - T_surf)                             | C      | **Stage 10.3 ✅**         |
+| 18  | **Latent heat**                | Q_LH = ρₐ·L_S·C_E·U·Δq, ice sat, L_s, m_vapor = ρₐ·C_E·U·Δq  | C      | **Stage 10.3 ✅**         |
+| 19  | **Surface temperature**        | Prognostic T_surface, C_eff·dT/dt = Q_net_non_melt           | C      | **Stage 10.2 ✅**         |
+| 20  | **Phase change (surface)**     | m_melt = Q_melt/(ρ·L_f), m_vapor = ρₐ·C_E·U·(q_air-q_sat)    | C      | **Stage 10.4 ✅**         |
 | 21  | **Mass update**                | M = ρ_ice·L·W·H, budget closes 0.013%                        | A      | Оставить                  |
 | 22  | **Boundary conditions**        | Land mask=8888.0, grounding logic, domain boundaries         | A      | Оставить                  |
 | 23  | **Initial conditions**         | Real geometry + real ice + zero velocity                     | A      | Оставить                  |
@@ -110,7 +110,7 @@ SH_COEFF = 1.7068  ! Stanton number (dimensionless), Q_SH = ρ·SH_COEFF·U·ΔT
 
 ---
 
-### 18. Latent heat — **C (Stage 10.3 ✅)** / **B (Stage 10.4 pending)**
+### 18. Latent heat — **C (Stage 10.3 ✅)**
 
 **Современная формулировка (Stage 10.3):**
 
@@ -142,7 +142,6 @@ q_sat = water_saturation  ! 5–18% error at T < 0°C
 ```
 
 **Решено в Stage 10.3:** Modern bulk с C_E, ice saturation (Murphy & Koop 2005), L_s.
-**Остается для Stage 10.4:** Разделение sublimation/deposition/melting с массовыми изменениями.
 
 ---
 
@@ -155,44 +154,34 @@ T_surface — prognostic
 C_eff = ρ_ice · c_ice · h_eff = 955500 J/(m²·K)
 dT/dt = Q_net_non_melt / C_eff  (T_surface < 0°C)
 T_surface = 0°C + excess → melt  (crossing melting point)
-m_surface = max(Q_net_non_melt, 0) / (ρ_ice · L_f)  (T_surface ≥ 0°C)
+m_melt = max(Q_net_non_melt - Q_LH, 0) / (ρ_ice · L_f)  (T_surface ≥ 0°C)
 ```
 
 **Решено в Stage 10.2:** Prognostic T_surface с C_eff·dT/dt = Q_net_non_melt.
 
 ---
 
-### 19. Surface temperature — **B (Stage 10.2)**
+### 20. Phase change (surface) — **C (Stage 10.4 ✅)**
 
-**Текущая формулировка:**
-
-```
-T_ICE = -10.0°C (parameter.f90, константа)
-```
-
-**Роль:** Используется в q_sat, LW_up, SH, LH как температура поверхности.
-
-**Проблема:** Нет прогностики — melt не меняет T_surface. Нет heat capacity.
-
-**Решение:** Stage 10.2 — prognostic T_surface с C_eff·dT/dt = Q_net_non_melt.
-
----
-
-### 20. Phase change (surface melting) — **B (Stage 10.4)**
-
-**Текущая формулировка:**
+**Современная формулировка (Stage 10.4):**
 
 ```
-m_surface = max(Q_net, 0) / (rho_ice * L_f)
+Q_net_non_melt = Q_SW + Q_LW + Q_SH + Q_LH
+Q_LH = m_vapor · L_S
+m_vapor = ρ_air · C_E · U · (q_air - q_sat_ice)  [kg/(m²·s)]
+
+Q_melt = max(Q_net_non_melt - Q_LH, 0)  [W/m²]
+m_melt = Q_melt / (ρ_ice · L_f)  [m/s]
+
+Sublimation: m_vapor < 0 (q_air < q_sat_ice) -> mass loss
+Deposition: m_vapor > 0 (q_air > q_sat_ice) -> mass gain
+Melting: m_melt > 0 (T_surface = 0°C, Q_melt > 0) -> mass loss
+
+Height change: dH/dt = -(m_melt + m_vapor/ρ_ice)
+Mass change: ΔM = -(M_melt + M_vapor)
 ```
 
-**Проблема:** Любой положительный Q_net → melt. Нет разделения на:
-
-- Melting (phase change ice→water)
-- Sublimation (ice→vapor)
-- Deposition (vapor→ice)
-
-**Решение:** Stage 10.4 — energy-consistent partitioning.
+**Решено в Stage 10.4:** Energy-consistent partitioning of surface energy into melting, sublimation, and deposition with explicit mass fluxes.
 
 ---
 
@@ -248,30 +237,37 @@ m_surface = max(Q_net, 0) / (rho_ice * L_f)
 
 ---
 
-## Production Physics Changed in Stage 10.3
+## Production Physics Changed in Stage 10.4
 
-**YES** — Production physics ИЗМЕНЕНА в Stage 10.3:
+**YES** — Production physics ИЗМЕНЕНА в Stage 10.4:
 
+- Latent heat: Q_LH = ρ·L_S·C_E·U·Δq with explicit vapor mass flux m_vapor = ρ·C_E·U·Δq
+- Phase change partitioning: Q_melt = max(Q_net_non_melt - Q_LH, 0)
+- Sublimation/deposition mass flux: m_vapor = ρ_air·C_E·U·(q_air - q_sat_ice)
+- Melting: m_melt = Q_melt / (ρ_ice·L_f)
+- Height update: dH/dt = -(m_melt + m_vapor/ρ_ice)
+- Mass budget includes vapor mass change: ΔM = -(M_melt + M_vapor)
+
+Previous Stage 10.3 changes retained:
 - Sensible heat: Q_SH = ρ·CP_AIR·C_H·U·ΔT (CP_AIR=1004, C_H=1.5e-3)
 - Latent heat: Q_LH = ρ·L_S·C_E·U·Δq (L_S=2.835e6, C_E=1.5e-3, ice saturation)
 - Ice saturation: Murphy & Koop (2005) formulation
-- Q_LH is energy flux only (no mass change until Stage 10.4)
 - Prognostic T_surface used for all surface fluxes
 
 ---
 
-## Stage 10 Readiness (post Stage 10.3 corrective validation)
+## Stage 10 Readiness (post Stage 10.4 completion)
 
 | Requirement              | Status                     |
 | ------------------------ | -------------------------- |
 | Physics baseline frozen  | ✅ a1fc859                 |
-| Current repo stage       | ✅ Stage 10.3 corrective   |
-| Equation Ledger          | ✅ Complete (Stage 10.3)   |
+| Current repo stage       | ✅ Stage 10.4 complete     |
+| Equation Ledger          | ✅ Complete (Stage 10.4)   |
 | Physics Status           | ✅ Complete (this file)    |
-| Modernization Plan       | ✅ Complete (Stage 10.3)   |
+| Modernization Plan       | ✅ Complete (Stage 10.4)   |
 | CI/FPM aligned           | ✅ 0.13.0 both             |
 | Independent tests        | ✅ 41 tests PASS           |
 | TEST_11 baseline         | ✅ Documented              |
 | Legacy blocks identified | ✅ All B-blocks catalogued |
 
-**Stage 10 readiness:** Stage 10.3 complete with corrective validation. Ready for Stage 10.4.
+**Stage 10 readiness:** Stage 10.4 complete. Ready for Stage 10.5.

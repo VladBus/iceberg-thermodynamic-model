@@ -29,7 +29,7 @@ Complete the iceberg model scientifically before expanding scope.
 ### Stage 10.4 — Phase Change & Surface Ablation
 | Substage | Status | Description |
 |----------|--------|-------------|
-| 10.4 | ⬜ TODO | Partition Q_net_non_melt into melt/sublimation/deposition mass fluxes |
+| 10.4 | ✅ DONE | Partition Q_net_non_melt into melt/sublimation/deposition mass fluxes |
 
 ### Stage 10.5 — Ocean Thermal Forcing
 | Substage | Status | Description |

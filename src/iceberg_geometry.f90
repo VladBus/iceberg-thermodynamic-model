@@ -129,10 +129,11 @@ contains
     end subroutine check_grounding_detailed
 
     ! ========================================================================
-    !   МАССОВЫЙ БАЛАНС ЗА ШАГ (для верификации TEST_10)
+    !   МАССОВЫЙ БАЛАНС ЗА ШАГ (для верификации TEST_10) — Stage 10.4
     ! ========================================================================
     ! Вычисляет потери массы за временной шаг dt из скоростей плавления
     ! и текущей геометрии. Используется для проверки сходимости баланса.
+    ! Stage 10.4: включает vapour mass flux (сублимация/осаждение).
     !
     ! Формулы:
     !   D = H * ρ_ice / ρ_water
@@ -142,7 +143,8 @@ contains
     !   basal_loss    = ρ_ice * m_basal * A_base * dt
     !   lateral_loss  = ρ_ice * m_lateral * A_lateral * dt
     !   surface_loss  = ρ_ice * m_surface * A_top * dt
-    !   total_loss = basal + lateral + surface
+    !   vapor_loss    = m_vapor * A_top * dt  (m_vapor в кг/(м²·с), отриц. = сублимация)
+    !   total_loss = basal + lateral + surface + vapor
     !
     ! Аргументы:
     !   state          - состояние (геометрия для площадей)
@@ -150,17 +152,19 @@ contains
     !   m_basal        - базальная скорость плавления [м/с]
     !   m_lateral      - боковая скорость плавления [м/с]
     !   m_surface      - поверхностная скорость плавления [м/с]
+    !   m_vapor        - скорость массы паровой фазы [кг/(м²·с)]
     !   basal_loss     - потеря массы базальным плавлением [кг] (выход)
     !   lateral_loss   - потеря массы боковым плавлением [кг] (выход)
     !   surface_loss   - потеря массы поверхностным плавлением [кг] (выход)
-    !   total_loss     - суммарная потеря массы [кг] (выход)
+    !   vapor_loss     - изменение массы сублимацией/осаждением [кг] (выход)
+    !   total_loss     - суммарное изменение массы [кг] (выход)
     ! ========================================================================
-    subroutine compute_mass_budget(state, dt, m_basal, m_lateral, m_surface, &
-                                   basal_loss, lateral_loss, surface_loss, total_loss)
+    subroutine compute_mass_budget(state, dt, m_basal, m_lateral, m_surface, m_vapor, &
+                                   basal_loss, lateral_loss, surface_loss, vapor_loss, total_loss)
         type(iceberg_state), intent(in) :: state
         real, intent(in) :: dt
-        real, intent(in) :: m_basal, m_lateral, m_surface
-        real, intent(out) :: basal_loss, lateral_loss, surface_loss, total_loss
+        real, intent(in) :: m_basal, m_lateral, m_surface, m_vapor
+        real, intent(out) :: basal_loss, lateral_loss, surface_loss, vapor_loss, total_loss
 
         real :: draft, a_base, a_lateral, a_top
 
@@ -172,7 +176,8 @@ contains
         basal_loss = RHO_ICE*m_basal*a_base*dt
         lateral_loss = RHO_ICE*m_lateral*a_lateral*dt
         surface_loss = RHO_ICE*m_surface*a_top*dt
-        total_loss = basal_loss + lateral_loss + surface_loss
+        vapor_loss = m_vapor*a_top*dt
+        total_loss = basal_loss + lateral_loss + surface_loss + vapor_loss
     end subroutine compute_mass_budget
 
     ! ========================================================================

@@ -319,17 +319,19 @@ contains
         ! 11. Массовый баланс
         diag%total_mass_loss = diag%basal_mass_loss + &
                                diag%lateral_mass_loss + &
-                               diag%surface_mass_loss
+                               diag%surface_mass_loss + &
+                               diag%vapor_mass_loss
     end subroutine iceberg_step
 
     ! ========================================================================
-    !   ОБНОВЛЕНИЕ ГЕОМЕТРИИ ПОСЛЕ ПЛАВЛЕНИЯ (Stage 9.1 §26)
+    !   ОБНОВЛЕНИЕ ГЕОМЕТРИИ ПОСЛЕ ПЛАВЛЕНИЯ (Stage 9.1 §26 + Stage 10.4)
     ! ========================================================================
     ! Использует геометрию ДО плавления (pre-melt) для консистентного
     ! массового баланса. Исправлено в Stage 9.3 (была ошибка 56%).
+    ! Stage 10.4: добавляет vapour mass flux (сублимация/осаждение) на верхнюю поверхность.
     !
     ! Обновление размеров (явный Эйлер):
-    !   H_new = H_old - dt*(m_basal + m_surface)
+    !   H_new = H_old - dt*(m_basal + m_surface + m_vapor/ρ_ice)
     !   L_new = L_old - dt*m_lateral
     !   W_new = W_old - dt*m_lateral
     ! С обрезкой: max(0, ...)
@@ -340,13 +342,14 @@ contains
     !   dV = V_old - V_new
     !   dV_basal    = L_old*W_old*dt*m_basal
     !   dV_surface  = L_old*W_old*dt*m_surface
+    !   dV_vapor    = L_old*W_old*dt*(m_vapor/ρ_ice)
     !   dV_lateral  = (H_old*W_old + L_old*H_old)*dt*m_lateral
     !   dM_* = ρ_ice * dV_*
     !
     ! Аргументы:
     !   state - состояние (intent(inout), обновляются L,W,H)
     !   dt    - шаг по времени [с]
-    !   diag  - диагностики с m_* [м/с] (intent(inout), обновляются mass_loss)
+    !   diag  - диагностики с m_* [м/с] и m_vapor [кг/(м²·с)] (intent(inout), обновляются mass_loss)
     ! ========================================================================
     subroutine iceberg_update_geometry(state, dt, diag)
         type(iceberg_state), intent(inout) :: state
@@ -355,7 +358,8 @@ contains
 
         real :: L_old, W_old, H_old, draft_old
         real :: V_old, V_new, dV
-        real :: dV_basal, dV_lateral, dV_surface
+        real :: dV_basal, dV_lateral, dV_surface, dV_vapor
+        real :: m_vapor_height
 
         L_old = state%L
         W_old = state%W
@@ -364,7 +368,13 @@ contains
 
         V_old = L_old*W_old*H_old
 
-        state%H = state%H - dt*(diag%m_basal + diag%m_surface)
+        ! Stage 10.4: convert vapor mass flux [kg/(m²·s)] to height rate [m/s]
+        m_vapor_height = diag%m_vapor / RHO_ICE
+
+        ! dH/dt = -m_basal - m_surface + m_vapor/ρ_ice
+        ! m_vapor > 0 (deposition) -> height increases
+        ! m_vapor < 0 (sublimation) -> height decreases
+        state%H = state%H - dt*(diag%m_basal + diag%m_surface - m_vapor_height)
         state%L = state%L - dt*diag%m_lateral
         state%W = state%W - dt*diag%m_lateral
 
@@ -376,19 +386,23 @@ contains
         dV = V_old - V_new
 
         ! Partition volume change by melt component (consistent with geometry update)
-        ! dH = -dt*(m_b + m_s), dL = -dt*m_l, dW = -dt*m_l
+        ! dH = -dt*(m_b + m_s + m_v/ρ_ice), dL = -dt*m_l, dW = -dt*m_l
         ! dV = L*W*dH + H*W*dL + L*H*dW
-        !    = -L*W*dt*(m_b+m_s) - H*W*dt*m_l - L*H*dt*m_l
+        !    = -L*W*dt*(m_b+m_s+m_v/ρ_ice) - H*W*dt*m_l - L*H*dt*m_l
         dV_basal = L_old*W_old*dt*diag%m_basal
         dV_surface = L_old*W_old*dt*diag%m_surface
+        dV_vapor = L_old*W_old*dt*m_vapor_height
         dV_lateral = (H_old*W_old + L_old*H_old)*dt*diag%m_lateral
 
         diag%basal_mass_loss = RHO_ICE*dV_basal
         diag%lateral_mass_loss = RHO_ICE*dV_lateral
         diag%surface_mass_loss = RHO_ICE*dV_surface
+        ! vapor: positive = mass loss (sublimation), negative = mass gain (deposition)
+        ! dV_vapor = L*W*dt*m_vapor/ρ_ice; m_vapor<0 (subl) -> dV_vapor<0 -> -dV_vapor>0 (loss)
+        diag%vapor_mass_loss = -RHO_ICE*dV_vapor
 
         ! Verify mass budget consistency (suppress warning, only check)
-        if (abs((diag%basal_mass_loss + diag%lateral_mass_loss + diag%surface_mass_loss) - RHO_ICE*dV) .gt. 1.0e-4*RHO_ICE*abs(dV)) then
+        if (abs((diag%basal_mass_loss + diag%lateral_mass_loss + diag%surface_mass_loss + diag%vapor_mass_loss) - RHO_ICE*dV) .gt. 1.0e-4*RHO_ICE*abs(dV)) then
             ! Small inconsistency due to max(0) clamping and floating point
         end if
     end subroutine iceberg_update_geometry

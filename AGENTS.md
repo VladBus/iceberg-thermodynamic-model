@@ -263,3 +263,19 @@ All analysis scripts are in `python/analysis/`:
 - **All 41 fpm tests PASS** including regression of Stage 10.1/10.2.
 - **Files changed:** src/iceberg_types.f90 (constants), src/iceberg_thermodynamics.f90 (compute_surface_melt), test/iceberg_test_surface_melt_audit.f90 (Stage 10.3 tests)
 - **Documentation updated:** model_equation_ledger.md, model_physics_status.md, stage10_modernization_plan.md
+
+## Stage 10.4 Summary (Phase Change Partitioning)
+
+- **Classification:** C -- Phase change partitioning implemented and validated.
+- **Physics:** Latent heat flux Q_LH partitioned into vapor mass flux and melt energy.
+- **Key changes:**
+  1. m_vapor = rho_air * C_E * U * (q_air - q_sat_ice) [kg/(m2 s)]
+  2. Q_LH = m_vapor * L_S [W/m2]
+  3. Q_melt = max(Q_net_non_melt - Q_LH, 0) [W/m2]
+  4. m_melt = Q_melt / (rho_ice * L_f) [m/s]
+  5. dH/dt = -(m_melt + m_vapor/rho_ice)
+  4. Mass budget includes vapor mass change
+- **Tests:** 8 new Stage 10.4 analytical tests PASS (sublimation, deposition, melt, energy/mass conservation, vapor latent/mass consistency)
+- **All 41 fpm tests PASS** including regression of Stage 10.1-10.3.
+- **Files changed:** src/iceberg_types.f90 (vapor diagnostics), src/iceberg_thermodynamics.f90 (phase change logic), src/iceberg.f90 (mass budget), src/iceberg_geometry.f90 (mass budget), test/iceberg_test_surface_melt_audit.f90 (8 new tests)
+- **Documentation updated:** model_equation_ledger.md, model_physics_status.md, stage10_modernization_plan.md

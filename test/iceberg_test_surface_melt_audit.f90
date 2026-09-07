@@ -52,6 +52,19 @@ program iceberg_test_surface_melt_audit
     real :: e_total_used
     real :: q_net_1, m_1, t_surf_1
     real :: q_net_2, m_2, t_surf_2
+    ! Analytical validation variables (Test A)
+    real :: t_air_k_a, t_surf_k_a, lw_down_a, lw_up_a
+    real :: q_net_non_melt_a, t_expected_a, t_diff_a
+    ! Analytical validation variables (Energy conservation)
+    real :: cos_zenith_e, decl_rad_e, hour_angle_rad_e
+    real :: t_air_k_e, t_dew_k_e, t_surf_k_e, p_atm_e
+    real :: wind_speed_e, rho_air_e, e_sat_air_e, e_sat_dew_e
+    real :: rh_e, e_vap_e, q_air_e, q_sat_initial_e
+    real :: sw_toa_e, air_mass_e, tau_rayleigh_e, t_rayleigh_e
+    real :: precip_water_cm_e, t_water_vap_e, t_aerosol_e, t_clear_e, t_cloud_e
+    real :: sw_down_e, sw_abs_e, lw_down_e, lw_up_e
+    real :: sh_flux_e, lh_flux_e, q_net_non_melt_e
+    real :: e_available_e, e_sensible_e, e_latent_e, e_total_used_e, diff_e
 
     n_errors = 0
     n_checks = 0
@@ -242,47 +255,79 @@ program iceberg_test_surface_melt_audit
     ! =========================================================================
     
     ! -------------------------------------------------------------------------
-    ! TEST A: Cold surface warming
+    ! TEST A: Cold surface warming — INDEPENDENT ANALYTICAL VALIDATION
     ! Initial: T_surface = -20°C
-    ! Positive Q_net_non_melt -> T_surface increases but stays < 0°C
-    ! Expected: m_surface = 0, T_surface > -20°C and < 0°C
+    ! Forcing: polar night, no wind, T_air = 0°C, RH=100%
+    ! Analytical Q_net_non_melt = LW_down + LW_up (SH=0, LH=0, SW=0)
+    ! Expected: T_new = T_old + Q_known * dt / C_eff
     ! -------------------------------------------------------------------------
     print *, ""
-    print *, "--- TEST A: Cold surface warming (-20°C -> warmer, no melt) ---"
+    print *, "--- TEST A: Cold surface warming - independent analytical ---"
 
     call iceberg_init(state, 0.0, 0.0, 100.0, 100.0, 100.0, &
-                      75.0, 30.0, 0.0, 0.0)
-    state%T_surface = -20.0  ! Explicit initial condition
+                      90.0, 0.0, 0.0, 0.0)  ! North pole -> polar night
+    state%T_surface = -20.0  ! Explicit initial condition: -20°C
     call init_zero_ocean(ocean_prof)
 
-    ! Construct forcing for positive net energy (no SW, warm air, no wind)
+    ! Forcing: polar night, no wind, T_air = 0°C, RH=100%
     atmos%t2m = 273.15   ! 0°C
-    atmos%d2m = 273.15
-    atmos%tcc = 0.0
+    atmos%d2m = 273.15   ! dew point = air temp -> RH=100%
+    atmos%tcc = 0.0      ! clear sky
     atmos%msl = 101325.0
     atmos%u10 = 0.0
     atmos%v10 = 0.0
 
+    ! --- INDEPENDENT ANALYTICAL COMPUTATION OF Q_NET_NON_MELT ---
+    ! Using module constants directly: LW_EMISS, LW_HUMID_COEFF, EMISSIVITY, STEFAN_BOLTZ
+    t_air_k_a = atmos%t2m
+    t_surf_k_a = state%T_surface + 273.15  ! 253.15 K
+    
+    ! LW_down = LW_EMISS * t_air^4 * (1 + LW_CLOUD_FACTOR*tcc) * 
+    !           (1 - LW_HUMID_COEFF*exp(-LW_HUMID_EXP*(273.15-t_air)^2))
+    ! tcc = 0, t_air = 273.15 -> (273.15 - t_air) = 0 -> exp(0) = 1
+    lw_down_a = LW_EMISS * t_air_k_a**4 * (1.0 - LW_HUMID_COEFF)
+    
+    ! LW_up = -EMISSIVITY * STEFAN_BOLTZ * t_surf_k^4
+    lw_up_a = -EMISSIVITY * STEFAN_BOLTZ * t_surf_k_a**4
+    
+    ! No wind -> SH = 0, LH = 0; Polar night -> SW = 0
+    q_net_non_melt_a = lw_down_a + lw_up_a
+    
+    ! Analytical temperature update: T_new = T_old + Q * dt / C_eff
+    t_expected_a = state%T_surface + q_net_non_melt_a * dt / (RHO_ICE * C_ICE * H_EFF)
+    
+    ! --- CALL PRODUCTION CODE ---
     call compute_surface_melt(state, atmos, diag, q_net, m_surface, dt, &
                               nat(1), nat(2), nat(3), nat(4))
+    
+    t_diff_a = state%T_surface - t_expected_a
 
-    ! Analytical: dT = Q_net_non_melt * dt / C_eff
-    ! C_eff = 910 * 2100 * 0.5 = 955500 J/(m² K)
-    ! We need Q_net_non_melt to compute expected dT
-    ! For this test, we just verify direction and bounds
-
-    print *, "T_initial = -20.0°C"
-    print *, "T_final   = ", state%T_surface, " °C"
-    print *, "m_surface = ", m_surface, " m/s"
-    print *, "q_net     = ", q_net, " W/m2"
+    print *, "T_initial     = -20.0°C"
+    print *, "T_final       = ", state%T_surface, " °C"
+    print *, "T_expected    = ", t_expected_a, " °C"
+    print *, "Difference    = ", t_diff_a, " °C"
+    print *, "Q_analytic    = ", q_net_non_melt_a, " W/m2"
+    print *, "LW_down       = ", lw_down_a, " W/m2"
+    print *, "LW_up         = ", lw_up_a, " W/m2"
+    print *, "m_surface     = ", m_surface, " m/s"
+    print *, "q_net (resid) = ", q_net, " W/m2"
 
     call write_audit_row(unit, "A_warming", atmos, q_net, m_surface, 0.0)
 
     n_checks = n_checks + 1
     if (state%T_surface .gt. -20.0 .and. state%T_surface .lt. 0.0 .and. m_surface .eq. 0.0) then
-        print *, "OK: Cold surface warmed toward 0°C, no melt"
+        print *, "OK: Cold surface warmed toward 0°C, no melt (directional)"
     else
-        print *, "FAIL: Test A conditions not met"
+        print *, "FAIL: Test A directional conditions not met"
+        n_errors = n_errors + 1
+    end if
+
+    ! Independent analytical temperature check
+    n_checks = n_checks + 1
+    if (abs(t_diff_a) .lt. 0.01) then  ! tolerance 0.01°C
+        print *, "OK: T_surface matches analytical T_new = T_old + Q*dt/C_eff within 0.01°C"
+    else
+        print *, "FAIL: Analytical temperature mismatch = ", t_diff_a, " °C"
         n_errors = n_errors + 1
     end if
 
@@ -470,11 +515,17 @@ program iceberg_test_surface_melt_audit
     end if
 
     ! -------------------------------------------------------------------------
-    ! ENERGY CONSERVATION TEST
-    ! Synthetic case with known energy partition
+    ! ENERGY CONSERVATION TEST — INDEPENDENT ANALYTICAL VALIDATION
+    ! Initial: T_surface = -1°C
+    ! Forcing: 75°N, 30°E, T_air=10°C, RH from d2m, wind=10 m/s, clear sky
+    ! Analytical Q_known computed independently before call
+    ! E_available = Q_known * dt
+    ! E_sensible = C_eff * (0 - T_initial)
+    ! E_latent = rho_ice * L_f * m_surface * dt
+    ! Verify: E_available = E_sensible + E_latent
     ! -------------------------------------------------------------------------
     print *, ""
-    print *, "--- ENERGY CONSERVATION: Crossing case partition check ---"
+    print *, "--- ENERGY CONSERVATION: Independent analytical validation ---"
 
     call iceberg_init(state, 0.0, 0.0, 100.0, 100.0, 100.0, &
                       75.0, 30.0, 0.0, 0.0)
@@ -488,27 +539,107 @@ program iceberg_test_surface_melt_audit
     atmos%u10 = 10.0
     atmos%v10 = 0.0
 
+    ! --- INDEPENDENT ANALYTICAL COMPUTATION OF Q_NET_NON_MELT ---
+    ! Using module constants directly
+    t_air_k_e = atmos%t2m
+    t_dew_k_e = atmos%d2m
+    t_surf_k_e = state%T_surface + 273.15  ! 272.15 K
+    p_atm_e = atmos%msl
+    wind_speed_e = sqrt(atmos%u10**2 + atmos%v10**2)
+    
+    ! --- Solar geometry (analytical, same as production) ---
+    call solar_geometry(nat(1), nat(2), nat(3), nat(4), &
+                        state%time, &
+                        state%latitude, state%longitude, &
+                        cos_zenith_e, &
+                        decl_rad_e, hour_angle_rad_e)
+    
+    ! --- Air density ---
+    rho_air_e = p_atm_e / (GAS_CONST_AIR * t_air_k_e)
+    
+    ! --- Vapor pressure (replicate production exactly) ---
+    e_sat_air_e = SAT_VAPOR_0 * 10.0**(TETENS_A * (t_air_k_e - 273.15) / t_air_k_e)
+    e_sat_dew_e = SAT_VAPOR_0 * 10.0**(TETENS_A * (t_dew_k_e - 273.15) / t_dew_k_e)
+    rh_e = min(1.0, max(0.0, e_sat_dew_e / e_sat_air_e))
+    e_vap_e = rh_e * e_sat_air_e
+    q_air_e = 0.622 * e_vap_e / p_atm_e
+    
+    ! --- Shortwave (Stage 10.1.2) ---
+    if (cos_zenith_e .le. 0.0) then
+        sw_down_e = 0.0
+    else
+        sw_toa_e = SOLAR_CONSTANT * cos_zenith_e
+        air_mass_e = 1.0 / cos_zenith_e
+        if (air_mass_e .gt. 40.0) air_mass_e = 40.0
+        tau_rayleigh_e = TAU_RAYLEIGH_0 * (p_atm_e / 101325.0)
+        t_rayleigh_e = exp(-tau_rayleigh_e * air_mass_e)
+        t_rayleigh_e = max(0.0, min(1.0, t_rayleigh_e))
+        precip_water_cm_e = PRECIP_WATER_SCALE * (e_vap_e / 100.0) * (101325.0 / p_atm_e)
+        precip_water_cm_e = max(0.0, precip_water_cm_e)
+        t_water_vap_e = 1.0 - WV_ABSORP_COEFF * (precip_water_cm_e ** WV_ABSORP_EXP)
+        t_water_vap_e = max(0.0, min(1.0, t_water_vap_e))
+        t_aerosol_e = AEROSOL_TRANS_ARCTIC
+        t_clear_e = t_rayleigh_e * t_water_vap_e * t_aerosol_e
+        t_clear_e = max(0.0, min(1.0, t_clear_e))
+        t_cloud_e = 1.0 - CLOUD_TRANS_COEFF * atmos%tcc
+        t_cloud_e = max(0.0, min(1.0, t_cloud_e))
+        sw_down_e = sw_toa_e * t_clear_e * t_cloud_e
+        sw_down_e = min(sw_down_e, sw_toa_e)
+        sw_down_e = max(0.0, sw_down_e)
+    end if
+    sw_abs_e = sw_down_e * (1.0 - ALBEDO_ICE)
+    
+    ! --- Longwave ---
+    lw_down_e = LW_EMISS * t_air_k_e**4 * &
+                (1.0 + LW_CLOUD_FACTOR * atmos%tcc) * &
+                (1.0 - LW_HUMID_COEFF * exp(-LW_HUMID_EXP * (273.15 - t_air_k_e)**2))
+    lw_up_e = -EMISSIVITY * STEFAN_BOLTZ * t_surf_k_e**4
+    
+    ! --- Sensible heat ---
+    sh_flux_e = rho_air_e * SH_COEFF * wind_speed_e * (t_air_k_e - t_surf_k_e)
+    
+    ! --- Latent heat ---
+    q_sat_initial_e = 0.622 * (SAT_VAPOR_0 * 10.0**(TETENS_A * (t_surf_k_e - 273.15) / t_surf_k_e)) / p_atm_e
+    lh_flux_e = rho_air_e * LH_COEFF * wind_speed_e * LATENT_VAP * (q_air_e - q_sat_initial_e)
+    
+    ! --- Total analytical net non-melt heat flux ---
+    q_net_non_melt_e = sw_abs_e + lw_down_e + lw_up_e + sh_flux_e + lh_flux_e
+    
+    ! --- Energy available ---
+    e_available_e = q_net_non_melt_e * dt
+    
+    ! --- Sensible energy required to reach 0°C ---
+    e_sensible_e = (RHO_ICE * C_ICE * H_EFF) * (0.0 - (-1.0))  ! = 955500 J/m²
+    
+    ! --- CALL PRODUCTION CODE ---
     call compute_surface_melt(state, atmos, diag, q_net, m_surface, dt, &
                               nat(1), nat(2), nat(3), nat(4))
+    
+    ! --- Latent energy from actual melt ---
+    e_latent_e = m_surface * RHO_ICE * LATENT_HEAT * dt
+    e_total_used_e = e_sensible_e + e_latent_e
+    diff_e = e_available_e - e_total_used_e
 
-    ! Energy accounting
-    q_nm_est = q_net + m_surface*RHO_ICE*LATENT_HEAT/dt
-    e_avail = q_nm_est * dt
-    e_req = c_eff * (0.0 - (-1.0))
-    e_melt = m_surface * RHO_ICE * LATENT_HEAT * dt
-    e_total_used = e_req + e_melt
-
-    print *, "E_available = ", e_avail, " J/m2"
-    print *, "E_sensible  = ", e_req, " J/m2"
-    print *, "E_latent    = ", e_melt, " J/m2"
-    print *, "E_used      = ", e_total_used, " J/m2"
-    print *, "Difference  = ", e_avail - e_total_used, " J/m2"
+    print *, "E_available (analytic) = ", e_available_e, " J/m2"
+    print *, "E_sensible             = ", e_sensible_e, " J/m2"
+    print *, "E_latent (actual)      = ", e_latent_e, " J/m2"
+    print *, "E_used                 = ", e_total_used_e, " J/m2"
+    print *, "Difference             = ", diff_e, " J/m2"
+    print *, "Q_analytic             = ", q_net_non_melt_e, " W/m2"
+    print *, "  SW_abs               = ", sw_abs_e, " W/m2"
+    print *, "  LW_down              = ", lw_down_e, " W/m2"
+    print *, "  LW_up                = ", lw_up_e, " W/m2"
+    print *, "  SH                   = ", sh_flux_e, " W/m2"
+    print *, "  LH                   = ", lh_flux_e, " W/m2"
+    print *, "cos_zenith             = ", cos_zenith_e
+    print *, "m_surface              = ", m_surface, " m/s"
+    print *, "q_net (residual)       = ", q_net, " W/m2"
 
     n_checks = n_checks + 1
-    if (abs(e_avail - e_total_used) .lt. 10.0) then  ! tolerance 10 J/m2
-        print *, "OK: Energy partition conserved within 10 J/m2"
+    if (abs(diff_e) .lt. 10.0) then  ! tolerance 10 J/m2
+        print *, "OK: Energy partition conserved within 10 J/m2 (independent analytical)"
     else
-        print *, "FAIL: Energy conservation error = ", e_avail - e_total_used, " J/m2"
+        print *, "FAIL: Energy conservation error = ", diff_e, " J/m2"
         n_errors = n_errors + 1
     end if
 

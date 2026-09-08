@@ -293,7 +293,7 @@ status = nf90_put_att(ncid, nf90_global, 'unit_system', 'SI (canonical external 
 call set_att(ncid, ice_conc_varid, 'units', '1')
          call set_att(ncid, ice_conc_varid, 'long_name', 'ice concentration per ice thickness category')
          call set_att(ncid, ice_conc_varid, 'comment', &
-     & 'ice area fraction [0-1] for each of 5 ice thickness '// &
+     & 'ice area fraction [0-1] for each of 5 ice thickness ' &
      & 'categories (internal fraction)')
 
         call set_att(ncid, u_varid, 'units', 'm s-1')

@@ -13,6 +13,7 @@
 !     Q_melt = max(Q_surface, 0) при T_surface = T_melt  [Вт/м²] — энергия для плавления
 !     m_surface = Q_melt / (ρ_ice * L_f)                 [м/с] — скорость плавления
 !   Tf = -54.0 * S  [°C], где S — массовая доля [кг/кг] (S=0.035 → Tf=-1.89°C)
+    !   (Stage 10.5: заменено на EOS-80 Tf = f(S,p), см. ocean_freezing_point)
 !   Подпись: m_vapor < 0 -> сублимация (Q_LH < 0, потеря энергии)
 !            m_vapor > 0 -> осаждение (Q_LH > 0, источник энергии)
 !
@@ -239,6 +240,7 @@ contains
         diag%t_draft = t_draft
         diag%s_draft = s_draft
         diag%tf_draft = tf_draft
+        diag%delta_t_ocean = t_draft - tf_draft
         diag%m_basal = m_basal
 
         ! 2. Боковое плавление
@@ -260,7 +262,7 @@ contains
     ! ========================================================================
     ! m_b = C_BASAL * max(0, T(D) - Tf(D))
     ! T(D), S(D) — интерполяция профиля на глубине осадки D.
-    ! Tf = -54.0 * S(D)
+    ! Tf = ocean_freezing_point(S(D), D)  (EOS-80, Stage 10.5)
     !
     ! Аргументы:
     !   prof        - профиль океана (intent(in))
@@ -281,7 +283,7 @@ contains
         t_draft = interp_at_draft(prof, draft, "temp")
         s_draft = interp_at_draft(prof, draft, "salt")
 
-        tf_draft = -54.0*s_draft
+        tf_draft = ocean_freezing_point(s_draft, draft)
 
         delta_t = t_draft - tf_draft
 
@@ -642,19 +644,20 @@ contains
     end function saturation_vapor_pressure_ice
 
     ! ========================================================================
-    !   ТОЧКА ЗАМЕРЗАНИЯ (Legacy HEAT formula)
+    !   ТОЧКА ЗАМЕРЗАНИЯ (обёртка для обратной совместимости)
     ! ========================================================================
-    ! Tf = -54.0 * S  [°C], S — массовая доля [кг/кг]
-    ! Эквивалентно Tf = -0.054 * S_PSU [°C], так как S_mass = S_PSU/1000.
-    ! Для S=35 PSU = 0.035 кг/кг: Tf = -1.89°C.
+    ! Stage 10.5: делегирует канонической EOS-80 формуле
+    ! ocean_freezing_point(S, p=0) на поверхности моря (глубина = 0).
+    ! Историческая legacy формула Tf = -54.0*S даёт на ~0.03°C более тёплую
+    ! точку замерзания (для S=0.035: -1.89°C против -1.92°C по EOS-80).
     !
     ! Аргументы:
-    !   salinity - соленость [кг/кг] (intent(in))
-    !   tf       - точка замерзания [°C] (выход)
+    !   salinity - соленость [кг/кг]
+    !   tf       - точка замерзания на поверхности [°C]
     ! ========================================================================
     pure real function freezing_point(salinity) result(tf)
         real, intent(in) :: salinity
-        tf = -54.0*salinity
+        tf = ocean_freezing_point(salinity, 0.0)
     end function freezing_point
 
 end module iceberg_thermodynamics

@@ -434,13 +434,19 @@ Report: `docs/wiki/Stage10.4.2.1_Independent_Q_surface_output_validation.md`.
 3. **Freezing point:** T_f = f(S, p) — уравнение состояние морской воды
 4. **Relative velocity:** U_rel = |V_water - V_ice| на соответствующих глубинах
 
-### Необходимые тесты
+### Статус: ✅ ЗАВЕРШЕНО
 
-1. T_water < T_f → no basal melt
-2. T_water = T_f → zero melt
-3. T_water > T_f → positive melt
-4. Varying draft
-5. Varying relative velocity
+Реализованы пункты 1–3 плана (пункт 4 — U_rel — перенесён в Stage 10.6):
+
+- **1. Interpolation to draft depth:** существующая `interp_at_draft` (линейная + клэмпы, Stage 9.3) подтверждена тестами 10.5.7–10.5.12.
+- **2. Submerged surface T:** действующая Method-A интеграция `depth_averaged_thermal_forcing` подтверждена репликой 10.5.17–10.5.18.
+- **3. Freezing point EOS-80:** каноническая `ocean_freezing_point(S, d)` в `iceberg_types.f90` заменяет legacy линейную Tf = −54·S в 3 местах: `compute_basal_melt` (Tf на черновике D), `depth_averaged_thermal_forcing` (послойно + глубокий слой), обёртка `freezing_point(S, 0)`.
+  - Формула: Fofonoff & Millard 1983 (UNESCO TPMS 44 §5) / Gill 1982 Eq. 3.5.2. Check value −2.588567 °C PASS (тест 10.5.6).
+  - Legacy −54·S давал Tf теплее EOS-80 на ~0.03 °C у поверхности и игнорировал давление (−0.07 °C на осадке 88 м); суммарно ~0.1 °C ≈ 3% типичного ΔT ≈ 3 °C.
+  - **Следствие:** во всех регрессиях «холодного океана» T=−1.9 °C оказалась выше Tf ниже ~8 м (EOS давление) → порог уточнён до −2.5 °C (test_2/3/4/6/8/9, drift_scaling_*, moving_trajectory, ibcao_interp).
+- **3.1 Diagnostics:** `delta_t_ocean = T(D) − Tf(D)` (необрезанная) добавлена в `iceberg_diagnostics`, устанавливается в `iceberg_thermodynamics_step`.
+- **Тесты:** audit 10.5.1–10.5.19 (24 проверки) в `iceberg_test_7_vertical_temp_gradient` — PASS; полный набор 49/49 PASS; `-Wall -Wextra` — 0 предупреждений, clean exit.
+- **Не входит в 10.5:** пункт 4 (U_rel = |V_water − V_ice| на соответствующих глубинах) → Stage 10.6.
 
 ---
 

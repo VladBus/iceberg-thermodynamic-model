@@ -20,7 +20,8 @@
 ! Точность: default real (float32) для совместимости с остальной моделью.
 !           Константы определены как real, parameter (compile-time).
 !
-! Версия: Stage 10.4 (после добавления фазового разделения поверхностного таяния)
+! Версия: Stage 10.5 (EOS-80 точка замерзания Tf = f(S,p) + диагностика
+!                      термического задействования на осадке)
 ! ==============================================================================
 
 module iceberg_types
@@ -45,6 +46,16 @@ module iceberg_types
 
     ! Гравитация
     real, parameter :: GRAVITY = 9.80665      ! Ускорение свободного падения [м/с²]
+
+    ! Коэффициенты точки замерзания морской воды (Stage 10.5, EOS-80 / UNESCO 1983)
+    ! Компактная форма: TF = (EOS_FP_A0 + EOS_FP_A1*sqrt(S) - EOS_FP_A2*S)*S + EOS_FP_BP*P
+    !   S — практическая солёность [PSU (PSS-78)], P — гидростатическое давление [дбар].
+    ! Источник: Fofonoff & Millard 1983 (UNESCO TPMS 44, §5); Gill 1982 (Eq. 3.5.2).
+    ! Check value: TF = -2.588567°C при S=40 PSU, P=500 дбар.
+    real, parameter :: EOS_FP_A0 = -0.0575        ! Линейный член [°C/PSU]
+    real, parameter :: EOS_FP_A1 = 1.710523e-3    ! Член S^(3/2) [°C/PSU^(3/2)]
+    real, parameter :: EOS_FP_A2 = 2.154996e-4    ! Член S^2 [°C/PSU^2]
+    real, parameter :: EOS_FP_BP = -7.53e-4       ! Коэффициент давления [°C/дбар]
 
     ! Коэффициенты лобового сопротивления (drag coefficients) [безразм.]
     ! Stage 9.1 §18-19, Bigg et al. 1997, Martin & Adcroft 2010
@@ -179,6 +190,8 @@ module iceberg_types
         real :: t_draft      ! Температура на глубине осадки [°C]
         real :: s_draft      ! Соленость на глубине осадки [кг/кг]
         real :: tf_draft     ! Точка замерзания на глубине осадки [°C]
+        real :: delta_t_ocean ! Термическое задействование на осадке T - Tf [°C]
+                             ! (необрезанное, может быть ≤ 0; Stage 10.5)
 
         ! Силы [Н]
         real :: f_wind_x     ! Ветровая сила по X
@@ -251,7 +264,43 @@ module iceberg_types
     public :: C_ICE, H_EFF, T_MELT
     public :: CP_AIR, L_S, VON_KARMAN, Z0_ICE, Z_REF, C_H_NEUTRAL, C_E_NEUTRAL
     public :: MURPHY_KOOP_A, MURPHY_KOOP_B, MURPHY_KOOP_C, MURPHY_KOOP_D
+    public :: EOS_FP_A0, EOS_FP_A1, EOS_FP_A2, EOS_FP_BP
     public :: OMEGA
     public :: ocean_profile, atmos_forcing, iceberg_diagnostics, iceberg_state
+    public :: ocean_freezing_point
+
+contains
+
+    ! ========================================================================
+    !   ТОЧКА ЗАМЕРЗАНИЯ МОРСКОЙ ВОДЫ Tf = f(S, p) (Stage 10.5)
+    ! ========================================================================
+    ! Каноническое уравнение состояния (EOS-80 / UNESCO 1983):
+    !   Tf = (A0 + A1*sqrt(S) - A2*S)*S + BP*P     [°C]
+    !   A0 = -0.0575, A1 = 1.710523e-3, A2 = 2.154996e-4   (S в PSS-78 [PSU])
+    !   BP = -7.53e-4 [°C/дбар], P — гидростатическое давление [дбар]
+    ! Источник: Fofonoff, N.P. & Millard, R.C. (1983). UNESCO TPMS 44, §5.
+    !           Gill, A.E. (1982). Atmosphere-Ocean Dynamics, Eq. 3.5.2.
+    ! Check value: Tf = -2.588567°C при S=40 PSU, P=500 дбар.
+    !
+    ! Давление пересчитывается из глубины гидростатически:
+    !   p [дбар] = rho_w * g * depth / 1e4  (≈ 1.008·depth при RHO_WATER=1028)
+    !
+    ! Аргументы:
+    !   salinity_mass - соленость МАССОВОЙ долей [кг/кг] (конвертируется в PSU ×1000)
+    !   depth_m       - глубина [м]
+    !   tf            - точка замерзания [°C]
+    ! ========================================================================
+    pure real function ocean_freezing_point(salinity_mass, depth_m) result(tf)
+        real, intent(in) :: salinity_mass
+        real, intent(in) :: depth_m
+
+        real :: s_psu, p_dbar
+
+        s_psu = salinity_mass*1000.0
+        p_dbar = RHO_WATER*GRAVITY*depth_m/1.0e4
+
+        tf = (EOS_FP_A0 + EOS_FP_A1*sqrt(s_psu) - EOS_FP_A2*s_psu)*s_psu &
+             + EOS_FP_BP*p_dbar
+    end function ocean_freezing_point
 
 end module iceberg_types

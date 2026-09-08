@@ -28,7 +28,8 @@ program iceberg_test_6_cold_ocean
     call iceberg_init(state, 0.0, 0.0, 100.0, 100.0, 100.0, &
                       76.5, 30.0, 0.0, 0.0)
 
-    ! Холодный океан: T = -1.9°C везде (Tf ≈ -1.86°C при S=0.0345)
+    ! Холодный океан: T = -2.5°C везде (S = 0.0345 → EOS-80 Tf ≈ -1.89°C на
+    ! поверхности, -1.96°C на осадке; T << Tf → плавления нет)
     ocean_prof%nlevels = 18
     allocate (ocean_prof%z(ocean_prof%nlevels))
     allocate (ocean_prof%dz(ocean_prof%nlevels))
@@ -40,7 +41,7 @@ program iceberg_test_6_cold_ocean
     do step = 1, ocean_prof%nlevels
         ocean_prof%z(step) = real(step*250)
         ocean_prof%dz(step) = 250.0
-        ocean_prof%temp(step) = -1.9
+        ocean_prof%temp(step) = -2.5
         ocean_prof%salt(step) = 0.0345
         ocean_prof%u(step) = 0.1
         ocean_prof%v(step) = 0.0

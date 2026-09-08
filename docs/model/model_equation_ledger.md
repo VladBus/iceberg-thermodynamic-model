@@ -210,22 +210,55 @@ Subroutines: read_era5_forcing, get_atmos_forcing, bilinear_interp
 
 ### 4.3 Вертикальная интерполяция/экстраполяция
 
-- EN4 уровни: до ~45 м (model levels)
-- Черновик айсберга: до ~88 м
-- Ниже EN4 max depth: экстраполяция последнего значения
+- Уровни профиля: 18 модельных уровней 2.5–550 м (EN4 → модель, `python/ocean/build_initial_ts.py`, `Z_M`)
+- Черновик айсберга: до ~88 м (внутри профиля в глубокой воде)
+- Линейная интерполяция между уровнями (`interp_at_draft`); клэмпы: выше z(1) → значение 1-го уровня, ниже z(nlevels) → значение последнего (Stage 9.3 fix)
+- Экстраполяция (постоянное значение глубжайшего уровня) — только в мелководных колоннах, где черновик глубже z(nlevels)/глубины дна
+- Горизонтально: билинейная по 4 углам ячейки (`get_ocean_profile`); `kt1 = min(kt1_i)` по углам; любой сухопутный угол → `kt1 = 0` → FORCING ERROR
 
 ### 4.4 Реализация
 
 ```
-File: src/iceberg_forcing.f90, src/initial_ocean_reader.f90
+File: src/iceberg_forcing.f90, src/initial_ocean_reader.f90, python/ocean/build_initial_ts.py
 Module: iceberg_forcing, initial_ocean_reader
-Subroutines: get_ocean_profile, ocean_interp_vertical
+Subroutines/functions: get_ocean_profile, interp_at_draft, depth_averaged_thermal_forcing, ocean_freezing_point
 ```
 
-### 4.5 Проверка
+### 4.5 Точка замерзания (Stage 10.5, EOS-80 / UNESCO 1983)
 
+```
+Tf = (A0 + A1·sqrt(S) - A2·S)·S + BP·P        [°C]
+A0 = -0.0575          °C/PSU
+A1 =  1.710523e-3     °C/PSU^(3/2)
+A2 =  2.154996e-4     °C/PSU^2
+BP = -7.53e-4         °C/дбар
+S  — практическая солёность  [PSU] = 1000·S_mass
+P  — гидростатическое давление [дбар] = ρ_w·g·z_m / 1.0e4
+```
+
+- Источник: Fofonoff & Millard 1983 (UNESCO TPMS 44 §5); Gill 1982 Eq. 3.5.2
+- **Check value (literature):** Tf(S=40, P=500 дбар) = **-2.588567 °C** — воспроизведён в тесте 10.5.6
+- Заменяет legacy линейную Tf = -54·S (Zubov): legacy теплее EOS-80 на ~0.03 °C у поверхности и не учитывает давление (до -0.07 °C на осадке ~88 м); суммарное смещение ~0.1 °C ≈ 3% типичного ΔT ~3 °C
+- Применение: `compute_basal_melt` (Tf на черновике D), `depth_averaged_thermal_forcing` (послойно Tf(z_k) + глубокий слой), обёртка `freezing_point(S, 0)` (поверхность)
+
+### 4.6 Термическое задействование воды на айсберг
+
+```
+Базальное:   ΔT_b        = max(0, T(D) - Tf(D))            → m_basal  = C_BASAL·ΔT_b
+Боковое:     ⟨ΔT⟩_D      = (1/D)·∫_0^D max(0,T(z)-Tf(z))dz → m_lateral = C_LATERAL·⟨ΔT⟩_D
+                                        (Method A, depth_averaged_thermal_forcing)
+Диагностика: delta_t_ocean = T(D) - Tf(D)   (необрезанная, может быть ≤ 0)
+```
+
+`T_freeze` в спектрах диагностики (строка таблицы ниже) — теперь EOS-80, а не постоянная.
+
+### 4.7 Проверка
+
+- iceberg_test_7_vertical_temp_gradient (audit 10.5.1–10.5.19, 24 проверки)
 - iceberg_test_en4_interp
-- iceberg_test_7_vertical_temp_gradient
+- iceberg_test_2 / iceberg_test_6 (холодный океан, T=−2.5 °C < Tf при всех глубинах)
+- iceberg_test_5 (тёплый океан, 1000 дней)
+- iceberg_test_moving_forcing, iceberg_test_ibcao_interp
 
 ---
 

@@ -53,7 +53,7 @@ program iceberg_test_3_uniform_current
     do step = 1, ocean_prof%nlevels
         ocean_prof%z(step) = real(step*10)
         ocean_prof%dz(step) = 10.0
-        ocean_prof%temp(step) = -1.9
+        ocean_prof%temp(step) = -2.5  ! << EOS-80 Tf (Stage 10.5) → нет плавления
         ocean_prof%salt(step) = 0.0345
         ocean_prof%u(step) = u_curr
         ocean_prof%v(step) = v_curr

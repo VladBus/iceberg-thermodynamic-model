@@ -43,7 +43,7 @@ program iceberg_test_moving_trajectory
     do step = 1, 18
         ocean_prof%z(step) = real(step*250)
         ocean_prof%dz(step) = 250.0
-        ocean_prof%temp(step) = -1.9
+        ocean_prof%temp(step) = -2.5  ! << EOS-80 Tf (Stage 10.5) → нет плавления
         ocean_prof%salt(step) = 0.0345
         ocean_prof%u(step) = 0.0
         ocean_prof%v(step) = 0.0

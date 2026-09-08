@@ -501,7 +501,7 @@ contains
     ! ========================================================================
     ! Stage 9.1 §14, Method A:
     !   ⟨ΔT⟩_D = (1/D) ∫₀ᴰ max(0, T(z) - Tf(z)) dz
-    ! где Tf(z) = -54.0 * S(z) [°C], S — массовая доля.
+    ! где Tf(z) = ocean_freezing_point(S(z), z)  (EOS-80, Stage 10.5).
     ! Интеграл берётся по вертикали от поверхности до осадки D.
     ! Если D > max(model z) — экстраполяция постоянными T/S от глубжайшего уровня.
     !
@@ -526,7 +526,7 @@ contains
         max_z = prof%z(prof%nlevels)
         temp_deep = prof%temp(prof%nlevels)
         salt_deep = prof%salt(prof%nlevels)
-        tf_deep = -54.0*salt_deep
+        tf_deep = ocean_freezing_point(salt_deep, max_z)
 
         ! Интеграл по модельным уровням
         do k = 1, prof%nlevels
@@ -539,7 +539,7 @@ contains
             dz_layer = z_bot - z_top
             if (dz_layer .le. 0.0) cycle
 
-            tf = -54.0*prof%salt(k)
+            tf = ocean_freezing_point(prof%salt(k), prof%z(k))
             delta_t = prof%temp(k) - tf
             if (delta_t .gt. 0.0) then
                 integral = integral + delta_t*dz_layer

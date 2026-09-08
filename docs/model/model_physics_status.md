@@ -2,7 +2,7 @@
 
 **Дата:** 2026-09-08  
 **Physics baseline commit:** a1fc859 "Correct Stage 10.2 analytical validation"  
-**Current repository stage:** Stage 10.4 — Phase Change Partitioning (10.4.2 monotonicity validated; 10.4.2.1 Q_surface output validated)
+**Current repository stage:** Stage 10.5 — Ocean Thermal Forcing (EOS-80 Tf=f(S,p); delta_t_ocean diagnostic; audit 10.5.1–10.5.19)
 **FPM версия:** 0.13.0 (local & CI aligned)  
 **Test targets:** 49  
 **Tests PASS:** 49 / 49
@@ -28,7 +28,7 @@
 | 1   | **Геометрия айсберга**         | L, W, H — прямоугольный параллелепипед                       | A      | Оставить                  |
 | 2   | **Координаты и позиция**       | x, y (модельные координаты), lat/lon (географические)        | A      | Оставить                  |
 | 3   | **Atmospheric forcing (ERA5)** | msl, u10, v10, t2m, d2m, tcc, sf — билинейная интерполяция   | A      | Оставить                  |
-| 4   | **Ocean forcing (EN4)**        | T, S — вертикальная интерполяция/экстраполяция до черновика  | B      | Модернизация в Stage 10.5 |
+| 4   | **Ocean forcing (EN4)**        | T, S — интерполяция до черновика; **Tf = EOS-80 f(S,p)**     | C      | **Stage 10.5 ✅**         |
 | 5   | **Ice initialization**         | Реальный лед из AMSR2 + IBCAO батиметрия                     | A      | Оставить                  |
 | 6   | **Iceberg dynamics**           | Лагранжева динамика: m·du/dt = ΣF, m·dv/dt = ΣF              | A      | Оставить                  |
 | 7   | **Wind drag**                  | Квадратичное сопротивление: τₐ = ρₐ·C_Dₐ·                    | A      | Оставить                  |
@@ -36,7 +36,7 @@
 | 9   | **Coriolis**                   | Полунеявная схема (semi-implicit)                            | A      | Оставить                  |
 | 10  | **Pressure-gradient force**    | Опционально, через ocean surface slope                       | A      | Оставить                  |
 | 11  | **Froude-Krylov**              | Не реализован                                                | D      | Не планируется            |
-| 12  | **Basal melt**                 | Q_basal = ρ_w·c_pw·C_BASAL·U_rel·(T_w - T_f)                 | B      | Модернизация в Stage 10.6 |
+| 12  | **Basal melt**                 | Q_basal = ρ_w·c_pw·C_BASAL·U_rel·(T_w - T_f); T_f — EOS-80   | B      | Модернизация в Stage 10.6 |
 | 13  | **Lateral melt**               | Q_lateral = ρ_w·c_pw·C_LATERAL·⟨ΔT⟩\_D·A_lat                 | B      | Модернизация в Stage 10.7 |
 | 14  | **Surface energy (общий)**     | Q_net = Q_SW + Q_LW↓ + Q_LW↑ + Q_SH + Q_LH                   | B      | Модернизация поэтапно     |
 | 15  | **Shortwave radiation**        | decl=0, hour_angle=0 (permanent equinox/noon)                | B      | **Stage 10.1**            |
@@ -286,6 +286,31 @@ Previous Stage 10.3 changes retained:
 
 ---
 
+## Stage 10.5 — Ocean Thermal Forcing (Детальный статус)
+
+### 4. Ocean forcing (EN4) — **C (Stage 10.5 ✅)**
+
+Модернизированы пункты 1–3 плана 10.5 (пункт 4 — U_rel — перенесён в Stage 10.6):
+
+1. **Interpolation to draft depth:** `interp_at_draft` — линейная интерполяция c клэмпами, T/S на черновике D.
+2. **Submerged surface temperature:** `depth_averaged_thermal_forcing` — ⟨ΔT⟩_D = (1/D)·∫max(0,T(z)−Tf(z))dz по [0,D] (Method A, legacy), для lateral melt.
+3. **Freezing point EOS-80:** каноническая функция `ocean_freezing_point(S, depth)` в `iceberg_types.f90`:
+   ```
+   Tf = (A0 + A1·√S − A2·S)·S + BP·P     [°C]
+   A0 = −0.0575, A1 = 1.710523e-3, A2 = 2.154996e-4, BP = −7.53e-4
+   S [PSU] = 1000·S_kg · P [дбар] = ρ_w·g·z/10⁴
+   ```
+   Источник: Fofonoff & Millard 1983 (UNESCO TPMS 44 §5), Gill 1982 Eq. 3.5.2. Check value −2.588567 °C PASS (10.5.6).
+   Применена в 3 точках: `compute_basal_melt` (Tf на D), `depth_averaged_thermal_forcing` (послойно + глубокий слой), `freezing_point(S, 0)`.
+4. **Relative velocity (U_rel):** не менялась — глубинная зависимость перенесена в Stage 10.6.
+
+**Диагностика:** `diag%delta_t_ocean = T(D) − Tf(D)` (необрезанная, может быть ≤ 0).
+
+**Тесты:** `iceberg_test_7_vertical_temp_gradient` — audit 10.5.1–10.5.19 (24 проверки) PASS.
+**Регрессии (EOS давление):** холодный океан T=−1.9 → −2.5 °C в test_2/3/4/6/8/9, drift_scaling_*, moving_trajectory, ibcao_interp.
+
+---
+
 ## Stage 10 Readiness (post Stage 10.4 completion)
 
 | Requirement              | Status                     |
@@ -300,4 +325,4 @@ Previous Stage 10.3 changes retained:
 | TEST_11 baseline         | ✅ Documented              |
 | Legacy blocks identified | ✅ All B-blocks catalogued |
 
-**Stage 10 readiness:** Stage 10.4 complete. Ready for Stage 10.5.
+**Stage 10 readiness:** Stage 10.5 (Ocean Thermal Forcing) complete. Ready for Stage 10.6 (Basal melting modernization).

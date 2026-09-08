@@ -50,7 +50,7 @@ program iceberg_test_4_vertical_shear
     do step = 1, 20
         ocean_prof%z(step) = real(step*5)  ! 5, 10, 15, ..., 100 м
         ocean_prof%dz(step) = 5.0
-        ocean_prof%temp(step) = -1.9
+        ocean_prof%temp(step) = -2.5  ! << EOS-80 Tf (Stage 10.5) → нет плавления
         ocean_prof%salt(step) = 0.0345
         ! Сильный сдвиг: U = 0.2 * exp(-z/20) — убывает с глубиной
         ! На поверхности (z=5): 0.2*exp(-0.25) = 0.156 м/с
@@ -63,7 +63,7 @@ program iceberg_test_4_vertical_shear
     do step = 21, 28
         ocean_prof%z(step) = real(100 + (step - 20)*50)  ! 150, 200, ..., 500 м
         ocean_prof%dz(step) = 50.0
-        ocean_prof%temp(step) = -1.9
+        ocean_prof%temp(step) = -2.5  ! << EOS-80 Tf (Stage 10.5) → нет плавления
         ocean_prof%salt(step) = 0.0345
         ocean_prof%u(step) = 0.001  ! Очень слабое глубокое течение
         ocean_prof%v(step) = 0.0

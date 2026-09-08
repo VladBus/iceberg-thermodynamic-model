@@ -93,8 +93,8 @@ Conversions only at the NetCDF output boundary (`netcdf_output.f90`). Internal C
 - ❌ Iceberg forcing must remain OFFLINE/PRESCRIBED. No two-way coupling.
 - ❌ No advanced physics (internal 3D temperature, wave erosion, sea-ice capture, rollover, fracture, multi-iceberg) until minimal model verified.
 - ❌ Melt coefficients are compile-time constants in `iceberg_types.f90` — require rebuild to change.
-- ❌ Vertical interpolation uses model levels (max 45m) — draft up to 88m requires extrapolation (handled in `iceberg_forcing.f90`).
-- ❌ Position lat/lon not updated from x,y in time stepping — forcing evaluated at initial position (known limitation).
+- ❌ Vertical interpolation: EN4→model = 18 levels 2.5–550 m (`python/ocean/build_initial_ts.py`); `interp_at_draft` = linear + surface/deep clamps; extrapolation only in shallow columns where draft below deepest defined level/ht (handled in `iceberg_forcing.f90`).
+- ❌ Position: x,y AND lat/lon updated each step (`model_coords_to_latlon` in `iceberg.f90`); forcing re-sampled at current x,y every step (`get_ocean_profile`/`era5_bilinear2d`). Forcing stays OFFLINE/PRESCRIBED — no two-way feedback.
 - ❌ Semi-implicit Coriolis solver has 8% period error at Δt=3600s — numerical damping; convergence study needed.
 
 ## Calendar Semantics
@@ -333,3 +333,16 @@ All analysis scripts are in `python/analysis/`:
 - **Tests:** 7 new Stage 10.4.2.1 checks inside `iceberg_test_surface_melt_audit` (total 66 checks, 0 errors).
 - **All fpm tests PASS** (49 auto-discovered test programs, exit 0) including regression of Stage 10.1-10.4.2.
 - **Files changed:** src/iceberg_types.f90 (q_surface/q_lh fields), src/iceberg_thermodynamics.f90 (diag assignments), test/iceberg_test_surface_melt_audit.f90 (10.4.2.1 block), docs/model/model_physics_status.md, docs/model/model_equation_ledger.md, docs/model/stage10_modernization_plan.md, docs/wiki/Stage10.4.2.1_Independent_Q_surface_output_validation.md, AGENTS.md
+
+## Stage 10.5 Summary (Ocean Thermal Forcing)
+
+- **Classification:** C -- Ocean T/S forcing chain modernized to EOS-80 freezing point and validated. Production physics changed (Tf = f(S,p) replaces Zubov linear -54·S; new diagnostic).
+- **Physics:**
+  1. `Tf(S,p) = (A0 + A1·sqrt(S) - A2·S)·S + BP·P`, A0=-0.0575, A1=1.710523e-3, A2=2.154996e-4, BP=-7.53e-4, S [PSU]=1000·S_kg, P [dbar]=ρ_w·g·z/10⁴ (Fofonoff & Millard 1983 / UNESCO TPMS 44 §5; Gill 1982 Eq. 3.5.2). **Literature checkvalue Tf(40 PSU, 500 dbar) = -2.588567 °C reproduced.**
+  2. Canonical `ocean_freezing_point` (pure) in `iceberg_types.f90`, applied at 3 sites: `compute_basal_melt` (Tf at draft D), `depth_averaged_thermal_forcing` (per-layer Tf(z_k) + deep layer), `freezing_point(S, 0)` wrapper.
+  3. New diagnostic `delta_t_ocean = T(D) - Tf(D)` (unclamped, may be ≤ 0); set in `iceberg_thermodynamics_step`.
+- **Regression consequence (EOS pressure term):** legacy "cold ocean" T=-1.9 °C was ABOVE Tf below ~8 m → spurious melt. Porthed threshold to -2.5 °C in 11 files (test_2/3/4/6/8/9, drift_scaling_wind, drift_scaling_wind_no_cor, drift_scaling_current, moving_trajectory, ibcao_interp).
+- **Tests:** test_7 rewritten with independent Stage 10.5 audit (checks 10.5.1-10.5.19, 24 total): EOS surface values/monotonicity, pressure term (−7.53e-4·P over 100 m), pure water depth, UNESCO 500 dbar checkvalue, interp node/midpoint/clamps, draft sampling (H=50/100/150), basal regimes T<Tf/T=Tf/T>Tf, lateral Method-A box-model replica, C_LATERAL·⟨ΔT⟩, delta_t_ocean wiring.
+- **All fpm tests PASS** (49 auto-discovered, exit 0), zero mismatches; `-Wall -Wextra` build clean (0 warnings), exit 0; `git diff --check` clean.
+- **Files changed:** src/iceberg_types.f90 (EOS_FP_* constants, ocean_freezing_point, delta_t_ocean, v10.5 header), src/iceberg_thermodynamics.f90 (compute_basal_melt/basal wrapper, delta_t_ocean diag), src/iceberg_forcing.f90 (depth_averaged_thermal_forcing per-layer + deep), 12 test files, docs/model/model_equation_ledger.md (§4.5-4.7), docs/model/model_physics_status.md (row 4 → C), docs/model/stage10_modernization_plan.md (§10.5 ✅), docs/wiki/Stage10.5_Ocean_Thermal_Forcing.md, AGENTS.md.
+- **Not in scope:** depth-dependent U_rel (Stage 10.6), basal/lateral melting modernization (10.6/10.7), canonical ocean model `thermodynamics.f90` untouched (its -54·S Zubov Tf remains).

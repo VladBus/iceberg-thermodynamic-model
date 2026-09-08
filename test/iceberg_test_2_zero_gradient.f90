@@ -29,11 +29,13 @@ program iceberg_test_2_zero_gradient
     print *, "  TEST_2: Zero-Gradient Environment"
     print *, "=================================================="
 
-    ! Настройка: T <= Tf везде, U=V=0, ветер=0
+    ! Настройка: T << Tf везде, U=V=0, ветер=0
     call iceberg_init(state, 0.0, 0.0, 100.0, 100.0, 100.0, &
                       76.5, 30.0, 0.0, 0.0)
 
-    ! Океанский профиль: T = -1.9°C, S = 0.0345, U=V=0
+    ! Океанский профиль: T = -2.5°C, S = 0.0345, U=V=0
+    ! (Stage 10.5: EOS-80 Tf ≈ -1.89°C на поверхности / -1.96°C на осадке 88 м;
+    !  T = -2.5°C гарантирует T << Tf на всех глубинах)
     ocean_prof%nlevels = 18
     allocate (ocean_prof%z(ocean_prof%nlevels))
     allocate (ocean_prof%dz(ocean_prof%nlevels))
@@ -45,7 +47,7 @@ program iceberg_test_2_zero_gradient
     do step = 1, ocean_prof%nlevels
         ocean_prof%z(step) = real(step*250)
         ocean_prof%dz(step) = 250.0
-        ocean_prof%temp(step) = -1.9
+        ocean_prof%temp(step) = -2.5
         ocean_prof%salt(step) = 0.0345
         ocean_prof%u(step) = 0.0
         ocean_prof%v(step) = 0.0

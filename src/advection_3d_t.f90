@@ -127,7 +127,7 @@ contains
                     ! APX = adx·(u·0.5·(T+Tj) - F_upwind) · c2
                     ! где F_upwind = 0.5·(u+|u|)·T + 0.5·(u-|u|)·Tj
                     a = abs(up)
-                    flxp = 0.5*(up + a)*cc + 0.5*(up - a)*cj1    ! Upwind flux
+                    flxp = 0.5*(up + a)*cc + 0.5*(up - a)*cj1    ! Противопоточный поток (upwind)
                     apx(i, j1, k) = adx(i, j1, k)*(up*0.5*(cc + cj1) - flxp)*c2
 
                     ! Антидиффузионные потоки FCT по Y

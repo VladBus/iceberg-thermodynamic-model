@@ -76,7 +76,7 @@ contains
         state%time = 0.0
         state%active = .true.
         state%grounded = .false.
-        state%T_surface = T_ICE  ! Initialize prognostic surface temperature to legacy value
+        state%T_surface = T_ICE  ! Инициализация прогностической температуры поверхности legacy-значением
 
         if (present(u0)) then
             state%u = u0
@@ -100,7 +100,7 @@ contains
     !   Масса:         M = ρ_ice * L * W * H                           [кг]
     !   Осадка:        D = H * ρ_ice / ρ_water                         [м]
     !   Надводная:     H - D                                           [м]
-    !   Площадь ВЛ:    A_wl = L * W                                     [м²]
+    !   Площадь ВЛ:    A_wl = L * W                                    [м²]
     !   Оромочённая:   A_wet = L*W + 2*(L+W)*D                         [м²]
     !   Парусная:      A_sail = L*W + 2*(L+W)*(H-D)                    [м²]
     !
@@ -118,7 +118,7 @@ contains
         geom%a_waterline = state%L*state%W
         geom%a_wet = state%L*state%W + 2.0*(state%L + state%W)*geom%draft
         geom%a_sail = state%L*state%W + 2.0*(state%L + state%W)*geom%freeboard
-        geom%t_surface = state%T_surface  ! Store current surface temperature
+        geom%t_surface = state%T_surface  ! Сохранение текущей температуры поверхности
     end subroutine iceberg_compute_geometry
 
     ! ========================================================================
@@ -282,7 +282,7 @@ contains
             state%y = state%y + dt*state%v
 
             ! 9a. Обновление географических координат из модельных (Stage 9.4A)
-            ! x/y — authoritative coordinates; lat/lon derived via inverse projection
+            ! x/y — авторитетные координаты; lat/lon получаются обратной проекцией
             ! Проверяем, что модельная сетка инициализирована (fi/dl не нули)
             if (fi(1, 1) .ne. 0.0 .or. dl(1, 1) .ne. 0.0) then
                 call model_coords_to_latlon(state%x, state%y, state%latitude, state%longitude, &
@@ -368,12 +368,12 @@ contains
 
         V_old = L_old*W_old*H_old
 
-        ! Stage 10.4: convert vapor mass flux [kg/(m²·s)] to height rate [m/s]
-        m_vapor_height = diag%m_vapor / RHO_ICE
+        ! Stage 10.4: пересчитываем массовый поток пара [кг/(м²·с)] в скорость изменения высоты [м/с]
+        m_vapor_height = diag%m_vapor/RHO_ICE
 
         ! dH/dt = -m_basal - m_surface + m_vapor/ρ_ice
-        ! m_vapor > 0 (deposition) -> height increases
-        ! m_vapor < 0 (sublimation) -> height decreases
+        ! m_vapor > 0 (осаждение) -> высота растёт
+        ! m_vapor < 0 (сублимация) -> высота убывает
         state%H = state%H - dt*(diag%m_basal + diag%m_surface - m_vapor_height)
         state%L = state%L - dt*diag%m_lateral
         state%W = state%W - dt*diag%m_lateral
@@ -385,7 +385,7 @@ contains
         V_new = state%L*state%W*state%H
         dV = V_old - V_new
 
-        ! Partition volume change by melt component (consistent with geometry update)
+        ! Разделяем изменение объёма по компонентам таяния (согласовано с обновлением геометрии)
         ! dH = -dt*(m_b + m_s + m_v/ρ_ice), dL = -dt*m_l, dW = -dt*m_l
         ! dV = L*W*dH + H*W*dL + L*H*dW
         !    = -L*W*dt*(m_b+m_s+m_v/ρ_ice) - H*W*dt*m_l - L*H*dt*m_l
@@ -397,13 +397,13 @@ contains
         diag%basal_mass_loss = RHO_ICE*dV_basal
         diag%lateral_mass_loss = RHO_ICE*dV_lateral
         diag%surface_mass_loss = RHO_ICE*dV_surface
-        ! vapor: positive = mass loss (sublimation), negative = mass gain (deposition)
-        ! dV_vapor = L*W*dt*m_vapor/ρ_ice; m_vapor<0 (subl) -> dV_vapor<0 -> -dV_vapor>0 (loss)
+        ! vapor: положительное = потеря массы (сублимация), отрицательное = прирост массы (осаждение)
+        ! dV_vapor = L*W*dt*m_vapor/ρ_ice; m_vapor<0 (субл) -> dV_vapor<0 -> -dV_vapor>0 (потеря)
         diag%vapor_mass_loss = -RHO_ICE*dV_vapor
 
-        ! Verify mass budget consistency (suppress warning, only check)
+        ! Проверка согласованности массового бюджета (подавляем предупреждение, только проверка)
         if (abs((diag%basal_mass_loss + diag%lateral_mass_loss + diag%surface_mass_loss + diag%vapor_mass_loss) - RHO_ICE*dV) .gt. 1.0e-4*RHO_ICE*abs(dV)) then
-            ! Small inconsistency due to max(0) clamping and floating point
+            ! Небольшая несогласованность из-за ограничения max(0) и плавающей точки
         end if
     end subroutine iceberg_update_geometry
 

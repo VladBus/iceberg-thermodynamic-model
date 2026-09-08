@@ -51,7 +51,7 @@ module iceberg_types
     ! Компактная форма: TF = (EOS_FP_A0 + EOS_FP_A1*sqrt(S) - EOS_FP_A2*S)*S + EOS_FP_BP*P
     !   S — практическая солёность [PSU (PSS-78)], P — гидростатическое давление [дбар].
     ! Источник: Fofonoff & Millard 1983 (UNESCO TPMS 44, §5); Gill 1982 (Eq. 3.5.2).
-    ! Check value: TF = -2.588567°C при S=40 PSU, P=500 дбар.
+    ! Контрольное значение: TF = -2.588567°C при S=40 PSU, P=500 дбар.
     real, parameter :: EOS_FP_A0 = -0.0575        ! Линейный член [°C/PSU]
     real, parameter :: EOS_FP_A1 = 1.710523e-3    ! Член S^(3/2) [°C/PSU^(3/2)]
     real, parameter :: EOS_FP_A2 = 2.154996e-4    ! Член S^2 [°C/PSU^2]
@@ -84,57 +84,57 @@ module iceberg_types
     real, parameter :: OMEGA = 7.2921150e-5
 
     ! ========================================================================
-    !   MODERN TURBULENT HEAT/MOISTURE EXCHANGE (Stage 10.3)
+    !   СОВРЕМЕННЫЙ ТУРБУЛЕНТНЫЙ ОБМЕН ТЕПЛОМ/ВЛАГОЙ (Stage 10.3)
     ! ========================================================================
-    ! Sensible heat:
+    ! Явное тепло:
     !   Q_SH = rho_air * CP_AIR * C_H * U * (T_air - T_surface)
-    ! Latent heat (vapor exchange):
+    ! Скрытое тепло (обмен паром):
     !   Q_LH = rho_air * L_S * C_E * U * (q_air - q_sat_ice)
     !
-    ! Neutral bulk coefficients (theoretical logarithmic formulation):
+    ! Нейтральные bulk-коэффициенты (теоретическая логарифмическая формула):
     !   C_H = C_E = kappa^2 / [ln(z/z0)]^2
-    !   kappa = 0.4 (von Karman constant)
-    !   z = 10 m (measurement height)
-    !   z0 = 1e-4 m (roughness length for smooth ice, Andreas et al. 2010)
-    !   Theoretical value: C = 0.4^2 / ln(10/1e-4)^2 ≈ 1.21e-3
+    !   kappa = 0.4 (постоянная фон Кармана)
+    !   z = 10 м (высота измерений)
+    !   z0 = 1e-4 м (длина шероховатости для гладкого льда, Andreas et al. 2010)
+    !   Теоретическое значение: C = 0.4^2 / ln(10/1e-4)^2 ≈ 1.21e-3
     !
-    ! Actual production coefficient (Stage 10.3):
-    !   C_H = C_E = 1.5e-3  -- fixed neutral bulk transfer coefficient
-    !   This value is a documented model parameter for the neutral bulk
-    !   formulation. It is NOT the direct result of kappa^2/ln(z/z0)^2
-    !   with z0=1e-4 m (which gives ~1.21e-3). The logarithmic relation
-    !   is retained only as theoretical context. No stability correction
-    !   is implemented in Stage 10.3.
+    ! Действующий производственный коэффициент (Stage 10.3):
+    !   C_H = C_E = 1.5e-3  -- фиксированный нейтральный bulk-коэффициент
+    !   Это документированный параметр модели для нейтральной bulk-формулировки.
+    !   Это НЕ прямой результат kappa^2/ln(z/z0)^2 при z0 = 1e-4 м
+    !   (который даёт ~1.21e-3). Логарифмическое соотношение сохраняется
+    !   только как теоретический контекст. Поправка на устойчивость
+    !   в Stage 10.3 не реализована.
     !
-    ! Legacy values (from HEAT model):
-    !   SH_COEFF = 1.7068  -> behaves like Stanton number (dimensionless)
-    !   LH_COEFF = 0.6650735 -> ~443x standard C_E (0.0015)
-    !   L_v = 2.5e6 (vaporization) used for ice-vapor exchange
-    !   Water saturation formula at ice surface (5-18% error at T < 0°C)
+    ! Legacy-значения (из модели HEAT):
+    !   SH_COEFF = 1.7068  -> ведёт себя как число Стэнтона (безразмерное)
+    !   LH_COEFF = 0.6650735 -> ~443× стандартного C_E (0.0015)
+    !   L_v = 2.5e6 (парообразование) для обмена лед-пар
+    !   Формула насыщения по воде на поверхности льда (ошибка 5-18% при T < 0°C)
     !
-    ! Modern formulation uses:
-    !   CP_AIR = 1004.0 J/(kg·K)  -- specific heat of dry air
-    !   L_S = 2.835e6 J/kg        -- latent heat of sublimation at 0°C
-    !   C_H = C_E = 1.5e-3        -- fixed neutral bulk transfer coefficients
-    !   q_sat_ice = saturation vapor pressure over ice (Murphy & Koop 2005)
-    !   Sign convention: Q_SH > 0 = atmosphere heats iceberg
-    !                    Q_LH > 0 = vapor flux supplies energy to surface
-    !   Stage 10.3: Q_LH is ENERGY FLUX ONLY; no mass change from sublimation/deposition
-!   Stage 10.4: Q_LH partitioned into vapor mass flux (m_vapor = rho_air * C_E * U * (q_air - q_sat_ice))
-!               and melt energy (Q_melt = max(Q_net_non_melt - Q_LH, 0))
+    ! Современная формулировка использует:
+    !   CP_AIR = 1004.0 Дж/(кг·К)  -- удельная теплоёмкость сухого воздуха
+    !   L_S = 2.835e6 Дж/кг        -- теплота сублимации при 0°C
+    !   C_H = C_E = 1.5e-3         -- фиксированные нейтральные bulk-коэффициенты
+    !   q_sat_ice = насыщенное парциальное давление над льдом (Murphy & Koop 2005)
+    !   Соглашение о знаках: Q_SH > 0 = атмосфера нагревает айсберг
+    !                        Q_LH > 0 = поток пара отдаёт энергию поверхности
+    !   Stage 10.3: Q_LH — ТОЛЬКО ЭНЕРГЕТИЧЕСКИЙ ПОТОК; изменения массы от сублимации/осаждения нет
+    !   Stage 10.4: Q_LH разделяется на массовый поток пара (m_vapor = rho_air * C_E * U * (q_air - q_sat_ice))
+    !   и энергию плавления (Q_melt = max(Q_net_non_melt - Q_LH, 0))
 
     real, parameter :: CP_AIR = 1004.0         ! Удельная теплоёмкость сухого воздуха [Дж/(кг·К)]
     real, parameter :: L_S = 2.835e6           ! Удельная теплота сублимации льда [Дж/кг] (при 0°C)
     real, parameter :: VON_KARMAN = 0.4        ! Константа Кармана [безразм.]
     real, parameter :: Z0_ICE = 1.0e-4         ! Длина шероховатости для гладкого льда [м] (Andreas et al. 2010)
     real, parameter :: Z_REF = 10.0            ! Высота измерения ветра [м] (ERA5 u10/v10)
-    ! Neutral bulk transfer coefficient (theoretical: kappa^2/ln(z/z0)^2 ≈ 1.21e-3;
-    ! production uses fixed value 1.5e-3 as documented model parameter)
-    real, parameter :: C_H_NEUTRAL = 1.5e-3    ! Neutral bulk transfer coeff for sensible heat [безразм.]
-    real, parameter :: C_E_NEUTRAL = 1.5e-3    ! Neutral bulk transfer coeff for latent heat [безразм.]
+    ! Нейтральный bulk-коэффициент переноса (теоретический: kappa^2/ln(z/z0)^2 ≈ 1.21e-3;
+    ! в производстве используется фиксированное значение 1.5e-3 как документированный параметр)
+    real, parameter :: C_H_NEUTRAL = 1.5e-3    ! Нейтральный bulk-коэффициент для явного тепла [безразм.]
+    real, parameter :: C_E_NEUTRAL = 1.5e-3    ! Нейтральный bulk-коэффициент для скрытого тепла [безразм.]
 
-    ! Saturation vapor pressure over ice (Murphy & Koop 2005)
-    ! Valid range: 50-273 K; used for 180-273 K (Arctic)
+    ! Насыщенное парциальное давление над льдом (Murphy & Koop 2005)
+    ! Диапазон применимости: 50-273 К; используется для 180-273 К (Арктика)
     real, parameter :: MURPHY_KOOP_A = 9.550426
     real, parameter :: MURPHY_KOOP_B = 5723.265
     real, parameter :: MURPHY_KOOP_C = 3.53068
@@ -191,7 +191,7 @@ module iceberg_types
         real :: s_draft      ! Соленость на глубине осадки [кг/кг]
         real :: tf_draft     ! Точка замерзания на глубине осадки [°C]
         real :: delta_t_ocean ! Термическое задействование на осадке T - Tf [°C]
-                             ! (необрезанное, может быть ≤ 0; Stage 10.5)
+        ! (необрезанное, может быть ≤ 0; Stage 10.5)
 
         ! Силы [Н]
         real :: f_wind_x     ! Ветровая сила по X
@@ -280,7 +280,7 @@ contains
     !   BP = -7.53e-4 [°C/дбар], P — гидростатическое давление [дбар]
     ! Источник: Fofonoff, N.P. & Millard, R.C. (1983). UNESCO TPMS 44, §5.
     !           Gill, A.E. (1982). Atmosphere-Ocean Dynamics, Eq. 3.5.2.
-    ! Check value: Tf = -2.588567°C при S=40 PSU, P=500 дбар.
+    ! Контрольное значение: Tf = -2.588567°C при S=40 PSU, P=500 дбар.
     !
     ! Давление пересчитывается из глубины гидростатически:
     !   p [дбар] = rho_w * g * depth / 1e4  (≈ 1.008·depth при RHO_WATER=1028)

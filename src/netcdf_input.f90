@@ -11,7 +11,7 @@
 !                  координат), чтение данных, диагностический вывод диапазонов,
 !                  подготовка временного интерфейса.
 ! Единицы: Внутри модуля сохраняются ИСХОДНЫЕ единицы ERA5:
-!          u10/v10 [m s-1], t2m [K], msl [Pa], time [s since 1970-01-01].
+!          u10/v10 [м/с], t2m [К], msl [Па], time [с от 1970-01-01].
 !          Преобразование в СГС/смешанную систему модели происходит вне модуля.
 ! ==============================================================================
 
@@ -202,7 +202,7 @@ contains
         if (status .ne. 0) goto 999
         call era5_read_var(ncid, 'tcc', era5_tcc, status, filename)
         if (status .ne. 0) goto 999
-        ! snowfall (CDS variable 'sf') is optional - may not be available in all ERA5 datasets
+        ! snowfall (переменная CDS 'sf') — опциональна; может отсутствовать в некоторых наборах ERA5
         call era5_read_var(ncid, 'sf', era5_snowfall, status, filename)
         if (status .ne. 0) then
             print *, "ERA5 WARNING: snowfall (sf) variable not found, using zeros."

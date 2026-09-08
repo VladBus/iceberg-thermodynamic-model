@@ -13,7 +13,7 @@
 !     Q_melt = max(Q_surface, 0) при T_surface = T_melt  [Вт/м²] — энергия для плавления
 !     m_surface = Q_melt / (ρ_ice * L_f)                 [м/с] — скорость плавления
 !   Tf = -54.0 * S  [°C], где S — массовая доля [кг/кг] (S=0.035 → Tf=-1.89°C)
-    !   (Stage 10.5: заменено на EOS-80 Tf = f(S,p), см. ocean_freezing_point)
+!   (Stage 10.5: заменено на EOS-80 Tf = f(S,p), см. ocean_freezing_point)
 !   Подпись: m_vapor < 0 -> сублимация (Q_LH < 0, потеря энергии)
 !            m_vapor > 0 -> осаждение (Q_LH > 0, источник энергии)
 !
@@ -48,27 +48,27 @@ module iceberg_thermodynamics
     real, parameter :: LW_HUMID_COEFF = 0.261      ! Коэффициент влажности для LW
     real, parameter :: LW_HUMID_EXP = 7.77e-4    ! Показатель влажности для LW
 
-    ! Legacy SH/LH coefficients (HEAT model) — retained for reference/compatibility
-    ! SH_COEFF = 1.7068  (behaves like Stanton number, dimensionless)
-    ! LH_COEFF = 0.6650735  (~443x standard bulk C_E ≈ 0.0015)
-    ! LATENT_VAP = 2.5e6  (vaporization; used for ice-vapor exchange in legacy)
-    ! SAT_VAPOR_0 = 610.78, TETENS_A = 8.61503  (Tetens water saturation)
-    ! T_ICE = -10.0°C (fixed surface temp, no feedback)
-    ! Water saturation formula at ice surface -> 5-18% q_sat error at T < 0°C
-    ! L_v instead of L_s -> -13% energy error for sublimation/deposition
-    ! Net legacy LH = 327-403x standard bulk formula
+    ! Legacy-коэффициенты SH/LH (модель HEAT) — сохранены для справки/совместимости
+    ! SH_COEFF = 1.7068  (ведёт себя как число Стэнтона, безразмерный)
+    ! LH_COEFF = 0.6650735  (~443× стандартного bulk C_E ≈ 0.0015)
+    ! LATENT_VAP = 2.5e6  (теплота парообразования; использовалась в legacy для обмена лед-пар)
+    ! SAT_VAPOR_0 = 610.78, TETENS_A = 8.61503  (насыщение по Тетенсу для воды)
+    ! T_ICE = -10.0°C (фиксированная температура поверхности, без обратной связи)
+    ! Формула насыщения по воде на поверхности льда -> ошибка q_sat 5-18% при T < 0°C
+    ! L_v вместо L_s -> ошибка энергии -13% для сублимации/осаждения
+    ! Суммарный legacy LH = 327-403× стандартной bulk-формулы
 
-    ! Modern bulk coefficients (Stage 10.3) — used in compute_surface_melt
-    ! Theoretical neutral bulk: C_H = C_E = kappa^2 / ln(z/z0)^2
-    !   kappa = 0.4, z = 10 m, z0 = 1e-4 m -> theoretical C ≈ 1.21e-3
-    ! Production uses fixed neutral bulk coefficients:
-    !   C_H = C_E = 1.5e-3  (documented model parameter)
-    !   NOT derived from kappa^2/ln(z/z0)^2 with z0=1e-4 m
-    ! CP_AIR = 1004.0 J/(kg·K), L_S = 2.835e6 J/kg (sublimation at 0°C)
-    ! Ice saturation: Murphy & Koop (2005) formulation
-    ! Sign convention: Q_SH > 0 = atmosphere heats iceberg
-    !                 Q_LH > 0 = vapor flux supplies energy to surface
-    ! Stage 10.3: Q_LH is ENERGY FLUX ONLY; no mass change from sublimation/deposition
+    ! Современные bulk-коэффициенты (Stage 10.3) — используются в compute_surface_melt
+    ! Теоретическая нейтральная bulk-форма: C_H = C_E = kappa^2 / ln(z/z0)^2
+    !   kappa = 0.4, z = 10 м, z0 = 1e-4 м -> теоретическое C ≈ 1.21e-3
+    ! В производстве используются фиксированные нейтральные bulk-коэффициенты:
+    !   C_H = C_E = 1.5e-3  (документированный параметр модели)
+    !   НЕ выводятся из kappa^2/ln(z/z0)^2 при z0 = 1e-4 м
+    ! CP_AIR = 1004.0 Дж/(кг·К), L_S = 2.835e6 Дж/кг (сублимация при 0°C)
+    ! Насыщение над льдом: формула Мерфи и Купа (2005)
+    ! Знаки: Q_SH > 0 = атмосфера нагревает айсберг
+    !        Q_LH > 0 = поток пара отдаёт энергию поверхности
+    ! Stage 10.3: Q_LH — ТОЛЬКО ЭНЕРГЕТИЧЕСКИЙ ПОТОК; изменения массы от сублимации/осаждения нет
 
     real, parameter :: SH_COEFF = 1.7068     ! Legacy: Stanton number (dimensionless)
     real, parameter :: LH_COEFF = 0.6650735  ! Legacy: Dalton number (dimensionless)
@@ -82,11 +82,11 @@ module iceberg_thermodynamics
     ! ========================================================================
     !   АТМОСФЕРНАЯ ПРОПУСКАЮЩАЯ СПОСОБНОСТЬ КОРОТКОВОЛНОВОЙ РАДИАЦИИ (Stage 10.1.2)
     ! ========================================================================
-    ! Broadband parameterization using ERA5 inputs (tcc, t2m, d2m, msl).
-    ! Based on simple physical approximations (Rayleigh, water vapor, aerosol).
-    ! Cloud transmittance: linear in tcc.
-    ! NOT using ERA5 SSRD/STRD — offline parameterization only.
-    ! Coefficients documented below; legacy empirical values marked.
+    ! Широкополосная параметризация по входным данным ERA5 (tcc, t2m, d2m, msl).
+    ! Основана на простых физических приближениях (Релей, водяной пар, аэрозоли).
+    ! Пропускание облаков: линейно по tcc.
+    ! НЕ используются ERA5 SSRD/STRD — только офлайн-параметризация.
+    ! Коэффициенты документированы ниже; legacy-эмпирические значения отмечены.
     ! ========================================================================
     real, parameter :: TAU_RAYLEIGH_0 = 0.09        ! Оптическая толщина Релея на уровне моря (p=1013.25 hPa)
     real, parameter :: AEROSOL_TRANS_ARCTIC = 0.93  ! Атмосферная прозрачность от аэрозолей (Arctic background, legacy empirical)
@@ -200,7 +200,7 @@ contains
         ! cos(zenith) = sin(φ)sin(δ) + cos(φ)cos(δ)cos(H)
       cos_zenith = sin(lat_rad)*sin(decl_rad) + cos(lat_rad)*cos(decl_rad)*cos(hour_angle_rad_local)
 
-        ! Clamp к [-1, 1] для числовой стабильности
+        ! Ограничение диапазона [-1, 1] для числовой стабильности
         cos_zenith = max(-1.0, min(1.0, cos_zenith))
 
         ! Опциональные выходы
@@ -323,52 +323,52 @@ contains
         end if
     end subroutine compute_lateral_melt
 
-! ========================================================================
+    ! ========================================================================
     !   ПОВЕРХНОСТНОЕ ПЛАВЛЕНИЕ С ПРОГНОСТИЧЕСКОЙ ТЕМПЕРАТУРОЙ (Stage 10.2 + 10.4.1)
     ! ========================================================================
-    ! Stage 10.4.1 CORRECTIVE ENERGY PARTITION:
-    ! Q_nonlatent = SW_abs + LW_down + LW_up + SH       (no LH)
-    ! Q_LH = m_vapor * L_S                               [W/m2]
-    ! Q_surface = Q_nonlatent + Q_LH                     [total surface energy]
+    ! Stage 10.4.1 КОРРЕКТНОЕ РАСПРЕДЕЛЕНИЕ ЭНЕРГИИ:
+    ! Q_nonlatent = SW_abs + LW_down + LW_up + SH       (без LH)
+    ! Q_LH = m_vapor * L_S                               [Вт/м²]
+    ! Q_surface = Q_nonlatent + Q_LH                     [полная энергия поверхности]
     ! C_eff dT_surface/dt = Q_surface   (T_surface < T_melt)
     !
-    ! Phase change logic (correct):
-    !   if T_surface < T_melt:
+    ! Логика фазового перехода (корректная):
+    !   если T_surface < T_melt:
     !       dT = Q_surface * dt / C_eff
     !       T_surface_new = T_surface + dT
-    !       if T_surface_new >= T_melt:
+    !       если T_surface_new >= T_melt:
     !           excess_energy = Q_surface - C_eff * (T_melt - T_surface) / dt
-    !           Q_melt = max(excess_energy, 0)  ! residual after reaching T_melt
+    !           Q_melt = max(excess_energy, 0)  ! остаток после достижения T_melt
     !           m_surface = Q_melt / (rho_ice * L_f)
     !           T_surface = T_melt
-    !       else:
+    !       иначе:
     !           m_surface = 0
-    !   else:  ! T_surface >= T_melt
+    !   иначе:  ! T_surface >= T_melt
     !       T_surface = T_melt
-    !       Q_melt = max(Q_surface, 0)  ! full Q_surface available for melt
+    !       Q_melt = max(Q_surface, 0)  ! вся Q_surface доступна для плавления
     !       m_surface = Q_melt / (rho_ice * L_f)
     !
-    ! Vapor mass flux (Stage 10.4):
-    !   m_vapor = rho_air * C_E * U * (q_air - q_sat_ice)  [kg/(m²·s)]
+    ! Массовый поток пара (Stage 10.4):
+    !   m_vapor = rho_air * C_E * U * (q_air - q_sat_ice)  [кг/(м²·с)]
     !   Q_LH = m_vapor * L_S
-    !   Sign: m_vapor < 0 -> sublimation (mass loss, Q_LH < 0 energy sink)
-    !         m_vapor > 0 -> deposition (mass gain, Q_LH > 0 energy source)
+    !   Знак: m_vapor < 0 -> сублимация (потеря массы, Q_LH < 0 — сток энергии)
+    !         m_vapor > 0 -> осаждение (прирост массы, Q_LH > 0 — источник энергии)
     !
-    ! Components:
+    ! Компоненты:
     !   SW_abs = SW_down * (1 - albedo)
     !   LW_down = LW_EMISS * t_air^4 * (1 + LW_CLOUD_FACTOR*tcc) * ...
     !   LW_up = -ε_ice * σ * t_surf^4
     !   SH = rho_air * CP_AIR * C_H * |V| * (t_air - t_surf)
     !   LH = rho_air * L_S * C_E * |V| * (q_air - q_sat_ice)
-    !   t_surf = state%T_surface [°C], converted to K for radiation
+    !   t_surf = state%T_surface [°C], для радиации переводится в К
     !
-    ! Arguments:
-    !   state       - state with T_surface [°C] (intent(inout), updated)
-    !   atmos       - atmospheric forcing
-    !   diag        - diagnostics (updated q_net_surface, t_surface, m_vapor)
-    !   q_net       - net heat flux [W/m²] (output, residual after melt)
-    !   m_surface   - surface melt rate [m/s] (output)
-    !   year, month, day, hour - reference date (UTC)
+    ! Аргументы:
+    !   state       - состояние айсберга с T_surface [°C] (intent(inout), обновляется)
+    !   atmos       - атмосферный форсинг
+    !   diag        - диагностики (обновляются q_net_surface, t_surface, m_vapor)
+    !   q_net       - суммарный тепловой поток [Вт/м²] (выход, остаток после плавления)
+    !   m_surface   - скорость поверхностного таяния [м/с] (выход)
+    !   year, month, day, hour - референс-дата (UTC)
     ! ========================================================================
     subroutine compute_surface_melt(state, atmos, diag, q_net, m_surface, dt, &
                                     year, month, day, hour)
@@ -387,15 +387,15 @@ contains
         real :: albedo
         real :: e_sat_air, e_sat_dew, rh, e_vap
         real :: sw_absorbed
-        ! --- Stage 10.1.2: SW atmospheric attenuation diagnostics ---
+        ! --- Stage 10.1.2: диагностика ослабления SW в атмосфере ---
         real :: sw_toa
         real :: air_mass, tau_rayleigh
         real :: t_rayleigh, t_water_vap, t_aerosol, t_clear, t_cloud
         real :: precipitable_water_cm
-        ! --- Stage 10.2: prognostic surface temperature ---
+        ! --- Stage 10.2: прогностическая температура поверхности ---
         real :: c_eff, excess_energy
         real :: t_surf_new
-        ! --- Stage 10.4: vapor mass flux and energy partition ---
+        ! --- Stage 10.4: массовый поток пара и распределение энергии ---
         real :: m_vapor, q_melt
         real :: q_nonlatent, q_lh, q_surface
 
@@ -408,8 +408,8 @@ contains
 
         wind_speed = sqrt(atmos%u10**2 + atmos%v10**2)
 
-        ! Effective heat capacity of surface layer
-        c_eff = RHO_ICE*C_ICE*H_EFF  ! J/(m² K)
+        ! Эффективная теплоёмкость поверхностного слоя
+        c_eff = RHO_ICE*C_ICE*H_EFF  ! Дж/(м² К)
 
         ! === КОРОТКОВОЛНОВАЯ РАДИАЦИЯ (Shortwave) ===
         ! Солнечная геометрия (Stage 10.1.1): астрономическая формула
@@ -418,60 +418,62 @@ contains
                             state%latitude, state%longitude, &
                             cos_zenith)
 
-        ! === ATMOSPHERIC VAPOR PRESSURE (always needed for LH, independent of solar geometry) ===
-        ! Compute e_vap, rh, q_air before SW branch so they are valid day and night
+        ! === ДАВЛЕНИЕ ВОДЯНОГО ПАРА В АТМОСФЕРЕ (нужно всегда для LH, не зависит от солнечной геометрии) ===
+        ! Вычисляем e_vap, rh, q_air до ветвления по SW, чтобы они были валидны днём и ночью
         e_sat_air = SAT_VAPOR_0*10.0**(TETENS_A*(t_air_k - 273.15)/t_air_k)
         e_sat_dew = SAT_VAPOR_0*10.0**(TETENS_A*(t_dew_k - 273.15)/t_dew_k)
-        rh = min(1.0, max(0.0, e_sat_dew/e_sat_air))  ! relative humidity [0-1]
-        e_vap = rh*e_sat_air  ! [Pa]
+        rh = min(1.0, max(0.0, e_sat_dew/e_sat_air))  ! относительная влажность [0-1]
+        e_vap = rh*e_sat_air  ! [Па]
         q_air = 0.622*e_vap/p_atm
 
-        ! Polar night/day handling: cos_zenith <= 0 -> no solar radiation
+        ! Полярная ночь/день: cos_zenith <= 0 -> солнечной радиации нет
         if (cos_zenith .le. 0.0) then
             sw_down = 0.0
             sw_toa = 0.0
             t_clear = 0.0
             t_cloud = 0.0
         else
-            ! === ATMOSPHERIC ATTENUATION (Stage 10.1.2) ===
-            ! Broadband parameterization: SW_down = S0 * cos_zenith * T_clear * T_cloud
-            ! where:
-            !   S0 * cos_zenith       = TOA solar flux on horizontal surface
-            !   T_clear               = clear-sky atmospheric transmittance
-            !   T_cloud               = cloud transmittance (function of tcc)
+            ! === ОСЛАБЛЕНИЕ В АТМОСФЕРЕ (Stage 10.1.2) ===
+            ! Широкополосная параметризация: SW_down = S0 * cos_zenith * T_clear * T_cloud
+            ! где:
+            !   S0 * cos_zenith       = поток солнечной радиации на горизонтальную поверхность
+            !   T_clear               = пропускание атмосферы при ясном небе
+            !   T_cloud               = пропускание облаков (функция от tcc)
             !
-            ! Clear-sky transmittance components:
-            !   T_rayleigh  = exp(-tau_rayleigh * air_mass)  ! Rayleigh scattering
-            !   T_water_vap = 1 - WV_ABSORP_COEFF * w^WV_ABSORP_EXP  ! Water vapor absorption
-            !   T_aerosol   = AEROSOL_TRANS_ARCTIC  ! Background aerosol (empirical)
+            ! Компоненты пропускания при ясном небе:
+            !   T_rayleigh  = exp(-tau_rayleigh * air_mass)  ! релеевское рассеяние
+            !   T_water_vap = 1 - WV_ABSORP_COEFF * w^WV_ABSORP_EXP  ! поглощение водяным паром
+            !   T_aerosol   = AEROSOL_TRANS_ARCTIC  ! фоновый аэрозоль (эмпирический)
             !   T_clear = T_rayleigh * T_water_vap * T_aerosol
             !
-            ! Cloud transmittance:
+            ! Пропускание облаков:
             !   T_cloud = 1 - CLOUD_TRANS_COEFF * tcc
-            !   overcast (tcc=1) -> ~25% of clear-sky flux
+            !   сплошная облачность (tcc=1) -> ~25% от потока при ясном небе
             !
-            ! All transmittances bounded to [0, 1].
-            ! Final SW_down bounded to <= TOA flux.
+            ! Все пропускания ограничены [0, 1].
+            ! Итоговый SW_down ограничен <= потоку на верхней границе атмосферы.
 
-            ! Top-of-atmosphere solar flux on horizontal surface
+            ! Поток солнечной радиации на верхней границе атмосферы
+            ! на горизонтальную поверхность
             sw_toa = SOLAR_CONSTANT*cos_zenith
 
-            ! Air mass (Kasten & Young 1989 approximation for large zenith angles)
+            ! Воздушная масса (аппроксимация Kasten & Young 1989 для больших зенитных углов)
             ! m = 1 / (cos_zenith + 0.50572 * (96.07995 - zenith_deg)^-1.6364)
-            ! For simplicity, use m = 1/cos_zenith with cap at 40 (zenith ~88.5 deg)
+            ! Для простоты используем m = 1/cos_zenith с ограничением 40 (зенит ~88.5°)
             air_mass = 1.0/cos_zenith
             if (air_mass .gt. 40.0) air_mass = 40.0
 
-            ! Rayleigh scattering transmittance
-            ! tau_rayleigh scales with surface pressure
+            ! Пропускание релеевского рассеяния
+            ! tau_rayleigh масштабируется по приземному давлению
             tau_rayleigh = TAU_RAYLEIGH_0*(p_atm/101325.0)
             t_rayleigh = exp(-tau_rayleigh*air_mass)
             t_rayleigh = max(0.0, min(1.0, t_rayleigh))
 
-            ! Water vapor absorption (Lacis & Hansen 1974 broadband approximation)
-            ! Precipitable water w [cm] estimated from surface vapor pressure
+            ! Поглощение водяным паром (широкополосная аппроксимация Lacis & Hansen 1974)
+            ! Содержание осаждаемой воды w [см] оценивается по приземному
+            ! давлению водяного пара
             ! w = PRECIP_WATER_SCALE * (e_vap / 100.0) * (101325.0 / p_atm)
-            ! where e_vap [Pa] -> hPa via /100
+            ! где e_vap [Па] -> гПа через /100
             precipitable_water_cm = PRECIP_WATER_SCALE*(e_vap/100.0)*(101325.0/p_atm)
             precipitable_water_cm = max(0.0, precipitable_water_cm)
 
@@ -479,21 +481,21 @@ contains
             t_water_vap = 1.0 - WV_ABSORP_COEFF*(precipitable_water_cm**WV_ABSORP_EXP)
             t_water_vap = max(0.0, min(1.0, t_water_vap))
 
-            ! Aerosol transmittance (Arctic background, empirical)
+            ! Пропускание аэрозоля (арктический фон, эмпирическое)
             t_aerosol = AEROSOL_TRANS_ARCTIC
 
-            ! Clear-sky transmittance
+            ! Пропускание при ясном небе
             t_clear = t_rayleigh*t_water_vap*t_aerosol
             t_clear = max(0.0, min(1.0, t_clear))
 
-            ! Cloud transmittance: linear in tcc
+            ! Пропускание облаков: линейно по tcc
             t_cloud = 1.0 - CLOUD_TRANS_COEFF*atmos%tcc
             t_cloud = max(0.0, min(1.0, t_cloud))
 
-            ! Final downward SW at surface
+            ! Итоговая нисходящая SW у поверхности
             sw_down = sw_toa*t_clear*t_cloud
 
-            ! Bound check: SW_down cannot exceed TOA flux
+            ! Проверка ограничения: SW_down не может превышать поток на TOA
             sw_down = min(sw_down, sw_toa)
             sw_down = max(0.0, sw_down)
         end if
@@ -501,7 +503,7 @@ contains
         albedo = ALBEDO_ICE
         sw_absorbed = sw_down*(1.0 - albedo)  ! поглощённая SW
 
-        ! Current surface temperature in Kelvin for radiation calculations
+        ! Текущая температура поверхности в Кельвинах для расчёта радиации
         t_surf_k = state%T_surface + 273.15
 
         ! === ДЛИННОВОЛНОВАЯ РАДИАЦИЯ (Longwave) ===
@@ -514,65 +516,65 @@ contains
         lw_up = -EMISSIVITY*STEFAN_BOLTZ*t_surf_k**4
 
         ! === ЯВНОЕ ТЕПЛО (Sensible Heat) ===
-        ! Stage 10.3: Modern bulk formulation
+        ! Stage 10.3: современная bulk-формулировка
         ! Q_SH = rho_air * CP_AIR * C_H * U * (T_air - T_surface)
-        ! C_H = C_H_NEUTRAL = 1.5e-3 (Andreas et al. 2010, Arctic sea ice)
-        ! Sign: Q_SH > 0 -> atmosphere heats iceberg
+        ! C_H = C_H_NEUTRAL = 1.5e-3 (Andreas et al. 2010, арктический морской лед)
+        ! Знак: Q_SH > 0 -> атмосфера нагревает айсберг
         sh_flux = rho_air_local*CP_AIR*C_H_NEUTRAL*wind_speed*(t_air_k - t_surf_k)
 
         ! === СКРЫТОЕ ТЕПЛО (Latent Heat) ===
-        ! Stage 10.3: Modern bulk formulation with ice saturation
+        ! Stage 10.3: современная bulk-формулировка с насыщением над льдом
         ! Q_LH = rho_air * L_S * C_E * U * (q_air - q_sat_ice)
         ! C_E = C_E_NEUTRAL = 1.5e-3
-        ! L_S = 2.835e6 J/kg (latent heat of sublimation at 0°C)
-        ! q_sat_ice = saturation specific humidity over ICE (Murphy & Koop 2005)
-        ! q_air = 0.622 * e_vap / p_atm (from ERA5 d2m/t2m, computed before solar branch)
-        ! Sign: Q_LH > 0 -> vapor flux supplies energy to surface (condensation/deposition)
-        !       Q_LH < 0 -> vapor flux removes energy from surface (sublimation)
-        ! Stage 10.4: Q_LH partitioned into vapor mass flux and melt energy
-        q_sat = saturation_vapor_pressure_ice(t_surf_k) / p_atm * 0.622
+        ! L_S = 2.835e6 Дж/кг (теплота сублимации при 0°C)
+        ! q_sat_ice = удельная влажность насыщения над ЛЬДОМ (Murphy & Koop 2005)
+        ! q_air = 0.622 * e_vap / p_atm (из ERA5 d2m/t2m, вычислено до ветвления по солнцу)
+        ! Знак: Q_LH > 0 -> поток пара отдаёт энергию поверхности (конденсация/осаждение)
+        !       Q_LH < 0 -> поток пара забирает энергию поверхности (сублимация)
+        ! Stage 10.4: Q_LH разделяется на массовый поток пара и энергию плавления
+        q_sat = saturation_vapor_pressure_ice(t_surf_k)/p_atm*0.622
         lh_flux = rho_air_local*L_S*C_E_NEUTRAL*wind_speed*(q_air - q_sat)
 
-        ! === VAPOR MASS FLUX (Stage 10.4) ===
-        ! m_vapor = rho_air * C_E * U * (q_air - q_sat_ice)  [kg/(m²·s)]
-        ! Sign: m_vapor < 0 -> sublimation (mass loss)
-        !       m_vapor > 0 -> deposition (mass gain)
+        ! === МАССОВЫЙ ПОТОК ПАРА (Stage 10.4) ===
+        ! m_vapor = rho_air * C_E * U * (q_air - q_sat_ice)  [кг/(м²·с)]
+        ! Знак: m_vapor < 0 -> сублимация (потеря массы)
+        !       m_vapor > 0 -> осаждение (прирост массы)
         ! Q_LH = m_vapor * L_S
         m_vapor = rho_air_local*C_E_NEUTRAL*wind_speed*(q_air - q_sat)
 
-        ! === ENERGY PARTITION (Stage 10.4.1 corrective) ===
-        ! Q_nonlatent = SW_abs + LW_down + LW_up + SH   (no LH)
-        ! Q_LH = m_vapor * L_S  [W/m2]
-        ! Q_surface = Q_nonlatent + Q_LH  [total energy available at surface]
-        ! 
-        ! Sign convention:
-        !   m_vapor < 0 -> sublimation -> Q_LH < 0 -> energy sink
-        !   m_vapor > 0 -> deposition  -> Q_LH > 0 -> energy source
+        ! === РАСПРЕДЕЛЕНИЕ ЭНЕРГИИ (Stage 10.4.1 corrective) ===
+        ! Q_nonlatent = SW_abs + LW_down + LW_up + SH   (без LH)
+        ! Q_LH = m_vapor * L_S  [Вт/м²]
+        ! Q_surface = Q_nonlatent + Q_LH  [полная энергия, доступная на поверхности]
         !
-        ! T_surface < T_melt:  use Q_surface for sensible warming
-        ! T_surface crosses T_melt: partition energy into sensible + residual
+        ! Соглашение о знаках:
+        !   m_vapor < 0 -> сублимация -> Q_LH < 0 -> сток энергии
+        !   m_vapor > 0 -> осаждение  -> Q_LH > 0 -> источник энергии
+        !
+        ! T_surface < T_melt:  Q_surface идёт на чувствительное нагревание
+        ! T_surface пересекает T_melt: энергия делится на чувствительную + остаточную
         ! T_surface = T_melt:  Q_melt = max(Q_surface, 0)
         !
-        ! This replaces the previous incorrect:
+        ! Это заменяет прежнюю неверную схему:
         !   Q_net_non_melt = SW + LW + SH + LH
-        !   Q_melt = max(Q_net_non_melt - Q_LH, 0)  -- WRONG: LH cancelled, wrong sign
+        !   Q_melt = max(Q_net_non_melt - Q_LH, 0)  -- ОШИБКА: LH сокращался, неверный знак
 
         q_nonlatent = sw_absorbed + lw_down + lw_up + sh_flux
         q_lh = lh_flux
         q_surface = q_nonlatent + q_lh
 
-        ! === PROGNOSTIC SURFACE TEMPERATURE WITH CORRECT ENERGY PARTITION ===
+        ! === ПРОГНОСТИЧЕСКАЯ ТЕМПЕРАТУРА ПОВЕРХНОСТИ С КОРРЕКТНЫМ РАСПРЕДЕЛЕНИЕМ ЭНЕРГИИ ===
         if (state%T_surface .lt. T_MELT) then
-            ! Surface below melting point: temperature evolution with full Q_surface
+            ! Поверхность ниже точки плавления: эволюция температуры с полной Q_surface
             t_surf_new = state%T_surface + q_surface*dt/c_eff
 
             if (t_surf_new .ge. T_MELT) then
-                ! Crossed melting point within timestep
-                ! Energy used for sensible warming to T_melt
-                ! Residual energy available for melting
+                ! Пересечение точки плавления в пределах шага
+                ! Энергия, израсходованная на чувствительный прогрев до T_melt
+                ! Остаточная энергия доступна для плавления
                 excess_energy = q_surface - c_eff*(T_MELT - state%T_surface)/dt
                 state%T_surface = T_MELT
-                ! Melt energy = max(residual, 0)
+                ! Энергия плавления = max(остаток, 0)
                 q_melt = max(excess_energy, 0.0)
                 if (q_melt .gt. 0.0) then
                     m_surface = q_melt/(RHO_ICE*LATENT_HEAT)
@@ -580,36 +582,36 @@ contains
                     m_surface = 0.0
                 end if
             else
-                ! Still below melting point
+                ! Всё ещё ниже точки плавления
                 state%T_surface = t_surf_new
                 m_surface = 0.0
             end if
         else
-            ! Surface at or above melting point
-            ! T_surface = T_melt, full Q_surface available for melt
+            ! Поверхность на точке плавления или выше
+            ! T_surface = T_melt, вся Q_surface доступна для плавления
             q_melt = max(q_surface, 0.0)
             if (q_melt .gt. 0.0) then
-                ! Positive energy -> melt, surface stays at T_MELT
+                ! Положительная энергия -> плавление, поверхность остаётся на T_MELT
                 state%T_surface = T_MELT
                 m_surface = q_melt/(RHO_ICE*LATENT_HEAT)
             else
-                ! Negative energy -> surface cools below T_MELT
+                ! Отрицательная энергия -> поверхность остывает ниже T_MELT
                 t_surf_new = state%T_surface + q_surface*dt/c_eff
                 state%T_surface = min(T_MELT, t_surf_new)
                 m_surface = 0.0
             end if
         end if
 
-        ! Total net flux for diagnostics (includes melt energy)
+        ! Суммарный чистый поток для диагностики (включает энергию плавления)
         q_net = q_surface - m_surface*RHO_ICE*LATENT_HEAT/dt
 
-        ! Store vapor mass flux in diagnostics
+        ! Сохраняем массовый поток пара в диагностиках
         diag%m_vapor = m_vapor
         diag%t_surface = state%T_surface
-        ! Diagnostic-only exposure of production surface fluxes (Stage 10.4.2.1):
-        ! q_surface = Q_nonlatent + Q_LH  [total energy available at surface]
-        ! q_lh      = m_vapor * L_S       [latent heat flux]
-        ! These are the values the melt/MassBudget physics were computed with.
+        ! Только диагностическая выдача производственных поверхностных потоков (Stage 10.4.2.1):
+        ! q_surface = Q_nonlatent + Q_LH  [полная энергия, доступная на поверхности]
+        ! q_lh      = m_vapor * L_S       [латентный тепловой поток]
+        ! Это те значения, с которыми производились расчёты таяния/массового бюджета.
         diag%q_surface = q_surface
         diag%q_lh = q_lh
     end subroutine compute_surface_melt

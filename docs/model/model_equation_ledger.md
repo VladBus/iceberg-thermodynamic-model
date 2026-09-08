@@ -116,10 +116,10 @@ y^(n+1) = y^n + v^n · Δt
 
 ### 2.5 Константы
 
-| Константа | Значение  | Единицы | Назначение         |
-| --------- | --------- | ------- | ------------------ |
-| DX        | 13890.0   | m       | Размер ячейки по X |
-| DY        | 13890.0   | m       | Размер ячейки по Y |
+| Константа | Значение | Единицы | Назначение         |
+| --------- | -------- | ------- | ------------------ |
+| DX        | 13890.0  | m       | Размер ячейки по X |
+| DY        | 13890.0  | m       | Размер ячейки по Y |
 
 ### 2.6 Численная схема
 
@@ -526,6 +526,7 @@ SW_abs = SW↓ · (1 - α_ice)
 ```
 
 **Legacy SW (replaced in Stage 10.1.2):**
+
 ```
 SW↓_legacy = S₀ · cos²(θ_z) · (1 - 0.6·tcc³) / ((cos_zenith+2.7)·1e-5·e_vap + 1.085·cos_zenith+0.1)
 ```
@@ -566,6 +567,7 @@ Stage 10.3: Q_LH is ENERGY FLUX ONLY; no mass change from sublimation/deposition
 ```
 
 **Theoretical context (not used directly in production):**
+
 ```
 Neutral bulk transfer coefficient from logarithmic law:
   C_H = C_E = κ² / [ln(z/z₀)]²
@@ -574,11 +576,13 @@ Neutral bulk transfer coefficient from logarithmic law:
   z₀ = 1e-4 m (roughness length for smooth ice, Andreas et al. 2010)
   → C = 0.4² / ln(10/1e-4)² ≈ 1.21e-3
 ```
+
 This theoretical value (≈1.21e-3) differs from the production fixed coefficient (1.5e-3).
 The logarithmic relation is retained as theoretical context only.
 No stability correction (Monin-Obukhov) is implemented in Stage 10.3.
 
 **Legacy SH/LH (retained for reference):**
+
 ```
 Q_SH_legacy = ρ_air · SH_COEFF · |V_a| · (T_air - T_surf)
     SH_COEFF = 1.7068  ! Stanton number (dimensionless)
@@ -680,11 +684,11 @@ diag%q_net_surface = q_net  = Q_surface - m_surface·ρ_ice·L_f/dt
 Direct validation in the same polar-night controlled experiment (only d2m varies):
 `Q_surface_production = Q_nonlatent_independent + m_vapor_production·L_S`.
 
-| Case | Q_nonlatent_ind | Q_LH (m_vapor·L_S) | Q_surface_expected | Q_surface PRODUCTION | error |
-| ---- | --------------- | ------------------ | ------------------ | -------------------- | ----- |
+| Case | Q_nonlatent_ind | Q_LH (m_vapor·L_S) | Q_surface_expected | Q_surface PRODUCTION | error   |
+| ---- | --------------- | ------------------ | ------------------ | -------------------- | ------- |
 | SUB  | 149.742706      | −105.374290        | 44.368416          | 44.368423            | +7.6e−6 |
-| ZERO | 149.742706      | −1.48e−4           | 149.742554         | 149.742554           | 0.0 |
-| DEP  | 149.742706      | +201.645966        | 351.388672         | 351.388672           | 0.0 |
+| ZERO | 149.742706      | −1.48e−4           | 149.742554         | 149.742554           | 0.0     |
+| DEP  | 149.742706      | +201.645966        | 351.388672         | 351.388672           | 0.0     |
 
 Errors ≤ 7.6e−6 W/m² (float32 rounding). Audit 66 checks / 0 errors.
 Report: `docs/wiki/Stage10.4.2.1_Independent_Q_surface_output_validation.md`.
@@ -710,40 +714,41 @@ Report: `docs/wiki/Stage10.4.2.1_Independent_Q_surface_output_validation.md`.
 
 | Константа       | Значение  | Единицы   | Назначение                              |
 | --------------- | --------- | --------- | --------------------------------------- |
-| SOLAR_CONSTANT         | 1353.0    | W/m²      | Солнечная константа                              |
-| ALBEDO_ICE             | 0.6       | -         | Альбедо льда                                     |
-| EMISSIVITY             | 0.97      | -         | Эмиссивность льда                                |
-| STEFAN_BOLTZ           | 5.67e-8   | W/(m²·K⁴) | Константа Стефана-Больцмана                      |
-| C_CLOUD                | 0.75      | -         | Cloud coefficient (SW, legacy)                   |
-| LW_EMISS               | 0.78      | -         | Атмосферная эмиссивность (LW)                    |
-| LW_CLOUD_FACTOR        | 0.25      | -         | Cloud factor (LW)                                |
-| LW_HUMID_COEFF         | 0.25      | -         | Humidity correction (LW)                         |
-| LW_HUMID_EXP           | 0.06      | -         | Humidity exponent (LW)                           |
-| SH_COEFF               | 1.5e-3    | -         | Sensible heat transfer coeff                     |
-| LH_COEFF               | 0.6650735 | -         | **Legacy latent heat coeff**                     |
-| LATENT_VAP             | 2.5e6     | J/kg      | Латентная теплота испарения (L_v)                |
-| SAT_VAPOR_0            | 610.78    | Pa        | Насыщенное парциальное давление при 0°C          |
-| TETENS_A               | 8.61503   | -         | Коэффициент Тетенса                              |
-| GAS_CONST_AIR          | 287.0     | J/(kg·K)  | Газовая постоянная сухого воздуха                |
-| EPSILON                | 0.622     | -         | Молекулярное соотношение H₂O/air                 |
+| SOLAR_CONSTANT  | 1353.0    | W/m²      | Солнечная константа                     |
+| ALBEDO_ICE      | 0.6       | -         | Альбедо льда                            |
+| EMISSIVITY      | 0.97      | -         | Эмиссивность льда                       |
+| STEFAN_BOLTZ    | 5.67e-8   | W/(m²·K⁴) | Константа Стефана-Больцмана             |
+| C_CLOUD         | 0.75      | -         | Cloud coefficient (SW, legacy)          |
+| LW_EMISS        | 0.78      | -         | Атмосферная эмиссивность (LW)           |
+| LW_CLOUD_FACTOR | 0.25      | -         | Cloud factor (LW)                       |
+| LW_HUMID_COEFF  | 0.25      | -         | Humidity correction (LW)                |
+| LW_HUMID_EXP    | 0.06      | -         | Humidity exponent (LW)                  |
+| SH_COEFF        | 1.5e-3    | -         | Sensible heat transfer coeff            |
+| LH_COEFF        | 0.6650735 | -         | **Legacy latent heat coeff**            |
+| LATENT_VAP      | 2.5e6     | J/kg      | Латентная теплота испарения (L_v)       |
+| SAT_VAPOR_0     | 610.78    | Pa        | Насыщенное парциальное давление при 0°C |
+| TETENS_A        | 8.61503   | -         | Коэффициент Тетенса                     |
+| GAS_CONST_AIR   | 287.0     | J/(kg·K)  | Газовая постоянная сухого воздуха       |
+| EPSILON         | 0.622     | -         | Молекулярное соотношение H₂O/air        |
+
 | ! Stage 10.1.2: Atmospheric attenuation constants
-| TAU_RAYLEIGH_0         | 0.09      | -         | Rayleigh optical depth at sea level (p=1013.25 hPa) |
-| AEROSOL_TRANS_ARCTIC   | 0.93      | -         | Arctic background aerosol transmittance (empirical) |
-| CLOUD_TRANS_COEFF      | 0.75      | -         | Cloud transmittance coefficient (T_cloud = 1 - C*tcc) |
-| WV_ABSORP_COEFF        | 0.077     | -         | Water vapor absorption coefficient (Lacis & Hansen 1974) |
-| WV_ABSORP_EXP          | 0.3       | -         | Water vapor absorption exponent (Lacis & Hansen 1974) |
-| PRECIP_WATER_SCALE     | 0.1       | cm/(hPa)  | Precipitable water scale from surface e_vap (empirical) |
+| TAU_RAYLEIGH_0 | 0.09 | - | Rayleigh optical depth at sea level (p=1013.25 hPa) |
+| AEROSOL_TRANS_ARCTIC | 0.93 | - | Arctic background aerosol transmittance (empirical) |
+| CLOUD_TRANS_COEFF | 0.75 | - | Cloud transmittance coefficient (T_cloud = 1 - C\*tcc) |
+| WV_ABSORP_COEFF | 0.077 | - | Water vapor absorption coefficient (Lacis & Hansen 1974) |
+| WV_ABSORP_EXP | 0.3 | - | Water vapor absorption exponent (Lacis & Hansen 1974) |
+| PRECIP_WATER_SCALE | 0.1 | cm/(hPa) | Precipitable water scale from surface e_vap (empirical) |
 | ! Stage 10.3: Modern turbulent exchange
-| CP_AIR                 | 1004.0    | J/(kg·K)  | Specific heat of dry air                          |
-| L_S                    | 2.835e6   | J/kg      | Latent heat of sublimation at 0°C                 |
-| C_H_NEUTRAL            | 1.5e-3    | -         | Fixed neutral bulk coefficient (model parameter; literature-context documented) |
-| C_E_NEUTRAL            | 1.5e-3    | -         | Fixed neutral bulk coefficient; same formulation  |
-| VON_KARMAN             | 0.4       | -         | Von Karman constant                               |
-| Z0_ICE                 | 1.0e-4    | m         | Roughness length for smooth ice (Andreas et al. 2010) |
-| MURPHY_KOOP_A          | 9.550426  | -         | Murphy & Koop (2005) ice saturation A             |
-| MURPHY_KOOP_B          | 5723.265  | K         | Murphy & Koop (2005) ice saturation B             |
-| MURPHY_KOOP_C          | 3.53068   | -         | Murphy & Koop (2005) ice saturation C             |
-| MURPHY_KOOP_D          | 0.00728332| 1/K       | Murphy & Koop (2005) ice saturation D             |
+| CP_AIR | 1004.0 | J/(kg·K) | Specific heat of dry air |
+| L_S | 2.835e6 | J/kg | Latent heat of sublimation at 0°C |
+| C_H_NEUTRAL | 1.5e-3 | - | Fixed neutral bulk coefficient (model parameter; literature-context documented) |
+| C_E_NEUTRAL | 1.5e-3 | - | Fixed neutral bulk coefficient; same formulation |
+| VON_KARMAN | 0.4 | - | Von Karman constant |
+| Z0_ICE | 1.0e-4 | m | Roughness length for smooth ice (Andreas et al. 2010) |
+| MURPHY_KOOP_A | 9.550426 | - | Murphy & Koop (2005) ice saturation A |
+| MURPHY_KOOP_B | 5723.265 | K | Murphy & Koop (2005) ice saturation B |
+| MURPHY_KOOP_C | 3.53068 | - | Murphy & Koop (2005) ice saturation C |
+| MURPHY_KOOP_D | 0.00728332| 1/K | Murphy & Koop (2005) ice saturation D |
 
 ### 8.6 Численная схема
 
@@ -805,11 +810,11 @@ dH/dt = -(m_melt + m_vapor/ρ_ice)
 where m_vapor = ρ_air · C_E · |V_a| · (q_air - q_sat_ice) [kg/(m²·s)]
 Q_LH = m_vapor · L_S
 Sign convention:
-  m_vapor < 0 -> sublimation (mass loss, thickness decreases, Q_LH < 0 energy sink)
-  m_vapor > 0 -> deposition (mass gain, thickness increases, Q_LH > 0 energy source)
+m_vapor < 0 -> sublimation (mass loss, thickness decreases, Q_LH < 0 energy sink)
+m_vapor > 0 -> deposition (mass gain, thickness increases, Q_LH > 0 energy source)
 
-Q_surface = Q_nonlatent + Q_LH  ! total surface energy
-Q_melt = max(Q_surface, 0)  at T_surface = T_melt
+Q_surface = Q_nonlatent + Q_LH ! total surface energy
+Q_melt = max(Q_surface, 0) at T_surface = T_melt
 m_melt = Q_melt / (ρ_ice · L_f)
 
 ### 9.2 Дискретное уравнение
@@ -960,16 +965,16 @@ Timestep loop (Δt = 3600 s):
 
 ## 15. КЛЮЧЕВЫЕ LEGACY APPROXIMATIONS (FOR STAGE 10 REFERENCE)
 
-| Block              | Legacy Formula   | Modern Target                          |
-| ------------------ | ---------------- | -------------------------------------- |
+| Block              | Legacy Formula   | Modern Target                                        |
+| ------------------ | ---------------- | ---------------------------------------------------- |
 | Solar geometry     | decl=0, hour=0   | Astronomical δ, H; daily integration for diagnostics |
-| LH coefficient     | 0.6650735        | C_E (neutral/stability-dependent)      |
-| Surface temp       | Fixed -10°C      | Prognostic T_surface                   |
-| q_sat              | Water saturation | Ice saturation (Murphy-Koop)           |
-| Latent heat        | L_v = 2.5e6      | L_s = 2.835e6 for sublimation          |
-| Phase change       | max(Q_net,0)     | Partition: melt/sublimation/deposition |
-| Basal melt coeff   | 1e-6 m/(s·K)     | Physics-based γ_T                      |
-| Lateral melt coeff | 1e-6 m/(s·K)     | Physics-based γ_T                      |
+| LH coefficient     | 0.6650735        | C_E (neutral/stability-dependent)                    |
+| Surface temp       | Fixed -10°C      | Prognostic T_surface                                 |
+| q_sat              | Water saturation | Ice saturation (Murphy-Koop)                         |
+| Latent heat        | L_v = 2.5e6      | L_s = 2.835e6 for sublimation                        |
+| Phase change       | max(Q_net,0)     | Partition: melt/sublimation/deposition               |
+| Basal melt coeff   | 1e-6 m/(s·K)     | Physics-based γ_T                                    |
+| Lateral melt coeff | 1e-6 m/(s·K)     | Physics-based γ_T                                    |
 
 ---
 

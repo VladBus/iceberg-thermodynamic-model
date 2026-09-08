@@ -281,7 +281,7 @@ status = nf90_put_att(ncid, nf90_global, 'unit_system', 'SI (canonical external 
         call set_att(ncid, ro_varid, 'comment', 'computed by Fortran Eckart EOS (Stage 3.1); Python must not recompute. '// &
                    'Value is density ANOMALY (rho - 1.02 g/cm3) in kg m-3 (internal g cm-3 * 1000)')
 
-        ! Snow and ice attributes
+        ! Атрибуты снега и льда
         call set_att(ncid, snow_depth_varid, 'units', 'm')
         call set_att(ncid, snow_depth_varid, 'long_name', 'snow depth per ice thickness category')
         call set_att(ncid, snow_depth_varid, 'comment', 'snow thickness [m] for each of 5 ice thickness categories (internal m)')

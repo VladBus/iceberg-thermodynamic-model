@@ -223,15 +223,18 @@ C_H = C_E = κ² / [ln(z/z0)]²  (theoretical logarithmic formulation)
 ```
 
 где:
+
 - κ = 0.4 (функция Кармана)
 - z = 10 m (высота измерения ветра)
 - z_0 = 1e-4 m (roughness length для гладкого льда, Andreas et al. 2010)
 - Theoretical value: C = 0.4² / ln(10/1e-4)² ≈ 1.21e-3
 
 **Actual production coefficients (Stage 10.3):**
+
 ```
 C_H = C_E = 1.5e-3  (fixed neutral bulk coefficients — model parameters)
 ```
+
 These are documented model parameters for the neutral bulk formulation. They are NOT the direct result of κ²/ln(z/z₀)² with z₀=1e-4 m (which gives ~1.21e-3). The logarithmic relation is retained only as theoretical context. No stability correction is implemented in Stage 10.3.
 
 **Stability correction:** Не включено в Stage 10.3 (требует Monin-Obukhov length, не доступен без итераций). Оставлено для будущих стадий.
@@ -273,17 +276,20 @@ L = L_s = 2.835e6 J/kg  (sublimation/deposition at 0°C)
 Fixed neutral bulk coefficients C_H = C_E = 1.5e-3 (model parameters for Stage 10.3).
 
 Theoretical logarithmic neutral formulation (context only):
+
 - κ = 0.4 (von Karman constant)
 - z = 10 m (ERA5 measurement height)
 - z₀ = 1e-4 m (roughness length for smooth ice, Andreas et al. 2010, Arctic sea ice)
 - Theoretical C = κ² / ln(z/z₀)² = 0.4² / ln(10/1e-4)² ≈ 1.21e-3
 
 **Источники:**
+
 - Andreas et al. (2010) "Parameterizing turbulent exchange over summer sea ice" — literature context for Arctic sea ice bulk exchange
 - Murphy & Koop (2005) "Review of vapour pressures of ice and supercooled water", QJRMS 131, 1539-1565
 - Standard bulk aerodynamic formulation (e.g., Garratt 1992, "The Atmospheric Boundary Layer")
 
 **Отвергнутые альтернативы:**
+
 - Stability correction (Monin-Obukhov) — требует итераций и Monin-Obukhov length, недоступен без неявной схемы
 - Fixed coefficients from literature without derivation — менее прозрачно
 - ERA5 surface fluxes (SSHF/SSHF) — не используются, офлайн параметризация
@@ -379,7 +385,7 @@ Fixed: t2m=283.15 K, tcc=0, msl=101325 Pa, U=10 m/s, T_surface=0 °C, lat 90.
 
 | Case | d2m [K] | m_vapor [kg/m²s] | Q_LH [W/m²] | Q_surface [W/m²] | m_surface [m/s] |
 | ---- | ------- | ---------------- | ----------- | ---------------- | --------------- |
-| SUB  | 263.15  | −3.72e−5         | −105.4      |  44.4            | 1.46e−7         |
+| SUB  | 263.15  | −3.72e−5         | −105.4      | 44.4             | 1.46e−7         |
 | ZERO | 273.158 | −5.2e−11         | ≈0          | 149.7            | 4.93e−7         |
 | DEP  | 283.15  | +7.11e−5         | +201.6      | 351.4            | 1.16e−6         |
 
@@ -403,10 +409,10 @@ before, and `diag%q_net_surface` = residual after melt (≈ 0 while melting) is
 NOT Q_surface.
 
 | Case | Q_nonlatent_ind [W/m²] | Q_LH = m_vapor·L_S [W/m²] | Q_surface_expected [W/m²] | Q_surface PRODUCTION [W/m²] | error [W/m²] |
-| ---- | --------------------- | ------------------------- | ------------------------- | --------------------------- | ------------ |
-| SUB  | 149.742706            | −105.374290               | 44.368416                 | 44.368423                   | +7.6e−6      |
-| ZERO | 149.742706            | −1.48e−4                  | 149.742554                | 149.742554                  | 0.0          |
-| DEP  | 149.742706            | +201.645966               | 351.388672                | 351.388672                  | 0.0          |
+| ---- | ---------------------- | ------------------------- | ------------------------- | --------------------------- | ------------ |
+| SUB  | 149.742706             | −105.374290               | 44.368416                 | 44.368423                   | +7.6e−6      |
+| ZERO | 149.742706             | −1.48e−4                  | 149.742554                | 149.742554                  | 0.0          |
+| DEP  | 149.742706             | +201.645966               | 351.388672                | 351.388672                  | 0.0          |
 
 All 7 checks PASS (direct identity 3 cases, Q_nonlatent control, latent identity
 Q_LH = m_vapor·L_S, production Q_surface monotonic sub<zero<dep, melt monotonic,
@@ -443,7 +449,7 @@ Report: `docs/wiki/Stage10.4.2.1_Independent_Q_surface_output_validation.md`.
 - **3. Freezing point EOS-80:** каноническая `ocean_freezing_point(S, d)` в `iceberg_types.f90` заменяет legacy линейную Tf = −54·S в 3 местах: `compute_basal_melt` (Tf на черновике D), `depth_averaged_thermal_forcing` (послойно + глубокий слой), обёртка `freezing_point(S, 0)`.
   - Формула: Fofonoff & Millard 1983 (UNESCO TPMS 44 §5) / Gill 1982 Eq. 3.5.2. Check value −2.588567 °C PASS (тест 10.5.6).
   - Legacy −54·S давал Tf теплее EOS-80 на ~0.03 °C у поверхности и игнорировал давление (−0.07 °C на осадке 88 м); суммарно ~0.1 °C ≈ 3% типичного ΔT ≈ 3 °C.
-  - **Следствие:** во всех регрессиях «холодного океана» T=−1.9 °C оказалась выше Tf ниже ~8 м (EOS давление) → порог уточнён до −2.5 °C (test_2/3/4/6/8/9, drift_scaling_*, moving_trajectory, ibcao_interp).
+  - **Следствие:** во всех регрессиях «холодного океана» T=−1.9 °C оказалась выше Tf ниже ~8 м (EOS давление) → порог уточнён до −2.5 °C (test*2/3/4/6/8/9, drift_scaling*\*, moving_trajectory, ibcao_interp).
 - **3.1 Diagnostics:** `delta_t_ocean = T(D) − Tf(D)` (необрезанная) добавлена в `iceberg_diagnostics`, устанавливается в `iceberg_thermodynamics_step`.
 - **Тесты:** audit 10.5.1–10.5.19 (24 проверки) в `iceberg_test_7_vertical_temp_gradient` — PASS; полный набор 49/49 PASS; `-Wall -Wextra` — 0 предупреждений, clean exit.
 - **Не входит в 10.5:** пункт 4 (U_rel = |V_water − V_ice| на соответствующих глубинах) → Stage 10.6.

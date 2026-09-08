@@ -23,34 +23,34 @@
 
 ## Таблица статусов физических блоков
 
-| №   | Блок                           | Текущая формулировка                                         | Статус | Решение                   |
-| --- | ------------------------------ | ------------------------------------------------------------ | ------ | ------------------------- |
-| 1   | **Геометрия айсберга**         | L, W, H — прямоугольный параллелепипед                       | A      | Оставить                  |
-| 2   | **Координаты и позиция**       | x, y (модельные координаты), lat/lon (географические)        | A      | Оставить                  |
-| 3   | **Atmospheric forcing (ERA5)** | msl, u10, v10, t2m, d2m, tcc, sf — билинейная интерполяция   | A      | Оставить                  |
-| 4   | **Ocean forcing (EN4)**        | T, S — интерполяция до черновика; **Tf = EOS-80 f(S,p)**     | C      | **Stage 10.5 ✅**         |
-| 5   | **Ice initialization**         | Реальный лед из AMSR2 + IBCAO батиметрия                     | A      | Оставить                  |
-| 6   | **Iceberg dynamics**           | Лагранжева динамика: m·du/dt = ΣF, m·dv/dt = ΣF              | A      | Оставить                  |
-| 7   | **Wind drag**                  | Квадратичное сопротивление: τₐ = ρₐ·C_Dₐ·                    | A      | Оставить                  |
-| 8   | **Water drag**                 | Метод A (layer-integrated) / Метод B (depth-averaged)        | A      | Оставить                  |
-| 9   | **Coriolis**                   | Полунеявная схема (semi-implicit)                            | A      | Оставить                  |
-| 10  | **Pressure-gradient force**    | Опционально, через ocean surface slope                       | A      | Оставить                  |
-| 11  | **Froude-Krylov**              | Не реализован                                                | D      | Не планируется            |
-| 12  | **Basal melt**                 | Q_basal = ρ_w·c_pw·C_BASAL·U_rel·(T_w - T_f); T_f — EOS-80   | B      | Модернизация в Stage 10.6 |
-| 13  | **Lateral melt**               | Q_lateral = ρ_w·c_pw·C_LATERAL·⟨ΔT⟩\_D·A_lat                 | B      | Модернизация в Stage 10.7 |
-| 14  | **Surface energy (общий)**     | Q_net = Q_SW + Q_LW↓ + Q_LW↑ + Q_SH + Q_LH                   | B      | Модернизация поэтапно     |
-| 15  | **Shortwave radiation**        | decl=0, hour_angle=0 (permanent equinox/noon)                | B      | **Stage 10.1**            |
-| 16  | **Longwave radiation**         | LW_down = ε_a·σ·T_air⁴·(1+...), LW_up = -ε_i·σ·T_surf⁴       | B      | Модернизация в Stage 10.1 |
-| 17  | **Sensible heat**              | Q_SH = ρₐ·C_H·U·(T_air - T_surf)                             | C      | **Stage 10.3 ✅**         |
-| 18  | **Latent heat**                | Q_LH = ρₐ·L_S·C_E·U·Δq, ice sat, L_s, m_vapor = ρₐ·C_E·U·Δq  | C      | **Stage 10.3 ✅**         |
-| 19  | **Surface temperature**        | Prognostic T_surface, C_eff·dT/dt = Q_net_non_melt           | C      | **Stage 10.2 ✅**         |
-| 20  | **Phase change (surface)**     | m_melt = Q_melt/(ρ·L_f), m_vapor = ρₐ·C_E·U·(q_air-q_sat)    | C      | **Stage 10.4 ✅**         |
-| 21  | **Mass update**                | M = ρ_ice·L·W·H, budget closes 0.013%                        | A      | Оставить                  |
-| 22  | **Boundary conditions**        | Land mask=8888.0, grounding logic, domain boundaries         | A      | Оставить                  |
-| 23  | **Initial conditions**         | Real geometry + real ice + zero velocity                     | A      | Оставить                  |
-| 24  | **Numerical integration**      | Δt=3600s, operator splitting, semi-implicit Coriolis         | A      | Оставить                  |
-| 25  | **Interpolation**              | Bilinear (horizontal), linear (vertical)                     | A      | Оставить                  |
-| 26  | **Diagnostics**                | NetCDF output, trajectory CSV, mass budget                   | A      | Оставить                  |
+| №   | Блок                           | Текущая формулировка                                        | Статус | Решение                   |
+| --- | ------------------------------ | ----------------------------------------------------------- | ------ | ------------------------- |
+| 1   | **Геометрия айсберга**         | L, W, H — прямоугольный параллелепипед                      | A      | Оставить                  |
+| 2   | **Координаты и позиция**       | x, y (модельные координаты), lat/lon (географические)       | A      | Оставить                  |
+| 3   | **Atmospheric forcing (ERA5)** | msl, u10, v10, t2m, d2m, tcc, sf — билинейная интерполяция  | A      | Оставить                  |
+| 4   | **Ocean forcing (EN4)**        | T, S — интерполяция до черновика; **Tf = EOS-80 f(S,p)**    | C      | **Stage 10.5 ✅**         |
+| 5   | **Ice initialization**         | Реальный лед из AMSR2 + IBCAO батиметрия                    | A      | Оставить                  |
+| 6   | **Iceberg dynamics**           | Лагранжева динамика: m·du/dt = ΣF, m·dv/dt = ΣF             | A      | Оставить                  |
+| 7   | **Wind drag**                  | Квадратичное сопротивление: τₐ = ρₐ·C_Dₐ·                   | A      | Оставить                  |
+| 8   | **Water drag**                 | Метод A (layer-integrated) / Метод B (depth-averaged)       | A      | Оставить                  |
+| 9   | **Coriolis**                   | Полунеявная схема (semi-implicit)                           | A      | Оставить                  |
+| 10  | **Pressure-gradient force**    | Опционально, через ocean surface slope                      | A      | Оставить                  |
+| 11  | **Froude-Krylov**              | Не реализован                                               | D      | Не планируется            |
+| 12  | **Basal melt**                 | Q_basal = ρ_w·c_pw·C_BASAL·U_rel·(T_w - T_f); T_f — EOS-80  | B      | Модернизация в Stage 10.6 |
+| 13  | **Lateral melt**               | Q_lateral = ρ_w·c_pw·C_LATERAL·⟨ΔT⟩\_D·A_lat                | B      | Модернизация в Stage 10.7 |
+| 14  | **Surface energy (общий)**     | Q_net = Q_SW + Q_LW↓ + Q_LW↑ + Q_SH + Q_LH                  | B      | Модернизация поэтапно     |
+| 15  | **Shortwave radiation**        | decl=0, hour_angle=0 (permanent equinox/noon)               | B      | **Stage 10.1**            |
+| 16  | **Longwave radiation**         | LW_down = ε_a·σ·T_air⁴·(1+...), LW_up = -ε_i·σ·T_surf⁴      | B      | Модернизация в Stage 10.1 |
+| 17  | **Sensible heat**              | Q_SH = ρₐ·C_H·U·(T_air - T_surf)                            | C      | **Stage 10.3 ✅**         |
+| 18  | **Latent heat**                | Q_LH = ρₐ·L_S·C_E·U·Δq, ice sat, L_s, m_vapor = ρₐ·C_E·U·Δq | C      | **Stage 10.3 ✅**         |
+| 19  | **Surface temperature**        | Prognostic T_surface, C_eff·dT/dt = Q_net_non_melt          | C      | **Stage 10.2 ✅**         |
+| 20  | **Phase change (surface)**     | m_melt = Q_melt/(ρ·L_f), m_vapor = ρₐ·C_E·U·(q_air-q_sat)   | C      | **Stage 10.4 ✅**         |
+| 21  | **Mass update**                | M = ρ_ice·L·W·H, budget closes 0.013%                       | A      | Оставить                  |
+| 22  | **Boundary conditions**        | Land mask=8888.0, grounding logic, domain boundaries        | A      | Оставить                  |
+| 23  | **Initial conditions**         | Real geometry + real ice + zero velocity                    | A      | Оставить                  |
+| 24  | **Numerical integration**      | Δt=3600s, operator splitting, semi-implicit Coriolis        | A      | Оставить                  |
+| 25  | **Interpolation**              | Bilinear (horizontal), linear (vertical)                    | A      | Оставить                  |
+| 26  | **Diagnostics**                | NetCDF output, trajectory CSV, mass budget                  | A      | Оставить                  |
 
 ---
 
@@ -95,6 +95,7 @@ Sign: Q_SH > 0 -> atmosphere heats iceberg
 ```
 
 **Theoretical context (not direct derivation):**
+
 ```
 Neutral bulk from logarithmic law: C_H = κ² / ln(z/z₀)²
 κ = 0.4, z = 10 m, z₀ = 1e-4 m → C ≈ 1.21e-3
@@ -102,6 +103,7 @@ Production uses fixed C_H = 1.5e-3 (documented parameter)
 ```
 
 **Legacy (retained for reference):**
+
 ```
 SH_COEFF = 1.7068  ! Stanton number (dimensionless), Q_SH = ρ·SH_COEFF·U·ΔT
 ```
@@ -128,6 +130,7 @@ Stage 10.3: Q_LH is ENERGY FLUX ONLY; no mass change from sublimation/deposition
 ```
 
 **Theoretical context (not direct derivation):**
+
 ```
 Neutral bulk from logarithmic law: C_E = κ² / ln(z/z₀)²
 κ = 0.4, z = 10 m, z₀ = 1e-4 m → C ≈ 1.21e-3
@@ -135,6 +138,7 @@ Production uses fixed C_E = 1.5e-3 (documented parameter)
 ```
 
 **Legacy (retained for reference):**
+
 ```
 LH_COEFF = 0.6650735  ! ~443× standard C_E
 L_v = 2.5e6 J/kg      ! Vaporization (not sublimation)
@@ -258,10 +262,10 @@ use identical m_vapor.
 
 ## FPM/CI Reproducibility
 
-| Environment | FPM Version | Test Discovery           |
-| ----------- | ----------- | ------------------------ |
-| Local       | 0.13.0      | Auto (41 targets)        |
-| CI (GitHub) | 0.13.0      | Auto (41 targets)        |
+| Environment | FPM Version | Test Discovery    |
+| ----------- | ----------- | ----------------- |
+| Local       | 0.13.0      | Auto (41 targets) |
+| CI (GitHub) | 0.13.0      | Auto (41 targets) |
 
 **Status:** ✅ Aligned — CI updated to FPM 0.13.0.
 
@@ -279,6 +283,7 @@ use identical m_vapor.
 - Mass budget includes vapor mass change: ΔM = -(M_melt + M_vapor)
 
 Previous Stage 10.3 changes retained:
+
 - Sensible heat: Q_SH = ρ·CP_AIR·C_H·U·ΔT (CP_AIR=1004, C_H=1.5e-3)
 - Latent heat: Q_LH = ρ·L_S·C_E·U·Δq (L_S=2.835e6, C_E=1.5e-3, ice saturation)
 - Ice saturation: Murphy & Koop (2005) formulation
@@ -293,7 +298,7 @@ Previous Stage 10.3 changes retained:
 Модернизированы пункты 1–3 плана 10.5 (пункт 4 — U_rel — перенесён в Stage 10.6):
 
 1. **Interpolation to draft depth:** `interp_at_draft` — линейная интерполяция c клэмпами, T/S на черновике D.
-2. **Submerged surface temperature:** `depth_averaged_thermal_forcing` — ⟨ΔT⟩_D = (1/D)·∫max(0,T(z)−Tf(z))dz по [0,D] (Method A, legacy), для lateral melt.
+2. **Submerged surface temperature:** `depth_averaged_thermal_forcing` — ⟨ΔT⟩\_D = (1/D)·∫max(0,T(z)−Tf(z))dz по [0,D] (Method A, legacy), для lateral melt.
 3. **Freezing point EOS-80:** каноническая функция `ocean_freezing_point(S, depth)` в `iceberg_types.f90`:
    ```
    Tf = (A0 + A1·√S − A2·S)·S + BP·P     [°C]
@@ -307,7 +312,7 @@ Previous Stage 10.3 changes retained:
 **Диагностика:** `diag%delta_t_ocean = T(D) − Tf(D)` (необрезанная, может быть ≤ 0).
 
 **Тесты:** `iceberg_test_7_vertical_temp_gradient` — audit 10.5.1–10.5.19 (24 проверки) PASS.
-**Регрессии (EOS давление):** холодный океан T=−1.9 → −2.5 °C в test_2/3/4/6/8/9, drift_scaling_*, moving_trajectory, ibcao_interp.
+**Регрессии (EOS давление):** холодный океан T=−1.9 → −2.5 °C в test*2/3/4/6/8/9, drift_scaling*\*, moving_trajectory, ibcao_interp.
 
 ---
 

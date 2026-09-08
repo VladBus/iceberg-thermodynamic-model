@@ -16,6 +16,8 @@ dependencies:
   - scipy
   - pyproj
   - rasterio
+  # Data acquisition (CDS API / HTTP)
+  - requests
   # LSP / Development Tools (Fortran)
   - pip
   - pip:

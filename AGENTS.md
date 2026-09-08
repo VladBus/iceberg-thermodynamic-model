@@ -269,12 +269,12 @@ All analysis scripts are in `python/analysis/`:
 - **Classification:** C -- Phase change partitioning implemented and validated.
 - **Physics:** Latent heat flux Q_LH partitioned into vapor mass flux and melt energy.
 - **Key changes:**
-  1. m_vapor = rho_air * C_E * U * (q_air - q_sat_ice) [kg/(m2 s)]
-  2. Q_LH = m_vapor * L_S [W/m2]
+  1. m*vapor = rho_air * C*E * U \* (q_air - q_sat_ice) [kg/(m2 s)]
+  2. Q_LH = m_vapor \* L_S [W/m2]
   3. Q_melt = max(Q_net_non_melt - Q_LH, 0) [W/m2]
-  4. m_melt = Q_melt / (rho_ice * L_f) [m/s]
+  4. m_melt = Q_melt / (rho_ice \* L_f) [m/s]
   5. dH/dt = -(m_melt + m_vapor/rho_ice)
-  4. Mass budget includes vapor mass change
+  6. Mass budget includes vapor mass change
 - **Tests:** 8 new Stage 10.4 analytical tests PASS (sublimation, deposition, melt, energy/mass conservation, vapor latent/mass consistency)
 - **All 41 fpm tests PASS** including regression of Stage 10.1-10.3.
 - **Files changed:** src/iceberg_types.f90 (vapor diagnostics), src/iceberg_thermodynamics.f90 (phase change logic), src/iceberg.f90 (mass budget), src/iceberg_geometry.f90 (mass budget), test/iceberg_test_surface_melt_audit.f90 (8 new tests)
@@ -285,17 +285,17 @@ All analysis scripts are in `python/analysis/`:
 - **Classification:** C -- Corrective energy partitioning of latent heat.
 - **Critical bug fixed:** Previous Stage 10.4 had `Q_net_non_melt = SW + LW + SH + LH` then `Q_melt = max(Q_net_non_melt - LH, 0)`, which cancelled LH and inverted sublimation energy sign.
 - **Correct physics (Stage 10.4.1):**
-  1. Q_nonlatent = SW_abs + LW_down + LW_up + SH  (NO LH)
-  2. m_vapor = rho_air * C_E * U * (q_air - q_sat_ice) [kg/(m2 s)]
-  3. Q_LH = m_vapor * L_S [W/m2]
+  1. Q_nonlatent = SW_abs + LW_down + LW_up + SH (NO LH)
+  2. m*vapor = rho_air * C*E * U \* (q_air - q_sat_ice) [kg/(m2 s)]
+  3. Q_LH = m_vapor \* L_S [W/m2]
   4. Q_surface = Q_nonlatent + Q_LH
   5. Sign: m_vapor < 0 -> sublimation -> Q_LH < 0 -> ENERGY SINK
-       m_vapor > 0 -> deposition  -> Q_LH > 0 -> ENERGY SOURCE
-  6. T_surface < T_melt: dT = Q_surface * dt / C_eff
+     m_vapor > 0 -> deposition -> Q_LH > 0 -> ENERGY SOURCE
+  6. T*surface < T_melt: dT = Q_surface * dt / C*eff
      If crossing T_melt: excess_energy = Q_surface - C_eff*(T_melt - T_surface)/dt
      Q_melt = max(excess_energy, 0)
   7. T_surface = T_melt: Q_melt = max(Q_surface, 0)
-  8. m_melt = Q_melt / (rho_ice * L_f)
+  8. m_melt = Q_melt / (rho_ice \* L_f)
   9. dH/dt = -(m_melt + m_vapor/rho_ice)
   10. Mass budget includes vapor mass change
 - **Vapor mass flux and latent heat flux are TWO REPRESENTATIONS of the SAME phase-change process** (not two independent energy sources).
@@ -344,5 +344,5 @@ All analysis scripts are in `python/analysis/`:
 - **Regression consequence (EOS pressure term):** legacy "cold ocean" T=-1.9 °C was ABOVE Tf below ~8 m → spurious melt. Porthed threshold to -2.5 °C in 11 files (test_2/3/4/6/8/9, drift_scaling_wind, drift_scaling_wind_no_cor, drift_scaling_current, moving_trajectory, ibcao_interp).
 - **Tests:** test_7 rewritten with independent Stage 10.5 audit (checks 10.5.1-10.5.19, 24 total): EOS surface values/monotonicity, pressure term (−7.53e-4·P over 100 m), pure water depth, UNESCO 500 dbar checkvalue, interp node/midpoint/clamps, draft sampling (H=50/100/150), basal regimes T<Tf/T=Tf/T>Tf, lateral Method-A box-model replica, C_LATERAL·⟨ΔT⟩, delta_t_ocean wiring.
 - **All fpm tests PASS** (49 auto-discovered, exit 0), zero mismatches; `-Wall -Wextra` build clean (0 warnings), exit 0; `git diff --check` clean.
-- **Files changed:** src/iceberg_types.f90 (EOS_FP_* constants, ocean_freezing_point, delta_t_ocean, v10.5 header), src/iceberg_thermodynamics.f90 (compute_basal_melt/basal wrapper, delta_t_ocean diag), src/iceberg_forcing.f90 (depth_averaged_thermal_forcing per-layer + deep), 12 test files, docs/model/model_equation_ledger.md (§4.5-4.7), docs/model/model_physics_status.md (row 4 → C), docs/model/stage10_modernization_plan.md (§10.5 ✅), docs/wiki/Stage10.5_Ocean_Thermal_Forcing.md, AGENTS.md.
+- **Files changed:** src/iceberg*types.f90 (EOS_FP*\* constants, ocean_freezing_point, delta_t_ocean, v10.5 header), src/iceberg_thermodynamics.f90 (compute_basal_melt/basal wrapper, delta_t_ocean diag), src/iceberg_forcing.f90 (depth_averaged_thermal_forcing per-layer + deep), 12 test files, docs/model/model_equation_ledger.md (§4.5-4.7), docs/model/model_physics_status.md (row 4 → C), docs/model/stage10_modernization_plan.md (§10.5 ✅), docs/wiki/Stage10.5_Ocean_Thermal_Forcing.md, AGENTS.md.
 - **Not in scope:** depth-dependent U_rel (Stage 10.6), basal/lateral melting modernization (10.6/10.7), canonical ocean model `thermodynamics.f90` untouched (its -54·S Zubov Tf remains).

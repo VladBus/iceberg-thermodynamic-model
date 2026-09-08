@@ -3,7 +3,7 @@
 ! Назначение: Диагностика Stage 8.6 — отслеживание первой дивергенции
 !             в цепочке термодинамика-динамика.
 ! Вызывается на каждом этапе временного шага для захвата:
-!   U_max, V_max, W_max, NaN fraction, T/S/RO min/max, KE, momentum
+!   U_max, V_max, W_max, доля NaN, T/S/RO min/max, KE, momentum
 ! ==============================================================================
 
 module stage86_diagnostics
@@ -60,7 +60,7 @@ contains
         real :: ke, mom_x, mom_y
         real :: speed_max
 
-        ! Ensure initialization happens first
+        ! Убеждаемся, что инициализация выполнена первой
         call init_stage86_diagnostics()
         if (diag_level .eq. DIAG_OFF) return
 
@@ -159,7 +159,7 @@ contains
             " RO=[", ro_min, ",", ro_max, "] g/cm3", &
             " KE=", ke, " mom=[", mom_x/100.0, ",", mom_y/100.0, "] m/s"
 
-        ! Detailed verbose output
+        ! Детальный подробный вывод
         if (diag_level .eq. DIAG_VERBOSE .and. n_wet .gt. 0) then
             print *, "  NaN fractions: U=", real(n_nan_u)/real(n_wet)*100.0, &
                "% V=", real(n_nan_v)/real(n_wet)*100.0, "% W=", real(n_nan_w)/real(n_wet)*100.0, "%"

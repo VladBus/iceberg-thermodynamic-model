@@ -87,9 +87,27 @@ program iceberg_test_surface_melt_audit
     real :: q_pos, q_neg, q_zero2
     real :: t_neg, t_zero2
     real :: m_vapor_analytical, q_lh_analytical
-    real :: t_air_k_test, t_surf_k_test, p_atm_test, rho_air_test, wind_speed_test
+    real :: t_air_k_test, t_dew_k_test, t_surf_k_test, p_atm_test, rho_air_test, wind_speed_test
     real :: e_sat_air_test, e_sat_dew_test, rh_test, e_vap_test, q_air_test, q_sat_test
     real :: t_surf_initial
+    ! Stage 10.4.2 independent monotonicity validation variables
+    real :: cos_zen_1042
+    real :: q_nl_sub_1042, q_nl_zero_1042, q_nl_dep_1042
+    real :: q_lh_sub_1042, q_lh_zero_1042, q_lh_dep_1042
+    real :: m_s_sub_1042, m_s_zero_1042, m_s_dep_1042
+    real :: m_v_sub_1042, m_v_zero_1042, m_v_dep_1042
+    real :: q_surf_m_sub_1042, q_surf_m_zero_1042, q_surf_m_dep_1042
+    real :: q_melt_m_sub_1042, q_melt_m_zero_1042, q_melt_m_dep_1042
+    real :: t_end_sub_1042, t_end_zero_1042, t_end_dep_1042
+    real :: d2m_zero_1042, target_e_1042
+    real :: q_nl_sec_1042, q_lh_sec_1042, m_s_sec_1042, m_v_sec_1042
+    real :: m_s_strong_1042, m_v_strong_1042, t_end_strong_1042, q_surf_strong_1042
+    real :: q_surf_cross_1042, excess_cross_1042, m_expect_cross_1042, c_eff_cross_1042
+    real :: m_cross_sub_1042, m_cross_dep_1042
+    real :: t_bf_sub_1042, t_bf_zero_1042, t_bf_dep_1042
+    real :: m_bf_sub_1042, m_bf_zero_1042, m_bf_dep_1042
+    real :: h_init_1042, h_final_1042, dh_model_1042, dh_expect_1042
+    real :: m_s_geom_1042, m_v_geom_1042
 
     n_errors = 0
     n_checks = 0
@@ -1831,6 +1849,479 @@ print *, "Negative forcing: T_final = ", t_neg, " m_surface = ", m_neg, " q_net 
         print *, "OK: Vapor mass and latent energy consistent (same m_vapor, L_S)"
     else
         print *, "FAIL: Mass/energy consistency"
+        n_errors = n_errors + 1
+    end if
+
+    ! -------------------------------------------------------------------------
+    ! STAGE 10.4.2: INDEPENDENT MONOTONICITY VALIDATION
+    !
+    ! The old TEST 10.4.9 used POLAR DAY: changing d2m altered e_vap ->
+    ! precipitable water -> SW_down, so Q_nonlatent was NOT identical between
+    ! cases and the m_sub < m_zero < m_dep claim was uncontrolled.
+    !
+    ! Here we run in POLAR NIGHT (SW == 0 exactly): Q_nonlatent =
+    ! LW_down(T_air,tcc) + LW_up(T_surface) + SH(rho,T_air,T_surface,U) is
+    ! analytically independent of d2m. Only Q_LH = m_vapor * L_S responds to
+    ! d2m (through q_air). Then:
+    !   m_vapor = rho * C_E * U * (q_air(d2m) - q_sat_ice)
+    ! q_air is monotonic increasing in d2m (Tetens e_sat(d2m) monotonic),
+    ! hence m_vapor(d2m), Q_LH(d2m), Q_surface(d2m), Q_melt(d2m) are all
+    ! monotonic. This validation derives the expected ordering independently
+    ! from the controlled inputs, NOT from the implementation's arithmetic.
+    ! -------------------------------------------------------------------------
+    print *, ""
+    print *, "=================================================="
+    print *, "--- STAGE 10.4.2: Independent monotonicity (polar night, T=0) ---"
+    print *, "=================================================="
+
+    ! Verify polar night precondition (SW = 0) and latitude for cos_zenith
+    call solar_geometry(nat(1), nat(2), nat(3), nat(4), 0.0, 90.0, 0.0, &
+                        cos_zen_1042, &
+                        decl_rad_e, hour_angle_rad_e)
+    print *, "cos_zenith at (90N, time=0) = ", cos_zen_1042
+
+    n_checks = n_checks + 1
+    if (cos_zen_1042 .le. 0.0) then
+        print *, "OK: Polar night confirmed -> SW = 0, Q_nonlatent d2m-invariant"
+    else
+        print *, "FAIL: Polar night expected but cos_zenith > 0"
+        n_errors = n_errors + 1
+    end if
+
+    ! --- Case SUB: dry air (sublimation). d2m = 263.15 K (-10°C dew point) ---
+    call iceberg_init(state, 0.0, 0.0, 100.0, 100.0, 100.0, &
+                      90.0, 0.0, 0.0, 0.0)  ! polar night
+    state%T_surface = 0.0  ! at melting point
+    t_surf_initial = state%T_surface
+    call init_zero_ocean(ocean_prof)
+    atmos%t2m = 283.15   ! 10°C warm air
+    atmos%d2m = 263.15   ! dry -> sublimation
+    atmos%tcc = 0.0
+    atmos%msl = 101325.0
+    atmos%u10 = 10.0
+    atmos%v10 = 0.0
+    call compute_surface_melt(state, atmos, diag, q_net, m_surface, dt, &
+                              nat(1), nat(2), nat(3), nat(4))
+    m_s_sub_1042 = m_surface
+    m_v_sub_1042 = diag%m_vapor
+    t_end_sub_1042 = state%T_surface
+
+    ! Independent Q_nonlatent for SUB (polar night: SW=0, no e_vap term)
+    q_nl_sub_1042 = LW_EMISS*atmos%t2m**4* &
+                    (1.0 + LW_CLOUD_FACTOR*atmos%tcc)* &
+                    (1.0 - LW_HUMID_COEFF*exp(-LW_HUMID_EXP*(273.15 - atmos%t2m)**2)) &
+                    - EMISSIVITY*STEFAN_BOLTZ*(t_surf_initial + 273.15)**4 &
+                    + (atmos%msl/(GAS_CONST_AIR*atmos%t2m))*CP_AIR*C_H_NEUTRAL* &
+                    sqrt(atmos%u10**2 + atmos%v10**2)*(atmos%t2m - (t_surf_initial + 273.15))
+
+    ! --- Case ZERO: d2m tuned so q_air ~= q_sat_ice (d2m ~ 273.16 K) ---
+    call iceberg_init(state, 0.0, 0.0, 100.0, 100.0, 100.0, &
+                      90.0, 0.0, 0.0, 0.0)
+    state%T_surface = 0.0
+    t_surf_initial = state%T_surface
+    call init_zero_ocean(ocean_prof)
+    ! q_sat_ice at 273.15 K (Murphy-Koop ~611.2 Pa). Solve e_sat_dew(Tetens)
+    ! = e_sat_ice(273.15): 8.61503*(d2m-273.15)/d2m = log10(611.2/610.78)
+    target_e_1042 = saturation_vapor_pressure_ice(273.15)
+    d2m_zero_1042 = 273.15/(1.0 - log10(target_e_1042/SAT_VAPOR_0)/TETENS_A)
+    atmos%t2m = 283.15
+    atmos%d2m = d2m_zero_1042   ! ~273.16 K -> zero latent flux
+    atmos%tcc = 0.0
+    atmos%msl = 101325.0
+    atmos%u10 = 10.0
+    atmos%v10 = 0.0
+    call compute_surface_melt(state, atmos, diag, q_net, m_surface, dt, &
+                              nat(1), nat(2), nat(3), nat(4))
+    m_s_zero_1042 = m_surface
+    m_v_zero_1042 = diag%m_vapor
+    t_end_zero_1042 = state%T_surface
+    ! Independent Q_nonlatent (identical by construction)
+    q_nl_zero_1042 = LW_EMISS*atmos%t2m**4* &
+                     (1.0 + LW_CLOUD_FACTOR*atmos%tcc)* &
+                     (1.0 - LW_HUMID_COEFF*exp(-LW_HUMID_EXP*(273.15 - atmos%t2m)**2)) &
+                     - EMISSIVITY*STEFAN_BOLTZ*(t_surf_initial + 273.15)**4 &
+                     + (atmos%msl/(GAS_CONST_AIR*atmos%t2m))*CP_AIR*C_H_NEUTRAL* &
+                     sqrt(atmos%u10**2 + atmos%v10**2)*(atmos%t2m - (t_surf_initial + 273.15))
+
+    ! --- Case DEP: humid air (deposition). d2m = 283.15 K (rh -> 100%) ---
+    call iceberg_init(state, 0.0, 0.0, 100.0, 100.0, 100.0, &
+                      90.0, 0.0, 0.0, 0.0)
+    state%T_surface = 0.0
+    t_surf_initial = state%T_surface
+    call init_zero_ocean(ocean_prof)
+    atmos%t2m = 283.15
+    atmos%d2m = 283.15   ! d2m = t2m -> q_air = q_sat_air > q_sat_ice
+    atmos%tcc = 0.0
+    atmos%msl = 101325.0
+    atmos%u10 = 10.0
+    atmos%v10 = 0.0
+    call compute_surface_melt(state, atmos, diag, q_net, m_surface, dt, &
+                              nat(1), nat(2), nat(3), nat(4))
+    m_s_dep_1042 = m_surface
+    m_v_dep_1042 = diag%m_vapor
+    t_end_dep_1042 = state%T_surface
+    q_nl_dep_1042 = LW_EMISS*atmos%t2m**4* &
+                    (1.0 + LW_CLOUD_FACTOR*atmos%tcc)* &
+                    (1.0 - LW_HUMID_COEFF*exp(-LW_HUMID_EXP*(273.15 - atmos%t2m)**2)) &
+                    - EMISSIVITY*STEFAN_BOLTZ*(t_surf_initial + 273.15)**4 &
+                    + (atmos%msl/(GAS_CONST_AIR*atmos%t2m))*CP_AIR*C_H_NEUTRAL* &
+                    sqrt(atmos%u10**2 + atmos%v10**2)*(atmos%t2m - (t_surf_initial + 273.15))
+
+    ! Reconstruct Q_melt and Q_surface from model m_surface (melt branch, T=0)
+    q_melt_m_sub_1042 = m_s_sub_1042*RHO_ICE*LATENT_HEAT          ! Q_melt = m_surface*rho*L
+    q_melt_m_zero_1042 = m_s_zero_1042*RHO_ICE*LATENT_HEAT
+    q_melt_m_dep_1042 = m_s_dep_1042*RHO_ICE*LATENT_HEAT
+    ! At T=0 with Q_surface >= 0: Q_surface = Q_melt. If Q_surface < 0,
+    ! m_surface = 0 and T drops; then Q_surface ~= q_net instead.
+    if (m_s_sub_1042 .gt. 0.0) then
+        q_surf_m_sub_1042 = q_melt_m_sub_1042
+    else
+        q_surf_m_sub_1042 = q_net
+    end if
+    if (m_s_zero_1042 .gt. 0.0) then
+        q_surf_m_zero_1042 = q_melt_m_zero_1042
+    else
+        q_surf_m_zero_1042 = q_net
+    end if
+    if (m_s_dep_1042 .gt. 0.0) then
+        q_surf_m_dep_1042 = q_melt_m_dep_1042
+    else
+        q_surf_m_dep_1042 = q_net
+    end if
+
+    print *, ""
+    print *, "d2m_zero (q_air=q_sat_ice) = ", d2m_zero_1042, " K"
+    print *, "Q_nonlatent (analytical) = ", q_nl_sub_1042, " / ", &
+        q_nl_zero_1042, " / ", q_nl_dep_1042, " W/m2"
+    print *, "m_vapor:  sub=", m_v_sub_1042, " zero=", m_v_zero_1042, &
+        " dep=", m_v_dep_1042, " kg/(m2 s)"
+    print *, "m_surface: sub=", m_s_sub_1042, " zero=", m_s_zero_1042, &
+        " dep=", m_s_dep_1042, " m/s"
+    print *, "Q_melt:   sub=", q_melt_m_sub_1042, " zero=", q_melt_m_zero_1042, &
+        " dep=", q_melt_m_dep_1042, " W/m2"
+    print *, "Q_surface:sub=", q_surf_m_sub_1042, " zero=", q_surf_m_zero_1042, &
+        " dep=", q_surf_m_dep_1042, " W/m2"
+    print *, "T_surface:sub=", t_end_sub_1042, " zero=", t_end_zero_1042, &
+        " dep=", t_end_dep_1042, " degC"
+
+    ! === 10.4.2.1: Q_nonlatent controlled identical across cases ===
+    n_checks = n_checks + 1
+    if (abs(q_nl_sub_1042 - q_nl_zero_1042) .lt. 1e-3 .and. &
+        abs(q_nl_zero_1042 - q_nl_dep_1042) .lt. 1e-3) then
+        print *, "OK: Q_nonlatent identical across cases (controlled)"
+    else
+        print *, "FAIL: Q_nonlatent not controlled: ", q_nl_sub_1042, q_nl_zero_1042, q_nl_dep_1042
+        n_errors = n_errors + 1
+    end if
+
+    ! === 10.4.2.2: Vapor sign conventions (sub < 0 < dep) ===
+    n_checks = n_checks + 1
+    if (m_v_sub_1042 .lt. 0.0 .and. m_v_dep_1042 .gt. 0.0 .and. &
+        abs(m_v_zero_1042) .lt. 1e-7) then
+        print *, "OK: Vapor signs: sub<0 (sublimation), zero~0, dep>0 (deposition)"
+    else
+        print *, "FAIL: Vapor signs: ", m_v_sub_1042, m_v_zero_1042, m_v_dep_1042
+        n_errors = n_errors + 1
+    end if
+
+    ! === 10.4.2.3: Monotonic vapor and Q_LH ordering ===
+    n_checks = n_checks + 1
+    if (m_v_sub_1042 .lt. m_v_zero_1042 .and. m_v_zero_1042 .lt. m_v_dep_1042 .and. &
+        m_v_sub_1042*L_S .lt. m_v_zero_1042*L_S .and. m_v_zero_1042*L_S .lt. m_v_dep_1042*L_S) then
+        print *, "OK: m_vapor and Q_LH strictly monotonic with d2m"
+    else
+        print *, "FAIL: m_vapor/Q_LH not monotonic"
+        n_errors = n_errors + 1
+    end if
+
+    ! === 10.4.2.4: Q_surface monotonic (Q_surface = Q_nonlatent + Q_LH) ===
+    n_checks = n_checks + 1
+    if (q_surf_m_sub_1042 .le. q_surf_m_zero_1042 .and. &
+        q_surf_m_zero_1042 .le. q_surf_m_dep_1042) then
+        print *, "OK: Q_surface monotonic: sub <= zero <= dep"
+    else
+        print *, "FAIL: Q_surface not monotonic: ", q_surf_m_sub_1042, q_surf_m_zero_1042, q_surf_m_dep_1042
+        n_errors = n_errors + 1
+    end if
+
+    ! === 10.4.2.5: Q_melt monotonic and all melting (strict) ===
+    n_checks = n_checks + 1
+    if (q_melt_m_sub_1042 .le. q_melt_m_zero_1042 .and. &
+        q_melt_m_zero_1042 .le. q_melt_m_dep_1042 .and. &
+        q_melt_m_sub_1042 .gt. 0.0 .and. q_melt_m_dep_1042 .gt. q_melt_m_zero_1042) then
+        print *, "OK: Q_melt monotonic: sub <= zero <= dep (all melting)"
+    else
+        print *, "FAIL: Q_melt not monotonic / not all melting"
+        n_errors = n_errors + 1
+    end if
+
+    ! === 10.4.2.6: m_surface strict monotonicity ===
+    n_checks = n_checks + 1
+    if (m_s_sub_1042 .lt. m_s_zero_1042 .and. m_s_zero_1042 .lt. m_s_dep_1042) then
+        print *, "OK: m_surface strictly monotonic: sub < zero < dep"
+    else
+        print *, "FAIL: m_surface not strictly monotonic: ", m_s_sub_1042, m_s_zero_1042, m_s_dep_1042
+        n_errors = n_errors + 1
+    end if
+
+    ! === 10.4.2.7: Zero-latent -> Q_surface = Q_nonlatent ===
+    n_checks = n_checks + 1
+    if (abs(q_surf_m_zero_1042 - q_nl_zero_1042) .lt. 1.0) then
+        print *, "OK: Zero-latent: Q_surface = Q_nonlatent (within 1 W/m2)"
+    else
+        print *, "FAIL: Zero-latent Q_surface != Q_nonlatent: ", q_surf_m_zero_1042, q_nl_zero_1042
+        n_errors = n_errors + 1
+    end if
+
+    ! === 10.4.2.8: Sublimation quench (strong sink heap cannot increase melt) ===
+    call iceberg_init(state, 0.0, 0.0, 100.0, 100.0, 100.0, &
+                      90.0, 0.0, 0.0, 0.0)
+    state%T_surface = 0.0
+    call init_zero_ocean(ocean_prof)
+    atmos%t2m = 283.15
+    atmos%d2m = 243.15   ! very dry -> strong sublimation -> Q_surface may go < 0
+    atmos%tcc = 0.0
+    atmos%msl = 101325.0
+    atmos%u10 = 10.0
+    atmos%v10 = 0.0
+    call compute_surface_melt(state, atmos, diag, q_net, m_surface, dt, &
+                              nat(1), nat(2), nat(3), nat(4))
+    m_s_strong_1042 = m_surface
+    m_v_strong_1042 = diag%m_vapor
+    t_end_strong_1042 = state%T_surface
+    q_surf_strong_1042 = q_net
+    ! Model Q_melt: strong sublimation reduces surface energy
+    print *, ""
+    print *, "STRONG SUBLIMATION: m_vapor=", m_v_strong_1042, &
+        " m_surface=", m_s_strong_1042, " T_end=", t_end_strong_1042, " q_net=", q_surf_strong_1042
+    n_checks = n_checks + 1
+    if (m_v_strong_1042 .lt. m_v_sub_1042 .and. &
+        m_s_strong_1042 .le. m_s_zero_1042 .and. &
+        m_s_strong_1042 .le. m_s_dep_1042) then
+        print *, "OK: Stronger sublimation sink cannot increase melt (quench possible)"
+    else
+        print *, "FAIL: Stronger sublimation increased melt!"
+        n_errors = n_errors + 1
+    end if
+
+    ! === 10.4.2.9: Deposition boost (stronger source cannot decrease melt) ===
+    call iceberg_init(state, 0.0, 0.0, 100.0, 100.0, 100.0, &
+                      90.0, 0.0, 0.0, 0.0)
+    state%T_surface = 0.0
+    call init_zero_ocean(ocean_prof)
+    atmos%t2m = 285.15
+    atmos%d2m = 285.15   ! warmer + humid -> strong deposition
+    atmos%tcc = 0.0
+    atmos%msl = 101325.0
+    atmos%u10 = 10.0
+    atmos%v10 = 0.0
+    call compute_surface_melt(state, atmos, diag, q_net, m_surface, dt, &
+                              nat(1), nat(2), nat(3), nat(4))
+    n_checks = n_checks + 1
+    if (diag%m_vapor .gt. m_v_dep_1042 .and. m_surface .ge. m_s_dep_1042) then
+        print *, "OK: Stronger deposition source cannot decrease melt"
+    else
+        print *, "FAIL: Stronger deposition reduced melt!"
+        n_errors = n_errors + 1
+    end if
+
+    ! === 10.4.2.10: Latent identity Q_LH = m_vapor * L_S (tight) ===
+    ! Independent: m_vapor = rho*C_E*U*(q_air(d2m) - q_sat_ice)
+    ! (DEP case: t2m = 283.15 K, d2m = 283.15 K)
+    q_lh_dep_1042 = m_v_dep_1042*L_S
+    t_air_k_test = 283.15
+    t_dew_k_test = 283.15
+    t_surf_k_test = 273.15
+    p_atm_test = 101325.0
+    rho_air_test = p_atm_test/(GAS_CONST_AIR*t_air_k_test)
+    wind_speed_test = 10.0
+    e_sat_air_test = SAT_VAPOR_0*10.0**(TETENS_A*(t_air_k_test - 273.15)/t_air_k_test)
+    e_sat_dew_test = SAT_VAPOR_0*10.0**(TETENS_A*(t_dew_k_test - 273.15)/t_dew_k_test)
+    rh_test = min(1.0, max(0.0, e_sat_dew_test/e_sat_air_test))
+    e_vap_test = rh_test*e_sat_air_test
+    q_air_test = 0.622*e_vap_test/p_atm_test
+    q_sat_test = saturation_vapor_pressure_ice(t_surf_k_test)/p_atm_test*0.622
+    m_v_sec_1042 = rho_air_test*C_E_NEUTRAL*wind_speed_test*(q_air_test - q_sat_test)
+    q_lh_sec_1042 = m_v_sec_1042*L_S
+    print *, ""
+    print *, "Latent identity: m_vapor(diag)*L_S = ", q_lh_dep_1042, &
+        " vs independent = ", q_lh_sec_1042, " W/m2"
+    n_checks = n_checks + 1
+    if (abs(q_lh_dep_1042 - q_lh_sec_1042) .lt. 1e-3) then
+        print *, "OK: Q_LH = m_vapor * L_S (independent, tight tolerance)"
+    else
+        print *, "FAIL: Latent identity violated: ", q_lh_dep_1042, q_lh_sec_1042
+        n_errors = n_errors + 1
+    end if
+
+    ! === 10.4.2.11: Below-freezing monotonic response (negative -> cool,
+    !     positive -> warm, monotonic in Q_LH) ===
+    ! Negative case: cold dry air, polar night, T_surface = -10
+    call iceberg_init(state, 0.0, 0.0, 100.0, 100.0, 100.0, &
+                      90.0, 0.0, 0.0, 0.0)
+    state%T_surface = -10.0
+    call init_zero_ocean(ocean_prof)
+    atmos%t2m = 253.15
+    atmos%d2m = 243.15
+    atmos%tcc = 1.0
+    atmos%msl = 101325.0
+    atmos%u10 = 5.0
+    atmos%v10 = 0.0
+    call compute_surface_melt(state, atmos, diag, q_net, m_surface, dt, &
+                              nat(1), nat(2), nat(3), nat(4))
+    t_bf_sub_1042 = state%T_surface
+    m_bf_sub_1042 = m_surface
+    ! Zero/dep warmer humidity at same air temp
+    call iceberg_init(state, 0.0, 0.0, 100.0, 100.0, 100.0, &
+                      90.0, 0.0, 0.0, 0.0)
+    state%T_surface = -10.0
+    call init_zero_ocean(ocean_prof)
+    atmos%t2m = 253.15
+    atmos%d2m = 253.15   ! saturated (q_air max)
+    atmos%tcc = 1.0
+    atmos%msl = 101325.0
+    atmos%u10 = 5.0
+    atmos%v10 = 0.0
+    call compute_surface_melt(state, atmos, diag, q_net, m_surface, dt, &
+                              nat(1), nat(2), nat(3), nat(4))
+    t_bf_dep_1042 = state%T_surface
+    m_bf_dep_1042 = m_surface
+    ! Positive case: warm moist air below freezing (should warm, no melt)
+    call iceberg_init(state, 0.0, 0.0, 100.0, 100.0, 100.0, &
+                      90.0, 0.0, 0.0, 0.0)
+    state%T_surface = -10.0
+    t_surf_initial = state%T_surface
+    call init_zero_ocean(ocean_prof)
+    atmos%t2m = 283.15
+    atmos%d2m = 283.15
+    atmos%tcc = 0.0
+    atmos%msl = 101325.0
+    atmos%u10 = 10.0
+    atmos%v10 = 0.0
+    call compute_surface_melt(state, atmos, diag, q_net, m_surface, dt, &
+                              nat(1), nat(2), nat(3), nat(4))
+    t_bf_zero_1042 = state%T_surface
+    m_bf_zero_1042 = m_surface
+    q_surf_cross_1042 = q_net
+    print *, ""
+    print *, "Below-freezing: cold-dry T=", t_bf_sub_1042, &
+        " cold-sat T=", t_bf_dep_1042, " warm T=", t_bf_zero_1042, &
+        " m_surface=", m_bf_sub_1042, m_bf_dep_1042, m_bf_zero_1042
+    n_checks = n_checks + 1
+    if (t_bf_sub_1042 .lt. -10.0 .and. t_bf_dep_1042 .gt. t_bf_sub_1042 .and. &
+        m_bf_sub_1042 .eq. 0.0 .and. m_bf_dep_1042 .eq. 0.0) then
+        print *, "OK: Below-freezing: strong sub cools, weak sub warms toward, no melt, monotonic"
+    else
+        print *, "FAIL: Below-freezing monotonicity", t_bf_sub_1042, t_bf_dep_1042
+        n_errors = n_errors + 1
+    end if
+    n_checks = n_checks + 1
+    if (t_bf_zero_1042 .gt. -10.0 .and. t_bf_zero_1042 .lt. 0.0 .and. m_bf_zero_1042 .eq. 0.0) then
+        print *, "OK: Positive Q_surface warms below freezing, no melt"
+    else
+        print *, "FAIL: Positive below-freezing warming", t_bf_zero_1042, m_bf_zero_1042
+        n_errors = n_errors + 1
+    end if
+
+    ! === 10.4.2.12: Crossing 0 degC (excess-energy partition + monotonic) ===
+    c_eff_cross_1042 = RHO_ICE*C_ICE*H_EFF
+    ! Sub case: just enough to cross
+    call iceberg_init(state, 0.0, 0.0, 100.0, 100.0, 100.0, &
+                      90.0, 0.0, 0.0, 0.0)
+    state%T_surface = -0.5
+    t_surf_initial = state%T_surface
+    call init_zero_ocean(ocean_prof)
+    atmos%t2m = 288.15
+    atmos%d2m = 263.15
+    atmos%tcc = 0.0
+    atmos%msl = 101325.0
+    atmos%u10 = 12.0
+    atmos%v10 = 0.0
+    call compute_surface_melt(state, atmos, diag, q_net, m_surface, dt, &
+                              nat(1), nat(2), nat(3), nat(4))
+    m_cross_sub_1042 = m_surface
+    ! Analytic Q_surface (polar night, independent formula)
+    q_surf_cross_1042 = LW_EMISS*atmos%t2m**4* &
+                        (1.0 + LW_CLOUD_FACTOR*atmos%tcc)* &
+                        (1.0 - LW_HUMID_COEFF*exp(-LW_HUMID_EXP*(273.15 - atmos%t2m)**2)) &
+                        - EMISSIVITY*STEFAN_BOLTZ*(t_surf_initial + 273.15)**4 &
+                        + (atmos%msl/(GAS_CONST_AIR*atmos%t2m))*CP_AIR*C_H_NEUTRAL* &
+                        sqrt(atmos%u10**2 + atmos%v10**2)*(atmos%t2m - (t_surf_initial + 273.15)) &
+                        + (atmos%msl/(GAS_CONST_AIR*atmos%t2m))*L_S*C_E_NEUTRAL* &
+                        sqrt(atmos%u10**2 + atmos%v10**2)* &
+                        (0.622*SAT_VAPOR_0*10.0**(TETENS_A*(atmos%d2m - 273.15)/atmos%d2m)/atmos%msl &
+                         - saturation_vapor_pressure_ice(t_surf_initial + 273.15)/atmos%msl*0.622)
+    excess_cross_1042 = q_surf_cross_1042 - c_eff_cross_1042*(0.0 - t_surf_initial)/dt
+    m_expect_cross_1042 = max(excess_cross_1042, 0.0)/(RHO_ICE*LATENT_HEAT)
+    ! Dep case: more latent -> more melt
+    call iceberg_init(state, 0.0, 0.0, 100.0, 100.0, 100.0, &
+                      90.0, 0.0, 0.0, 0.0)
+    state%T_surface = -0.5
+    call init_zero_ocean(ocean_prof)
+    atmos%t2m = 288.15
+    atmos%d2m = 283.15
+    atmos%tcc = 0.0
+    atmos%msl = 101325.0
+    atmos%u10 = 12.0
+    atmos%v10 = 0.0
+    call compute_surface_melt(state, atmos, diag, q_net, m_surface, dt, &
+                              nat(1), nat(2), nat(3), nat(4))
+    m_cross_dep_1042 = m_surface
+    print *, ""
+    print *, "Crossing: Q_surface(ana)=", q_surf_cross_1042, " excess=", &
+        excess_cross_1042, " m_expect=", m_expect_cross_1042
+    print *, "Crossing: m_sub=", m_cross_sub_1042, " m_dep=", m_cross_dep_1042
+    n_checks = n_checks + 1
+    if (abs(state%T_surface - 0.0) .lt. 1e-6 .and. m_cross_dep_1042 .ge. m_cross_sub_1042) then
+        print *, "OK: Crossing -> surface pinned at 0 degC, monotonic melt (dep >= sub)"
+    else
+        print *, "FAIL: Crossing partition or monotonicity"
+        n_errors = n_errors + 1
+    end if
+    n_checks = n_checks + 1
+    if (m_cross_sub_1042 .gt. 0.0 .and. &
+        abs(m_cross_sub_1042 - m_expect_cross_1042) .lt. 5.0e-8) then
+        print *, "OK: Crossing excess-energy partition matches independent analytic"
+    else
+        print *, "FAIL: Crossing excess-energy: model=", m_cross_sub_1042, " expect=", m_expect_cross_1042
+        n_errors = n_errors + 1
+    end if
+
+    ! === 10.4.2.13: Mass/energy consistency (geometry includes vapor) ===
+    ! DEP melt case from above: H should shrink by dt*m_surface with vapor
+    ! deposition offsetting part of the mass loss.
+    call iceberg_init(state, 0.0, 0.0, 100.0, 100.0, 100.0, &
+                      90.0, 0.0, 0.0, 0.0)
+    state%T_surface = 0.0
+    call init_zero_ocean(ocean_prof)
+    atmos%t2m = 283.15
+    atmos%d2m = 283.15
+    atmos%tcc = 0.0
+    atmos%msl = 101325.0
+    atmos%u10 = 10.0
+    atmos%v10 = 0.0
+    call compute_surface_melt(state, atmos, diag, q_net, m_surface, dt, &
+                              nat(1), nat(2), nat(3), nat(4))
+    h_init_1042 = state%H
+    diag%m_basal = 0.0
+    diag%m_lateral = 0.0
+    diag%m_surface = m_surface
+    m_s_geom_1042 = m_surface
+    m_v_geom_1042 = diag%m_vapor
+    call iceberg_update_geometry(state, dt, diag)
+    h_final_1042 = state%H
+    ! dH/dt = -m_surface + m_vapor/rho_ice (iceberg.f90 line 374-377)
+    dh_model_1042 = h_final_1042 - h_init_1042
+    dh_expect_1042 = -dt*(m_s_geom_1042 - m_v_geom_1042/RHO_ICE)
+    print *, ""
+    print *, "Geometry: H=", h_init_1042, "->", h_final_1042, &
+        " dH_model=", dh_model_1042, " dH_expect=", dh_expect_1042, &
+        " (melt=", m_s_geom_1042, " vapor=", m_v_geom_1042, ")"
+    n_checks = n_checks + 1
+    if (abs(dh_model_1042 - dh_expect_1042) .lt. 1.0e-3) then
+        print *, "OK: Geometry mass budget includes vapor deposition (dH = -dt*(m_surf - m_vap/rho))"
+    else
+        print *, "FAIL: Geometry mass budget: ", dh_model_1042, dh_expect_1042
         n_errors = n_errors + 1
     end if
 

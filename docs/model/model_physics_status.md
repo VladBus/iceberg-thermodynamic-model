@@ -1,11 +1,11 @@
 # Статус физических блоков модели (Model Physics Status)
 
-**Дата:** 2026-09-07  
+**Дата:** 2026-09-08  
 **Physics baseline commit:** a1fc859 "Correct Stage 10.2 analytical validation"  
-**Current repository stage:** Stage 10.4 — Phase Change Partitioning  
+**Current repository stage:** Stage 10.4 — Phase Change Partitioning (10.4.2 monotonicity validated)  
 **FPM версия:** 0.13.0 (local & CI aligned)  
-**Test targets:** 41  
-**Tests PASS:** 41 / 41
+**Test targets:** 49  
+**Tests PASS:** 49 / 49
 
 ---
 
@@ -208,6 +208,8 @@ use identical m_vapor.
 ```
 
 **Решено в Stage 10.4.1:** Corrective energy partitioning — Q_nonlatent + Q_LH = Q_surface (no double counting). Sublimation is energy sink, deposition is energy source. Melting uses full Q_surface.
+
+**Проверено в Stage 10.4.2 (independent monotonicity validation):** old TEST 10.4.9 was uncontrolled (polar day ⇒ d2m also changed SW_down via precipitable water). Re-validated in **polar night** (SW=0 ⇒ Q_nonlatent = LW_down+LW_up+SH is d2m-invariant analytically). With t2m=283.15 K, tcc=0, msl=101325 Pa, U=10 m/s, T=0 °C and only d2m varied: Q_nonlatent = 149.743 W/m² across all cases; m_vapor = −3.72e−5 / −5.2e−11 / +7.11e−5 kg/m²·s (sub/zero/dep); m_surface = 1.46e−7 / 4.93e−7 / 1.16e−6 m/s — strictly monotonic sub < zero < dep. Zero-latent (d2m=273.158 K tuned so e_sat_dew(Tetens)=e_sat_ice(Murphy-Koop)) gives Q_surface = Q_nonlatent within 1 W/m². Sublimation quench (m→0, T<0) and deposition boost verified; crossing-0°C excess-energy partition matches independent analytic; geometry budget dH/dt = −m_surface + m_vapor/ρ_ice confirmed. Report: `docs/wiki/Stage10.4.2_Independent_monotonicity_validation.md`.
 
 ---
 

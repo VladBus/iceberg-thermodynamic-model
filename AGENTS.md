@@ -302,3 +302,18 @@ All analysis scripts are in `python/analysis/`:
 - **Tests:** 10 new Stage 10.4.1 corrective validation tests PASS (zero LH, sublimation, deposition, monotonicity, latent identity, below-freezing, crossing 0°C, at 0°C, mass/energy consistency, regression).
 - **All 41 fpm tests PASS** including regression of Stage 10.1-10.4.
 - **Files changed:** src/iceberg_thermodynamics.f90 (compute_surface_melt energy partition), docs/model/model_equation_ledger.md, docs/model/model_physics_status.md, docs/model/stage10_modernization_plan.md, docs/PROJECT_ROADMAP.md, AGENTS.md
+
+## Stage 10.4.2 Summary (Independent Monotonicity Validation)
+
+- **Classification:** C -- Independent controlled validation of the Stage 10.4.1 latent-heat monotonicity. No production physics changed.
+- **Why re-validated:** old TEST 10.4.9 ran in **polar day**, where changing `d2m` also changed `SW_down` (precipitable-water attenuation), so Q_nonlatent was NOT controlled; observed `m_base=2.37e-7 > m_dep=6.59e-8` contradicted the claimed ordering. The old "monotonicity" claim was not demonstrated.
+- **Controlled design — polar night (SW ≡ 0):** Q_nonlatent = LW_down + LW_up + SH is analytically d2m-invariant. Only Q_LH responds to d2m via q_air (Tetens monotonic).
+- **Controlled run** (lat 90, t2m=283.15 K, tcc=0, msl=101325 Pa, U=10 m/s, T=0°C; only d2m varies):
+  - SUB d2m=263.15 K: m_vapor=−3.72e−5 kg/m²s, Q_surface=44.4 W/m², m=1.46e−7 m/s
+  - ZERO d2m=273.158 K (e_sat_dew=e_sat_ice): m_vapor≈0, Q_surface=149.7, m=4.93e−7
+  - DEP d2m=283.15 K: m_vapor=+7.11e−5, Q_surface=351.4, m=1.16e−6
+  - Q_nonlatent identical (149.743 W/m²) across all cases; m_vapor/Q_LH/Q_surface/Q_melt/m_surface strictly monotonic sub < zero < dep.
+- **Additional checks:** zero-latent ⇒ Q_surface=Q_nonlatent (within 1 W/m²); strong sublimation quenches melt (m→0, T<0); strong deposition cannot decrease melt; Q_LH=m_vapor·L_S (independent, tight); below-freezing monotonic cooling/warming with no melt; crossing 0°C excess-energy partition matches independent analytic; geometry budget dH/dt=−m_surface+m_vapor/ρ_ice.
+- **Tests:** 13 new Stage 10.4.2 checks inside `iceberg_test_surface_melt_audit` (total 59 checks, 0 errors).
+- **All fpm tests PASS** (49 auto-discovered test programs, exit 0) including regression of Stage 10.1-10.4.1.
+- **Files changed:** test/iceberg_test_surface_melt_audit.f90 (Stage 10.4.2 block), docs/model/model_physics_status.md, docs/model/model_equation_ledger.md, docs/model/stage10_modernization_plan.md, docs/wiki/Stage10.4.2_Independent_monotonicity_validation.md, AGENTS.md

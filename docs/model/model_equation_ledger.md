@@ -606,6 +606,29 @@ Q_LH = m_vapor · L_S  and  ΔM_vapor = m_vapor · A_top · Δt
 use identical m_vapor.
 ```
 
+**Stage 10.4.2 — Independent monotonicity validation (2026-09-08):**
+
+Old TEST 10.4.9 ran in polar day, where d2m also changes SW_down
+(precipitable-water attenuation), so Q_nonlatent was NOT controlled.
+Re-validated in **polar night** (SW ≡ 0):
+
+```
+Q_nonlatent = LW_down(T_air,tcc) + LW_up(T_surface) + SH(rho,T_air,T_surface,U)
+            (d2m-invariant by construction)
+m_vapor     = rho · C_E · U · (q_air(d2m) - q_sat_ice)   (monotonic in d2m)
+Q_LH        = m_vapor · L_S
+Q_surface   = Q_nonlatent + Q_LH      -> monotonic sub < zero < dep
+Q_melt      = max(Q_surface, 0)       -> monotonic
+m_surface   = Q_melt/(ρ_ice · L_f)    -> monotonic
+```
+
+Controlled run (t2m=283.15 K, tcc=0, p=101325 Pa, U=10 m/s, T=0 °C, lat 90):
+SUB d2m=263.15 K → m_vapor=−3.72e−5, Q_surface=44.4, m=1.46e−7
+ZERO d2m=273.158 K (e_sat_dew=e_sat_ice) → m_vapor≈0, Q_surface=149.7, m=4.93e−7
+DEP d2m=283.15 K → m_vapor=+7.11e−5, Q_surface=351.4, m=1.16e−6
+Q_nonlatent identical (149.743 W/m²) in all cases. All known properties verified.
+Report: `docs/wiki/Stage10.4.2_Independent_monotonicity_validation.md`.
+
 ### 8.3 Дискретные уравнения
 
 Те же, вычисляются каждый timestep в compute_surface_melt.

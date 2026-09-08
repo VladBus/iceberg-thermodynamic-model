@@ -360,12 +360,35 @@ Mass update:
 2. ✅ Sublimation: q_air < q_sat_ice, Q_LH < 0, Q_melt LOWER than zero-LH case
 3. ✅ Deposition: q_air > q_sat_ice, Q_LH > 0, Q_melt HIGHER than zero-LH case
 4. ✅ Latent energy identity: Q_LH = m_vapor · L_S
-5. ✅ Energy monotonicity: Q_melt_sub < Q_melt_zero < Q_melt_dep
+5. ⚠️ Energy monotonicity: Q_melt_sub < Q_melt_zero < Q_melt_dep — **REPLACED by Stage 10.4.2** (old test was uncontrolled)
 6. ✅ Below-freezing surface: negative Q_surface cools T_surface, zero melt
 7. ✅ Crossing 0°C: sensible heating + residual phase-change energy partition
 8. ✅ At 0°C: positive Q_surface -> melt; negative Q_surface -> cooling; zero -> no change
 9. ✅ Mass/energy consistency: vapor mass and latent energy use same m_vapor, L_S
 10. ✅ Regression: all existing Stage 10.1.1, 10.1.2, 10.2, 10.3 tests PASS
+
+### Stage 10.4.2 — Independent monotonicity validation (✅ ALL PASS)
+
+**Why re-validated:** old TEST 10.4.9 ran in polar day ⇒ changing `d2m` also changed
+`SW_down` (precipitable-water attenuation), so Q_nonlatent was NOT controlled and the
+observed `m_base=2.37e-7 > m_dep=6.59e-8` contradicted the claimed ordering.
+
+**Controlled design — polar night (SW ≡ 0):** Q_nonlatent = LW_down + LW_up + SH is
+analytically d2m-invariant. Only Q_LH responds to d2m via q_air (Tetens monotonic).
+Fixed: t2m=283.15 K, tcc=0, msl=101325 Pa, U=10 m/s, T_surface=0 °C, lat 90.
+
+| Case | d2m [K] | m_vapor [kg/m²s] | Q_LH [W/m²] | Q_surface [W/m²] | m_surface [m/s] |
+| ---- | ------- | ---------------- | ----------- | ---------------- | --------------- |
+| SUB  | 263.15  | −3.72e−5         | −105.4      |  44.4            | 1.46e−7         |
+| ZERO | 273.158 | −5.2e−11         | ≈0          | 149.7            | 4.93e−7         |
+| DEP  | 283.15  | +7.11e−5         | +201.6      | 351.4            | 1.16e−6         |
+
+Q_nonlatent identical = 149.743 W/m² across all cases. Strict monotonicity
+sub < zero < dep verified for m_vapor, Q_LH, Q_surface, Q_melt, m_surface.
+Zero-latent ⇒ Q_surface = Q_nonlatent (within 1 W/m²); sublimation quench
+(m→0, T<0); deposition boost; crossing-0°C excess partition vs independent
+analytic; geometry mass budget dH/dt = −m_surface + m_vapor/ρ_ice.
+Report: `docs/wiki/Stage10.4.2_Independent_monotonicity_validation.md`.
 
 ---
 

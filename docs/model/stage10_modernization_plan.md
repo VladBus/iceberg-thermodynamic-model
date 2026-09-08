@@ -390,6 +390,30 @@ Zero-latent ⇒ Q_surface = Q_nonlatent (within 1 W/m²); sublimation quench
 analytic; geometry mass budget dH/dt = −m_surface + m_vapor/ρ_ice.
 Report: `docs/wiki/Stage10.4.2_Independent_monotonicity_validation.md`.
 
+### Stage 10.4.2.1 — Independent Q_surface output validation (✅ ALL PASS)
+
+**Why:** Stage 10.4.2 reconstructed Q_surface from m_surface; it never verified
+the PRODUCTION Q_surface calculation. This stage validates the actual product
+directly: `diag%q_surface` (NEW diagnostic-only exposure of the local
+`q_surface = Q_nonlatent + Q_LH`) vs `Q_nonlatent_independent + m_vapor_production·L_S`.
+
+Production change is diagnostic-only (no numerics change): `diag%q_surface`,
+`diag%q_lh` assigned in `compute_surface_melt`; `q_surface`/`q_lh` were local
+before, and `diag%q_net_surface` = residual after melt (≈ 0 while melting) is
+NOT Q_surface.
+
+| Case | Q_nonlatent_ind [W/m²] | Q_LH = m_vapor·L_S [W/m²] | Q_surface_expected [W/m²] | Q_surface PRODUCTION [W/m²] | error [W/m²] |
+| ---- | --------------------- | ------------------------- | ------------------------- | --------------------------- | ------------ |
+| SUB  | 149.742706            | −105.374290               | 44.368416                 | 44.368423                   | +7.6e−6      |
+| ZERO | 149.742706            | −1.48e−4                  | 149.742554                | 149.742554                  | 0.0          |
+| DEP  | 149.742706            | +201.645966               | 351.388672                | 351.388672                  | 0.0          |
+
+All 7 checks PASS (direct identity 3 cases, Q_nonlatent control, latent identity
+Q_LH = m_vapor·L_S, production Q_surface monotonic sub<zero<dep, melt monotonic,
+sign conventions, 10.4.2 test-side-bug regression with explicit 283.15/283.15).
+Audit: 66 checks / 0 errors. All 49 fpm programs PASS.
+Report: `docs/wiki/Stage10.4.2.1_Independent_Q_surface_output_validation.md`.
+
 ---
 
 ## 10.5 — OCEAN THERMAL FORCING (Океанический тепловый форсинг)

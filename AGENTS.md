@@ -317,3 +317,19 @@ All analysis scripts are in `python/analysis/`:
 - **Tests:** 13 new Stage 10.4.2 checks inside `iceberg_test_surface_melt_audit` (total 59 checks, 0 errors).
 - **All fpm tests PASS** (49 auto-discovered test programs, exit 0) including regression of Stage 10.1-10.4.1.
 - **Files changed:** test/iceberg_test_surface_melt_audit.f90 (Stage 10.4.2 block), docs/model/model_physics_status.md, docs/model/model_equation_ledger.md, docs/model/stage10_modernization_plan.md, docs/wiki/Stage10.4.2_Independent_monotonicity_validation.md, AGENTS.md
+
+## Stage 10.4.2.1 Summary (Independent Q_surface Output Validation)
+
+- **Classification:** C -- Direct validation of the production Q_surface output. Production physics unchanged; one diagnostic-only API addition.
+- **Why:** Stage 10.4.2 reconstructed Q_surface from downstream m_surface (`Q_surface = m_surface·ρ·L_f` or `q_net` fallback) — it never verified the production total-surface-flux calculation. `q_surface`/`q_lh` were LOCAL in `compute_surface_melt` (line 560); `diag%q_net_surface` = residual AFTER melt (≈ 0 while melting), NOT Q_surface.
+- **Production change (diagnostic-only, no numerics change):**
+  1. `src/iceberg_types.f90` — `iceberg_diagnostics` gains `q_surface`, `q_lh`.
+  2. `src/iceberg_thermodynamics.f90` — `compute_surface_melt` assigns `diag%q_surface = q_surface`, `diag%q_lh = q_lh` (the exact values melt/mass-budget were computed with).
+- **Direct validation** (polar-night controlled exp, only d2m varies): `Q_surface_production == Q_nonlatent_independent + m_vapor_production·L_S`.
+  - SUB d2m=263.15 K: 44.368423 vs 44.368416 expected → error +7.6e−6 W/m²
+  - ZERO d2m=273.158 K: 149.742554 vs 149.742554 → 0.0
+  - DEP d2m=283.15 K: 351.388672 vs 351.388672 → 0.0
+  - Q_nonlatent independent = 149.742706 W/m² identical across cases; production Q_surface strictly monotonic sub < zero < dep; latent identity Q_LH = m_vapor·L_S confirmed (DEP 201.645966 W/m² vs independent literals 283.15/283.15 K).
+- **Tests:** 7 new Stage 10.4.2.1 checks inside `iceberg_test_surface_melt_audit` (total 66 checks, 0 errors).
+- **All fpm tests PASS** (49 auto-discovered test programs, exit 0) including regression of Stage 10.1-10.4.2.
+- **Files changed:** src/iceberg_types.f90 (q_surface/q_lh fields), src/iceberg_thermodynamics.f90 (diag assignments), test/iceberg_test_surface_melt_audit.f90 (10.4.2.1 block), docs/model/model_physics_status.md, docs/model/model_equation_ledger.md, docs/model/stage10_modernization_plan.md, docs/wiki/Stage10.4.2.1_Independent_Q_surface_output_validation.md, AGENTS.md

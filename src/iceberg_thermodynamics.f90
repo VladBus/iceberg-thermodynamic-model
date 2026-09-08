@@ -604,6 +604,12 @@ contains
         ! Store vapor mass flux in diagnostics
         diag%m_vapor = m_vapor
         diag%t_surface = state%T_surface
+        ! Diagnostic-only exposure of production surface fluxes (Stage 10.4.2.1):
+        ! q_surface = Q_nonlatent + Q_LH  [total energy available at surface]
+        ! q_lh      = m_vapor * L_S       [latent heat flux]
+        ! These are the values the melt/MassBudget physics were computed with.
+        diag%q_surface = q_surface
+        diag%q_lh = q_lh
     end subroutine compute_surface_melt
 
     ! ========================================================================

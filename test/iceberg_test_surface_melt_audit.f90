@@ -108,6 +108,17 @@ program iceberg_test_surface_melt_audit
     real :: m_bf_sub_1042, m_bf_zero_1042, m_bf_dep_1042
     real :: h_init_1042, h_final_1042, dh_model_1042, dh_expect_1042
     real :: m_s_geom_1042, m_v_geom_1042
+    ! Stage 10.4.2.1 independent Q_surface output validation variables
+    real :: q_s_prod_sub_10421, q_s_prod_zero_10421, q_s_prod_dep_10421
+    real :: q_s_exp_sub_10421, q_s_exp_zero_10421, q_s_exp_dep_10421
+    real :: q_s_err_sub_10421, q_s_err_zero_10421, q_s_err_dep_10421
+    real :: q_nl_ind_sub_10421, q_nl_ind_zero_10421, q_nl_ind_dep_10421
+    real :: q_lh_ind_sub_10421, q_lh_ind_zero_10421, q_lh_ind_dep_10421
+    real :: q_lh_prod_sub_10421, q_lh_prod_zero_10421, q_lh_prod_dep_10421
+    real :: m_v_prod_sub_10421, m_v_prod_zero_10421, m_v_prod_dep_10421
+    real :: m_s_prod_sub_10421, m_s_prod_zero_10421, m_s_prod_dep_10421
+    real :: m_v_sec_10421, q_lh_sec_10421
+    real :: t_surf_k_10421
 
     n_errors = 0
     n_checks = 0
@@ -2322,6 +2333,234 @@ print *, "Negative forcing: T_final = ", t_neg, " m_surface = ", m_neg, " q_net 
         print *, "OK: Geometry mass budget includes vapor deposition (dH = -dt*(m_surf - m_vap/rho))"
     else
         print *, "FAIL: Geometry mass budget: ", dh_model_1042, dh_expect_1042
+        n_errors = n_errors + 1
+    end if
+
+    ! =========================================================================
+    ! === Stage 10.4.2.1: Independent Q_surface OUTPUT validation ==============
+    !
+    ! Stage 10.4.2 validated the DOWNSTREAM monotonicity of Q_surface but
+    ! RECONSTRUCTED Q_surface from m_surface (Q_surface = m_surface*rho*L_f or
+    ! q_net fallback). It never verified the PRODUCTION total-surface-flux
+    ! calculation directly.
+    !
+    ! Here production diag%q_surface = Q_nonlatent + Q_LH (Stage 10.4.1/10.4.2
+    ! exact arithmetic) is compared DIRECTLY against
+    !   Q_surface_expected = Q_nonlatent_independent + Q_LH_expected
+    ! with
+    !   Q_nonlatent_independent = LW_down + LW_up + SH   (independent formula)
+    !   Q_LH_expected           = m_vapor_production*L_S (production vapor diag)
+    !
+    ! Controlled polar-night experiment (same as 10.4.2): lat 90, T_surface=0,
+    ! t2m=283.15, tcc=0, msl=101325, U=10, v10=0, zero-ocean, identical
+    ! geometry/dt. Only d2m varies: SUB=263.15, ZERO=q_air≈q_sat_ice, DEP=283.15.
+    ! -------------------------------------------------------------------------
+    print *, ""
+    print *, "=================================================="
+    print *, "--- STAGE 10.4.2.1: Independent Q_surface output validation ---"
+    print *, "=================================================="
+
+    ! Independent Q_nonlatent control first: identical atmos/T_surface across
+    ! cases must give identical Q_nonlatent (SW=0 polar night, d2m-independent).
+
+    ! --- Case SUB: dry air (sublimation), d2m = 263.15 K ---
+    call iceberg_init(state, 0.0, 0.0, 100.0, 100.0, 100.0, &
+                      90.0, 0.0, 0.0, 0.0)
+    state%T_surface = 0.0
+    t_surf_initial = state%T_surface
+    t_surf_k_10421 = t_surf_initial + 273.15
+    call init_zero_ocean(ocean_prof)
+    atmos%t2m = 283.15
+    atmos%d2m = 263.15
+    atmos%tcc = 0.0
+    atmos%msl = 101325.0
+    atmos%u10 = 10.0
+    atmos%v10 = 0.0
+    call compute_surface_melt(state, atmos, diag, q_net, m_surface, dt, &
+                              nat(1), nat(2), nat(3), nat(4))
+    q_s_prod_sub_10421 = diag%q_surface
+    q_lh_prod_sub_10421 = diag%q_lh
+    m_v_prod_sub_10421 = diag%m_vapor
+    m_s_prod_sub_10421 = m_surface
+    ! Independent Q_nonlatent (polar night: SW=0; d2m-independent by design)
+    q_nl_ind_sub_10421 = LW_EMISS*atmos%t2m**4* &
+                         (1.0 + LW_CLOUD_FACTOR*atmos%tcc)* &
+                         (1.0 - LW_HUMID_COEFF*exp(-LW_HUMID_EXP*(273.15 - atmos%t2m)**2)) &
+                         - EMISSIVITY*STEFAN_BOLTZ*t_surf_k_10421**4 &
+                         + (atmos%msl/(GAS_CONST_AIR*atmos%t2m))*CP_AIR*C_H_NEUTRAL* &
+                         sqrt(atmos%u10**2 + atmos%v10**2)*(atmos%t2m - t_surf_k_10421)
+    ! Q_LH_expected = production vapor mass flux * L_S
+    q_lh_ind_sub_10421 = m_v_prod_sub_10421*L_S
+    q_s_exp_sub_10421 = q_nl_ind_sub_10421 + q_lh_ind_sub_10421
+    q_s_err_sub_10421 = q_s_prod_sub_10421 - q_s_exp_sub_10421
+
+    ! --- Case ZERO: d2m tuned so q_air ~= q_sat_ice (d2m ~ 273.16 K) ---
+    call iceberg_init(state, 0.0, 0.0, 100.0, 100.0, 100.0, &
+                      90.0, 0.0, 0.0, 0.0)
+    state%T_surface = 0.0
+    t_surf_initial = state%T_surface
+    t_surf_k_10421 = t_surf_initial + 273.15
+    call init_zero_ocean(ocean_prof)
+    atmos%t2m = 283.15
+    atmos%d2m = d2m_zero_1042   ! ~273.16 K -> zero latent flux (10.4.2 result)
+    atmos%tcc = 0.0
+    atmos%msl = 101325.0
+    atmos%u10 = 10.0
+    atmos%v10 = 0.0
+    call compute_surface_melt(state, atmos, diag, q_net, m_surface, dt, &
+                              nat(1), nat(2), nat(3), nat(4))
+    q_s_prod_zero_10421 = diag%q_surface
+    q_lh_prod_zero_10421 = diag%q_lh
+    m_v_prod_zero_10421 = diag%m_vapor
+    m_s_prod_zero_10421 = m_surface
+    q_nl_ind_zero_10421 = LW_EMISS*atmos%t2m**4* &
+                          (1.0 + LW_CLOUD_FACTOR*atmos%tcc)* &
+                          (1.0 - LW_HUMID_COEFF*exp(-LW_HUMID_EXP*(273.15 - atmos%t2m)**2)) &
+                          - EMISSIVITY*STEFAN_BOLTZ*t_surf_k_10421**4 &
+                          + (atmos%msl/(GAS_CONST_AIR*atmos%t2m))*CP_AIR*C_H_NEUTRAL* &
+                          sqrt(atmos%u10**2 + atmos%v10**2)*(atmos%t2m - t_surf_k_10421)
+    q_lh_ind_zero_10421 = m_v_prod_zero_10421*L_S
+    q_s_exp_zero_10421 = q_nl_ind_zero_10421 + q_lh_ind_zero_10421
+    q_s_err_zero_10421 = q_s_prod_zero_10421 - q_s_exp_zero_10421
+
+    ! --- Case DEP: humid air (deposition), d2m = 283.15 K (explicit, no stale) ---
+    call iceberg_init(state, 0.0, 0.0, 100.0, 100.0, 100.0, &
+                      90.0, 0.0, 0.0, 0.0)
+    state%T_surface = 0.0
+    t_surf_initial = state%T_surface
+    t_surf_k_10421 = t_surf_initial + 273.15
+    call init_zero_ocean(ocean_prof)
+    atmos%t2m = 283.15
+    atmos%d2m = 283.15   ! d2m = t2m -> q_air = q_sat_air > q_sat_ice (deposition)
+    atmos%tcc = 0.0
+    atmos%msl = 101325.0
+    atmos%u10 = 10.0
+    atmos%v10 = 0.0
+    call compute_surface_melt(state, atmos, diag, q_net, m_surface, dt, &
+                              nat(1), nat(2), nat(3), nat(4))
+    q_s_prod_dep_10421 = diag%q_surface
+    q_lh_prod_dep_10421 = diag%q_lh
+    m_v_prod_dep_10421 = diag%m_vapor
+    m_s_prod_dep_10421 = m_surface
+    q_nl_ind_dep_10421 = LW_EMISS*atmos%t2m**4* &
+                         (1.0 + LW_CLOUD_FACTOR*atmos%tcc)* &
+                         (1.0 - LW_HUMID_COEFF*exp(-LW_HUMID_EXP*(273.15 - atmos%t2m)**2)) &
+                         - EMISSIVITY*STEFAN_BOLTZ*t_surf_k_10421**4 &
+                         + (atmos%msl/(GAS_CONST_AIR*atmos%t2m))*CP_AIR*C_H_NEUTRAL* &
+                         sqrt(atmos%u10**2 + atmos%v10**2)*(atmos%t2m - t_surf_k_10421)
+    q_lh_ind_dep_10421 = m_v_prod_dep_10421*L_S
+    q_s_exp_dep_10421 = q_nl_ind_dep_10421 + q_lh_ind_dep_10421
+    q_s_err_dep_10421 = q_s_prod_dep_10421 - q_s_exp_dep_10421
+
+    print *, ""
+    print *, "Independent Q_nonlatent: sub=", q_nl_ind_sub_10421, &
+             " zero=", q_nl_ind_zero_10421, " dep=", q_nl_ind_dep_10421, " W/m2"
+    print *, "Q_LH (m_vapor*L_S):   sub=", q_lh_ind_sub_10421, &
+             " zero=", q_lh_ind_zero_10421, " dep=", q_lh_ind_dep_10421, " W/m2"
+    print *, "Q_surface expected:   sub=", q_s_exp_sub_10421, &
+             " zero=", q_s_exp_zero_10421, " dep=", q_s_exp_dep_10421, " W/m2"
+    print *, "Q_surface PRODUCTION: sub=", q_s_prod_sub_10421, &
+             " zero=", q_s_prod_zero_10421, " dep=", q_s_prod_dep_10421, " W/m2"
+    print *, "Q_surface error:      sub=", q_s_err_sub_10421, &
+             " zero=", q_s_err_zero_10421, " dep=", q_s_err_dep_10421, " W/m2"
+
+    ! === 10.4.2.1.1: Direct Q_surface identity (production == independent) ===
+    ! Tolerance justified: Q_surface ~ 350 W/m2, ~10 float32 ops on operands up
+    ! to ~350 -> worst-case accumulation ~ 10*2^-23*350 ~ 4e-4 W/m2. Use 1e-2
+    ! (25x margin, 0.003% of 350) to be robust against multiplication-order
+    ! rounding in Q_LH = m_vapor*L_S vs rho*L_S*C_E*U*dq.
+    n_checks = n_checks + 1
+    if (abs(q_s_err_sub_10421) .lt. 1.0e-2 .and. &
+        abs(q_s_err_zero_10421) .lt. 1.0e-2 .and. &
+        abs(q_s_err_dep_10421) .lt. 1.0e-2) then
+        print *, "OK: Production Q_surface = Q_nonlatent_ind + m_vapor*L_S (3 cases)"
+    else
+        print *, "FAIL: Q_surface identity: ", q_s_err_sub_10421, q_s_err_zero_10421, q_s_err_dep_10421
+        n_errors = n_errors + 1
+    end if
+
+    ! === 10.4.2.1.2: Q_nonlatent control (identical across cases) ===
+    n_checks = n_checks + 1
+    if (abs(q_nl_ind_sub_10421 - q_nl_ind_zero_10421) .lt. 1.0e-3 .and. &
+        abs(q_nl_ind_zero_10421 - q_nl_ind_dep_10421) .lt. 1.0e-3) then
+        print *, "OK: Independent Q_nonlatent identical across cases (controlled)"
+    else
+        print *, "FAIL: Q_nonlatent not controlled"
+        n_errors = n_errors + 1
+    end if
+
+    ! === 10.4.2.1.3: Latent identity Q_LH = m_vapor_production * L_S ===
+    ! Production q_lh = rho*L_S*C_E*U*dq; product form = (rho*C_E*U*dq)*L_S.
+    ! Multiplication-order rounding only -> tight 1e-2 tolerance.
+    n_checks = n_checks + 1
+    if (abs(q_lh_prod_sub_10421 - q_lh_ind_sub_10421) .lt. 1.0e-2 .and. &
+        abs(q_lh_prod_zero_10421 - q_lh_ind_zero_10421) .lt. 1.0e-2 .and. &
+        abs(q_lh_prod_dep_10421 - q_lh_ind_dep_10421) .lt. 1.0e-2) then
+        print *, "OK: Production Q_LH == m_vapor_production * L_S (3 cases)"
+    else
+        print *, "FAIL: Latent identity: ", q_lh_prod_sub_10421 - q_lh_ind_sub_10421, &
+            q_lh_prod_zero_10421 - q_lh_ind_zero_10421, q_lh_prod_dep_10421 - q_lh_ind_dep_10421
+        n_errors = n_errors + 1
+    end if
+
+    ! === 10.4.2.1.4: Production Q_surface monotonic sub < zero < dep ===
+    ! (most important: the production OUTPUT must be monotonic in d2m)
+    n_checks = n_checks + 1
+    if (q_s_prod_sub_10421 .lt. q_s_prod_zero_10421 .and. &
+        q_s_prod_zero_10421 .lt. q_s_prod_dep_10421) then
+        print *, "OK: Production Q_surface strictly monotonic: sub < zero < dep"
+    else
+        print *, "FAIL: Production Q_surface not monotonic"
+        n_errors = n_errors + 1
+    end if
+
+    ! === 10.4.2.1.5: Melt monotonic m_surface sub <= zero <= dep (secondary) ===
+    n_checks = n_checks + 1
+    if (m_s_prod_sub_10421 .le. m_s_prod_zero_10421 .and. &
+        m_s_prod_zero_10421 .le. m_s_prod_dep_10421) then
+        print *, "OK: m_surface monotonic: sub <= zero <= dep"
+    else
+        print *, "FAIL: m_surface not monotonic: ", m_s_prod_sub_10421, m_s_prod_zero_10421, m_s_prod_dep_10421
+        n_errors = n_errors + 1
+    end if
+
+    ! === 10.4.2.1.6: Sign conventions (m_vapor, q_lh) ===
+    n_checks = n_checks + 1
+    if (m_v_prod_sub_10421 .lt. 0.0 .and. abs(m_v_prod_zero_10421) .lt. 1.0e-7 .and. &
+        m_v_prod_dep_10421 .gt. 0.0 .and. &
+        q_lh_prod_sub_10421 .lt. 0.0 .and. abs(q_lh_prod_zero_10421) .lt. 0.5 .and. &
+        q_lh_prod_dep_10421 .gt. 0.0) then
+        print *, "OK: Signs: sub<0 (sublimation), zero~0, dep>0 (deposition) for m_vapor and Q_LH"
+    else
+        print *, "FAIL: Sign conventions violated"
+        n_errors = n_errors + 1
+    end if
+
+    ! === 10.4.2.1.7: Regression of 10.4.2 test-side bug (no stale atmos) ===
+    ! The old latent-identity test reused t2m=285.15 from the dep-boost case.
+    ! Here DEP is configured with EXPLICIT d2m=283.15; independent latent flux
+    ! recomputed from literals 283.15/283.15 must equal production q_lh. This
+    ! fails if any stale atmos value leaks into the DEP production call.
+    t_air_k_test = 283.15
+    t_dew_k_test = 283.15
+    rho_air_test = 101325.0/(GAS_CONST_AIR*t_air_k_test)
+    wind_speed_test = 10.0
+    e_sat_air_test = SAT_VAPOR_0*10.0**(TETENS_A*(t_air_k_test - 273.15)/t_air_k_test)
+    e_sat_dew_test = SAT_VAPOR_0*10.0**(TETENS_A*(t_dew_k_test - 273.15)/t_dew_k_test)
+    rh_test = min(1.0, max(0.0, e_sat_dew_test/e_sat_air_test))
+    e_vap_test = rh_test*e_sat_air_test
+    q_air_test = 0.622*e_vap_test/101325.0
+    q_sat_test = saturation_vapor_pressure_ice(273.15)/101325.0*0.622
+    m_v_sec_10421 = rho_air_test*C_E_NEUTRAL*wind_speed_test*(q_air_test - q_sat_test)
+    q_lh_sec_10421 = m_v_sec_10421*L_S
+    print *, ""
+    print *, "Regression: independent DEP Q_LH (283.15/283.15) = ", q_lh_sec_10421, &
+        " vs production = ", q_lh_prod_dep_10421, " W/m2"
+    n_checks = n_checks + 1
+    if (abs(q_lh_sec_10421 - q_lh_prod_dep_10421) .lt. 1.0e-3) then
+        print *, "OK: DEP production Q_LH matches independent (explicit 283.15/283.15, no stale atmos)"
+    else
+        print *, "FAIL: DEP latent regression mismatch: ", q_lh_sec_10421, q_lh_prod_dep_10421
         n_errors = n_errors + 1
     end if
 

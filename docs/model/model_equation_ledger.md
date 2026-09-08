@@ -629,6 +629,33 @@ DEP d2m=283.15 K → m_vapor=+7.11e−5, Q_surface=351.4, m=1.16e−6
 Q_nonlatent identical (149.743 W/m²) in all cases. All known properties verified.
 Report: `docs/wiki/Stage10.4.2_Independent_monotonicity_validation.md`.
 
+**Stage 10.4.2.1 — Independent Q_surface output validation (2026-09-08):**
+
+Stage 10.4.2 reconstructed Q_surface from the downstream melt rate; it never
+verified the PRODUCTION calculation. 10.4.2.1 exposes the production flux in
+diagnostics (diagnostic-only addition; physics unchanged):
+
+```
+Q_surface    (local, was not stored)  = Q_nonlatent + Q_LH
+Q_LH         (local, was not stored)  = m_vapor · L_S
+diag%q_surface = q_surface   (NEW, diagnostic-only)
+diag%q_lh      = q_lh        (NEW, diagnostic-only)
+diag%q_net_surface = q_net  = Q_surface - m_surface·ρ_ice·L_f/dt
+                             (residual AFTER melt, ≈ 0 while melting — NOT Q_surface)
+```
+
+Direct validation in the same polar-night controlled experiment (only d2m varies):
+`Q_surface_production = Q_nonlatent_independent + m_vapor_production·L_S`.
+
+| Case | Q_nonlatent_ind | Q_LH (m_vapor·L_S) | Q_surface_expected | Q_surface PRODUCTION | error |
+| ---- | --------------- | ------------------ | ------------------ | -------------------- | ----- |
+| SUB  | 149.742706      | −105.374290        | 44.368416          | 44.368423            | +7.6e−6 |
+| ZERO | 149.742706      | −1.48e−4           | 149.742554         | 149.742554           | 0.0 |
+| DEP  | 149.742706      | +201.645966        | 351.388672         | 351.388672           | 0.0 |
+
+Errors ≤ 7.6e−6 W/m² (float32 rounding). Audit 66 checks / 0 errors.
+Report: `docs/wiki/Stage10.4.2.1_Independent_Q_surface_output_validation.md`.
+
 ### 8.3 Дискретные уравнения
 
 Те же, вычисляются каждый timestep в compute_surface_melt.

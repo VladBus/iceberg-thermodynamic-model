@@ -131,7 +131,8 @@ program iceberg_test_surface_melt_audit
     open (unit, file='data/output/diagnostics/stage9.4c/surface_melt_audit.csv', &
           status='replace', iostat=ios)
     if (ios .eq. 0) then
-        write(unit, '(A)') 'case,t2m_K,d2m_K,tcc,msl_Pa,u10,v10,sw_down,sw_abs,lw_down,lw_up,sh,lh,q_net,m_surface,expected_melt,ratio'
+        write(unit, '(A)') 'case,t2m_K,d2m_K,tcc,msl_Pa,u10,v10,sw_down,sw_abs,'// &
+             'lw_down,lw_up,sh,lh,q_net,m_surface,expected_melt,ratio'
     end if
 
     dt = 3600.0
@@ -1159,8 +1160,10 @@ program iceberg_test_surface_melt_audit
 
     ! Verify analytical self-consistency (formula matches itself)
     n_checks = n_checks + 1
-    if (abs(sh_analytical_103 - rho_air_a_103 * CP_AIR * C_H_NEUTRAL * wind_a_103 * (t_air_k_a_103 - t_surf_k_a_103)) .lt. 1e-6 .and. &
-        abs(lh_analytical_103 - rho_air_a_103 * L_S * C_E_NEUTRAL * wind_a_103 * dq_a_103) .lt. 1e-6) then
+    if (abs(sh_analytical_103 - rho_air_a_103 * CP_AIR * &
+          C_H_NEUTRAL * wind_a_103 * (t_air_k_a_103 - t_surf_k_a_103)) .lt. 1e-6 .and. &
+        abs(lh_analytical_103 - rho_air_a_103 * L_S * C_E_NEUTRAL * &
+          wind_a_103 * dq_a_103) .lt. 1e-6) then
         print *, "OK: Analytical SH/LH formulas are self-consistent"
     else
         print *, "FAIL: Analytical SH/LH mismatch"

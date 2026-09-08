@@ -140,7 +140,8 @@ program iceberg_test_surface_latent_reference
         ! Vapor pressure from dew point (Tetens formula for water)
         e_sat_dew = SAT_VAPOR_0_MODEL*10.0**(TETENS_A_MODEL*cases(i)%t_dew_c/(t_dew_k))
         ! Model uses RH from dew point, so e_vap = e_sat_dew (since RH = e_dew/e_sat_air)
-        ! Actually model calculates: e_sat_air = f(T_air), e_sat_dew = f(T_dew), RH = e_sat_dew/e_sat_air, e_vap = RH * e_sat_air = e_sat_dew
+        ! Actually model: e_sat_air = f(T_air), e_sat_dew = f(T_dew),
+        ! RH = e_sat_dew/e_sat_air, e_vap = RH * e_sat_air = e_sat_dew
         e_vap = e_sat_dew
 
         ! Saturation vapor pressure at air temperature (water)

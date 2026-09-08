@@ -90,7 +90,11 @@ print *, "SKIP: KOORD.DAT not present (gitignored; run python/grid/build_real_gr
     if (ios_csv .ne. 0) then
         print *, "WARNING: Could not open force budget output file"
     else
-        write(unit, '(A)') 'step,time_h,x_m,y_m,lat,lon,u,v,mass,fx_wind,fy_wind,fx_water,fy_water,fx_cor,fy_cor,fx_pres,fy_pres,fx_fk,fy_fk,fx_total,fy_total,ax,ay,fx_calc,fy_calc,mb_mday,ml_mday,ms_mday,q_net,closure_x,closure_y'
+        write(unit, '(A)') 'step,time_h,x_m,y_m,lat,lon,u,v,mass,'// &
+             'fx_wind,fy_wind,fx_water,fy_water,fx_cor,fy_cor,'// &
+             'fx_pres,fy_pres,fx_fk,fy_fk,fx_total,fy_total,'// &
+             'ax,ay,fx_calc,fy_calc,mb_mday,ml_mday,ms_mday,'// &
+             'q_net,closure_x,closure_y'
     end if
 
     print *, "Starting 5-day integration with force budget output..."

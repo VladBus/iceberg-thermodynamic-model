@@ -56,8 +56,8 @@ program iceberg_test_wind_drift_sensitivity
     open (unit, file='data/output/diagnostics/stage9.3/wind_drift_sensitivity.csv', &
           status='replace', iostat=ios)
     if (ios .eq. 0) then
-        write(unit, '(A)') 'case,cd_air,cd_water,cor_on,terminal_u,terminal_v,'// &
-         & 'terminal_speed,drift_ratio,wind_speed,fx_wind,fx_water,fx_cor'
+write(unit, '(A)') 'case,cd_air,cd_water,cor_on,terminal_u,terminal_v,'// &
+     & 'terminal_speed,drift_ratio,wind_speed,fx_wind,fx_water,fx_cor'
     end if
 
     print *, "Case    CD_AIR    CD_WATER   Cor?  U_term    V_term    Speed    Drift%   Fx_wind  Fx_water  Fx_cor"

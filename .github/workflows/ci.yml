@@ -37,12 +37,16 @@ jobs:
           fpm --version
 
       - name: Build and run all tests
+        env:
+          FCFLAGS: "-ffree-line-length-none"
         run: |
-          fpm test --flag "-I/usr/include -ffree-line-length-none"
+          fpm test --flag "-I/usr/include"
 
       - name: Build main executable (smoke test)
+        env:
+          FCFLAGS: "-ffree-line-length-none"
         run: |
-          fpm build --flag "-I/usr/include -ffree-line-length-none"
+          fpm build --flag "-I/usr/include"
 
   test-python:
     name: Python Environment Check

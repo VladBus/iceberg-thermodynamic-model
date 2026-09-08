@@ -24,7 +24,7 @@ program iceberg_test_force_budget
     real :: dt
     real :: model_time_sec, start_sec
     real :: bathymetry
-    logical :: realistic_ok, era5_ok, forcing_ok
+    logical :: realistic_ok, era5_ok, forcing_ok, fexists
     real :: x_model, y_model
     integer :: i_idx, j_idx
     logical :: has_nan
@@ -43,6 +43,13 @@ program iceberg_test_force_budget
     print *, "=================================================="
     print *, "  TEST: Force Budget Diagnostics"
     print *, "=================================================="
+
+    ! --- Проверка наличия KOORD.DAT перед инициализацией сетки ---
+    inquire (file='KOORD.DAT', exist=fexists)
+    if (.not. fexists) then
+print *, "SKIP: KOORD.DAT not present (gitignored; run python/grid/build_real_grid_inputs.py first)"
+        stop 0
+    end if
 
     ! 1. Инициализация модельной сетки и батиметрии
     print *, "Initializing model grid..."

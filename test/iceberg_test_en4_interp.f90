@@ -18,7 +18,7 @@ program iceberg_test_en4_interp
     real :: draft, delta_t_avg, u_avg, v_avg
     real, allocatable :: u_profile(:), v_profile(:), z_layers(:)
     integer :: n_layers
-    logical :: ok, realistic_ok
+    logical :: ok, realistic_ok, fexists
     integer :: n_errors, n_checks
     integer :: i_idx, j_idx
     real :: x_model, y_model, lat, lon
@@ -29,6 +29,13 @@ program iceberg_test_en4_interp
     print *, "=================================================="
     print *, "  EN4 OCEAN PROFILE INTERPOLATION TEST"
     print *, "=================================================="
+
+    ! --- Проверка наличия KOORD.DAT перед инициализацией сетки ---
+    inquire (file='KOORD.DAT', exist=fexists)
+    if (.not. fexists) then
+print *, "SKIP: KOORD.DAT not present (gitignored; run python/grid/build_real_grid_inputs.py first)"
+        stop 0
+    end if
 
     ! 1. Инициализация модельной сетки и T/S
     print *, "Initializing model grid..."
@@ -177,7 +184,7 @@ contains
         dx_model = 13890.0
         j_idx_out = int(x_model_in/dx_model) + 1
         i_idx_out = int(y_model_in/dx_model) + 1
-        if (i_idx_out .lt. 1 .or. i_idx_out .ge. is1 .or. j_idx_out .lt. 1 .or. j_idx_out .ge. js1) then
+    if (i_idx_out .lt. 1 .or. i_idx_out .ge. is1 .or. j_idx_out .lt. 1 .or. j_idx_out .ge. js1) then
             in_domain = .false.
         else
             in_domain = .true.

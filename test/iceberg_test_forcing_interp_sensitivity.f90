@@ -25,7 +25,7 @@ program iceberg_test_forcing_interp_sensitivity
     real :: latitude, longitude
     real :: f_coriolis
     real :: dx_model
-    logical :: ok
+    logical :: ok, fexists
 
     ! Test 1 variables
     real :: x_model, y_model
@@ -56,6 +56,13 @@ program iceberg_test_forcing_interp_sensitivity
     print *, "=================================================="
     print *, "  TEST: Forcing Interpolation Sensitivity"
     print *, "=================================================="
+
+    ! --- Проверка наличия KOORD.DAT перед инициализацией сетки ---
+    inquire (file='KOORD.DAT', exist=fexists)
+    if (.not. fexists) then
+print *, "SKIP: KOORD.DAT not present (gitignored; run python/grid/build_real_grid_inputs.py first)"
+        stop 0
+    end if
 
     ! Инициализация модельной сетки
     call coup1()

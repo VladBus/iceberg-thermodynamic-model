@@ -26,7 +26,7 @@ program iceberg_test_ibcao_interp
     real :: lat, lon
     real :: x_model, y_model
     real :: initial_draft, final_draft
-    logical :: forcing_ok
+    logical :: forcing_ok, fexists
     integer :: i_idx, j_idx
 
     ! Переменные для теста 4
@@ -40,6 +40,13 @@ program iceberg_test_ibcao_interp
     print *, "=================================================="
     print *, "  IBCAO BATHYMETRY & GROUNDING TEST"
     print *, "=================================================="
+
+    ! --- Проверка наличия KOORD.DAT перед инициализацией сетки ---
+    inquire (file='KOORD.DAT', exist=fexists)
+    if (.not. fexists) then
+print *, "SKIP: KOORD.DAT not present (gitignored; run python/grid/build_real_grid_inputs.py first)"
+        stop 0
+    end if
 
     ! 1. Инициализация модельной сетки
     print *, "Initializing model grid..."
@@ -232,7 +239,7 @@ contains
         dx_model = 13890.0
         j_idx_out = int(x_model_in/dx_model) + 1
         i_idx_out = int(y_model_in/dx_model) + 1
-        if (i_idx_out .lt. 1 .or. i_idx_out .ge. is1 .or. j_idx_out .lt. 1 .or. j_idx_out .ge. js1) then
+    if (i_idx_out .lt. 1 .or. i_idx_out .ge. is1 .or. j_idx_out .lt. 1 .or. j_idx_out .ge. js1) then
             in_domain = .false.
         else
             in_domain = .true.

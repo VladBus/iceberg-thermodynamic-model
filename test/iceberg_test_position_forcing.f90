@@ -28,6 +28,7 @@ program iceberg_test_position_forcing
 
     integer :: n_errors, n_checks
     integer :: step, nsteps
+    logical :: fexists
     real :: dt, model_time
     real :: latitude, longitude
     real :: f_coriolis
@@ -52,6 +53,13 @@ program iceberg_test_position_forcing
     print *, "=================================================="
     print *, "  TEST: Position-Dependent Forcing (Production)"
     print *, "=================================================="
+
+    ! --- Проверка наличия KOORD.DAT перед инициализацией сетки ---
+    inquire (file='KOORD.DAT', exist=fexists)
+    if (.not. fexists) then
+print *, "SKIP: KOORD.DAT not present (gitignored; run python/grid/build_real_grid_inputs.py first)"
+        stop 0
+    end if
 
     ! 1. Initialize model grid (needed for fi/dl/ht/t2/s2/u2/v2)
     print *, "Initializing model grid..."
@@ -327,7 +335,7 @@ contains
     ! --------------------------------------------------------------------------
     ! Synthetic atmos forcing — spatially varying
     ! --------------------------------------------------------------------------
-    subroutine get_synthetic_atmos_forcing(x_model_in, y_model_in, model_time_sec_in, atmos_out, ok_out)
+subroutine get_synthetic_atmos_forcing(x_model_in, y_model_in, model_time_sec_in, atmos_out, ok_out)
         real, intent(in) :: x_model_in, y_model_in, model_time_sec_in
         type(atmos_forcing), intent(out) :: atmos_out
         logical, intent(out) :: ok_out

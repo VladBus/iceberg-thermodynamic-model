@@ -27,7 +27,7 @@ program iceberg_test_11_30day_offline
     real :: total_budget_loss
     real :: bathymetry
     real :: lat, lon
-    logical :: realistic_ok, era5_ok, forcing_ok
+    logical :: realistic_ok, era5_ok, forcing_ok, fexists
     real :: x_model, y_model
     integer :: i_idx, j_idx
     logical :: has_nan
@@ -45,6 +45,13 @@ program iceberg_test_11_30day_offline
     print *, "=================================================="
     print *, "  TEST_11: 30-Day Offline Experiment"
     print *, "=================================================="
+
+    ! --- Проверка наличия KOORD.DAT перед инициализацией сетки ---
+    inquire (file='KOORD.DAT', exist=fexists)
+    if (.not. fexists) then
+print *, "SKIP: KOORD.DAT not present (gitignored; run python/grid/build_real_grid_inputs.py first)"
+        stop 0
+    end if
 
     ! 1. Инициализация модельной сетки и батиметрии
     print *, "Initializing model grid..."

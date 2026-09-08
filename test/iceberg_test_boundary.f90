@@ -8,7 +8,7 @@ program iceberg_test_boundary
     use iceberg
     use iceberg_forcing, only: model_coords_to_latlon, model_coords_to_indices
     use iceberg_types
-    use param, only: is, js, is1, js1, ht, fi, dl, kt1
+    use param, only: is, js, is1, js1, ht, fi, dl, kt1, grid_mode, grid_mode_test
     use grid_coupling, only: coup1
     use grid_masks, only: ikuv
     implicit none
@@ -18,7 +18,7 @@ program iceberg_test_boundary
 
     integer :: n_errors, n_checks
     real :: lat, lon, dt
-    logical :: ok
+    logical :: ok, fexists
     real :: bathymetry
     integer :: i_idx, j_idx
 
@@ -29,8 +29,13 @@ program iceberg_test_boundary
     print *, "  TEST: Boundary Handling Verification"
     print *, "=================================================="
 
-    ! Инициализация модельной сетки (нужна для fi/dl/ht)
+    ! --- Инициализация модельной сетки ( синтетическая, если KOORD.DAT отсутствует) ---
     print *, "Initializing model grid..."
+    inquire (file='KOORD.DAT', exist=fexists)
+    if (.not. fexists) then
+        print *, "KOORD.DAT not present; using synthetic grid (grid_mode=TEST)"
+        grid_mode = grid_mode_test
+    end if
     call coup1()
     call ikuv()
 
@@ -190,7 +195,7 @@ contains
         state_in%y = state_in%y + dt_in*state_in%v
 
         ! Попытка обновить lat/lon - должна вернуть ok=.false. за границей
-        call model_coords_to_latlon(state_in%x, state_in%y, lat_local, lon_local, diag_out%forcing_valid)
+   call model_coords_to_latlon(state_in%x, state_in%y, lat_local, lon_local, diag_out%forcing_valid)
 
         if (.not. diag_out%forcing_valid) then
             state_in%active = .false.

@@ -10,7 +10,7 @@ program iceberg_test_coord_mapping
     use iceberg
     use iceberg_types
     use iceberg_forcing, only: model_coords_to_latlon, latlon_to_model_coords
-    use param, only: fi, dl, is, js, is1, js1, kt1, ht
+    use param, only: fi, dl, is, js, is1, js1, kt1, ht, grid_mode, grid_mode_test
     use grid_coupling, only: coup1
     use grid_masks, only: ikuv
     implicit none
@@ -21,7 +21,7 @@ program iceberg_test_coord_mapping
     real :: x_model, y_model
     real :: lat_err, lon_err
     real :: max_lat_err, max_lon_err, rms_lat_err, rms_lon_err
-    logical :: ok
+    logical :: ok, fexists
     real :: dx_model
     real :: test_lats(4), test_lons(4)
     real :: lat1, lat2, f1, f2, df
@@ -35,7 +35,13 @@ program iceberg_test_coord_mapping
     print *, "  TEST: Coordinate Mapping Numerical Verification"
     print *, "=================================================="
 
-    ! Инициализация модельной сетки
+    ! --- Инициализация модельной сетки ( синтетическая, если KOORD.DAT отсутствует) ---
+    print *, "Initializing model grid..."
+    inquire (file='KOORD.DAT', exist=fexists)
+    if (.not. fexists) then
+        print *, "KOORD.DAT not present; using synthetic grid (grid_mode=TEST)"
+        grid_mode = grid_mode_test
+    end if
     call coup1()
     call ikuv()
 

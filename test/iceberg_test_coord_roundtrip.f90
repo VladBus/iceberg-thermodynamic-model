@@ -14,7 +14,7 @@ program iceberg_test_coord_roundtrip
     integer :: n_errors, n_checks
     real :: lat_in, lon_in, x_model, y_model, lat_out, lon_out
     real :: lat_err, lon_err
-    logical :: ok
+    logical :: ok, fexists
     integer :: test_idx
 
     ! Тестовые точки (lat, lon) в градусах — ВНУТРИ домена модели (Баренцево море ~66-82N, 30-63E)
@@ -29,6 +29,13 @@ program iceberg_test_coord_roundtrip
     print *, "=================================================="
     print *, "  COORDINATE ROUND-TRIP TEST"
     print *, "=================================================="
+
+    ! --- Проверка наличия KOORD.DAT перед инициализацией сетки ---
+    inquire (file='KOORD.DAT', exist=fexists)
+    if (.not. fexists) then
+print *, "SKIP: KOORD.DAT not present (gitignored; run python/grid/build_real_grid_inputs.py first)"
+        stop 0
+    end if
 
     ! 1. Инициализация модельной сетки
     print *, "Initializing model grid..."

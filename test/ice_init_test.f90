@@ -30,7 +30,7 @@ program ice_init_test
     integer :: i, j, k, ios, m, n_ice, n_err
     real :: a1, mean_ans, mean_hices, tot_wices, eps_tol
     character(len=256) :: ice_dir, nam_file
-    logical :: any_missing
+    logical :: any_missing, fexists
 
     print *, "===================================================="
     print *, "  REAL ICE INITIALIZATION TEST (Stage 7.6C.1)"
@@ -38,6 +38,13 @@ program ice_init_test
     print *, "PURPOSE: Validate 1_k.ice -> an1 -> wice1 -> redis()"
     print *, "         init chain against satellite reconstruction."
     print *, ""
+
+    ! --- Проверка наличия KOORD.DAT перед инициализацией сетки ---
+    inquire (file='KOORD.DAT', exist=fexists)
+    if (.not. fexists) then
+print *, "SKIP: KOORD.DAT not present (gitignored; run python/grid/build_real_grid_inputs.py first)"
+        stop 0
+    end if
 
     ! --- Сетка и геометрия (те же вызовы, что в main.f90) ---
     print *, "Calling grid_coupling (coup1)..."

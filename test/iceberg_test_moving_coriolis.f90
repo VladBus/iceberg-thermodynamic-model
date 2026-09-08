@@ -9,7 +9,7 @@ program iceberg_test_moving_coriolis
     use iceberg_types
     use iceberg_dynamics
     use iceberg_forcing, only: model_coords_to_latlon
-    use param, only: fi, dl, is, js, is1, js1, kt1, ht
+    use param, only: fi, dl, is, js, is1, js1, kt1, ht, grid_mode, grid_mode_test
     use grid_coupling, only: coup1
     use grid_masks, only: ikuv
     implicit none
@@ -23,6 +23,7 @@ program iceberg_test_moving_coriolis
     integer :: step, nsteps
     real :: dt, model_time
     real :: latitude, longitude
+    logical :: fexists
     real :: f_coriolis
     real :: f_initial, f_final
     real :: lat_initial, lat_final
@@ -37,7 +38,13 @@ program iceberg_test_moving_coriolis
     print *, "  TEST: Coriolis with Moving Latitude"
     print *, "=================================================="
 
-    ! Инициализация модельной сетки
+    ! --- Инициализация модельной сетки ( синтетическая, если KOORD.DAT отсутствует) ---
+    print *, "Initializing model grid..."
+    inquire (file='KOORD.DAT', exist=fexists)
+    if (.not. fexists) then
+        print *, "KOORD.DAT not present; using synthetic grid (grid_mode=TEST)"
+        grid_mode = grid_mode_test
+    end if
     call coup1()
     call ikuv()
 

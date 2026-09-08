@@ -36,6 +36,13 @@ program ocean_init_test
     print *, "  OCEAN INIT TEST (Stage 7.7 realistic T/S)"
     print *, "===================================================="
 
+    ! --- Проверка наличия KOORD.DAT перед инициализацией сетки ---
+    inquire (file='KOORD.DAT', exist=fexists)
+    if (.not. fexists) then
+print *, "SKIP: KOORD.DAT not present (gitignored; run python/grid/build_real_grid_inputs.py first)"
+        stop 0
+    end if
+
     call coup1()
     call ikuv()
 

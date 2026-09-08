@@ -23,7 +23,7 @@ program param_sensitivity_30day
     real :: M0, M_final, total_budget_loss
     real :: bathymetry
     integer :: i_idx, j_idx
-    logical :: realistic_ok, era5_ok, forcing_ok
+    logical :: realistic_ok, era5_ok, forcing_ok, fexists
     real :: x_model, y_model, lat, lon
     integer :: p
 
@@ -38,6 +38,13 @@ program param_sensitivity_30day
     print *, "=================================================="
     print *, "  PARAMETER SENSITIVITY: 30-Day Experiment"
     print *, "=================================================="
+
+    ! --- Проверка наличия KOORD.DAT перед инициализацией сетки ---
+    inquire (file='KOORD.DAT', exist=fexists)
+    if (.not. fexists) then
+print *, "SKIP: KOORD.DAT not present (gitignored; run python/grid/build_real_grid_inputs.py first)"
+        stop 0
+    end if
 
     ! 1. Инициализация модельной сетки
     print *, "Initializing model grid..."

@@ -29,13 +29,20 @@ program era5_coverage_test
     integer :: i, j, ios, tidx, nbad, n_req, n_err
     real(8) :: value
     real :: lat, lon
-    logical :: ok
+    logical :: ok, fexists
     character(len=256) :: era5_file
 
     n_err = 0
     print *, "===================================================="
     print *, "  ERA5 COVERAGE TEST (Stage 7.6C.2)"
     print *, "===================================================="
+
+    ! --- Проверка наличия KOORD.DAT перед инициализацией сетки ---
+    inquire (file='KOORD.DAT', exist=fexists)
+    if (.not. fexists) then
+print *, "SKIP: KOORD.DAT not present (gitignored; run python/grid/build_real_grid_inputs.py first)"
+        stop 0
+    end if
 
     ! --- Сетка реального бассейна (fi/dl из KOORD.DAT, kt1 из hhh.bar) ---
     call coup1()

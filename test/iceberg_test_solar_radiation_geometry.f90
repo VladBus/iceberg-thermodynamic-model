@@ -139,7 +139,7 @@ program iceberg_test_solar_radiation_geometry
                 ! Shortwave (clear sky, no atmospheric attenuation for comparison)
                 sw_astro = SOLAR_CONSTANT_ASTRO*cos_zenith_astro
 
-print *, "  ", date_names(j), " ", time_names(k), ": decl=", &
+                print *, "  ", date_names(j), " ", time_names(k), ": decl=", &
      & decl*57.2957795, "° H=", H, "° cosZ=", &
      & cos_zenith_astro, " SW=", sw_astro, " W/m2"
 

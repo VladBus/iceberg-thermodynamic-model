@@ -131,7 +131,7 @@ program iceberg_test_surface_melt_audit
     open (unit, file='data/output/diagnostics/stage9.4c/surface_melt_audit.csv', &
           status='replace', iostat=ios)
     if (ios .eq. 0) then
-write(unit, '(A)') 'case,t2m_K,d2m_K,tcc,msl_Pa,u10,v10,sw_down,sw_abs,'// &
+        write(unit, '(A)') 'case,t2m_K,d2m_K,tcc,msl_Pa,u10,v10,sw_down,sw_abs,' &
      & 'lw_down,lw_up,sh,lh,q_net,m_surface,expected_melt,ratio'
     end if
 

@@ -38,11 +38,11 @@ jobs:
 
       - name: Build and run all tests
         run: |
-          fpm test --flag "-I/usr/include"
+          fpm test --flag "-I/usr/include -ffree-line-length-none"
 
       - name: Build main executable (smoke test)
         run: |
-          fpm build --flag "-I/usr/include"
+          fpm build --flag "-I/usr/include -ffree-line-length-none"
 
   test-python:
     name: Python Environment Check

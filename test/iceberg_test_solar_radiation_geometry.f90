@@ -140,8 +140,8 @@ program iceberg_test_solar_radiation_geometry
                 sw_astro = SOLAR_CONSTANT_ASTRO*cos_zenith_astro
 
                 print *, "  ", date_names(j), " ", time_names(k), ": decl=", &
-             decl*57.2957795, "° H=", H, "° cosZ=", &
-             cos_zenith_astro, " SW=", sw_astro, " W/m2"
+         & decl*57.2957795, "° H=", H, "° cosZ=", &
+         & cos_zenith_astro, " SW=", sw_astro, " W/m2"
 
                 ! Accumulate daily (6-hour intervals)
                 daily_sw_astro = daily_sw_astro + sw_astro*6.0*3600.0/1e6

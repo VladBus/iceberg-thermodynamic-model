@@ -116,8 +116,12 @@ Thumbs.db
 .opencode/
 opencode.jsonc
 docs/wiki/
+
 # Internal live TODO (kept locally, NOT tracked in Git)
 docs/wiki/ERA5_INTEGRATION_TODO.md
+
+# Work References
+docs/references/work_references.bib
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs

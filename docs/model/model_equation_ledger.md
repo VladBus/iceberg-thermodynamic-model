@@ -1,1016 +1,210 @@
 # Model Equation Ledger — Математическая спецификация текущей модели
 
-**Дата:** 2026-09-07
-**Physics baseline commit:** a1fc859 "Correct Stage 10.2 analytical validation"
-**Current repository stage:** Stage 10.3 — corrective validation
-**Model version:** Stage 10.3 corrective validation (production physics from f82c527 + corrective fixes)
+**Дата:** 2026-09-10  
+**Current repository stage:** Stage 10.6.1  
+**Production baseline:** Stage 10.6 + documentation correction `40d4a3b`  
+**Units:** SI in the iceberg module unless explicitly noted.
 
 ---
 
-## 1. ГЕОМЕТРИЯ АЙСБЕРГА
+## 1. Geometry
 
-### 1.1 Физический смысл
+The iceberg is a rectangular prism with prognostic dimensions `L`, `W`, `H`.
 
-Айсберг моделируется как прямоугольный параллелепипед с горизонтальными размерами L (длина, x-направление) и W (ширина, y-направление), и вертикальной толщиной H.
+`V = L W H`  
+`M = rho_ice V`  
+`D = H rho_ice / rho_water`  
+`A_base = L W`  
+`A_lat = 2 H (L + W)`
 
-### 1.2 Непрерывные уравнения
+Constants: `rho_ice = 910 kg m^-3`, `rho_water = 1028 kg m^-3`.
 
-```
-Объём:          V = L · W · H
-Масса:          M = ρ_ice · V
-Черновик:       D = H · ρ_ice / ρ_water
-Нависающая часть: H_sail = H - D
-Площадь основания:  A_base = L · W
-Площадь боковой поверхности: A_lat = 2 · H · (L + W)
-Площадь верхней поверхности: A_top = L · W
-```
+Geometry is updated after thermodynamic melt. The model does not currently prognose orientation, tilt, fracturing or internal temperature structure.
 
-### 1.3 Дискретные уравнения
+## 2. Position and coordinates
 
-Те же, обновляются каждый timestep после расчёта таяния.
+`dx/dt = u`  
+`dy/dt = v`
 
-### 1.4 Переменные
+With the current explicit time step:
 
-| Переменная | Значение   | Единицы | Описание               |
-| ---------- | ---------- | ------- | ---------------------- |
-| L          | prognostic | m       | Длина (x-направление)  |
-| W          | prognostic | m       | Ширина (y-направление) |
-| H          | prognostic | m       | Толщина                |
-| V          | diagnostic | m³      | Объём                  |
-| M          | diagnostic | kg      | Масса                  |
-| D          | diagnostic | m       | Черновик               |
-| H_sail     | diagnostic | m       | Нависающая часть       |
+`x(n+1) = x(n) + u(n) dt`  
+`y(n+1) = y(n) + v(n) dt`
 
-### 1.5 Константы
+`DX = DY = 13890 m`. Model x/y is authoritative for moving forcing. Geographic latitude/longitude are diagnostic and are obtained from the model grid coordinate fields. The stored lat/lon state is not currently updated during every motion step.
 
-| Константа | Значение | Единицы | Назначение             |
-| --------- | -------- | ------- | ---------------------- |
-| RHO_ICE   | 910.0    | kg/m³   | Плотность льда         |
-| RHO_WATER | 1028.0   | kg/m³   | Плотность морской воды |
+## 3. Dynamics
 
-### 1.6 Численная схема
+The horizontal momentum equations are
 
-- Explicit update: L^(n+1) = L^n - ΔL_melt, аналогично W, H
-- Timestep: Δt = 3600 s (1 час)
-- Operator splitting: dynamics → thermodynamics → geometry update
+`M du/dt = F_wind + F_water + F_coriolis + F_pressure`
 
-### 1.7 Реализация
+`M dv/dt = F_wind + F_water + F_coriolis + F_pressure`.
 
-```
-File: src/iceberg_geometry.f90
-Module: iceberg_geometry
-Subroutines: iceberg_update_geometry, iceberg_volume, iceberg_mass, iceberg_draft
-```
+Wind and water drag act on relative velocities. Coriolis is treated semi-implicitly. The pressure-gradient forcing is retained from the existing model formulation.
 
-### 1.8 Граничные условия
+## 4. Atmospheric forcing
 
-- L, W, H ≥ 0 (проверка в коде)
-- Grounding: если D ≥ bathymetry → grounded = .true., velocity = 0
+ERA5 supplies surface pressure, 10-m wind, 2-m air temperature/dew point, total cloud cover and snowfall. Surface fields are interpolated horizontally to the current iceberg position.
 
-### 1.9 Начальные условия
+Conversions include K→°C for temperatures and m/s→cm/s where required by legacy interfaces. The iceberg thermodynamic flux equations use SI units.
 
-- Из файла 1_k.ice (реальная геометрия) или синтетические значения
+## 5. Solar radiation
 
-### 1.10 Проверка
+The shortwave input is based on
 
-- iceberg_test_1_hydrostatic (hydrostatic equilibrium)
-- iceberg_test_10_mass_conservation (mass budget)
+`SW_down = S0 cos(Z) T_clear T_cloud`,
 
-### 1.11 Ограничения
+with `S0 = 1353 W m^-2` and solar zenith angle `Z` from astronomical solar geometry. Spencer (1971) is the source for the declination/equation-of-time approximation.
 
-- Нет формы айсберга (всегда прямоугольник)
-- Нет внутренней структуры температуры
+The current attenuation parameterization contains Rayleigh, water-vapour, aerosol and cloud terms. The exact empirical constants are documented in source code; their provenance and sensitivity remain an open documentation/validation item.
 
----
+## 6. Surface longwave and turbulent fluxes
 
-## 2. КООРДИНАТЫ И ПОЗИЦИЯ
+The surface energy budget is assembled as
 
-### 2.1 Физический смысл
+`Q_nonlatent = SW_absorbed + LW_down + LW_up + Q_SH`
 
-Позиция айсберга в модельной сетке (x, y) и географических координатах (lat, lon).
+`Q_LH = m_vapor L_s`
 
-### 2.2 Непрерывные уравнения
+`Q_surface = Q_nonlatent + Q_LH`.
 
-```
-dx/dt = u
-dy/dt = v
-```
+Sensible heat uses the neutral bulk form
 
-### 2.3 Дискретные уравнения (Explicit Euler)
+`Q_SH = rho_air c_p C_H U (T_air - T_surface)`.
 
-```
-x^(n+1) = x^n + u^n · Δt
-y^(n+1) = y^n + v^n · Δt
-```
+Latent mass exchange is
 
-### 2.4 Переменные
+`m_vapor = rho_air C_E U (q_air - q_sat,ice)`
 
-| Переменная | Значение   | Единицы | Описание                         |
-| ---------- | ---------- | ------- | -------------------------------- |
-| x          | prognostic | m       | Позиция X (модельные координаты) |
-| y          | prognostic | m       | Позиция Y (модельные координаты) |
-| lat        | diagnostic | deg     | Географическая широта            |
-| lon        | diagnostic | deg     | Географическая долгота           |
-| u          | prognostic | m/s     | Скорость по X                    |
-| v          | prognostic | m/s     | Скорость по Y                    |
+and
 
-### 2.5 Константы
+`Q_LH = m_vapor L_s`.
 
-| Константа | Значение | Единицы | Назначение         |
-| --------- | -------- | ------- | ------------------ |
-| DX        | 13890.0  | m       | Размер ячейки по X |
-| DY        | 13890.0  | m       | Размер ячейки по Y |
+Negative `m_vapor` denotes sublimation; positive values denote deposition. Ice saturation vapour pressure follows Murphy & Koop (2005). The present atmospheric closure is neutral and uses fixed transfer coefficients.
 
-### 2.6 Численная схема
+## 7. Prognostic surface temperature and phase change
 
-- Explicit Euler для позиции
-- Timestep: Δt = 3600 s
-- Координатное преобразование: model_coords_to_indices (bilinear interpolation weights)
+The surface temperature has an effective heat capacity `C_eff`. Below the melting point, net surface energy changes `T_surface`. When the discrete step crosses the melting point, energy is partitioned at the crossing. At the melting point,
 
-### 2.7 Реализация
+`Q_melt = max(Q_surface, 0)`
 
-```
-File: src/iceberg.f90, src/iceberg_forcing.f90
-Module: iceberg, iceberg_forcing
-Subroutines: iceberg_step, model_coords_to_indices
-```
+and
 
-### 2.8 Граничные условия
+`m_melt = Q_melt / (rho_ice L_f)`.
 
-- Domain boundaries: отражение или остановка на границе
-- Land mask: 8888.0 → grounded
+Geometry responds to both melt and atmospheric ice-mass exchange:
 
-### 2.9 Начальные условия
+`dH/dt = -(m_melt + m_vapor/rho_ice)`
 
-- Задаются при iceberg_init (x, y, lat, lon)
+for the implemented surface contribution, with corresponding geometry updates in the production module.
 
-### 2.10 Проверка
+The crossing treatment has passed independent implementation checks, but complete external validation of the high-flux surface-energy response remains pending.
 
-- iceberg_test_coord_mapping
-- iceberg_test_coord_roundtrip
+## 8. Ocean forcing
 
-### 2.11 Ограничения
+EN4 temperature and salinity profiles are interpolated horizontally and vertically. At iceberg draft `D`, ocean temperature is interpolated within the available profile and extrapolated using the nearest available level when the draft exceeds the deepest available model level in a shallow column.
 
-- Преобразование модельных координат в географические координаты через билинейную интерполяцию географической сетки модели (массивы FI/DL из KOORD.DAT)
-- lat/lon не обновляются из x,y в time stepping (known limitation) — используются для диагностики, forcing интерполируется по текущим x,y
+## 9. EOS-80 freezing point
 
----
+The freezing temperature is
 
-## 3. ATMOSPHERIC FORCING (ERA5)
+`Tf = (A0 + A1 sqrt(S) - A2 S) S + BP P`
 
-### 3.1 Физический смысл
+with
 
-Интерполяция ERA5 реанализа на позицию айсберга.
+`A0 = -0.0575`  
+`A1 = 1.710523e-3`  
+`A2 = 2.154996e-4`  
+`BP = -7.53e-4`.
 
-### 3.2 Переменные forcing
+`S` is practical salinity in PSU and `P = rho_w g z / 1e4` is pressure in dbar. The implementation follows the Fofonoff & Millard (1983)/UNESCO freezing-point formulation, with Gill (1982) as supporting reference.
 
-| ERA5 переменная | Внутреннее имя | Единицы (ERA5) | Единицы (модель) | Конверсия |
-| --------------- | -------------- | -------------- | ---------------- | --------- |
-| msl             | atmos%msl      | Pa             | Pa               | ×1.0      |
-| u10             | atmos%u10      | m/s            | cm/s             | ×100      |
-| v10             | atmos%v10      | m/s            | cm/s             | ×100      |
-| t2m             | atmos%t2m      | K              | °C               | -273.15   |
-| d2m             | atmos%d2m      | K              | °C               | -273.15   |
-| tcc             | atmos%tcc      | 0–1            | 0–1              | ×1.0      |
-| sf              | atmos%snowfall | m/s            | m/s              | ×1.0      |
+The implementation computes freezing point only. It is **not** a complete EOS-80 or TEOS-10 density equation of state.
 
-### 3.3 Интерполяция
+A literature check reproduces `Tf(S=40 PSU, P=500 dbar) = -2.588567 °C`.
 
-- Горизонтальная: билинейная на 4 ближайших узлах ERA5 grid
-- Вертикальная: не применяется (поверхностные поля)
-- Временная: nearest neighbor (discrete 3-hourly slices)
+## 10. Ocean-side relative flow and heat transfer
 
-### 3.4 Реализация
+For each ocean profile level,
 
-```
-File: src/netcdf_input.f90, src/iceberg_forcing.f90
-Module: netcdf_input, iceberg_forcing
-Subroutines: read_era5_forcing, get_atmos_forcing, bilinear_interp
-```
+`U_rel(z) = sqrt((u_water(z)-u_ice)^2 + (v_water(z)-v_ice)^2)`.
 
-### 3.5 Проверка
+The characteristic length is currently
 
-- iceberg_test_era5_interp
-- iceberg_test_forcing_interp_sensitivity
+`L_char = L`.
 
----
+This is an approximation because iceberg orientation is not prognosed.
 
-## 4. OCEAN FORCING (EN4)
+The Reynolds number is
 
-### 4.1 Физический смысл
+`Re = U_rel L_char / nu`.
 
-Температура и соленость океана, интерполированные на позицию и глубину айсберга.
+For `Re < 5e5`:
 
-### 4.2 Переменные forcing
+`Nu = 0.664 Re^0.5 Pr^(1/3)`.
 
-| Переменная  | Единицы (EN4) | Единицы (модель)            | Интерполяция                                      |
-| ----------- | ------------- | --------------------------- | ------------------------------------------------- |
-| Temperature | °C            | °C                          | Вертикальная (linear) + горизонтальная (bilinear) |
-| Salinity    | PSU           | mass fraction (0.033–0.035) | То же                                             |
+For `Re >= 5e5`:
 
-### 4.3 Вертикальная интерполяция/экстраполяция
+`Nu = 0.037 Re^0.8 Pr^(1/3)`.
 
-- Уровни профиля: 18 модельных уровней 2.5–550 м (EN4 → модель, `python/ocean/build_initial_ts.py`, `Z_M`)
-- Черновик айсберга: до ~88 м (внутри профиля в глубокой воде)
-- Линейная интерполяция между уровнями (`interp_at_draft`); клэмпы: выше z(1) → значение 1-го уровня, ниже z(nlevels) → значение последнего (Stage 9.3 fix)
-- Экстраполяция (постоянное значение глубжайшего уровня) — только в мелководных колоннах, где черновик глубже z(nlevels)/глубины дна
-- Горизонтально: билинейная по 4 углам ячейки (`get_ocean_profile`); `kt1 = min(kt1_i)` по углам; любой сухопутный угол → `kt1 = 0` → FORCING ERROR
+The transfer coefficient is always calculated from the canonical relation
 
-### 4.4 Реализация
+`gamma_T = Nu k / L_char`.
 
-```
-File: src/iceberg_forcing.f90, src/initial_ocean_reader.f90, python/ocean/build_initial_ts.py
-Module: iceberg_forcing, initial_ocean_reader
-Subroutines/functions: get_ocean_profile, interp_at_draft, depth_averaged_thermal_forcing, ocean_freezing_point
-```
+Therefore the expanded forms are:
 
-### 4.5 Точка замерзания (Stage 10.5, EOS-80 / UNESCO 1983)
+**Laminar**
 
-```
-Tf = (A0 + A1·sqrt(S) - A2·S)·S + BP·P        [°C]
-A0 = -0.0575          °C/PSU
-A1 =  1.710523e-3     °C/PSU^(3/2)
-A2 =  2.154996e-4     °C/PSU^2
-BP = -7.53e-4         °C/дбар
-S  — практическая солёность  [PSU] = 1000·S_mass
-P  — гидростатическое давление [дбар] = ρ_w·g·z_m / 1.0e4
-```
+`gamma_T = 0.664 k Pr^(1/3) U_rel^0.5 nu^(-0.5) L_char^(-0.5)`.
 
-- Источник: Fofonoff & Millard 1983 (UNESCO TPMS 44 §5); Gill 1982 Eq. 3.5.2
-- **Check value (literature):** Tf(S=40, P=500 дбар) = **-2.588567 °C** — воспроизведён в тесте 10.5.6
-- Заменяет legacy линейную Tf = -54·S (Zubov): legacy теплее EOS-80 на ~0.03 °C у поверхности и не учитывает давление (до -0.07 °C на осадке ~88 м); суммарное смещение ~0.1 °C ≈ 3% типичного ΔT ~3 °C
-- Применение: `compute_basal_melt` (Tf на черновике D), `depth_averaged_thermal_forcing` (послойно Tf(z_k) + глубокий слой), обёртка `freezing_point(S, 0)` (поверхность)
+**Turbulent**
 
-### 4.6 Термическое задействование воды на айсберг
+`gamma_T = 0.037 k Pr^(1/3) U_rel^0.8 nu^(-0.8) L_char^(-0.2)`.
 
-```
-Базальное:   ΔT_b        = max(0, T(D) - Tf(D))            → m_basal  = C_BASAL·ΔT_b
-Боковое:     ⟨ΔT⟩_D      = (1/D)·∫_0^D max(0,T(z)-Tf(z))dz → m_lateral = C_LATERAL·⟨ΔT⟩_D
-                                        (Method A, depth_averaged_thermal_forcing)
-Диагностика: delta_t_ocean = T(D) - Tf(D)   (необрезанная, может быть ≤ 0)
-```
+The Stage 10.6.1 correction `40d4a3b` synchronized these negative length exponents across documentation and source comments.
 
-`T_freeze` в спектрах диагностики (строка таблицы ниже) — теперь EOS-80, а не постоянная.
+Basal melt is then
 
-### 4.7 Проверка
+`DeltaT_b = max(0, T(D) - Tf(D))`
 
-- iceberg_test_7_vertical_temp_gradient (audit 10.5.1–10.5.19, 24 проверки)
-- iceberg_test_en4_interp
-- iceberg_test_2 / iceberg_test_6 (холодный океан, T=−2.5 °C < Tf при всех глубинах)
-- iceberg_test_5 (тёплый океан, 1000 дней)
-- iceberg_test_moving_forcing, iceberg_test_ibcao_interp
+`m_basal = gamma_T DeltaT_b / (rho_ice L_f)`.
 
----
+The implemented correlation is canonical flat-plate forced-convection theory applied as an iceberg approximation. It is not a geometry-specific derivation for an iceberg. At `U_rel = 0`, the current forced-convection closure gives zero transfer; natural convection is not included.
 
-## 5. ICEBERG DYNAMICS (MOMENTUM EQUATIONS)
+## 11. Lateral melt
 
-### 5.1 Физический смысл
+The submerged thermal excess is depth-averaged:
 
-Лагранжева динамика айсберга под действием ветра, течения, Кориолиса и градиента давления.
+`<DeltaT>_D = (1/D) integral_0^D max(0, T(z)-Tf(z)) dz`.
 
-### 5.2 Непрерывные уравнения
+The current lateral melt closure remains legacy/approximate. Published laboratory work shows sensitivity to flow speed and vertical shear, so this block should not be treated as fully validated.
 
-```
-m · du/dt = F_wind_x + F_water_x + F_coriolis_x + F_pressure_x
-m · dv/dt = F_wind_y + F_water_y + F_coriolis_y + F_pressure_y
-```
+## 12. Real-grid and initialization definitions
 
-где m = ρ_ice · L · W · H
+The real grid contains 133×105 nodes and 132×104 active cells, with DX=DY=13.89 km. KOORD.DAT supplies grid coordinates and hhh.bar supplies bathymetry/land classification.
 
-### 5.3 Дискретные уравнения (Semi-implicit для Coriolis)
+Real sea-ice initialization for 2020-01-01 uses OSI-SAF SIC CDR v3.1 and C3S CS2SMOS SIT L4 combined v1.1. The reconstruction produces the legacy category files `1_1.ice`–`1_5.ice`.
 
-**Wind drag (Explicit):**
+## 13. Numerical conventions
 
-```
-F_wind_x = 0.5 · ρ_air · C_D_a · A_sail · |V_a| · (u_a - u)
-F_wind_y = 0.5 · ρ_air · C_D_a · A_sail · |V_a| · (v_a - v)
-```
+The standard thermodynamic/dynamic production time step is one hour unless an experiment explicitly changes it. The iceberg module uses SI units; legacy ocean-model interfaces may use CGS. Moving forcing is evaluated from the current x/y position rather than the initial position.
 
-**Water drag — Method A (Layer-integrated, Explicit):**
+## 14. Verification versus validation
 
-```
-F_water_x = -0.5 · ρ_water · C_D_w · A_wetted · |V_w - V_ice| · (u_w - u)
-F_water_y = -0.5 · ρ_water · C_D_w · A_wetted · |V_w - V_ice| · (v_w - v)
-```
+The FPM suite currently contains 50 test targets. Tests establish implementation identities, numerical regressions and selected analytical properties. They do not constitute independent observational validation.
 
-**Water drag — Method B (Depth-averaged, Explicit):**
+The scientific validation requirement for future stages is: equation/source provenance + independent analytical check + regression coverage + external observation/benchmark where available.
 
-```
-F_water_x = -0.5 · ρ_water · C_D_w · A_wetted · |Ū_w - V_ice| · (ū_w - u)
-F_water_y = -0.5 · ρ_water · C_D_w · A_wetted · |Ū_w - V_ice| · (v̄_w - v)
-```
+## 15. Primary references
 
-**Coriolis (Semi-implicit):**
+- Spencer (1971) — solar geometry.
+- Murphy & Koop (2005) — ice saturation vapour pressure.
+- Fofonoff & Millard (1983); Gill (1982) — seawater freezing point.
+- Eckert & Drake (1959) — canonical heat/mass transfer correlations.
+- Weeks & Campbell (1973) — empirical iceberg melt context.
+- Holland & Jenkins (1999); Jenkins et al. (2010) — three-equation ice-ocean thermodynamics.
+- FitzMaurice & Stern (2018) — tabular iceberg basal melt comparison.
+- Bigg et al. (1997); Martin & Adcroft (2010); NEMO-ICB literature — iceberg dynamics/thermodynamics and coupled modelling context.
 
-```
-u^(n+1) = u^n + Δt/m · (F_x^n + f · v^(n+1))
-v^(n+1) = v^n + Δt/m · (F_y^n - f · u^(n+1))
-
-Решается аналитически:
-u^(n+1) = (u^n + Δt/m·F_x^n + f·Δt/m·(v^n + Δt/m·F_y^n)) / (1 + (f·Δt/m)²)
-v^(n+1) = (v^n + Δt/m·F_y^n - f·Δt/m·(u^n + Δt/m·F_x^n)) / (1 + (f·Δt/m)²)
-```
-
-**Pressure gradient (Optional):**
-
-```
-F_pressure_x = -A_base · ∂p/∂x
-F_pressure_y = -A_base · ∂p/∂y
-```
-
-### 5.4 Переменные
-
-| Переменная | Значение   | Единицы | Описание                        |
-| ---------- | ---------- | ------- | ------------------------------- |
-| u, v       | prognostic | m/s     | Скорость айсберга               |
-| u_a, v_a   | forcing    | cm/s    | Ветра (переведено в m/s)        |
-| u_w, v_w   | forcing    | cm/s    | Течения (переведено в m/s)      |
-| f          | diagnostic | 1/s     | Параметр Кориолиса = 2Ωsin(lat) |
-| m          | diagnostic | kg      | Масса айсберга                  |
-
-### 5.5 Константы
-
-| Константа | Значение  | Единицы | Назначение                                 |
-| --------- | --------- | ------- | ------------------------------------------ |
-| C_D_A     | 1.3e-3    | -       | Коэффициент лобового сопротивления воздуха |
-| C_D_W     | 2.0e-3    | -       | Коэффициент лобового сопротивления воды    |
-| OMEGA     | 7.2921e-5 | 1/s     | Угловая скорость Земли                     |
-
-### 5.6 Численная схема
-
-- Operator splitting: Wind + Water drag (Explicit) → Coriolis (Semi-implicit) → Position update
-- Timestep: Δt = 3600 s
-- Semi-implicit Coriolis: безусловно устойчива для линейного члена
-
-### 5.7 Реализация
-
-```
-File: src/iceberg_dynamics.f90
-Module: iceberg_dynamics
-Subroutines: iceberg_dynamics_step, solve_coriolis_semi_implicit
-```
-
-### 5.8 Граничные условия
-
-- Grounded: u = v = 0
-- Domain boundaries: velocity damping
-
-### 5.9 Начальные условия
-
-- u = v = 0 (zero initial velocity)
-
-### 5.10 Проверка
-
-- iceberg_test_3_uniform_current
-- iceberg_test_9_coriolis_only
-- iceberg_test_coriolis_convergence
-- iceberg_test_coriolis_sign
-- iceberg_test_discrete_momentum
-- iceberg_test_force_budget
-
-### 5.11 Ограничения
-
-- Coriolis period error ~8% при Δt=3600s (numerical damping)
-- No Froude-Krylov force
-- No added mass effect
-
----
-
-## 6. BASAL MELT
-
-### 6.1 Физический смысл
-
-Таяние нижней границы айсберга от océanique теплового флюса.
-
-### 6.2 Непрерывное уравнение
-
-```
-Q_basal = ρ_water · c_pw · γ_T · (T_water - T_freeze)
-γ_T = 0.037 * k * Pr^(1/3) * U_rel^0.8 * ν^(-0.8) * L_char^(-0.2)   [W/(m²·K)]
-m_basal = Q_basal / (ρ_ice · L_f)
-Re = U_rel * L_char / ν
-Nu = 0.037 * Re^0.8 * Pr^(1/3)   (турбулентный режим, Re ≥ 5·10⁵)
-Nu = 0.664 * Re^0.5 * Pr^(1/3)   (ламинарный режим, Re < 5·10⁵)
-γ_T = Nu * k / L_char
-```
-
-### 6.3 Дискретное уравнение
-
-```
-γ_T = 0.037 * k * Pr^(1/3) * U_rel^0.8 * ν^(-0.8) * L_char^(-0.2)   (турбулентный)
-γ_T = 0.664 * k * Pr^(1/3) * U_rel^0.5 * ν^(-0.5) * L_char^(-0.5)   (ламинарный)
-Q_basal = γ_T * (T(D) - Tf(D))
-ΔH_basal = -Q_basal · Δt / (ρ_ice · L_f)
-```
-
-Где:
-- k = THERMAL_CONDUCTIVITY = 0.56 W/(m·K)
-- Pr = PRANDTL_NUMBER = 13.8
-- ν = KINEMATIC_VISCOSITY = 1.82e-6 m²/s
-- L_char = state%L (длина в направлении X — см. ограничение ниже)
-- Переход ламинарный/турбулентный при Re_crit = 5·10⁵
-
-### 6.4 Переменные
-
-| Переменная | Значение   | Единицы | Описание                              |
-| ---------- | ---------- | ------- | ------------------------------------- |
-| T_water    | forcing    | °C      | Температура воды на глубине черновика |
-| T_freeze   | diagnostic | °C      | Точка замерзания (EOS-80, Stage 10.5) |
-| U_rel      | diagnostic | m/s     | Относительная скорость вода-лёд на D  |
-| γ_T        | diagnostic | W/(m²·K)| Теплообменный коэффициент океан-статья |
-| Re         | diagnostic | -       | Число Рейнольдса U_rel·L_char/ν       |
-| Nu         | diagnostic | -       | Число Нуссельта                        |
-| Q_basal    | diagnostic | W/m²    | Тепловой флюс через основание         |
-
-### 6.5 Константы
-
-| Константа               | Значение | Единицы | Назначение                                |
-| ----------------------- | -------- | ------- | ----------------------------------------- |
-| PRANDTL_NUMBER          | 13.8     | -       | Число Прандтля морской воды (0°C)         |
-| KINEMATIC_VISCOSITY     | 1.82e-6  | m²/s    | Кинематическая вязкость морской воды      |
-| THERMAL_CONDUCTIVITY    | 0.56     | W/(m·K) | Теплопроводность морской воды             |
-| REYNOLDS_CRITICAL       | 5.0e5    | -       | Критическое число Рейнольдса (переход)    |
-| MELT_RATE_MIN           | 1.0e-12  | m/s     | Порог скорости плавления (численный шум)  |
-| RHO_ICE                 | 910.0    | kg/m³   | Плотность льда                            |
-| LATENT_HEAT             | 334000.0 | J/kg    | Удельная теплота плавления льда           |
-
-### 6.6 Численная схема
-
-- Explicit
-- U_rel = |V_water(D) - V_ice| на глубине черновики (интерполяция профиля)
-- T_water интерполируется вертикально до D
-- L_char = state%L (X-размер айсберга). **ОГРАНИЧЕНИЕ**: модель не имеет прогностической ориентации, state%L всегда вдоль X. Корректно только если U_rel || X.
-- При U_rel ≤ 0 возвращает m_basal = 0 (нет турбулентного теплообмена). Натуральная конвекция не реализована (Stage 10.7+).
-
-### 6.7 Реализация
-
-```
-File: src/iceberg_thermodynamics.f90
-Module: iceberg_thermodynamics
-Subroutines: compute_basal_melt
-File: src/iceberg_types.f90
-Function: ocean_heat_transfer_coeff
-```
-
-### 6.8 Проверка
-
-- iceberg_test_5_warm_ocean
-- iceberg_test_6_cold_ocean
-- iceberg_test_10p6_ocean_heat_transfer (аудит Stage 10.6: 18 независимых проверок)
-
----
-
-## 7. LATERAL MELT
-
-### 7.1 Физический смысл
-
-Боковое таяние вертикальных граней айсберга.
-
-### 7.2 Непрерывное уравнение
-
-```
-Q_lateral = ρ_water · c_pw · C_LATERAL · ⟨ΔT⟩_D · A_lat
-d(L+W)/dt = -Q_lateral / (ρ_ice · L_f · H)
-```
-
-где ⟨ΔT⟩\_D — глубинно-усредненная разница температур по черновику (Method A, Stage 10.5).
-
-**Stage 10.7 (планируемо):** замена на физически обоснованную параметризацию с использованием U_rel(z) и bulk-формулировки теплообмена. По Weeks & Campbell (1973) для бокового плавления характерная длина L_char = D (черновик).
-
-### 7.3 Дискретное уравнение
-
-```
-ΔL_lat = ΔW_lat = -Q_lateral · Δt / (ρ_ice · L_f · H · 2)
-```
-
-### 7.4 Переменные
-
-| Переменная | Значение   | Единицы | Описание                                |
-| ---------- | ---------- | ------- | --------------------------------------- |
-| ⟨ΔT⟩\_D    | diagnostic | °C      | Глубинно-усредненное ΔT                 |
-| A_lat      | diagnostic | m²      | Площадь боковой поверхности = 2·H·(L+W) |
-| Q_lateral  | diagnostic | W/m²    | Тепловой флюс через боковые грани       |
-
-### 7.5 Константы
-
-| Константа | Значение | Единицы | Назначение                  |
-| --------- | -------- | ------- | --------------------------- |
-| C_LATERAL | 1.0e-6   | m/(s·K) | Legacy боковой коэффициент  |
-
-### 7.6 Численная схема
-
-- Explicit
-- Глубинное усреднение по уровням EN4 до D
-- Симметричное уменьшение L и W
-
-### 7.7 Реализация
-
-```
-File: src/iceberg_thermodynamics.f90
-Module: iceberg_thermodynamics
-Subroutines: compute_lateral_melt
-```
-
-### 7.8 Проверка
-
-- iceberg_test_5_warm_ocean
-
-### 7.9 Ограничения (Stage 10.7 target)
-
-- Legacy C_LATERAL используется вместо физически обоснованной bulk-формулировки
-- U_rel(z) инфраструктура готова в ocean_profile%u_rel, но не используется для бокового плавления
-- Характерная длина для бокового плавления должна быть D (черновик) по Weeks & Campbell (1973)
-
----
-
-## 8. SURFACE ENERGY BALANCE (CURRENT LEGACY FORMULATION)
-
-### 8.1 Физический смысл
-
-Энергетический баланс верхней поверхности айсберга, определяющий поверхностное таяние.
-
-### 8.2 Непрерывные уравнения (Stage 10.1.1 + 10.1.2)
-
-**Shortwave (SW) — Astronomical geometry (Stage 10.1.1) + Atmospheric attenuation (Stage 10.1.2):**
-
-```
-SW↓ = S₀ · cos(θ_z) · T_clear · T_cloud
-SW_abs = SW↓ · (1 - α_ice)
-
-где:
-  S₀ = SOLAR_CONSTANT = 1353 W/m²
-  cos(θ_z) = sin(φ)sin(δ) + cos(φ)cos(δ)cos(H)  ! астрономическая геометрия (Stage 10.1.1)
-  δ = 0.006918 - 0.399912·cos(Γ) + 0.070257·sin(Γ) - ...  ! Спенсер (1971)
-  Γ = 2π·(day_of_year - 1)/365
-  H = 15°·(local_solar_time - 12)  ! часовой угол
-  local_solar_time = UTC + lon/15 + eq_time/60
-  eq_time = 229.18·(0.000075 + 0.001868·cos(Γ) - 0.032077·sin(Γ) - ...)  ! Спенсер (1971)
-  Polar night/day: cos(θ_z) ≤ 0 → SW↓ = 0
-
-  ! Atmospheric attenuation (Stage 10.1.2):
-  T_clear = T_rayleigh · T_water_vapor · T_aerosol
-  T_rayleigh = exp(-τ_rayleigh · m)
-  τ_rayleigh = 0.09 · (p_atm / 101325 Pa)  ! sea-level optical depth
-  m = 1 / cos(θ_z)  ! air mass (capped at 40)
-  T_water_vapor = 1 - 0.077 · w^0.3  ! Lacis & Hansen (1974) broadband
-  w [cm] = 0.1 · (e_vap / 100) · (101325 / p_atm)  ! precipitable water from surface e_vap
-  T_aerosol = 0.93  ! Arctic background (empirical, legacy)
-  T_cloud = 1 - 0.75 · tcc  ! linear cloud transmittance (overcast → 25% of clear)
-
-  All transmittances bounded to [0, 1]. SW↓ ≤ S₀ · max(cos(θ_z), 0).
-```
-
-**Legacy SW (replaced in Stage 10.1.2):**
-
-```
-SW↓_legacy = S₀ · cos²(θ_z) · (1 - 0.6·tcc³) / ((cos_zenith+2.7)·1e-5·e_vap + 1.085·cos_zenith+0.1)
-```
-
-**Longwave (LW):**
-
-```
-LW↓ = ε_a · σ · T_air⁴ · (1 + LW_cloud · tcc) · (1 - LW_humid · exp(-LW_humid_exp · (273.15 - T_air)²))
-LW↑ = -ε_ice · σ · T_surf⁴
-```
-
-**Sensible Heat (SH) — Stage 10.3 Modern Bulk Formulation:**
-
-```
-ρ_air = p_atm / (R_air · T_air)
-Q_SH = ρ_air · CP_AIR · C_H · |V_a| · (T_air - T_surf)
-
-C_H = C_H_NEUTRAL = 1.5e-3  ! Fixed neutral bulk transfer coefficient (model parameter)
-CP_AIR = 1004.0 J/(kg·K)    ! Specific heat of dry air
-Sign: Q_SH > 0 -> atmosphere heats surface
-```
-
-**Latent Heat (LH) — Stage 10.3 Modern Bulk Formulation:**
-
-```
-q_air = 0.622 · e_vap / p_atm
-q_sat_ice = 0.622 · e_sat_ice(T_surf) / p_atm  ! ICE saturation (Murphy & Koop 2005)
-Q_LH = ρ_air · L_S · C_E · |V_a| · (q_air - q_sat_ice)
-
-C_E = C_E_NEUTRAL = 1.5e-3   ! Fixed neutral bulk transfer coefficient (model parameter)
-L_S = 2.835e6 J/kg           ! Latent heat of sublimation at 0°C
-e_sat_ice = exp(A - B/T + C·ln(T) - D·T)  ! Murphy & Koop (2005), Eq. 10
-    A = 9.550426, B = 5723.265, C = 3.53068, D = 0.00728332
-    T in [K], e_sat in [Pa], valid 50-273 K
-Sign: Q_LH > 0 -> vapor flux supplies energy to surface (condensation/deposition)
-      Q_LH < 0 -> vapor flux removes energy from surface (sublimation)
-Stage 10.3: Q_LH is ENERGY FLUX ONLY; no mass change from sublimation/deposition
-```
-
-**Theoretical context (not used directly in production):**
-
-```
-Neutral bulk transfer coefficient from logarithmic law:
-  C_H = C_E = κ² / [ln(z/z₀)]²
-  κ = 0.4 (von Karman constant)
-  z = 10 m (measurement height)
-  z₀ = 1e-4 m (roughness length for smooth ice, Andreas et al. 2010)
-  → C = 0.4² / ln(10/1e-4)² ≈ 1.21e-3
-```
-
-This theoretical value (≈1.21e-3) differs from the production fixed coefficient (1.5e-3).
-The logarithmic relation is retained as theoretical context only.
-No stability correction (Monin-Obukhov) is implemented in Stage 10.3.
-
-**Legacy SH/LH (retained for reference):**
-
-```
-Q_SH_legacy = ρ_air · SH_COEFF · |V_a| · (T_air - T_surf)
-    SH_COEFF = 1.7068  ! Stanton number (dimensionless)
-Q_LH_legacy = ρ_air · LH_COEFF · |V_a| · L_v · (q_air - q_sat_water)
-    LH_COEFF = 0.6650735  ! ~443x standard C_E
-    L_v = 2.5e6 J/kg  ! Vaporization (not sublimation)
-    q_sat_water = water saturation at ice surface (5-18% error at T < 0°C)
-```
-
-**Net & Melt (Stage 10.4.1 — Corrective Energy Partition):**
-
-```
-Q_nonlatent = SW_abs + LW↓ + LW↑ + Q_SH           ! Non-latent energy fluxes
-q_air = 0.622 · e_vap / p_atm
-q_sat_ice = 0.622 · e_sat_ice(T_surf) / p_atm     ! ICE saturation (Murphy & Koop 2005)
-m_vapor = ρ_air · C_E · |V_a| · (q_air - q_sat_ice)  [kg/(m²·s)]  ! vapor mass flux
-Q_LH = m_vapor · L_S  [W/m²]                       ! latent heat flux, consistent with Stage 10.3
-Q_surface = Q_nonlatent + Q_LH                     ! Total energy available at surface
-
-Sign convention:
-  m_vapor < 0 -> sublimation -> Q_LH < 0 -> energy SINK
-  m_vapor > 0 -> deposition  -> Q_LH > 0 -> energy SOURCE
-
-Q_melt = max(Q_surface, 0)  [W/m²]  ! energy available for melting at T_surface = 0°C
-m_melt = Q_melt / (ρ_ice · L_f)  [m/s]  ! surface melt rate (liquid water)
-
-Q_net = Q_surface - m_melt · ρ_ice · L_f / Δt  [W/m²]  ! residual flux for diagnostics
-```
-
-**Phase Change Logic (Corrected Stage 10.4.1):**
-
-```
-if T_surface < T_melt:
-    dT = Q_surface · Δt / C_eff
-    T_surface_new = T_surface + dT
-    if T_surface_new ≥ T_melt:
-        ! Crossed melting point: partition timestep energy
-        excess_energy = Q_surface - C_eff · (T_melt - T_surface) / Δt
-        Q_melt = max(excess_energy, 0)
-        m_melt = Q_melt / (ρ_ice · L_f)
-        T_surface = T_melt
-    else:
-        m_melt = 0
-else:  ! T_surface ≥ T_melt
-    T_surface = T_melt
-    Q_melt = max(Q_surface, 0)
-    m_melt = Q_melt / (ρ_ice · L_f)
-
-Vapor mass flux (sublimation/deposition):
-m_vapor = ρ_air · C_E · |V_a| · (q_air - q_sat_ice)  [kg/(m²·s)]
-Sign: m_vapor < 0 -> sublimation (mass loss, energy sink)
-      m_vapor > 0 -> deposition (mass gain, energy source)
-Mass change from vapor: ΔM_vapor = m_vapor · A_top · Δt
-
-Note: Vapor mass flux and latent heat flux are two representations
-of the SAME phase-change process, NOT two independent energy sources.
-Q_LH = m_vapor · L_S  and  ΔM_vapor = m_vapor · A_top · Δt
-use identical m_vapor.
-```
-
-**Stage 10.4.2 — Independent monotonicity validation (2026-09-08):**
-
-Old TEST 10.4.9 ran in polar day, where d2m also changes SW_down
-(precipitable-water attenuation), so Q_nonlatent was NOT controlled.
-Re-validated in **polar night** (SW ≡ 0):
-
-```
-Q_nonlatent = LW_down(T_air,tcc) + LW_up(T_surface) + SH(rho,T_air,T_surface,U)
-            (d2m-invariant by construction)
-m_vapor     = rho · C_E · U · (q_air(d2m) - q_sat_ice)   (monotonic in d2m)
-Q_LH        = m_vapor · L_S
-Q_surface   = Q_nonlatent + Q_LH      -> monotonic sub < zero < dep
-Q_melt      = max(Q_surface, 0)       -> monotonic
-m_surface   = Q_melt/(ρ_ice · L_f)    -> monotonic
-```
-
-Controlled run (t2m=283.15 K, tcc=0, p=101325 Pa, U=10 m/s, T=0 °C, lat 90):
-SUB d2m=263.15 K → m_vapor=−3.72e−5, Q_surface=44.4, m=1.46e−7
-ZERO d2m=273.158 K (e_sat_dew=e_sat_ice) → m_vapor≈0, Q_surface=149.7, m=4.93e−7
-DEP d2m=283.15 K → m_vapor=+7.11e−5, Q_surface=351.4, m=1.16e−6
-Q_nonlatent identical (149.743 W/m²) in all cases. All known properties verified.
-Report: `docs/wiki/Stage10.4.2_Independent_monotonicity_validation.md`.
-
-**Stage 10.4.2.1 — Independent Q_surface output validation (2026-09-08):**
-
-Stage 10.4.2 reconstructed Q_surface from the downstream melt rate; it never
-verified the PRODUCTION calculation. 10.4.2.1 exposes the production flux in
-diagnostics (diagnostic-only addition; physics unchanged):
-
-```
-Q_surface    (local, was not stored)  = Q_nonlatent + Q_LH
-Q_LH         (local, was not stored)  = m_vapor · L_S
-diag%q_surface = q_surface   (NEW, diagnostic-only)
-diag%q_lh      = q_lh        (NEW, diagnostic-only)
-diag%q_net_surface = q_net  = Q_surface - m_surface·ρ_ice·L_f/dt
-                             (residual AFTER melt, ≈ 0 while melting — NOT Q_surface)
-```
-
-Direct validation in the same polar-night controlled experiment (only d2m varies):
-`Q_surface_production = Q_nonlatent_independent + m_vapor_production·L_S`.
-
-| Case | Q_nonlatent_ind | Q_LH (m_vapor·L_S) | Q_surface_expected | Q_surface PRODUCTION | error   |
-| ---- | --------------- | ------------------ | ------------------ | -------------------- | ------- |
-| SUB  | 149.742706      | −105.374290        | 44.368416          | 44.368423            | +7.6e−6 |
-| ZERO | 149.742706      | −1.48e−4           | 149.742554         | 149.742554           | 0.0     |
-| DEP  | 149.742706      | +201.645966        | 351.388672         | 351.388672           | 0.0     |
-
-Errors ≤ 7.6e−6 W/m² (float32 rounding). Audit 66 checks / 0 errors.
-Report: `docs/wiki/Stage10.4.2.1_Independent_Q_surface_output_validation.md`.
-
-### 8.3 Дискретные уравнения
-
-Те же, вычисляются каждый timestep в compute_surface_melt.
-
-### 8.4 Переменные
-
-| Переменная | Значение   | Единицы | Описание                       |
-| ---------- | ---------- | ------- | ------------------------------ |
-| T_air      | forcing    | °C      | Температура воздуха (t2m)      |
-| T_dew      | forcing    | °C      | Точка росы (d2m)               |
-| T_surf     | parameter  | °C      | T_ICE = -10.0°C (CONSTANT)     |
-| p_atm      | forcing    | Pa      | Давление (msl)                 |
-| tcc        | forcing    | 0–1     | Облачность                     |
-| V_a        | forcing    | m/s     | Скорость ветра                 |
-| Q_net      | diagnostic | W/m²    | Чистый энергетический флюс     |
-| m_surface  | diagnostic | m/s     | Скорость поверхностного таяния |
-
-### 8.5 Константы (Legacy)
-
-| Константа       | Значение  | Единицы   | Назначение                              |
-| --------------- | --------- | --------- | --------------------------------------- |
-| SOLAR_CONSTANT  | 1353.0    | W/m²      | Солнечная константа                     |
-| ALBEDO_ICE      | 0.6       | -         | Альбедо льда                            |
-| EMISSIVITY      | 0.97      | -         | Эмиссивность льда                       |
-| STEFAN_BOLTZ    | 5.67e-8   | W/(m²·K⁴) | Константа Стефана-Больцмана             |
-| C_CLOUD         | 0.75      | -         | Cloud coefficient (SW, legacy)          |
-| LW_EMISS        | 0.78      | -         | Атмосферная эмиссивность (LW)           |
-| LW_CLOUD_FACTOR | 0.25      | -         | Cloud factor (LW)                       |
-| LW_HUMID_COEFF  | 0.25      | -         | Humidity correction (LW)                |
-| LW_HUMID_EXP    | 0.06      | -         | Humidity exponent (LW)                  |
-| SH_COEFF        | 1.5e-3    | -         | Sensible heat transfer coeff            |
-| LH_COEFF        | 0.6650735 | -         | **Legacy latent heat coeff**            |
-| LATENT_VAP      | 2.5e6     | J/kg      | Латентная теплота испарения (L_v)       |
-| SAT_VAPOR_0     | 610.78    | Pa        | Насыщенное парциальное давление при 0°C |
-| TETENS_A        | 8.61503   | -         | Коэффициент Тетенса                     |
-| GAS_CONST_AIR   | 287.0     | J/(kg·K)  | Газовая постоянная сухого воздуха       |
-| EPSILON         | 0.622     | -         | Молекулярное соотношение H₂O/air        |
-
-| ! Stage 10.1.2: Atmospheric attenuation constants
-| TAU_RAYLEIGH_0 | 0.09 | - | Rayleigh optical depth at sea level (p=1013.25 hPa) |
-| AEROSOL_TRANS_ARCTIC | 0.93 | - | Arctic background aerosol transmittance (empirical) |
-| CLOUD_TRANS_COEFF | 0.75 | - | Cloud transmittance coefficient (T_cloud = 1 - C\*tcc) |
-| WV_ABSORP_COEFF | 0.077 | - | Water vapor absorption coefficient (Lacis & Hansen 1974) |
-| WV_ABSORP_EXP | 0.3 | - | Water vapor absorption exponent (Lacis & Hansen 1974) |
-| PRECIP_WATER_SCALE | 0.1 | cm/(hPa) | Precipitable water scale from surface e_vap (empirical) |
-| ! Stage 10.3: Modern turbulent exchange
-| CP_AIR | 1004.0 | J/(kg·K) | Specific heat of dry air |
-| L_S | 2.835e6 | J/kg | Latent heat of sublimation at 0°C |
-| C_H_NEUTRAL | 1.5e-3 | - | Fixed neutral bulk coefficient (model parameter; literature-context documented) |
-| C_E_NEUTRAL | 1.5e-3 | - | Fixed neutral bulk coefficient; same formulation |
-| VON_KARMAN | 0.4 | - | Von Karman constant |
-| Z0_ICE | 1.0e-4 | m | Roughness length for smooth ice (Andreas et al. 2010) |
-| MURPHY_KOOP_A | 9.550426 | - | Murphy & Koop (2005) ice saturation A |
-| MURPHY_KOOP_B | 5723.265 | K | Murphy & Koop (2005) ice saturation B |
-| MURPHY_KOOP_C | 3.53068 | - | Murphy & Koop (2005) ice saturation C |
-| MURPHY_KOOP_D | 0.00728332| 1/K | Murphy & Koop (2005) ice saturation D |
-
-### 8.6 Численная схема
-
-- Explicit evaluation каждый timestep
-- T_surf = state%T_surface (prognostic, Stage 10.2)
-- Solar geometry: астрономическая (Stage 10.1.1) — declination δ, hour angle H, cos(θ_z) каждый timestep
-- Polar night/day: cos(θ_z) ≤ 0 → SW↓ = 0
-- max(0, Q_net) предотвращает отрицательное таяние
-- SW atmospheric attenuation: T_clear = T_rayleigh·T_water_vapor·T_aerosol; T_cloud = 1 - 0.75·tcc (Stage 10.1.2)
-- SH/LH: Modern bulk formulation with ice saturation (Stage 10.3)
-- L_S = 2.835e6 J/kg used for vapor exchange energy flux (no mass change in Stage 10.3)
-
-### 8.7 Реализация
-
-```
-File: src/iceberg_thermodynamics.f90
-Module: iceberg_thermodynamics
-Subroutines: compute_surface_melt, saturation_vapor_pressure, ...
-```
-
-### 8.8 Граничные условия
-
-- Polar night: legacy даёт cos_zenith > 0 (FALSE DAYLIGHT)
-- No melt if Q_net ≤ 0
-
-### 8.9 Начальные условия
-
-- Не требуются (diagnostic каждый шаг)
-
-### 8.10 Проверка
-
-- iceberg_test_surface_energy_algebra (algebraic identity)
-- iceberg_test_surface_latent_reference (benchmark vs bulk)
-- iceberg_test_solar_radiation_geometry (legacy vs astronomy)
-- iceberg_test_surface_energy_balance (flux closure)
-- iceberg_test_surface_melt_audit (self-referential)
-
-### 8.11 Ограничения (КРИТИЧЕСКИЕ — Stage 10 targets)
-
-1. **Solar geometry:** FIXED in Stage 10.1.1 — astronomical δ, H, cos(θ_z) now time-dependent
-2. **Atmospheric attenuation (SW):** PARTIALLY FIXED in Stage 10.1.2 — broadband parameterization with documented coefficients; CLOUD_TRANS_COEFF=0.75, AEROSOL_TRANS_ARCTIC=0.93 (empirical legacy), PRECIP_WATER_SCALE=0.1 (empirical). NOT using ERA5 SSRD/STRD.
-3. **SH/LH coefficients:** C_H = C_E = 1.5e-3 fixed neutral bulk coefficients (model parameters). NOT derived from kappa²/ln²(z/z₀) with z₀=1e-4 m (which gives ~1.21e-3). Theoretical logarithmic relation retained as context only.
-4. **Stability correction:** NOT implemented (no Monin-Obukhov length, requires implicit scheme).
-5. **T_ICE:** Fixed -10°C → нет condensation heating feedback (replaced by prognostic T_surface in Stage 10.2)
-6. **q_sat:** FIXED in Stage 10.3 — now uses ice saturation (Murphy & Koop 2005).
-7. **L_v vs L_s:** FIXED in Stage 10.3 — now uses L_s = 2.835e6 J/kg for sublimation/deposition energy flux.
-8. **No phase partitioning:** Stage 10.3 — Q_LH is energy flux only; no mass change from sublimation/deposition (Stage 10.4).
-
----
-
-## 9. SURFACE MELT → GEOMETRY UPDATE (Stage 10.4 updated)
-
-### 9.1 Непрерывное уравнение
-
-```
-dH/dt = -(m_melt + m_vapor/ρ_ice)
-```
-
-where m_vapor = ρ_air · C_E · |V_a| · (q_air - q_sat_ice) [kg/(m²·s)]
-Q_LH = m_vapor · L_S
-Sign convention:
-m_vapor < 0 -> sublimation (mass loss, thickness decreases, Q_LH < 0 energy sink)
-m_vapor > 0 -> deposition (mass gain, thickness increases, Q_LH > 0 energy source)
-
-Q_surface = Q_nonlatent + Q_LH ! total surface energy
-Q_melt = max(Q_surface, 0) at T_surface = T_melt
-m_melt = Q_melt / (ρ_ice · L_f)
-
-### 9.2 Дискретное уравнение
-
-```
-H^(n+1) = H^n - (m_melt + m_vapor/ρ_ice) · Δt
-```
-
-### 9.3 Массовый баланс
-
-```
-M_budget = M_geometry = ρ_ice · L · W · H
-Mass_loss = M_basal + M_lateral + M_surface + M_vapor
-Error = |M_geometry - M_budget| / M_initial < 0.013%
-```
-
-### 9.4 Реализация
-
-```
-File: src/iceberg_geometry.f90
-Subroutines: iceberg_update_geometry
-```
-
-### 9.5 Проверка
-
-- iceberg_test_10_mass_conservation
-- iceberg_test_11_30day_offline
-
----
-
-## 10. MASS CONSERVATION (Stage 10.4 updated)
-
-### 10.1 Уравнение
-
-```
-M^(n+1) = M^n - (M_basal + M_lateral + M_surface + M_vapor) · Δt
-```
-
-where M_vapor = m_vapor · A_top · Δt
-m_vapor = ρ_air · C_E · |V_a| · (q_air - q_sat_ice) [kg/(m²·s)]
-
-### 10.2 Диагностика
-
-```
-M_geometry = ρ_ice · L · W · H
-M_budget = M_initial - Σ(M_melt_components) - M_vapor
-Relative_error = |M_geometry - M_budget| / M_initial
-```
-
----
-
-## 11. ЧИСЛЕННЫЕ МЕТОДЫ (SUMMARY)
-
-### 11.1 State Variables & Update Order
-
-```
-State vector: [x, y, u, v, L, W, H] (7 prognostic)
-
-Timestep loop (Δt = 3600 s):
-1. Forcing interpolation (atmos + ocean) at current position
-2. Dynamics:
-   a. Wind drag (Explicit)
-   b. Water drag (Explicit, Method A or B)
-   c. Coriolis (Semi-implicit analytical solve)
-   d. Pressure gradient (Optional, Explicit)
-   e. Update u, v
-3. Position update (Explicit Euler): x, y
-4. Thermodynamics:
-   a. Basal melt (Explicit)
-   b. Lateral melt (Explicit)
-   c. Surface energy balance (Explicit):
-      i. Compute Q_SW, Q_LW, Q_SH, Q_LH
-      ii. Compute Q_nonlatent = SW_abs + LW_down + LW_up + SH
-      iii. Compute m_vapor = ρ_air · C_E · |V_a| · (q_air - q_sat_ice)
-      iv. Compute Q_LH = m_vapor · L_S
-      v. Compute Q_surface = Q_nonlatent + Q_LH
-      vi. Prognostic T_surface update:
-          if T_surface < T_melt:
-              dT = Q_surface · Δt / C_eff
-              T_surface_new = T_surface + dT
-              if T_surface_new ≥ T_melt:
-                  excess_energy = Q_surface - C_eff · (T_melt - T_surface) / Δt
-                  Q_melt = max(excess_energy, 0)
-              else:
-                  Q_melt = 0
-          else:
-              Q_melt = max(Q_surface, 0)
-      vii. Compute m_melt = Q_melt / (ρ_ice · L_f)
-      viii. m_surface = m_melt
-   d. Update H (from m_surface + m_vapor/ρ_ice)
-   e. Update L, W (from lateral melt)
-   f. Update geometry (mass, draft, areas)
-5. Diagnostics output
-```
-
-### 11.2 Interpolation Schemes
-
-- Horizontal (ERA5/EN4): Bilinear
-- Vertical (EN4): Linear + extrapolation
-- Time (ERA5): Nearest neighbor (3-hourly)
-
-### 11.3 Timestep
-
-- Δt = 3600 s (1 hour) — production
-- Тестирована стабильность: 60–3600 s
-
----
-
-## 12. BOUNDARY CONDITIONS
-
-| Boundary               | Treatment                                             |
-| ---------------------- | ----------------------------------------------------- |
-| Domain edges           | Land mask (8888.0) → grounded, velocity = 0           |
-| Iceberg grounding      | D ≥ bathymetry → grounded = .true., u=v=0             |
-| Forcing outside domain | Nearest valid value / zero gradient                   |
-| Velocity               | No-slip at land, free-slip at open boundary           |
-| Thermodynamic          | No flux through land, ocean forcing only at wet cells |
-
----
-
-## 13. INITIAL CONDITIONS
-
-| Component                      | Source                                      |
-| ------------------------------ | ------------------------------------------- |
-| Iceberg geometry (L,W,H)       | 1_k.ice (real) / synthetic (test)           |
-| Iceberg position (x,y,lat,lon) | 1_k.ice / specified                         |
-| Iceberg velocity (u,v)         | 0, 0                                        |
-| SIC/SIT                        | AMSR2 + IBCAO (real) / synthetic (test)     |
-| Ocean T/S                      | EN4 Jan 2020 (real) / zero gradient (test)  |
-| Atmosphere                     | ERA5 Jan-Mar 2020 (real) / synthetic (test) |
-
----
-
-## 14. CODE LOCATIONS (QUICK REFERENCE)
-
-| Physics Block     | Primary File               | Module                 |
-| ----------------- | -------------------------- | ---------------------- |
-| Geometry          | iceberg_geometry.f90       | iceberg_geometry       |
-| Dynamics          | iceberg_dynamics.f90       | iceberg_dynamics       |
-| Thermodynamics    | iceberg_thermodynamics.f90 | iceberg_thermodynamics |
-| Forcing           | iceberg_forcing.f90        | iceberg_forcing        |
-| ERA5 Input        | netcdf_input.f90           | netcdf_input           |
-| EN4 Input         | initial_ocean_reader.f90   | initial_ocean_reader   |
-| Main Orchestrator | app/main.f90               | (program)              |
-| Types/Constants   | iceberg_types.f90          | iceberg_types          |
-
----
-
-## 15. КЛЮЧЕВЫЕ LEGACY APPROXIMATIONS (FOR STAGE 10 REFERENCE)
-
-| Block              | Legacy Formula   | Modern Target                                        |
-| ------------------ | ---------------- | ---------------------------------------------------- |
-| Solar geometry     | decl=0, hour=0   | Astronomical δ, H; daily integration for diagnostics |
-| LH coefficient     | 0.6650735        | C_E (neutral/stability-dependent)                    |
-| Surface temp       | Fixed -10°C      | Prognostic T_surface                                 |
-| q_sat              | Water saturation | Ice saturation (Murphy-Koop)                         |
-| Latent heat        | L_v = 2.5e6      | L_s = 2.835e6 for sublimation                        |
-| Phase change       | max(Q_net,0)     | Partition: melt/sublimation/deposition               |
-| Basal melt coeff   | 1e-6 m/(s·K)     | Physics-based γ_T                                    |
-| Lateral melt coeff | 1e-6 m/(s·K)     | Physics-based γ_T                                    |
-
----
-
-_Этот документ является математической спецификацией текущей (Stage 9.4C.2) production модели. Все уравнения отражают фактический код, а не желаемую физику._
+Full records are maintained in `docs/references/references.bib`; source-to-component roles are maintained in `docs/references/literature_matrix.md`.

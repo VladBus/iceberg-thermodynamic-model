@@ -1,8 +1,8 @@
 # Model Equation Ledger — Математическая спецификация текущей модели
 
-**Дата:** 2026-09-07  
-**Physics baseline commit:** a1fc859 "Correct Stage 10.2 analytical validation"  
-**Current repository stage:** Stage 10.3 — corrective validation  
+**Дата:** 2026-09-07
+**Physics baseline commit:** a1fc859 "Correct Stage 10.2 analytical validation"
+**Current repository stage:** Stage 10.3 — corrective validation
 **Model version:** Stage 10.3 corrective validation (production physics from f82c527 + corrective fixes)
 
 ---
@@ -385,38 +385,62 @@ Subroutines: iceberg_dynamics_step, solve_coriolis_semi_implicit
 ### 6.2 Непрерывное уравнение
 
 ```
-Q_basal = ρ_water · c_pw · C_BASAL · U_rel · (T_water - T_freeze)
-dh/dt = -Q_basal / (ρ_ice · L_f)
+Q_basal = ρ_water · c_pw · γ_T · (T_water - T_freeze)
+γ_T = 0.037 * k * Pr^(1/3) * U_rel^0.8 * ν^(-0.8) * L_char^0.2   [W/(m²·K)]
+m_basal = Q_basal / (ρ_ice · L_f)
+Re = U_rel * L_char / ν
+Nu = 0.037 * Re^0.8 * Pr^(1/3)   (турбулентный режим, Re ≥ 5·10⁵)
+Nu = 0.664 * Re^0.5 * Pr^(1/3)   (ламинарный режим, Re < 5·10⁵)
+γ_T = Nu * k / L_char
 ```
 
 ### 6.3 Дискретное уравнение
 
 ```
+γ_T = 0.037 * k * Pr^(1/3) * U_rel^0.8 * ν^(-0.8) * L_char^0.2   (турбулентный)
+γ_T = 0.664 * k * Pr^(1/3) * U_rel^0.5 * ν^(-0.5) * L_char^0.5   (ламинарный)
+Q_basal = γ_T * (T(D) - Tf(D))
 ΔH_basal = -Q_basal · Δt / (ρ_ice · L_f)
 ```
+
+Где:
+- k = THERMAL_CONDUCTIVITY = 0.56 W/(m·K)
+- Pr = PRANDTL_NUMBER = 13.8
+- ν = KINEMATIC_VISCOSITY = 1.82e-6 m²/s
+- L_char = state%L (длина в направлении X — см. ограничение ниже)
+- Переход ламинарный/турбулентный при Re_crit = 5·10⁵
 
 ### 6.4 Переменные
 
 | Переменная | Значение   | Единицы | Описание                              |
 | ---------- | ---------- | ------- | ------------------------------------- |
 | T_water    | forcing    | °C      | Температура воды на глубине черновика |
-| T_freeze   | diagnostic | °C      | Точка замерзания (зависит от S, p)    |
-| U_rel      | diagnostic | m/s     | Относительная скорость вода-лёд       |
+| T_freeze   | diagnostic | °C      | Точка замерзания (EOS-80, Stage 10.5) |
+| U_rel      | diagnostic | m/s     | Относительная скорость вода-лёд на D  |
+| γ_T        | diagnostic | W/(m²·K)| Теплообменный коэффициент океан-статья |
+| Re         | diagnostic | -       | Число Рейнольдса U_rel·L_char/ν       |
+| Nu         | diagnostic | -       | Число Нуссельта                        |
 | Q_basal    | diagnostic | W/m²    | Тепловой флюс через основание         |
 
 ### 6.5 Константы
 
-| Константа   | Значение | Единицы  | Назначение                    |
-| ----------- | -------- | -------- | ----------------------------- |
-| C_BASAL     | 1.0e-6   | m/(s·K)  | Коэффициент базального таяния |
-| CP_WATER    | 3985.0   | J/(kg·K) | Теплоёмкость воды             |
-| LATENT_HEAT | 3.34e5   | J/kg     | Латентная теплота плавления   |
+| Константа               | Значение | Единицы | Назначение                                |
+| ----------------------- | -------- | ------- | ----------------------------------------- |
+| PRANDTL_NUMBER          | 13.8     | -       | Число Прандтля морской воды (0°C)         |
+| KINEMATIC_VISCOSITY     | 1.82e-6  | m²/s    | Кинематическая вязкость морской воды      |
+| THERMAL_CONDUCTIVITY    | 0.56     | W/(m·K) | Теплопроводность морской воды             |
+| REYNOLDS_CRITICAL       | 5.0e5    | -       | Критическое число Рейнольдса (переход)    |
+| MELT_RATE_MIN           | 1.0e-12  | m/s     | Порог скорости плавления (численный шум)  |
+| RHO_ICE                 | 910.0    | kg/m³   | Плотность льда                            |
+| LATENT_HEAT             | 334000.0 | J/kg    | Удельная теплота плавления льда           |
 
 ### 6.6 Численная схема
 
 - Explicit
-- U_rel = |V_water - V_ice| на глубине черновика
+- U_rel = |V_water(D) - V_ice| на глубине черновики (интерполяция профиля)
 - T_water интерполируется вертикально до D
+- L_char = state%L (X-размер айсберга). **ОГРАНИЧЕНИЕ**: модель не имеет прогностической ориентации, state%L всегда вдоль X. Корректно только если U_rel || X.
+- При U_rel ≤ 0 возвращает m_basal = 0 (нет турбулентного теплообмена). Натуральная конвекция не реализована (Stage 10.7+).
 
 ### 6.7 Реализация
 
@@ -424,12 +448,15 @@ dh/dt = -Q_basal / (ρ_ice · L_f)
 File: src/iceberg_thermodynamics.f90
 Module: iceberg_thermodynamics
 Subroutines: compute_basal_melt
+File: src/iceberg_types.f90
+Function: ocean_heat_transfer_coeff
 ```
 
 ### 6.8 Проверка
 
 - iceberg_test_5_warm_ocean
 - iceberg_test_6_cold_ocean
+- iceberg_test_10p6_ocean_heat_transfer (аудит Stage 10.6: 18 независимых проверок)
 
 ---
 
@@ -446,7 +473,9 @@ Q_lateral = ρ_water · c_pw · C_LATERAL · ⟨ΔT⟩_D · A_lat
 d(L+W)/dt = -Q_lateral / (ρ_ice · L_f · H)
 ```
 
-где ⟨ΔT⟩\_D — глубинно-усредненная разница температур по черновику.
+где ⟨ΔT⟩\_D — глубинно-усредненная разница температур по черновику (Method A, Stage 10.5).
+
+**Stage 10.7 (планируемо):** замена на физически обоснованную параметризацию с использованием U_rel(z) и bulk-формулировки теплообмена. По Weeks & Campbell (1973) для бокового плавления характерная длина L_char = D (черновик).
 
 ### 7.3 Дискретное уравнение
 
@@ -466,7 +495,7 @@ d(L+W)/dt = -Q_lateral / (ρ_ice · L_f · H)
 
 | Константа | Значение | Единицы | Назначение                  |
 | --------- | -------- | ------- | --------------------------- |
-| C_LATERAL | 1.0e-6   | m/(s·K) | Коэффициент бокового таяния |
+| C_LATERAL | 1.0e-6   | m/(s·K) | Legacy боковой коэффициент  |
 
 ### 7.6 Численная схема
 
@@ -485,6 +514,12 @@ Subroutines: compute_lateral_melt
 ### 7.8 Проверка
 
 - iceberg_test_5_warm_ocean
+
+### 7.9 Ограничения (Stage 10.7 target)
+
+- Legacy C_LATERAL используется вместо физически обоснованной bulk-формулировки
+- U_rel(z) инфраструктура готова в ocean_profile%u_rel, но не используется для бокового плавления
+- Характерная длина для бокового плавления должна быть D (черновик) по Weeks & Campbell (1973)
 
 ---
 

@@ -1,9 +1,9 @@
 # Stage 10 — План физической модернизации модели айсберга
 
-**Дата:** 2026-09-07  
-**Physics baseline commit:** a1fc859 "Correct Stage 10.2 analytical validation"  
-**Current repository stage:** Stage 10.3 — corrective validation  
-**Статус:** Stage 10.3 complete with corrective validation
+**Дата:** 2026-09-09
+**Physics baseline commit:** 136b2e5 "stage10.6: relative ocean flow and ocean-side heat transfer"
+**Current repository stage:** Stage 10.6.1 — Ocean Heat Transfer Audit Complete
+**Статус:** Stage 10.6 complete with independent scientific audit
 
 ---
 
@@ -451,7 +451,7 @@ Report: `docs/wiki/Stage10.4.2.1_Independent_Q_surface_output_validation.md`.
   - Legacy −54·S давал Tf теплее EOS-80 на ~0.03 °C у поверхности и игнорировал давление (−0.07 °C на осадке 88 м); суммарно ~0.1 °C ≈ 3% типичного ΔT ≈ 3 °C.
   - **Следствие:** во всех регрессиях «холодного океана» T=−1.9 °C оказалась выше Tf ниже ~8 м (EOS давление) → порог уточнён до −2.5 °C (test*2/3/4/6/8/9, drift_scaling*\*, moving_trajectory, ibcao_interp).
 - **3.1 Diagnostics:** `delta_t_ocean = T(D) − Tf(D)` (необрезанная) добавлена в `iceberg_diagnostics`, устанавливается в `iceberg_thermodynamics_step`.
-- **Тесты:** audit 10.5.1–10.5.19 (24 проверки) в `iceberg_test_7_vertical_temp_gradient` — PASS; полный набор 49/49 PASS; `-Wall -Wextra` — 0 предупреждений, clean exit.
+- **Тесты:** audit 10.5.1–10.5.19 (24 проверки) в `iceberg_test_7_vertical_temp_gradient` — PASS; полный набор 50/50 PASS; `-Wall -Wextra` — 0 предупреждений, clean exit.
 - **Не входит в 10.5:** пункт 4 (U_rel = |V_water − V_ice| на соответствующих глубинах) → Stage 10.6.
 
 ---
@@ -462,31 +462,43 @@ Report: `docs/wiki/Stage10.4.2.1_Independent_Q_surface_output_validation.md`.
 
 Заменить `C_BASAL = 1e-6` на физически обоснованную параметризацию.
 
-### Направление модернизации
+### Направление модернизации — ВЫПОЛНЕНО (Stage 10.6 + 10.6.1)
 
-**Three-equation model (упрощённый):**
-
-```
-Q_basal = ρ_water · c_pw · γ_T · U_rel · (T_water - T_freeze)
-m_basal = Q_basal / (ρ_ice · L_f)
-```
-
-где `γ_T` — Stanton number для теплопереноса.
-
-**Или bulk formulation:**
+**Bulk formulation (Eckert & Drake 1959; Weeks & Campbell 1973):**
 
 ```
-γ_T = C_D_w^(1/2) / (1 + Pr^(2/3) · ...)
+U_rel = sqrt((u_water(D) - u_ice)^2 + (v_water(D) - v_ice)^2)
+Re = U_rel * L_char / ν
+Nu = 0.037 * Re^0.8 * Pr^(1/3)          (турбулентный режим, Re ≥ 5·10⁵)
+Nu = 0.664 * Re^0.5 * Pr^(1/3)          (ламинарный режим, Re < 5·10⁵)
+γ_T = Nu * k / L_char                    [W/(m²·K)]
+Q_basal = γ_T * (T(D) - Tf(D))          [W/m²]
+m_basal = Q_basal / (ρ_ice * L_f)       [m/s]
 ```
 
-Для Stage 10.6: использовать документированный neutral `γ_T` с источником.
+**Stage 10.6.1 — Independent Scientific Audit (ВЫПОЛНЕНО):**
+- 18 независимых аналитических проверок PASS (`iceberg_test_10p6_ocean_heat_transfer`)
+- Flat plate formula validated: ratio = 1.000000 vs analytical
+- Константы задокументированы с источниками
+- Известные ограничения задокументированы (L_char = state%L без ориентации, U_rel=0 → m=0, W&C discrepancy ~5x)
 
-### Константы для документирования
+### Реализованные константы (в `iceberg_types.f90`):
 
-| Константа    | Значение | Единицы | Источник   |
-| ------------ | -------- | ------- | ---------- |
-| γ_T          | TBD      | -       | Literature |
-| Pr (Prandtl) | 13.8     | -       | Seawater   |
+| Константа               | Значение | Единицы | Источник                         |
+| ----------------------- | -------- | ------- | -------------------------------- |
+| PRANDTL_NUMBER          | 13.8     | -       | Seawater at 0°C                  |
+| KINEMATIC_VISCOSITY     | 1.82e-6  | m²/s    | Seawater at 0°C, S=34.8          |
+| THERMAL_CONDUCTIVITY    | 0.56     | W/(m·K) | Seawater at 0°C                  |
+| REYNOLDS_CRITICAL       | 5.0e5    | -       | Flat plate transition (Eckert&Drake) |
+| MELT_RATE_MIN           | 1.0e-12  | m/s     | Numerical floor                  |
+
+**Three-equation constants (H&J99, J10) — НЕ ИСПОЛЬЗУЮТСЯ, сохранены как комментарии:**
+- CD_ICE_OCEAN, STANTON_THERMAL, STANTON_HALINE — для возможного будущего перехода
+
+### Тесты:
+- `iceberg_test_10p6_ocean_heat_transfer` — 18 независимых проверок PASS
+- `iceberg_test_7_vertical_temp_gradient` — 24 проверки Stage 10.5 PASS
+- `iceberg_test_5_warm_ocean` / `iceberg_test_6_cold_ocean` PASS
 
 ---
 
@@ -658,18 +670,18 @@ Q_lateral = ρ_water · c_pw · γ_T · U_rel · ⟨T_water - T_freeze⟩_D · A
 
 1. ✅ Solar geometry modernized (10.1.1) — astronomical δ, H, cos(θ_z) time-dependent
 2. ✅ Atmospheric attenuation modernized (10.1.2) — broadband SW parameterization, documented coefficients
-3. ⬜ Surface temperature prognostic (10.2)
+3. ✅ Surface temperature prognostic (10.2)
 4. ✅ Turbulent sensible heat documented (10.3)
 5. ✅ Turbulent moisture exchange documented (10.3)
 6. ✅ Ice saturation vapor pressure used (10.3)
 7. ✅ Sublimation/deposition separated from melting (10.4)
 8. ✅ Surface melt energy-consistent (10.4)
 9. ✅ Basal melt documented (10.6)
-10. ✅ Lateral melt documented (10.7)
+10. ⬜ Lateral melt documented (10.7)
 11. ✅ Ocean thermal forcing documented (10.5)
-12. ✅ Mass conservation passes (10.8)
-13. ✅ Energy consistency where applicable (10.8)
-14. ✅ Numerical stability passes (10.8)
+12. ⬜ Mass conservation passes (10.8)
+13. ⬜ Energy consistency where applicable (10.8)
+14. ⬜ Numerical stability passes (10.8)
 15. ✅ All equations in Equation Ledger
 16. ✅ All constants have units and provenance
 17. ✅ Production code has Russian scientific comments
@@ -679,6 +691,7 @@ Q_lateral = ρ_water · c_pw · γ_T · U_rel · ⟨T_water - T_freeze⟩_D · A
 21. ✅ Local and CI FPM reproducible
 22. ✅ No arbitrary tuning
 23. ✅ No unexplained magic numbers in modernized physics
+24. ✅ Stage 10.6.1 independent audit complete (basal melt)
 
 ---
 

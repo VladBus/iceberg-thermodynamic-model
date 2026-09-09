@@ -65,51 +65,48 @@ module iceberg_types
     ! ========================================================================
     !   ОКЕАНИЧЕСКАЯ СТОРОНА ТЕПЛООБМЕНА (Stage 10.6)
     ! ========================================================================
-    ! Three-equation / bulk formulation параметры для базального и бокового плавления.
+    ! Bulk formulation параметры для базального и бокового плавления.
     ! Источники:
-    !   - Holland & Jenkins (1999) J. Phys. Oceanogr. 29, 1787-1800
-    !   - Jenkins et al. (2010) J. Phys. Oceanogr. 40, 2272-2283 (Ronne Ice Shelf obs)
-    !   - FitzMaurice & Stern (2018) Ocean Modelling 131, 54-69 (iceberg comparison)
-    !   - Weeks & Campbell (1973) iceberg bulk parameterization
-    !   - Martin & Adcroft (2010) J. Geophys. Res. 115, C08016
+    !   - Weeks & Campbell (1973) J. Glaciol. 12, 207-233 — original bulk parameterization
+    !   - Eckert & Drake (1959) "Analysis of Heat and Mass Transfer" — Nu = 0.037 Re^0.8 Pr^1/3
+    !   - FitzMaurice & Stern (2018) Ocean Modelling 131, 54-69 — comparison with three-equation
+    !   - Martin & Adcroft (2010) J. Geophys. Res. 115, C08016 — implementation in climate models
     !
     ! Для айсбергов масштаба L ~ 100-1000 м (малые по сравнению с радиусом
-    ! деформации ~15 км) применима bulk-формулировка по Re = U*L/ν.
-    ! Heat transfer coefficient: γ_T = 0.037 * k * Pr^(1/3) * U^0.8 * ν^-0.8 * L^0.2
-    ! Melt rate: m = γ_T * (T - Tf) / (ρ_ice * L_f)
-    ! В координатах γ_T: h = ρ_w * c_pw * γ_T  [W/(m²·K)]
+    ! деформации ~15 км) применима bulk-формулировка по Re = U*L/ν (FitzMaurice & Stern 2018).
+    ! Heat transfer coefficient: γ_T = 0.037 * k * Pr^(1/3) * U^0.8 * ν^-0.8 * L^0.2  [W/(m²·K)]
+    ! Melt rate: m = γ_T * (T - Tf) / (ρ_ice * L_f)  [m/s]
     ! Stanton number: St = γ_T / U
     !
-    ! Константы:
-    !   C_d (drag coefficient): 0.0015-0.0097 (H&J99: 0.0015, J10: 0.0097)
-    !   Для гладкого льда (Andreas et al. 2010): C_d ≈ 0.0022-0.0025
-    !   Γ_T (thermal Stanton number): 0.011 (J10) - 0.012 (LES max)
-    !   Γ_S (haline Stanton number): 3.1e-4 (J10)
-    !   Pr (Prandtl number) seawater: ~13.8
-    !   Sc (Schmidt number) seawater: ~2400
+    ! ВАЖНО: Характерная длина L_char для базального плавления — это длина айсберга
+    ! в НАПРАВЛЕНИИ ПОТОКА (streamwise length). Текущая модель НЕ имеет прогностической
+    ! ориентации айсберга (state%L всегда вдоль X, state%W вдоль Y).
+    ! Поэтому L_char = state%L использует X-размер как приближение.
+    ! Это ограничение: для потока не вдоль X физическая корректность не гарантирована.
+    ! Для бокового плавления Weeks & Campbell (1973) предлагают L_char = D (черновик).
+    !
+    ! Константы bulk-формулировки:
+    !   Pr (Prandtl number) seawater: ~13.8 at 0°C
+    !   ν (kinematic viscosity) seawater: ~1.82e-6 m²/s at 0°C, S=34.8
+    !   k (thermal conductivity) seawater: ~0.56 W/(m·K) at 0°C
+    !   Sc (Schmidt number) seawater: ~2400 (not used in bulk, for reference)
+    !   Re_crit (laminar-turbulent transition): ~5e5 (flat plate)
+    !   Three-equation constants (H&J99, J10) — НЕ ИСПОЛЬЗУЮТСЯ в текущей реализации,
+    !     сохранены только для документации возможного будущего перехода:
+    !     C_d (drag): 0.0015-0.0097, Γ_T: 0.011, Γ_S: 3.1e-4
     ! ========================================================================
 
-    ! Drag coefficient for ice-ocean interface (dimensionless)
-    ! Using mid-range value for smooth ice (Larsen C observations: 0.0022)
-    real, parameter :: CD_ICE_OCEAN = 2.2e-3
-
-    ! Thermal Stanton number Γ_T = γ_T / u*  (dimensionless)
-    ! Jenkins et al. (2010) Ronne Ice Shelf: Γ_T = 0.011
-    ! LES upper limit (Vreugdenhil & Taylor 2019): 0.012
-    real, parameter :: STANTON_THERMAL = 0.011
-
-    ! Haline Stanton number Γ_S = γ_S / u* (dimensionless)
-    ! Jenkins et al. (2010): Γ_S = 3.1e-4
-    real, parameter :: STANTON_HALINE = 3.1e-4
-
     ! Prandtl number for seawater (ratio of viscosity to thermal diffusivity)
-    ! Pr = ν / κ_T ≈ 1.8e-6 / 1.3e-7 ≈ 13.8 at 0°C
+    ! Pr = ν / κ_T ≈ 1.8e-6 / 1.3e-7 ≈ 13.8 at 0°C, S=34.8
+    ! Источник: стандартные таблицы свойств морской воды
     real, parameter :: PRANDTL_NUMBER = 13.8
 
     ! Kinematic viscosity of seawater [m²/s] at 0°C, S=34.8
+    ! Источник: UNESCO 1983 / Fofonoff & Millard
     real, parameter :: KINEMATIC_VISCOSITY = 1.82e-6
 
     ! Thermal conductivity of seawater [W/(m·K)] at 0°C
+    ! Источник: стандартные таблицы свойств морской воды
     real, parameter :: THERMAL_CONDUCTIVITY = 0.56
 
     ! Schmidt number for seawater (ratio of viscosity to salt diffusivity)
@@ -117,9 +114,13 @@ module iceberg_types
     ! Not directly used in bulk formulation but for reference
     real, parameter :: SCHMIDT_NUMBER = 2400.0
 
+    ! Critical Reynolds number for laminar-turbulent transition on flat plate
+    ! Re_crit ≈ 5e5 (standard value, Eckert & Drake 1959)
+    real, parameter :: REYNOLDS_CRITICAL = 5.0e5
+
     ! Characteristic length scale for basal melt Reynolds number
-    ! For basal: L = iceberg length in flow direction (L)
-    ! For lateral: L = draft (D) - from Weeks & Campbell (1973)
+    ! For basal: L_char = iceberg length in flow direction (state%L, but see limitation above)
+    ! For lateral: L_char = draft (D) - from Weeks & Campbell (1973)
     ! These are set per-call based on geometry, not compile-time constants
 
     ! Coefficients плавления [м/(с·К)] — LEGACY (Stage 9.3, retained for reference)
@@ -132,6 +133,13 @@ module iceberg_types
 
     ! Порог скорости плавления для предотвращения числового шума [м/с]
     real, parameter :: MELT_RATE_MIN = 1.0e-12
+
+    ! Three-equation constants (Holland & Jenkins 1999, Jenkins et al. 2010) —
+    ! НЕ ИСПОЛЬЗУЮТСЯ в текущей bulk-реализации Stage 10.6.
+    ! Сохранены для документации возможного будущего перехода к three-equation.
+    ! real, parameter :: CD_ICE_OCEAN = 2.2e-3      ! Drag coefficient (Andreas et al. 2010)
+    ! real, parameter :: STANTON_THERMAL = 0.011    ! Thermal Stanton number Γ_T (Jenkins 2010)
+    ! real, parameter :: STANTON_HALINE = 3.1e-4    ! Haline Stanton number Γ_S (Jenkins 2010)
 
     ! Радиационные свойства льда
     real, parameter :: ALBEDO_ICE = 0.7      ! Альбедо льда [безразм.]
@@ -331,10 +339,9 @@ module iceberg_types
     public :: MURPHY_KOOP_A, MURPHY_KOOP_B, MURPHY_KOOP_C, MURPHY_KOOP_D
     public :: EOS_FP_A0, EOS_FP_A1, EOS_FP_A2, EOS_FP_BP
     public :: OMEGA
-    ! Stage 10.6 ocean-side heat transfer constants
-    public :: CD_ICE_OCEAN, STANTON_THERMAL, STANTON_HALINE
+    ! Stage 10.6 ocean-side heat transfer constants (bulk formulation)
     public :: PRANDTL_NUMBER, KINEMATIC_VISCOSITY, THERMAL_CONDUCTIVITY
-    public :: SCHMIDT_NUMBER, MELT_RATE_MIN
+    public :: SCHMIDT_NUMBER, REYNOLDS_CRITICAL, MELT_RATE_MIN
     public :: ocean_profile, atmos_forcing, iceberg_diagnostics, iceberg_state
     public :: ocean_freezing_point
     public :: ocean_heat_transfer_coeff
@@ -377,23 +384,34 @@ contains
     !   ТЕПЛООБМЕННЫЙ КОЭФФИЦИЕНТ ОКЕАН-СТОРОНЫ (Stage 10.6)
     ! ========================================================================
     ! Вычисляет теплообменный коэффициент γ_T [W/(m²·K)] для базального/бокового плавления
-    ! на основе bulk-формулировки (Weeks & Campbell 1973; Martin & Adcroft 2010):
+    ! на основе bulk-формулировки (Weeks & Campbell 1973; Eckert & Drake 1959;
+    ! Martin & Adcroft 2010):
     !
-    !   γ_T = 0.037 * k * Pr^(1/3) * U_rel^0.8 * ν^-0.8 * L_char^0.2
+    !   γ_T = Nu * k / L_char
+    !   Nu = 0.037 * Re^0.8 * Pr^(1/3)          (турбулентный режим, Re > Re_crit)
+    !   Nu = 0.664 * Re^0.5 * Pr^(1/3)          (ламинарный режим, Re <= Re_crit)
+    !   Re = U_rel * L_char / ν
     !
     ! где:
     !   k        = THERMAL_CONDUCTIVITY [W/(m·K)]
     !   Pr       = PRANDTL_NUMBER [dimensionless]
     !   U_rel    = относительная скорость вода-лёд [m/s]
     !   ν        = KINEMATIC_VISCOSITY [m²/s]
-    !   L_char   = характерная длина [m] (L для базального, D для бокового)
+    !   L_char   = характерная длина [m]
+    !             (базальное: L — длина в направлении потока, см. ограничение ниже)
+    !             (боковое: D — черновик, по Weeks & Campbell 1973)
     !
-    ! Альтернативно через Stanton number (three-equation style):
-    !   γ_T = ρ_w * c_pw * Γ_T * √(C_d) * U_rel
-    ! где Γ_T = STANTON_THERMAL, C_d = CD_ICE_OCEAN
-    !
-    ! Stage 10.6 использует bulk-формулировку с Re = U*L/ν как более подходящую
-    ! для айсбергов L ~ 100-1000 м (FitzMaurice & Stern 2018).
+    ! ОГРАНИЧЕНИЯ:
+    ! 1. Характерная длина L_char для базального плавления — это streamwise length
+    !    (длина айсберга в направлении относительного течения). Текущая модель
+    !    НЕ имеет прогностической ориентации (state%L всегда вдоль X, state%W — вдоль Y).
+    !    Вызывающий код передаёт state%L как L_char, что корректно ТОЛЬКО если
+    !    U_rel направлен вдоль X. Для общего случая это аппроксимация.
+    ! 2. При U_rel = 0 возвращает γ_T = 0 (нет турбулентного теплообмена).
+    !    Физически при U_rel = 0 должен быть натуральный конвективный/проводимый
+    !    теплообмен, но он не реализован (known limitation, Stage 10.7+).
+    ! 3. Переход ламинарный/турбулентный при Re_crit = 5e5 (flat plate).
+    !    Для Re < Re_crit используется ламинарная корреляция.
     !
     ! Аргументы:
     !   u_rel       - относительная скорость [м/с] (intent(in))
@@ -415,9 +433,15 @@ contains
         ! Reynolds number: Re = U * L / ν
         reynolds = u_rel*l_char/KINEMATIC_VISCOSITY
 
-        ! Nusselt number для турбулентного течения lungo flat plate (Eckert & Drake 1959)
-        ! Nu = 0.037 * Re^0.8 * Pr^(1/3)  (laminar + turbulent regime)
-        nusselt = 0.037*(reynolds**0.8)*(PRANDTL_NUMBER**(1.0/3.0))
+        ! Nusselt number: laminar/turbulent regime per Eckert & Drake (1959)
+        ! Transition at Re_crit = 5e5 (flat plate). Use turbulent for Re >= Re_crit.
+        if (reynolds .ge. REYNOLDS_CRITICAL) then
+            ! Turbulent regime: Nu = 0.037 * Re^0.8 * Pr^(1/3)
+            nusselt = 0.037*(reynolds**0.8)*(PRANDTL_NUMBER**(1.0/3.0))
+        else
+            ! Laminar regime: Nu = 0.664 * Re^0.5 * Pr^(1/3)
+            nusselt = 0.664*sqrt(reynolds)*(PRANDTL_NUMBER**(1.0/3.0))
+        end if
 
         ! Heat transfer coefficient: γ_T = Nu * k / L
         gamma_t = nusselt*THERMAL_CONDUCTIVITY/l_char

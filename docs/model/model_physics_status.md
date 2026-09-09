@@ -1,11 +1,11 @@
 # Статус физических блоков модели (Model Physics Status)
 
-**Дата:** 2026-09-08  
-**Physics baseline commit:** a1fc859 "Correct Stage 10.2 analytical validation"  
-**Current repository stage:** Stage 10.5 — Ocean Thermal Forcing (EOS-80 Tf=f(S,p); delta_t_ocean diagnostic; audit 10.5.1–10.5.19)
-**FPM версия:** 0.13.0 (local & CI aligned)  
-**Test targets:** 49  
-**Tests PASS:** 49 / 49
+**Дата:** 2026-09-09
+**Physics baseline commit:** 136b2e5 "stage10.6: relative ocean flow and ocean-side heat transfer"
+**Current repository stage:** Stage 10.6.1 — Ocean Heat Transfer Audit Complete
+**FPM версия:** 0.13.0 (local & CI aligned)
+**Test targets:** 50
+**Tests PASS:** 50 / 50
 
 ---
 
@@ -36,8 +36,8 @@
 | 9   | **Coriolis**                   | Полунеявная схема (semi-implicit)                           | A      | Оставить                  |
 | 10  | **Pressure-gradient force**    | Опционально, через ocean surface slope                      | A      | Оставить                  |
 | 11  | **Froude-Krylov**              | Не реализован                                               | D      | Не планируется            |
-| 12  | **Basal melt**                 | Q_basal = ρ_w·c_pw·C_BASAL·U_rel·(T_w - T_f); T_f — EOS-80  | B      | Модернизация в Stage 10.6 |
-| 13  | **Lateral melt**               | Q_lateral = ρ_w·c_pw·C_LATERAL·⟨ΔT⟩\_D·A_lat                | B      | Модернизация в Stage 10.7 |
+| 12  | **Basal melt**                 | Q_basal = ρ_w·c_pw·γ_T·(T_w - T_f); γ_T = Nu·k/L_char; Nu = 0.037·Re^0.8·Pr^(1/3) | C      | **Stage 10.6 ✅** |
+| 13  | **Lateral melt**               | Q_lateral = ρ_w·c_pw·C_LATERAL·⟨ΔT⟩\_D·A_lat (legacy)                            | B      | Модернизация в Stage 10.7 |
 | 14  | **Surface energy (общий)**     | Q_net = Q_SW + Q_LW↓ + Q_LW↑ + Q_SH + Q_LH                  | B      | Модернизация поэтапно     |
 | 15  | **Shortwave radiation**        | decl=0, hour_angle=0 (permanent equinox/noon)               | B      | **Stage 10.1**            |
 | 16  | **Longwave radiation**         | LW_down = ε_a·σ·T_air⁴·(1+...), LW_up = -ε_i·σ·T_surf⁴      | B      | Модернизация в Stage 10.1 |
@@ -316,18 +316,84 @@ Previous Stage 10.3 changes retained:
 
 ---
 
-## Stage 10 Readiness (post Stage 10.4 completion)
+## Stage 10.6.1 — Ocean Heat Transfer Audit (Детальный статус)
+
+### 12. Basal melt — **C (Stage 10.6 ✅ / Stage 10.6.1 аудит пройден)**
+
+Реализована bulk-формулировка теплообмена океан-статья по Eckert & Drake (1959) / Weeks & Campbell (1973):
+
+```
+U_rel = sqrt((u_water(D) - u_ice)^2 + (v_water(D) - v_ice)^2)
+Re = U_rel * L_char / ν
+Nu = 0.037 * Re^0.8 * Pr^(1/3)          (турбулентный режим, Re ≥ 5·10⁵)
+Nu = 0.664 * Re^0.5 * Pr^(1/3)          (ламинарный режим, Re < 5·10⁵)
+γ_T = Nu * k / L_char                    [W/(m²·K)]
+Q_basal = γ_T * (T(D) - Tf(D))          [W/m²]
+m_basal = Q_basal / (ρ_ice * L_f)       [m/s]
+```
+
+Где:
+- k = THERMAL_CONDUCTIVITY = 0.56 W/(m·K)
+- Pr = PRANDTL_NUMBER = 13.8
+- ν = KINEMATIC_VISCOSITY = 1.82e-6 m²/s
+- L_char = state%L (длина в направлении X). **ОГРАНИЧЕНИЕ**: модель не имеет прогностической ориентации, state%L всегда вдоль X. Корректно только если U_rel || X.
+- Tf = EOS-80 freezing point (Stage 10.5)
+
+**Константы Stage 10.6:**
+
+| Константа | Значение | Единицы | Источник |
+|-----------|----------|---------|----------|
+| PRANDTL_NUMBER | 13.8 | - | Seawater at 0°C |
+| KINEMATIC_VISCOSITY | 1.82e-6 | m²/s | Seawater at 0°C, S=34.8 |
+| THERMAL_CONDUCTIVITY | 0.56 | W/(m·K) | Seawater at 0°C |
+| REYNOLDS_CRITICAL | 5.0e5 | - | Flat plate transition |
+| MELT_RATE_MIN | 1.0e-12 | m/s | Numerical floor |
+
+**Three-equation constants (H&J99, J10) — НЕ ИСПОЛЬЗУЮТСЯ:**
+- CD_ICE_OCEAN, STANTON_THERMAL, STANTON_HALINE — сохранены в коде как комментарии для возможного будущего перехода к three-equation.
+
+**Аудит Stage 10.6.1 (iceberg_test_10p6_ocean_heat_transfer — 18 независимых проверок):**
+- Константы A.1–A.4: значения соответствуют литературе ✅
+- Ламинарный режим B.1–B.2: Nu = 0.664·Re^0.5·Pr^(1/3) ✅
+- Турбулентный режим C.1–C.3: Nu = 0.037·Re^0.8·Pr^(1/3) ✅
+- Монотоничность по U_rel: m увеличивается с U_rel ✅
+- Монотоничность по L_char: m убывает как L^(-0.2) (flat plate) ✅
+- Монотоничность по ΔT: m линейно растёт с ΔT ✅
+- U_rel = 0 → γ_T = 0, m = 0 (known limitation: нет натурной конвекции) ✅
+- Холодный океан (ΔT < 0) → m = 0 ✅
+- Размерностная проверка: m ~ 10⁻⁷ m/s для типичных арктических значений ✅
+- Независимая валидация flat plate формулы: ratio = 1.000000 ✅
+- Консистентность с production compute_basal_melt ✅
+
+**Известные ограничения:**
+1. **Характерная длина**: L_char = state%L (X-размер). Модель не имеет ориентации. Физически верно только если U_rel направлен вдоль X.
+2. **Режим течения**: Используется flat plate корреляция. Для Re < 5e5 — ламинарная, для Re ≥ 5e5 — турбулентная. Реальные айсберги могут иметь сложную геометрию.
+3. **U_rel = 0**: Возвращает m_basal = 0. Натуральная конвекция/проводимость не реализована (Stage 10.7+).
+4. **W&C discrepancy**: Flat plate даёт m ~ L^(-0.2) (убывает с L), W&C iceberg параметризация даёт m ~ L^0.2 (растёт с L). Фактор ~5 разница (FitzMaurice & Stern 2018). Bulk-формула применима для L < радиуса деформации (~15 км).
+5. **Боковое плавление**: Остаётся legacy (C_LATERAL) до Stage 10.7.
+
+**Тесты:** `iceberg_test_10p6_ocean_heat_transfer` (18 проверок) PASS, `iceberg_test_7_vertical_temp_gradient` (24 проверки Stage 10.5) PASS, `iceberg_test_5_warm_ocean` PASS, `iceberg_test_6_cold_ocean` PASS.
+
+---
+
+### 13. Lateral melt — **B (Stage 10.7)**
+
+Остаётся legacy C_LATERAL. Инфраструктура U_rel(z) готова в ocean_profile%u_rel. Характерная длина для бокового плавления по Weeks & Campbell (1973): L_char = D (черновик).
+
+---
+
+## Stage 10 Readiness (post Stage 10.6.1 completion)
 
 | Requirement              | Status                     |
 | ------------------------ | -------------------------- |
-| Physics baseline frozen  | ✅ a1fc859                 |
-| Current repo stage       | ✅ Stage 10.4 complete     |
-| Equation Ledger          | ✅ Complete (Stage 10.4)   |
+| Physics baseline frozen  | ✅ 136b2e5                 |
+| Current repo stage       | ✅ Stage 10.6.1 complete   |
+| Equation Ledger          | ✅ Complete (Stage 10.6)   |
 | Physics Status           | ✅ Complete (this file)    |
-| Modernization Plan       | ✅ Complete (Stage 10.4)   |
+| Modernization Plan       | ✅ Complete (Stage 10.6)   |
 | CI/FPM aligned           | ✅ 0.13.0 both             |
-| Independent tests        | ✅ 41 tests PASS           |
+| Independent tests        | ✅ 50 tests PASS           |
 | TEST_11 baseline         | ✅ Documented              |
 | Legacy blocks identified | ✅ All B-blocks catalogued |
 
-**Stage 10 readiness:** Stage 10.5 (Ocean Thermal Forcing) complete. Ready for Stage 10.6 (Basal melting modernization).
+**Stage 10 readiness:** Stage 10.6 (Basal melting modernization + audit) complete. Ready for Stage 10.7 (Lateral melting modernization).

@@ -346,3 +346,20 @@ All analysis scripts are in `python/analysis/`:
 - **All fpm tests PASS** (49 auto-discovered, exit 0), zero mismatches; `-Wall -Wextra` build clean (0 warnings), exit 0; `git diff --check` clean.
 - **Files changed:** src/iceberg*types.f90 (EOS_FP*\* constants, ocean_freezing_point, delta_t_ocean, v10.5 header), src/iceberg_thermodynamics.f90 (compute_basal_melt/basal wrapper, delta_t_ocean diag), src/iceberg_forcing.f90 (depth_averaged_thermal_forcing per-layer + deep), 12 test files, docs/model/model_equation_ledger.md (§4.5-4.7), docs/model/model_physics_status.md (row 4 → C), docs/model/stage10_modernization_plan.md (§10.5 ✅), docs/wiki/Stage10.5_Ocean_Thermal_Forcing.md, AGENTS.md.
 - **Not in scope:** depth-dependent U_rel (Stage 10.6), basal/lateral melting modernization (10.6/10.7), canonical ocean model `thermodynamics.f90` untouched (its -54·S Zubov Tf remains).
+
+## Stage 10.6.1 Summary (Ocean Heat Transfer Audit)
+
+- **Classification:** B — PASS WITH LIMITATIONS. Production physics unchanged; documentation corrected.
+- **Formulation audited:** `ocean_heat_transfer_coeff` (src/iceberg_types.f90:421-448): Re=U_rel·L_char/ν; laminar Nu=0.664·Re^0.5·Pr^(1/3); turbulent Nu=0.037·Re^0.8·Pr^(1/3); γ_T=Nu·k/L_char; transition at Re≥5e5.
+- **Precision:** 10p6 airtight audit matches canonical ±1e-7 (laminar) / −1.09e-5 (turbulent) on R4 hardcoded reference.
+- **Doc correction (commit `40d4a3b`):** exponents L_char^0.2/0.5 → L_char^(-0.2)/(-0.5) (dimensionally correct).
+
+## Stage 10.7 Summary (Independent Basal Melt Validation)
+
+- **Classification:** B — PASS WITH LIMITATIONS. Audit only; production Fortran NOT changed (no bug found).
+- **Test:** `applications/iceberg_test_10p7_basal_melt_validation` (17 checks, STOP 0): ALL expected values computed from embedded literals (Pr=13.8, ν=1.82e-6, k=0.56, ρ_ice=910, L_f=3.34e5, EOS-80 coefficients); production functions called only for actual output.
+- **Cases A–J:** cold ocean m=0 · laminar/turbulent γ_T analytic · transition just below/above 5e5 (jump ratio 2.897) · U-scaling U^0.5/U^0.8 · ΔT linearity (m/ΔT const to 1e-3) · L-scaling L^(-0.5)/L^(-0.2) · zero flow γ_T=0 (documented natural-convection limitation) · end-to-end chain I (Tf=−1.93158, ΔT=3.93158, m=1.5852e-6 m/s, float32-exact match) · literature magnitude band J (0.4963 m/day ∈ [0.01,1] m/day, Cenedese & Straneo 2023).
+- **Literature cross-check:** three-equation estimate (St·u*, St=0.011 commented) at U=0.1 m/s → factor ≈1.8 agreement with flat-plate; both closures reproduce observed band.
+- **All fpm tests PASS** (51 auto-discovered, exit 0); `-Wall -Wextra` build clean; `git diff --check` clean.
+- **Files changed:** test/iceberg_test_10p7_basal_melt_validation.f90 (new), docs/validation/stage10.7_basal_melt_validation.md (new), docs/model/model_physics_status.md, docs/model/stage10_modernization_plan.md, docs/references/literature_matrix.md, docs/references/citation_map.md, docs/PROJECT_ROADMAP.md, AGENTS.md.
+- **Network blocker documented:** external web/bib verification unavailable (search/firecrawl/fetch failures) — in-repo bibliography primary; Γ_T Stanton convention is an open risk for Stage 10.8.

@@ -1,7 +1,7 @@
 # Project Roadmap
 
-**Updated:** 2026-09-10  
-**Current scientific stage:** Stage 10.6.1 — Ocean Heat Transfer Audit Complete  
+**Updated:** 2026-09-10
+**Current scientific stage:** Stage 10.7 — Independent Basal Melt Validation Complete
 **Current status:** B — PASS WITH LIMITATIONS
 
 ## Completed foundation
@@ -28,23 +28,24 @@
 | 10.5 | EOS-80 freezing point | Complete; classification B |
 | 10.6 | Relative ocean flow and heat transfer | Complete |
 | 10.6.1 | Independent heat-transfer audit + documentation correction | Complete; classification B |
+| 10.7 | Independent basal-melt validation (analytical + literature) | Complete; classification B; 17 checks |
 
 ## Immediate next step
 
-### Stage 10.7 — choose the next physics/validation target
+### Stage 10.8 — observational validation / calibration and next closure
 
-Stage 10.7 should begin only after the documentation foundation is merged. The next target should be selected from a scientifically defined problem, not from an implementation gap.
+Stage 10.7 completed the independent analytical-literature audit of basal melt (`docs/validation/stage10.7_basal_melt_validation.md`). The next target should be selected from a scientifically defined problem, not from an implementation gap.
 
 Priority order:
 
-1. Independent validation of basal and lateral melt against observations/laboratory benchmarks.
-2. Scientific assessment and, if justified, implementation of a three-equation ice-ocean interface formulation based on Holland & Jenkins (1999) and Jenkins et al. (2010).
+1. Observational validation of basal/lateral melt against public iceberg catalogues, mooring/CTD data and laboratory benchmarks (hard mortality/melt metrics), plus the minimal Python validation layer (tolerance 1e-3).
+2. Scientific assessment and, if justified, implementation of a three-equation ice-ocean interface formulation based on Holland & Jenkins (1999) and Jenkins et al. (2010), with independent confirmation of the Γ_T/Γ_S Stanton convention (open risk from Stage 10.7).
 3. Iceberg-specific ocean heat-transfer improvements, including natural convection and geometry/orientation effects.
 4. Atmospheric stability corrections if external validation demonstrates material bias.
 
 ## Longer-term physics
 
-The following are explicit roadmap items and are **not** part of Stage 10.6.1:
+The following are explicit roadmap items and are **not** part of Stage 10.7:
 
 - full seawater thermodynamics / EOS-80 density pathway;
 - TEOS-10 thermodynamic framework;

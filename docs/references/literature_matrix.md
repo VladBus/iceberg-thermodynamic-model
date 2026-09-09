@@ -1,6 +1,6 @@
 # Literature-to-Model Matrix
 
-**Scope:** current repository state through Stage 10.6.1.
+**Scope:** current repository state through Stage 10.7 (independent basal-melt validation).
 
 The matrix is deliberately selective: a Zotero record is not automatically a model reference. The role describes how a source is used or should be used in the scientific documentation.
 
@@ -33,6 +33,7 @@ The matrix is deliberately selective: a Zotero record is not automatically a mod
 | Jenkins, Nicholls & Corr 2010 | Ice-ocean turbulent exchange / basal ablation | COMPARISON |
 | Andreas et al. 2010 | Air-sea/ice turbulent exchange context | SUPPORT |
 | Martin & Adcroft 2010 | Interactive iceberg freshwater flux in climate modelling | BACKGROUND/FUTURE |
+| Cenedese & Straneo 2023 | Iceberg melt review; observed submarine melt band ~0.01–1 m/day | VALIDATION |
 
 ## Existing iceberg literature in the collection
 
@@ -50,7 +51,7 @@ The curated bibliography already contains important iceberg references including
 | Surface temperature | Prognostic mixed-layer-like surface heat capacity | Model-derived numerical closure; independent physical validation still limited | B |
 | Phase change | Melt, sublimation/deposition and latent-heat partition | Thermodynamic accounting implemented; external validation pending | B |
 | Freezing point | EOS-80/UNESCO equation with pressure term | Fofonoff & Millard 1983; Gill 1982 | C |
-| Basal ocean heat transfer | Re/Nu correlation with laminar/turbulent transition | Eckert & Drake 1959; iceberg applicability is an approximation | B |
+| Basal ocean heat transfer | Re/Nu correlation with laminar/turbulent transition | Eckert & Drake 1959; iceberg applicability is an approximation | B (independently audited in Stage 10.7) |
 | Lateral melt | Legacy depth-averaged formulation | FitzMaurice laboratory literature provides evidence for shear/nonlinearity | B |
 | Three-equation interface physics | Not implemented | Holland & Jenkins 1999; Jenkins et al. 2010 | FUTURE |
 | Full seawater EOS | Not implemented; freezing point only | EOS-80/TEOS-10 literature | FUTURE |

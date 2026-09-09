@@ -1,7 +1,7 @@
 # Stage 10 — Physics Modernization Plan
 
-**Updated:** 2026-09-10  
-**Current stage:** 10.6.1  
+**Updated:** 2026-09-10
+**Current stage:** 10.7 (independent basal-melt validation; audit only, production unchanged)
 **Current classification:** B — PASS WITH LIMITATIONS
 
 ## Purpose
@@ -44,13 +44,29 @@ Basal ocean-side heat transfer uses depth-dependent relative velocity between th
 - Weeks & Campbell (1973) and FitzMaurice & Stern (2018) indicate that iceberg-specific melt behaviour can differ from simple flat-plate closures.
 - Lateral melt remains a separate approximate closure.
 
+## Stage 10.7 — Independent scientific validation of basal melt (DONE)
+
+Independent scientific audit of the basal-melt chain (Re/Nu/γ_T/Tf/ΔT/m) with all expected values computed from embedded literals, not from production diagnostics. 17 independent checks (cases A–J) PASS; classification remains **B — PASS WITH LIMITATIONS**. Production Fortran unchanged. Findings:
+
+- Formulation matches Weeks & Campbell (1973)/Eckert & Drake (1959) to float32 precision; `L_char = L` is supported by FitzMaurice & Stern (2018) for tabular icebergs.
+- Turbulent branch (m ∝ U^0.8·L^−0.2·ΔT) is the realistic regime for Arctic icebergs (Re ≈ 5.5e5–2.7e8); laminar only for small bergs / weak flow.
+- Order-of-magnitude agreement with in-repo three-equation estimate (St·u*, St=0.011 commented): factor ≈1.8 at U=0.1 m/s; observed submarine-melt band 0.01–1 m/day reproduced.
+- Documented limitations unchanged: no natural convection (m→0 at U_rel=0), `L_char=L` orientation approximation, no three-equation closure.
+
+Validation report: `docs/validation/stage10.7_basal_melt_validation.md`. Test: `iceberg_test_10p7_basal_melt_validation` (17 checks).
+
 ## Next modernization sequence
 
-### 10.7 — Scientific validation and/or next physical closure
+### 10.8 — Observational validation / calibration and next closure
 
-Do not select the next equation solely by implementation convenience. The next stage should be chosen after identifying an independent validation target and the literature needed to support it.
+Stage 10.7 completed the analytical-literature audit. The next stage should:
 
-Priority candidates:
+1. validate basal/lateral melt against published observations or laboratory results (hard metric: drift-life and Δmatching of public iceberg catalogues; mooring/CTD around bergs; lab U^0.8 test);
+2. implement the three-equation ice-ocean interface formulation (Holland & Jenkins 1999; Jenkins et al. 2010) with independent confirmation of the Γ_T/Γ_S Stanton convention (open risk: network verification was unavailable during 10.7);
+3. address natural convection at low relative flow (melt plumes);
+4. add the minimal Python validation layer (`python/analysis/` independent `gamma/m` calculator, tolerance 1e-3 vs production float32).
+
+Priority candidates (unchanged ordering, refreshed after 10.7):
 
 1. independent validation of basal/lateral melt against published observations or laboratory results;
 2. assessment of the three-equation ice-ocean interface formulation (Holland & Jenkins 1999; Jenkins et al. 2010);

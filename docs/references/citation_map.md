@@ -16,6 +16,7 @@ This file prevents literature references from being used more strongly than the 
 | Ice-shelf basal ablation / exchange | future comparison | `jenkinsNichollsCorrAblationRonne2010` | COMPARISON/FUTURE |
 | Turbulent exchange over sea ice/MIZ | atmospheric/ocean exchange context | `andreasHorstGrachevSummerSeaIce2010` | SUPPORT |
 | Interactive iceberg freshwater flux | coupled modelling context | `martinAdcroftInteractiveIcebergs2010` | BACKGROUND/FUTURE |
+| Observed iceberg submarine-melt band | validation band for basal melt (0.01–1 m/day) | `cenedeseIcebergsMelting2023` | VALIDATION |
 
 ## Important scope statements
 

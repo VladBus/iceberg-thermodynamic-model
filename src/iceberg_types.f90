@@ -74,7 +74,7 @@ module iceberg_types
     !
     ! Для айсбергов масштаба L ~ 100-1000 м (малые по сравнению с радиусом
     ! деформации ~15 км) применима bulk-формулировка по Re = U*L/ν (FitzMaurice & Stern 2018).
-    ! Heat transfer coefficient: γ_T = 0.037 * k * Pr^(1/3) * U^0.8 * ν^-0.8 * L^0.2  [W/(m²·K)]
+    ! Heat transfer coefficient: γ_T = 0.037 * k * Pr^(1/3) * U^0.8 * ν^-0.8 * L^(-0.2)  [W/(m²·K)]
     ! Melt rate: m = γ_T * (T - Tf) / (ρ_ice * L_f)  [m/s]
     ! Stanton number: St = γ_T / U
     !

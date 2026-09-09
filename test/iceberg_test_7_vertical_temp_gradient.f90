@@ -378,7 +378,7 @@ contains
         ! l_char = 100.0, u_ice=v_ice=0.0
         call compute_basal_melt(prof_cold, 10.0, 100.0, 0.0, 0.0, t, s, tf, dtb, m)
         ! Expected m = gamma_T * delta_T / (rho_ice * L_f)
-        ! gamma_T = 0.037 * k * Pr^(1/3) * U^0.8 * nu^-0.8 * L^0.2
+        ! gamma_T = 0.037 * k * Pr^(1/3) * U^0.8 * nu^-0.8 * L^(-0.2)
         ! With U=0.05, L=100, k=0.56, Pr=13.8, nu=1.82e-6
         ! delta_T = 1.0 - tf
         ana = 1.0 - tf_eos_lit(s*1000.0, pressure_dbar(10.0))

@@ -386,7 +386,7 @@ Subroutines: iceberg_dynamics_step, solve_coriolis_semi_implicit
 
 ```
 Q_basal = ρ_water · c_pw · γ_T · (T_water - T_freeze)
-γ_T = 0.037 * k * Pr^(1/3) * U_rel^0.8 * ν^(-0.8) * L_char^0.2   [W/(m²·K)]
+γ_T = 0.037 * k * Pr^(1/3) * U_rel^0.8 * ν^(-0.8) * L_char^(-0.2)   [W/(m²·K)]
 m_basal = Q_basal / (ρ_ice · L_f)
 Re = U_rel * L_char / ν
 Nu = 0.037 * Re^0.8 * Pr^(1/3)   (турбулентный режим, Re ≥ 5·10⁵)
@@ -397,8 +397,8 @@ Nu = 0.664 * Re^0.5 * Pr^(1/3)   (ламинарный режим, Re < 5·10⁵
 ### 6.3 Дискретное уравнение
 
 ```
-γ_T = 0.037 * k * Pr^(1/3) * U_rel^0.8 * ν^(-0.8) * L_char^0.2   (турбулентный)
-γ_T = 0.664 * k * Pr^(1/3) * U_rel^0.5 * ν^(-0.5) * L_char^0.5   (ламинарный)
+γ_T = 0.037 * k * Pr^(1/3) * U_rel^0.8 * ν^(-0.8) * L_char^(-0.2)   (турбулентный)
+γ_T = 0.664 * k * Pr^(1/3) * U_rel^0.5 * ν^(-0.5) * L_char^(-0.5)   (ламинарный)
 Q_basal = γ_T * (T(D) - Tf(D))
 ΔH_basal = -Q_basal · Δt / (ρ_ice · L_f)
 ```

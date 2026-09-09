@@ -61,13 +61,15 @@ contains
     !   x_model, y_model - позиция в модельных координатах [м] (intent(in))
     !   lat, lon         - географическая позиция [°] (intent(in))
     !   draft            - осадка айсберга [м] (intent(in))
+    !   u_ice, v_ice     - скорость айсберга [м/с] (intent(in))
     !   prof             - выходной профиль океана (intent(out))
     !   ok               - флаг успеха (intent(out))
     ! ========================================================================
-    subroutine get_ocean_profile(x_model, y_model, lat, lon, draft, prof, ok)
+    subroutine get_ocean_profile(x_model, y_model, lat, lon, draft, u_ice, v_ice, prof, ok)
         real, intent(in) :: x_model, y_model
         real, intent(in) :: lat, lon
         real, intent(in) :: draft
+        real, intent(in) :: u_ice, v_ice
         type(ocean_profile), intent(out) :: prof
         logical, intent(out) :: ok
 
@@ -141,9 +143,9 @@ contains
         ! 5. Выделить память под профиль
         prof%nlevels = kt
         allocate (prof%z(kt), prof%dz(kt), prof%temp(kt), prof%salt(kt), &
-                  prof%u(kt), prof%v(kt))
+                  prof%u(kt), prof%v(kt), prof%u_rel(kt))
 
-        ! 6. Заполнить профиль
+        ! 6. Заполнить профиль и вычислить относительную скорость
         do k = 1, kt
             prof%z(k) = real(z(k))*CM_TO_M
             prof%dz(k) = real(dz(k))*CM_TO_M
@@ -153,6 +155,9 @@ contains
             ! u2/v2 в CGS [см/с] → SI [м/с]: × CM_TO_M
             prof%u(k) = bilinear_interp_3d(u2, i1, i2, j1, j2, k, wx, wy, wx1, wy1)*CM_TO_M
             prof%v(k) = bilinear_interp_3d(v2, i1, i2, j1, j2, k, wx, wy, wx1, wy1)*CM_TO_M
+
+            ! Относительная скорость воды относительно айсберга на уровне k
+            prof%u_rel(k) = sqrt((prof%u(k) - u_ice)**2 + (prof%v(k) - v_ice)**2)
         end do
 
         ok = .true.
@@ -441,7 +446,7 @@ contains
     ! Аргументы:
     !   prof       - профиль океана (intent(in))
     !   draft      - глубина осадки [м] (intent(in))
-    !   field_name - "temp" или "salt" (intent(in))
+    !   field_name - "temp", "salt", "u", "v", "u_rel" (intent(in))
     !   val        - интерполированное значение (выход)
     ! ========================================================================
     function interp_at_draft(prof, draft, field_name) result(val)
@@ -458,6 +463,9 @@ contains
             select case (field_name)
             case ("temp"); val = prof%temp(1)
             case ("salt"); val = prof%salt(1)
+            case ("u");    val = prof%u(1)
+            case ("v");    val = prof%v(1)
+            case ("u_rel"); val = prof%u_rel(1)
             case default; val = 0.0
             end select
             return
@@ -468,6 +476,9 @@ contains
             select case (field_name)
             case ("temp"); val = prof%temp(prof%nlevels)
             case ("salt"); val = prof%salt(prof%nlevels)
+            case ("u");    val = prof%u(prof%nlevels)
+            case ("v");    val = prof%v(prof%nlevels)
+            case ("u_rel"); val = prof%u_rel(prof%nlevels)
             case default; val = 0.0
             end select
             return
@@ -491,6 +502,12 @@ contains
             val = (1.0 - w)*prof%temp(k1) + w*prof%temp(k1 + 1)
         case ("salt")
             val = (1.0 - w)*prof%salt(k1) + w*prof%salt(k1 + 1)
+        case ("u")
+            val = (1.0 - w)*prof%u(k1) + w*prof%u(k1 + 1)
+        case ("v")
+            val = (1.0 - w)*prof%v(k1) + w*prof%v(k1 + 1)
+        case ("u_rel")
+            val = (1.0 - w)*prof%u_rel(k1) + w*prof%u_rel(k1 + 1)
         case default
             val = 0.0
         end select

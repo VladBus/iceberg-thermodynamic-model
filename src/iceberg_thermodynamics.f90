@@ -233,7 +233,8 @@ contains
         real :: q_net
 
         ! 1. Базальное плавление
-        call compute_basal_melt(ocean_prof, diag%draft, &
+        ! Характерная длина для базального плавления = L (длина в направлении X)
+        call compute_basal_melt(ocean_prof, diag%draft, state%L, state%u, state%v, &
                                 t_draft, s_draft, tf_draft, &
                                 delta_t_basal, m_basal)
 
@@ -258,27 +259,65 @@ contains
     end subroutine iceberg_thermodynamics_step
 
     ! ========================================================================
-    !   БАЗАЛЬНОЕ ПЛАВЛЕНИЕ (Stage 9.1 §13)
+    !   БАЗАЛЬНОЕ ПЛАВЛЕНИЕ (Stage 10.6 — физически обоснованное)
     ! ========================================================================
-    ! m_b = C_BASAL * max(0, T(D) - Tf(D))
-    ! T(D), S(D) — интерполяция профиля на глубине осадки D.
-    ! Tf = ocean_freezing_point(S(D), D)  (EOS-80, Stage 10.5)
+    ! Использует bulk-формулировку теплообмена (Weeks & Campbell 1973;
+    ! Martin & Adcroft 2010) с относительной скоростью на глубине осадки:
+    !
+    !   U_rel = sqrt((u_water(D) - u_ice)^2 + (v_water(D) - v_ice)^2)
+    !   Re = U_rel * L / ν        (L = длина айсберга в направлении потока)
+    !   Nu = 0.037 * Re^0.8 * Pr^(1/3)   (турбулентный режим)
+    !   γ_T = Nu * k / L          [Вт/(м²·К)]
+    !   Q_basal = γ_T * (T(D) - Tf(D)) [Вт/м²]
+    !   m_basal = Q_basal / (ρ_ice * L_f) [м/с]
+    !
+    ! Где:
+    !   k = THERMAL_CONDUCTIVITY [Вт/(м·К)]
+    !   Pr = PRANDTL_NUMBER [безразм.]
+    !   ν = KINEMATIC_VISCOSITY [м²/с]
+    !   Tf = EOS-80 freezing point (Stage 10.5)
+    !
+    ! ========================================================================
+    !   БАЗАЛЬНОЕ ПЛАВЛЕНИЕ (Stage 10.6 — физически обоснованное)
+    ! ========================================================================
+    ! Использует bulk-формулировку теплообмена (Weeks & Campbell 1973;
+    ! Martin & Adcroft 2010) с относительной скоростью на глубине осадки:
+    !
+    !   U_rel = sqrt((u_water(D) - u_ice)^2 + (v_water(D) - v_ice)^2)
+    !   Re = U_rel * L / ν        (L = длина айсберга в направлении потока)
+    !   Nu = 0.037 * Re^0.8 * Pr^(1/3)   (турбулентный режим)
+    !   γ_T = Nu * k / L          [Вт/(м²·К)]
+    !   Q_basal = γ_T * (T(D) - Tf(D)) [Вт/м²]
+    !   m_basal = Q_basal / (ρ_ice * L_f) [м/с]
+    !
+    ! Где:
+    !   k = THERMAL_CONDUCTIVITY [Вт/(м·К)]
+    !   Pr = PRANDTL_NUMBER [безразм.]
+    !   ν = KINEMATIC_VISCOSITY [м²/с]
+    !   Tf = EOS-80 freezing point (Stage 10.5)
     !
     ! Аргументы:
-    !   prof        - профиль океана (intent(in))
+    !   prof        - профиль океана (intent(in)), содержит u_rel на глубине D
     !   draft       - осадка [м] (intent(in))
+    !   l_char      - характерная длина для Re (L для базального) [м] (intent(in))
+    !   u_ice, v_ice - скорость айсберга [м/с] (intent(in))
     !   t_draft     - температура на осадке [°C] (выход)
     !   s_draft     - соленость на осадке [кг/кг] (выход)
     !   tf_draft    - точка замерзания на осадке [°C] (выход)
     !   delta_t     - T - Tf [°C] (выход)
     !   m_basal     - базальная скорость плавления [м/с] (выход)
     ! ========================================================================
-    subroutine compute_basal_melt(prof, draft, t_draft, s_draft, tf_draft, &
-                                  delta_t, m_basal)
+    subroutine compute_basal_melt(prof, draft, l_char, u_ice, v_ice, &
+                                  t_draft, s_draft, tf_draft, delta_t, m_basal)
         type(ocean_profile), intent(in) :: prof
         real, intent(in) :: draft
+        real, intent(in) :: l_char
+        real, intent(in) :: u_ice, v_ice
         real, intent(out) :: t_draft, s_draft, tf_draft
         real, intent(out) :: delta_t, m_basal
+
+        real :: u_rel_draft, gamma_t, q_basal
+        real :: u_draft, v_draft
 
         t_draft = interp_at_draft(prof, draft, "temp")
         s_draft = interp_at_draft(prof, draft, "salt")
@@ -288,7 +327,28 @@ contains
         delta_t = t_draft - tf_draft
 
         if (delta_t .gt. 0.0) then
-            m_basal = C_BASAL*delta_t
+            ! Относительная скорость на глубине осадки
+            ! Если профиль содержит u_rel, используем его, иначе вычисляем из u,v
+            if (allocated(prof%u_rel)) then
+                u_rel_draft = interp_at_draft(prof, draft, "u_rel")
+            else
+                ! Вычисляем из u и v на глубине осадки
+                u_draft = interp_at_draft(prof, draft, "u")
+                v_draft = interp_at_draft(prof, draft, "v")
+                u_rel_draft = sqrt((u_draft - u_ice)**2 + (v_draft - v_ice)**2)
+            end if
+
+            ! Теплообменный коэффициент через bulk-формулировку
+            call ocean_heat_transfer_coeff(u_rel_draft, l_char, gamma_t)
+
+            ! Тепловой флюс через основание
+            q_basal = gamma_t*delta_t
+
+            ! Скорость плавления [м/с]
+            m_basal = q_basal/(RHO_ICE*LATENT_HEAT)
+
+            ! Защита от числового шума
+            if (m_basal .lt. MELT_RATE_MIN) m_basal = 0.0
         else
             m_basal = 0.0
             delta_t = 0.0
@@ -296,11 +356,13 @@ contains
     end subroutine compute_basal_melt
 
     ! ========================================================================
-    !   БОКОВОЕ ПЛАВЛЕНИЕ (Stage 9.1 §14, Method A)
+    !   БОКОВОЕ ПЛАВЛЕНИЕ (Stage 9.1 §14, Method A — legacy formula)
     ! ========================================================================
     ! m_l = C_LATERAL * ⟨max(0, T - Tf)⟩_D
     ! Глубинно-усреднённое термическое задействование вычисляется через
     ! depth_averaged_thermal_forcing (интеграл по осадке с экстраполяцией).
+    ! Stage 10.7: будет заменено на физически обоснованную параметризацию
+    ! с использованием U_rel(z) и bulk-формулировки теплообмена.
     !
     ! Аргументы:
     !   prof            - профиль океана (intent(in))

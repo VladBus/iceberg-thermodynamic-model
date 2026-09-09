@@ -171,7 +171,7 @@ print *, "SKIP: KOORD.DAT not present (gitignored; run python/grid/build_real_gr
 
     ! Get initial production forcing
     call get_ocean_profile(state%x, state%y, state%latitude, state%longitude, &
-                           state%H*RHO_ICE/RHO_WATER, ocean_prof, forcing_ok)
+                           state%H*RHO_ICE/RHO_WATER, state%u, state%v, ocean_prof, forcing_ok)
     call model_coords_to_latlon(state%x, state%y, latitude, longitude, ok)
 
     if (forcing_ok .and. ok) then
@@ -215,7 +215,7 @@ print *, "SKIP: KOORD.DAT not present (gitignored; run python/grid/build_real_gr
         ! This is the EXACT sequence from production code:
         ! 1. Ocean profile at CURRENT position
         call get_ocean_profile(state%x, state%y, state%latitude, state%longitude, &
-                               state%H*RHO_ICE/RHO_WATER, ocean_prof, forcing_ok)
+                               state%H*RHO_ICE/RHO_WATER, state%u, state%v, ocean_prof, forcing_ok)
 
         ! 2. Atmos forcing at CURRENT lat/lon
         if (forcing_ok) then
@@ -268,7 +268,7 @@ print *, "SKIP: KOORD.DAT not present (gitignored; run python/grid/build_real_gr
 
     ! Get forcing at t=0
     call get_ocean_profile(state%x, state%y, state%latitude, state%longitude, &
-                           state%H*RHO_ICE/RHO_WATER, ocean_prof, forcing_ok)
+                           state%H*RHO_ICE/RHO_WATER, state%u, state%v, ocean_prof, forcing_ok)
     call model_coords_to_latlon(state%x, state%y, latitude, longitude, ok)
     if (forcing_ok .and. ok) then
         call get_atmos_forcing(latitude, longitude, 0.0, atmos, forcing_ok)

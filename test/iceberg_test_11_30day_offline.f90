@@ -108,7 +108,7 @@ print *, "SKIP: KOORD.DAT not present (gitignored; run python/grid/build_real_gr
 
         ! 5a. Получить океанский профиль на текущей позиции
         call get_ocean_profile(state%x, state%y, state%latitude, state%longitude, &
-                               state%H*910.0/1028.0, ocean_prof, forcing_ok)
+                               state%H*910.0/1028.0, state%u, state%v, ocean_prof, forcing_ok)
         if (.not. forcing_ok) then
             print *, "WARNING: Ocean profile interpolation failed at step ", step
         end if

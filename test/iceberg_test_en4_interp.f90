@@ -57,7 +57,7 @@ print *, "SKIP: KOORD.DAT not present (gitignored; run python/grid/build_real_gr
     y_model = 60.0*13890.0   ! i=61 -> (61-1)*13890
     draft = 88.5  ! типичная осадка для 100м айсберга
 
-    call get_ocean_profile(x_model, y_model, lat, lon, draft, prof, ok)
+    call get_ocean_profile(x_model, y_model, lat, lon, draft, 0.0, 0.0, prof, ok)
     if (.not. ok) then
         print *, "  ERROR: get_ocean_profile failed"
         n_errors = n_errors + 1
@@ -137,7 +137,7 @@ print *, "SKIP: KOORD.DAT not present (gitignored; run python/grid/build_real_gr
     x_model = 10.0*13890.0
     y_model = 30.0*13890.0
 
-    call get_ocean_profile(x_model, y_model, lat, lon, draft, prof, ok)
+    call get_ocean_profile(x_model, y_model, lat, lon, draft, 0.0, 0.0, prof, ok)
     if (.not. ok) then
         print *, "  ERROR: get_ocean_profile failed at second position"
         n_errors = n_errors + 1

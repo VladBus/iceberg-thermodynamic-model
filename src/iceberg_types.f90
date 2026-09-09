@@ -62,12 +62,76 @@ module iceberg_types
     real, parameter :: CD_AIR = 1.3e-3      ! Коэффициент аэродинамического сопротивления (воздух-лёд)
     real, parameter :: CD_WATER = 2.0e-3      ! Коэффициент гидродинамического сопротивления (вода-лёд)
 
-    ! Коэффициенты плавления [м/(с·К)]
+    ! ========================================================================
+    !   ОКЕАНИЧЕСКАЯ СТОРОНА ТЕПЛООБМЕНА (Stage 10.6)
+    ! ========================================================================
+    ! Three-equation / bulk formulation параметры для базального и бокового плавления.
+    ! Источники:
+    !   - Holland & Jenkins (1999) J. Phys. Oceanogr. 29, 1787-1800
+    !   - Jenkins et al. (2010) J. Phys. Oceanogr. 40, 2272-2283 (Ronne Ice Shelf obs)
+    !   - FitzMaurice & Stern (2018) Ocean Modelling 131, 54-69 (iceberg comparison)
+    !   - Weeks & Campbell (1973) iceberg bulk parameterization
+    !   - Martin & Adcroft (2010) J. Geophys. Res. 115, C08016
+    !
+    ! Для айсбергов масштаба L ~ 100-1000 м (малые по сравнению с радиусом
+    ! деформации ~15 км) применима bulk-формулировка по Re = U*L/ν.
+    ! Heat transfer coefficient: γ_T = 0.037 * k * Pr^(1/3) * U^0.8 * ν^-0.8 * L^0.2
+    ! Melt rate: m = γ_T * (T - Tf) / (ρ_ice * L_f)
+    ! В координатах γ_T: h = ρ_w * c_pw * γ_T  [W/(m²·K)]
+    ! Stanton number: St = γ_T / U
+    !
+    ! Константы:
+    !   C_d (drag coefficient): 0.0015-0.0097 (H&J99: 0.0015, J10: 0.0097)
+    !   Для гладкого льда (Andreas et al. 2010): C_d ≈ 0.0022-0.0025
+    !   Γ_T (thermal Stanton number): 0.011 (J10) - 0.012 (LES max)
+    !   Γ_S (haline Stanton number): 3.1e-4 (J10)
+    !   Pr (Prandtl number) seawater: ~13.8
+    !   Sc (Schmidt number) seawater: ~2400
+    ! ========================================================================
+
+    ! Drag coefficient for ice-ocean interface (dimensionless)
+    ! Using mid-range value for smooth ice (Larsen C observations: 0.0022)
+    real, parameter :: CD_ICE_OCEAN = 2.2e-3
+
+    ! Thermal Stanton number Γ_T = γ_T / u*  (dimensionless)
+    ! Jenkins et al. (2010) Ronne Ice Shelf: Γ_T = 0.011
+    ! LES upper limit (Vreugdenhil & Taylor 2019): 0.012
+    real, parameter :: STANTON_THERMAL = 0.011
+
+    ! Haline Stanton number Γ_S = γ_S / u* (dimensionless)
+    ! Jenkins et al. (2010): Γ_S = 3.1e-4
+    real, parameter :: STANTON_HALINE = 3.1e-4
+
+    ! Prandtl number for seawater (ratio of viscosity to thermal diffusivity)
+    ! Pr = ν / κ_T ≈ 1.8e-6 / 1.3e-7 ≈ 13.8 at 0°C
+    real, parameter :: PRANDTL_NUMBER = 13.8
+
+    ! Kinematic viscosity of seawater [m²/s] at 0°C, S=34.8
+    real, parameter :: KINEMATIC_VISCOSITY = 1.82e-6
+
+    ! Thermal conductivity of seawater [W/(m·K)] at 0°C
+    real, parameter :: THERMAL_CONDUCTIVITY = 0.56
+
+    ! Schmidt number for seawater (ratio of viscosity to salt diffusivity)
+    ! Sc = ν / κ_S ≈ 1.8e-6 / 7.5e-10 ≈ 2400
+    ! Not directly used in bulk formulation but for reference
+    real, parameter :: SCHMIDT_NUMBER = 2400.0
+
+    ! Characteristic length scale for basal melt Reynolds number
+    ! For basal: L = iceberg length in flow direction (L)
+    ! For lateral: L = draft (D) - from Weeks & Campbell (1973)
+    ! These are set per-call based on geometry, not compile-time constants
+
+    ! Coefficients плавления [м/(с·К)] — LEGACY (Stage 9.3, retained for reference)
     ! Исправлены в Stage 9.3: были 1e-4 [м/с] с делением на (ρᵢ·L_f),
     ! стало 1e-6 [м/(с·К)] с формулой m = C * ΔT (без деления на ρᵢ·L_f).
     ! Физический смысл: γ_T = h/(ρᵢ·L_f), где h ≈ 300 Вт/(м²·К) → γ_T ≈ 1e-6.
-    real, parameter :: C_BASAL = 1.0e-6     ! Базальный коэффициент плавления
-    real, parameter :: C_LATERAL = 1.0e-6     ! Боковой коэффициент плавления
+    ! Stage 10.6: заменяются на физически обоснованную формулу в compute_basal_melt
+    real, parameter :: C_BASAL = 1.0e-6     ! Legacy базальный коэффициент плавления
+    real, parameter :: C_LATERAL = 1.0e-6     ! Legacy боковой коэффициент плавления
+
+    ! Порог скорости плавления для предотвращения числового шума [м/с]
+    real, parameter :: MELT_RATE_MIN = 1.0e-12
 
     ! Радиационные свойства льда
     real, parameter :: ALBEDO_ICE = 0.7      ! Альбедо льда [безразм.]
@@ -153,6 +217,7 @@ module iceberg_types
         real, allocatable :: salt(:)       ! Соленость [массовая доля, кг/кг], размер (nlevels)
         real, allocatable :: u(:)          ! Скорость по X [м/с], размер (nlevels)
         real, allocatable :: v(:)          ! Скорость по Y [м/с], размер (nlevels)
+        real, allocatable :: u_rel(:)      ! Относительная скорость [м/с], размер (nlevels)
     end type ocean_profile
 
     ! Атмосферный форсинг от ERA5 (на позиции айсберга)
@@ -266,8 +331,13 @@ module iceberg_types
     public :: MURPHY_KOOP_A, MURPHY_KOOP_B, MURPHY_KOOP_C, MURPHY_KOOP_D
     public :: EOS_FP_A0, EOS_FP_A1, EOS_FP_A2, EOS_FP_BP
     public :: OMEGA
+    ! Stage 10.6 ocean-side heat transfer constants
+    public :: CD_ICE_OCEAN, STANTON_THERMAL, STANTON_HALINE
+    public :: PRANDTL_NUMBER, KINEMATIC_VISCOSITY, THERMAL_CONDUCTIVITY
+    public :: SCHMIDT_NUMBER, MELT_RATE_MIN
     public :: ocean_profile, atmos_forcing, iceberg_diagnostics, iceberg_state
     public :: ocean_freezing_point
+    public :: ocean_heat_transfer_coeff
 
 contains
 
@@ -302,5 +372,55 @@ contains
         tf = (EOS_FP_A0 + EOS_FP_A1*sqrt(s_psu) - EOS_FP_A2*s_psu)*s_psu &
              + EOS_FP_BP*p_dbar
     end function ocean_freezing_point
+
+    ! ========================================================================
+    !   ТЕПЛООБМЕННЫЙ КОЭФФИЦИЕНТ ОКЕАН-СТОРОНЫ (Stage 10.6)
+    ! ========================================================================
+    ! Вычисляет теплообменный коэффициент γ_T [W/(m²·K)] для базального/бокового плавления
+    ! на основе bulk-формулировки (Weeks & Campbell 1973; Martin & Adcroft 2010):
+    !
+    !   γ_T = 0.037 * k * Pr^(1/3) * U_rel^0.8 * ν^-0.8 * L_char^0.2
+    !
+    ! где:
+    !   k        = THERMAL_CONDUCTIVITY [W/(m·K)]
+    !   Pr       = PRANDTL_NUMBER [dimensionless]
+    !   U_rel    = относительная скорость вода-лёд [m/s]
+    !   ν        = KINEMATIC_VISCOSITY [m²/s]
+    !   L_char   = характерная длина [m] (L для базального, D для бокового)
+    !
+    ! Альтернативно через Stanton number (three-equation style):
+    !   γ_T = ρ_w * c_pw * Γ_T * √(C_d) * U_rel
+    ! где Γ_T = STANTON_THERMAL, C_d = CD_ICE_OCEAN
+    !
+    ! Stage 10.6 использует bulk-формулировку с Re = U*L/ν как более подходящую
+    ! для айсбергов L ~ 100-1000 м (FitzMaurice & Stern 2018).
+    !
+    ! Аргументы:
+    !   u_rel       - относительная скорость [м/с] (intent(in))
+    !   l_char      - характерная длина [м] (intent(in))
+    !   gamma_t     - теплообменный коэффициент [Вт/(м²·К)] (выход)
+    ! ========================================================================
+    pure subroutine ocean_heat_transfer_coeff(u_rel, l_char, gamma_t)
+        real, intent(in) :: u_rel
+        real, intent(in) :: l_char
+        real, intent(out) :: gamma_t
+
+        real :: reynolds, nusselt
+
+        if (u_rel .le. 0.0 .or. l_char .le. 0.0) then
+            gamma_t = 0.0
+            return
+        end if
+
+        ! Reynolds number: Re = U * L / ν
+        reynolds = u_rel*l_char/KINEMATIC_VISCOSITY
+
+        ! Nusselt number для турбулентного течения lungo flat plate (Eckert & Drake 1959)
+        ! Nu = 0.037 * Re^0.8 * Pr^(1/3)  (laminar + turbulent regime)
+        nusselt = 0.037*(reynolds**0.8)*(PRANDTL_NUMBER**(1.0/3.0))
+
+        ! Heat transfer coefficient: γ_T = Nu * k / L
+        gamma_t = nusselt*THERMAL_CONDUCTIVITY/l_char
+    end subroutine ocean_heat_transfer_coeff
 
 end module iceberg_types

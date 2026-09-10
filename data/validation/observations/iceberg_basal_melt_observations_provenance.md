@@ -17,7 +17,10 @@ number is invented. Missing quantities are `NaN`.
 `tier` groups rows as `lab-primary`, `field-primary`, `synthesis-derived`,
 `rs-derived`. `melt_component` is `basal` when the source reports bottom melt
 and `submarine` when the source reports the melt of the submerged surface
-(basal + side; the dominant term is basal).
+(basal + side). Note (Stage 10.9 correction): which term dominates is
+aspect-ratio-dependent — side melt is comparable for small bergs
+(D/L ~ 0.2) and in the tank experiments; "the dominant term is basal" only
+holds for flat tabular bergs with D/L < ~0.25.
 
 ## Row-by-row provenance
 

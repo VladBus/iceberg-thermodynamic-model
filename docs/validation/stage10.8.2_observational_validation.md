@@ -21,11 +21,14 @@ test_observational_validation.py` (229 checks, 15 function blocks A-O).
 ## 1. Scope and dataset
 
 The observable that must be tested is the melt rate of the submerged surface of
-icebergs (basal plane dominating; side melt second), driven by the ocean-side
-thermal forcing. Studies were selected only when they reported a repeatable
-melt rate of an iceberg's submerged surface (laboratory, in-situ field,
-synthesis, or remote-sensing position chains). Exclusions, applied before any
-analysis:
+icebergs (the basal plane where the draft/length aspect makes it dominant; the
+side area contributes comparably for small bergs and in the tank experiments —
+see the aspect-ratio analysis in Stage 10.9, which corrects the earlier
+"basal plane dominating; side melt second" generalization), driven by the
+ocean-side thermal forcing. Studies were selected only when they reported a
+repeatable melt rate of an iceberg's submerged surface (laboratory, in-situ
+field, synthesis, or remote-sensing position chains). Exclusions, applied
+before any analysis:
 
 - Rignot et al. 2010 calving-face rates (0.7-3.9 m/day): glacier terminus,
   plume-driven, not iceberg submarine melt — context only.
@@ -85,11 +88,15 @@ Per row:
 | NJ80_dT4 | 0.0466 | 0.1601 | 3.44 | 4.0 | 2.75e6 | turbulent |
 | NJ80_dT8 | 0.1507 | 0.3201 | 2.12 | 8.0 | 2.75e6 | turbulent |
 
-The single field observation (KW84) is reproduced to better than the reported
-range (model 0.70x within 0.04-0.08). The synthesis curve is overestimated by
-a factor that declines with thermal driving (5.8 -> 2.1 from dT 2 to 8 °C).
-This systematic positive bias at high dT at the reference U/L is the headline
-numerical finding (see Section 8 discussion of the turbulent scaling).
+The single field observation (KW84) is reproduced at the lower edge of the
+reported range (model 0.705x at L_char = draft = 20 m). With the production
+characteristic length L_char = berg length (40-100 m) the ratio falls to
+0.55-0.62x — below the reported 0.05-0.07 band; the comparison length
+assumption is relaxed in Stage 10.9 Section 7. The synthesis curve is
+overestimated by a factor that declines with thermal driving (5.8 -> 2.1 from
+dT 2 to 8 °C). This positive bias toward high dT at the reference U/L is the
+headline numerical finding; Stage 10.9 shows it is a functional-form
+(dT-power-law) mismatch rather than a scale offset.
 
 ## 4. Natural-convection gap (quiescent laboratory rows)
 
@@ -129,11 +136,14 @@ Required `U_rel` (m/s) to reproduce each observed melt with `L=50 m, S=35`:
 
 The Greenland fjord rates (0.16-0.5 m/day) require plausible fjord currents of
 ~0.1-1.0 m/s at dT=2-4 °C — consistent with observed Sermilik/Disko conditions,
-so the closure is not obviously wrong in the turbulent regime. The East
-Antarctic maximum (0.0137) requires only ~0.02 m/s, i.e. the model easily
-produces small rates at low dT — physically reasonable. The context row (open
-Southern Ocean, up to 1.5 m/day) is not a central estimate and is excluded from
-metrics everywhere.
+so the closure is not obviously wrong in the turbulent regime. Caveat (resolved
+in Stage 10.9): the rs rows measure **submarine** melt while the closure
+predicts a **basal** melt rate; the two are equal only where the basal plane
+dominates, which is an aspect-ratio-dependent condition, not a universal one.
+The East Antarctic maximum (0.0137) requires only ~0.02 m/s, i.e. the model
+easily produces small rates at low dT — physically reasonable. The context row
+(open Southern Ocean, up to 1.5 m/day) is not a central estimate and is
+excluded from metrics everywhere.
 
 ## 6. Regime analysis
 
@@ -170,20 +180,27 @@ production chain to < 1e-12 relative. There is no numerical drift between the
 
 ## 9. Interpretation, systematic bias and limitations (Q9)
 
-- Where a forcing-anchored observation exists (KW84), the closure agrees
-  within the reported range (0.70x).
+- Where a forcing-anchored observation exists (KW84), the closure agrees at
+  the lower edge of the reported range at L_char = draft (0.705x), dropping to
+  0.55-0.62x under the production berg-length length scale (Stage 10.9 §7).
 - Against the NJ80 synthesis the closure reads **high**, by 2.1-5.8x at the
-  reference parameters, with a clear dT-trend (ratio -> 2 as dT -> 8 °C). This
-  is a systematic bias to document (flat-plate gamma overestimates heat transfer
-  at small driving / real berg side+basal geometry, or the NJ80 curve is itself
-  representative of lower forced-convection than assumed). It is NOT corrected
+  reference parameters, with a clear dT-trend (ratio -> 2 as dT -> 8 °C). Stage
+  10.9 demonstrates this is a dT-power-law mismatch (obs ~ dT^1.73, closure
+  dT^1.0), i.e. a shape error, not a stable scale offset; it is NOT corrected
   in production.
 - The closure cannot represent quiescent (lab) melt: 5.7-7.3 orders of
-  magnitude gap. This is the strongest structural limitation.
+  magnitude gap. This is the strongest structural limitation; it is also
+  structurally uncalibratable (a scalar multiplier times zero is zero), which
+  is the main reason Stage 10.9 does not recommend a coefficient fit.
 - fjord remote-sensing rates are reproducible with plausible U_rel; that is a
-  necessary but weak consistency, not a verification.
+  necessary but weak consistency, not a verification, and it applies to
+  submarine (not basal) melt.
+- Side-area melt dominates or matches the basal plane for bergs with
+  D/L < ~0.25; the "basal plane dominating" generalization in an earlier draft
+  of this report is corrected in Stage 10.9 §3 (claims #7, #8).
 - All F90 production physics is untouched; this is a diagnostics/validation
-  stage only.
+  stage only. The follow-up assessment (Stage 10.9) concludes that no scalar
+  calibration of the heat-transfer coefficient is supported by these data.
 
 ## 10. Reproduction
 
@@ -222,7 +239,8 @@ Artifacts: `data/validation/observations/iceberg_basal_melt_observations.csv`
 production closure shows (i) a 5.7-7.3 order-of-magnitude inability to
 represent quiescent melt (structural limitation), and (ii) a systematic
 positive bias factor 2.1-5.8 against the NJ80 synthesis at reference
-parameters, with no observational anchor for the laminar branch. These are
+parameters (later shown in Stage 10.9 to be a dT-power-law shape mismatch),
+with no observational anchor for the laminar branch. These are
 documented findings; no production coefficient was changed and calibration is a
 separate stage. AS IS, validation passed, with documented systematic
 limitations.
@@ -233,19 +251,30 @@ limitations.
 
 - `depth_m = L_char_m` (draft) for the freezing-point pressure.
 - NJ80 `S=35`, `U_ref=0.1 m/s`, `L=50 m`; KW84 `L=20 m` (from the reported
-  40-100 m berg length) — reference, not measured, values.
-- `melt_component = submarine` for the remote-sensing rows implies the basal
-  term dominates; per-source basis, documented, no tuning.
+  40-100 m berg length) — reference, not measured, values. Stage 10.9 shows
+  the KW84 ratio falls to 0.55-0.62x when the production berg-length L is used.
+- `melt_component = submarine` for the remote-sensing rows is a basal proxy
+  whose validity is aspect-ratio-dependent (Stage 10.9 claims #7/#8 correct the
+  stronger "basal dominates" generalization); documented, no tuning.
 
 ## RISKS
 
-- Only 4 model-comparable observational rows; the turbulent branch is the only
-  branch with field anchors. Laminar coefficients remain unverified against
-  field data.
-- The positive synthesis bias may partly reflect the NJ80 curve being
-  representative of weaker forced convection than the flat-plate high-Re form;
-  a calibration study (Stage 10.8.3+, separate) is the correct vehicle — not a
-  silent production change.
+- Only 4 model-comparable observational rows from **2** independent sources;
+  the turbulent branch is the only branch with field anchors. Laminar
+  coefficients remain unverified against field data.
+- The positive synthesis bias is a dT-shape mismatch (obs ~ dT^1.73 vs closure
+  dT^1.0), not a scale offset; the required individual-row coefficient spans
+  ~8x across the two source families, which Stage 10.9 quantifies and uses to
+  rule out any scalar calibration. This is documented, not silently changed.
+
+## 15. Follow-up assessment (Stage 10.9)
+
+The claims in this report marked with caveats, plus the identifiability of the
+heat-transfer coefficient itself, are assessed in
+[`stage10.9_calibration_assessment.md`](stage10.9_calibration_assessment.md).
+Conclusion: **no scalar calibration of the production coefficient is
+supported**; the recommended next step is a three-equation ice-ocean interface
+(Holland & Jenkins 1999) with a natural-convection floor.
 
 ## Verified sources (all DOI-checked via Crossref)
 

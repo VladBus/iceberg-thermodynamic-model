@@ -1,13 +1,14 @@
 # Статус физических блоков модели
 
 **Дата:** 2026-09-10
-**Current repository stage:** Stage 10.8.2 — Observational Validation of the Basal-Melt Closure
-**Production baseline:** Stage 10.6.1 (unchanged; 10.7 audit, 10.8.1 Python layer, 10.8.2 observational validation — diagnostics only)
+**Current repository stage:** Stage 10.9 — Calibration Assessment of the Basal-Melt Coefficient
+**Production baseline:** Stage 10.6.1 (unchanged; 10.7 audit, 10.8.1 Python layer, 10.8.2 observational validation, 10.9 calibration assessment — diagnostics only)
 **FPM test targets:** 51
 **Local status:** 51/51 PASS; strict build clean; `git diff --check` clean
 **Stage 10.7 report:** `docs/validation/stage10.7_basal_melt_validation.md`
 **Stage 10.8.1 report:** `docs/validation/stage10.8.1_python_validation.md`
 **Stage 10.8.2 report:** `docs/validation/stage10.8.2_observational_validation.md`
+**Stage 10.9 report:** `docs/validation/stage10.9_calibration_assessment.md`
 
 ## Классификация
 
@@ -38,9 +39,9 @@
 | Phase change | Explicit melt/sublimation/deposition partition and latent heat | B |
 | Freezing point | EOS-80/UNESCO pressure-dependent freezing-point equation | C |
 | Ocean heat transfer | Relative flow; laminar/turbulent flat-plate Nu correlation | B |
-| Basal melt | `m_basal = gamma_T * max(T-Tf,0)/(rho_ice*Lf)` (independently audited in Stage 10.7; independent Python layer in `python/validation/`, Stage 10.8.1; observational validation vs published melts, Stage 10.8.2) | B |
+| Basal melt | `m_basal = gamma_T * max(T-Tf,0)/(rho_ice*Lf)` (independently audited in Stage 10.7; independent Python layer in `python/validation/`, Stage 10.8.1; observational validation vs published melts, Stage 10.8.2; Stage 10.9: scalar coefficient **not identifiable** across the 10.8.2 sources — no calibration made) | B |
 | Lateral melt | Depth-averaged thermal forcing; legacy/approximate closure | B |
-| Three-equation interface | Not implemented | E |
+| Three-equation interface | Not implemented; recommended Stage 10.10 upgrade (Holland & Jenkins 1999) | E |
 | Full seawater EOS | Not implemented; freezing point only | E |
 | TEOS-10 | Not implemented | E |
 | Natural convection | Not represented in current ocean heat-transfer closure | E |

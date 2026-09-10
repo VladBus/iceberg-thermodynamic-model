@@ -11,9 +11,10 @@ This file prevents literature references from being used more strongly than the 
 | Laminar flat-plate heat transfer | `ocean_heat_transfer_coeff` in `src/iceberg_types.f90` | `eckertDrakeHeatMassTransfer1959` | CORE, approximation |
 | Turbulent flat-plate heat transfer | `ocean_heat_transfer_coeff` in `src/iceberg_types.f90` | `eckertDrakeHeatMassTransfer1959` | CORE, approximation |
 | Empirical iceberg basal melt context | basal melt comparison | `weeksCampbellIcebergsFreshWater1973` | COMPARISON |
+| Bulk melt-law basis (closed-form) | closed-form melt/draft basis | `biggModellingDynamicsThermodynamics1997` | COMPARISON |
 | Tabular iceberg basal melt | validation/comparison literature | `fitzmauriceSternBasalMeltTabular2018` | COMPARISON/VALIDATION |
-| Ice-ocean three-equation formulation | future interface closure | `hollandJenkinsThermodynamicIceOcean1999` | FUTURE |
-| Ice-shelf basal ablation / exchange | future comparison | `jenkinsNichollsCorrAblationRonne2010` | COMPARISON/FUTURE |
+| Ice-ocean three-equation formulation | recommended next interface closure (Stage 10.10) | `hollandJenkinsThermodynamicIceOcean1999` | RECOMMENDED NEXT |
+| Ice-shelf basal ablation / exchange | melt-driven Stanton anchor (St = 0.011) | `jenkinsNichollsCorrAblationRonne2010` | COMPARISON/FUTURE |
 | Turbulent exchange over sea ice/MIZ | atmospheric/ocean exchange context | `andreasHorstGrachevSummerSeaIce2010` | SUPPORT |
 | Interactive iceberg freshwater flux | coupled modelling context | `martinAdcroftInteractiveIcebergs2010` | BACKGROUND/FUTURE |
 | Observed iceberg submarine-melt band | validation band for basal melt (0.01–1 m/day) | `cenedeseIcebergsMelting2023` | VALIDATION |
@@ -39,7 +40,11 @@ Weeks & Campbell and FitzMaurice & Stern are relevant because they concern icebe
 
 ### Three-equation physics
 
-Holland & Jenkins (1999) and Jenkins et al. (2010) provide a literature basis for a future interface formulation. They are not evidence that the current Stage 10.6 closure already implements the three-equation boundary condition.
+Holland & Jenkins (1999) and Jenkins et al. (2010) provide a literature basis for a future interface formulation. They are not evidence that the current Stage 10.6 closure already implements the three-equation boundary condition. In Stage 10.9 this was made concrete: the flat-plate shear Stanton St ~ 3-4e-4 (production) is an order of magnitude below the melt-driven glaciological anchor St = 0.011 (Jenkins et al. 2010), and the required single coefficient spans ~8x across the two 10.8.2 sources, so the three-equation interface is the recommended Stage 10.10 upgrade rather than a scalar calibration.
+
+### Stage 10.9 DOI verification
+
+The roles above for Weeks & Campbell 1973, Bigg 1997, Holland & Jenkins 1999, Jenkins & Nicholls 2010, FitzMaurice & Stern 2018, Cenedese & Straneo 2023 and Martin & Adcroft 2010 were confirmed by Crossref bibliographic verification in Stage 10.9 (`docs/validation/stage10.9_calibration_assessment.md` §9). No new bibliography keys were added.
 
 ### Freezing point
 

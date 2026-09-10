@@ -398,16 +398,30 @@ All analysis scripts are in `python/analysis/`:
 - **Literature cross-check:** three-equation estimate (St·u*, St=0.011 commented) at U=0.1 m/s → factor ≈1.8 agreement with flat-plate; both closures reproduce observed band.
 - **All fpm tests PASS** (51 auto-discovered, exit 0); `-Wall -Wextra` build clean; `git diff --check` clean.
 - **Files changed:** test/iceberg_test_10p7_basal_melt_validation.f90 (new), docs/validation/stage10.7_basal_melt_validation.md (new), docs/model/model_physics_status.md, docs/model/stage10_modernization_plan.md, docs/references/literature_matrix.md, docs/references/citation_map.md, docs/PROJECT_ROADMAP.md, AGENTS.md.
-- **Network blocker documented:** external web/bib verification unavailable (search/firecrawl/fetch failures) — in-repo bibliography primary; Γ_T Stanton convention is an open risk for Stage 10.8.
+- **Network blocker documented:** external web/bib verification unavailable (search/firecrawl/fetch failures) — in-repo bibliography primary; Γ_T Stanton convention is an open risk for Stage 10.8. (Resolved in Stage 10.9: all seven named DOI anchors verified via Crossref.)
 
 ## Stage 10.8.2 Summary (Observational Validation of Basal Melt)
 
 - **Classification:** C — validation pass complete with documented systematic limitations; **production physics NOT changed** (no coefficient/parameter edits).
 - **Dataset:** `data/validation/observations/iceberg_basal_melt_observations.csv` (19 records, 16 cols; **versioned** — un-ignored in `.gitignore` because the test suite and CI depend on it) + provenance md. Tiers: lab-primary (Russell & Head 1980), field-primary (Keys & Williams 1984), synthesis (Neshyba & Josberger 1980), rs-derived (Enderlin & Hamilton 2014; Enderlin et al. 2016/2023) + 1 context row. Rignot calving-face rates EXCLUDED (not submarine melt). All DOIs Crossref-verified.
 - **Code:** `python/validation/observational_validation.py` (loader, metrics, natural-convection gap test, inverse-U bisection, regimes, sensitivity sweep, 6 figures); `python/tests/test_observational_validation.py` (15 blocks, **229 checks**).
-- **Results:** 4 forcing-anchored rows — RMSE 0.108, MAE 0.092, bias +0.083 m/day; KW84 within range (ratio 0.70); NJ80 synthesis overestimated factor 2.1→5.8 (dT 8→2 °C). Natural-convection gap 5.7–7.3 orders (no quiescent branch). Inverse-U: fjord rates reproducible at plausible U_rel 0.1–1.0 m/s (dT 2–4 °C). All comparable obs are turbulent (Re>5e5); laminar branch has no field anchor.
+- **Results:** 4 forcing-anchored rows — RMSE 0.108, MAE 0.092, bias +0.083 m/day; KW84 within range (ratio 0.70 at L=draft); NJ80 synthesis overestimated factor 2.1→5.8 (dT 8→2 °C) — later shown (10.9) to be a dT-power-law shape mismatch, not a scale offset. Natural-convection gap 5.7–7.3 orders (no quiescent branch). Inverse-U: fjord rates reproducible at plausible U_rel 0.1–1.0 m/s (dT 2–4 °C). All comparable obs are turbulent (Re>5e5); laminar branch has no field anchor.
 - **Metrics are computed on 4 rows only** (`include_in_metrics=True`: KW84 + NJ80×3); RH rows = gap test, RS rows = inverse-U, OPEN = context-only.
 - **Verification:** `python python/tests/test_observational_validation.py` must print `TOTAL CHECKS: 229 ERRORS: 0`; regression `test_basal_melt_validation.py` (44) still under CI.
 - **Bib:** 8 new verified entries in `docs/references/references.bib` (enderin x3, josberger, keys, neshyba, orheim, schild); legacy key `russefl-headMELTINGFREEDRIFTINGICEBERGS` KEPT (citation compatibility) but record corrected (author Russell-Head, journal Annals of Glaciology, vol 1, DOI 10.3189/S0260305500017092).
-- **Report:** `docs/validation/stage10.8.2_observational_validation.md` (12 sections).
-- **Next (Stage 10.9):** calibration of the turbulent heat-transfer coefficient against the 10.8.2 set (production-coefficient change, separate sign-off) OR three-equation ice-ocean interface; natural convection quantified as the largest structural gap.
+- **Report:** `docs/validation/stage10.8.2_observational_validation.md` (12 sections; claims #7/#8 corrected and #1/#2/#4 qualified in Stage 10.9).
+- **Corrected claims (Stage 10.9):** "basal plane dominating; side melt second" is aspect-ratio-dependent (side ~ basal for D/L~0.2); "submarine ≈ basal" is not universal; the KW84 0.70x anchor only holds at L=draft (production L = berg length gives 0.55–0.62x).
+
+## Stage 10.9 Summary (Calibration Assessment of the Basal-Melt Coefficient)
+
+- **Classification:** C — validation insufficient for robust calibration; **production physics NOT changed** (no coefficient fits; `git diff -- src/` EMPTY).
+- **Module:** `python/validation/calibration_assessment.py` (pure-Python; imports `basal_melt` + `observational_validation`, no Fortran); test `python/tests/test_calibration_assessment.py` (20 blocks, **212 checks**, A–T).
+- **Conclusion — NO scalar coefficient identifiable:** inferred required C_gamma spans **8.29x (0.918 decades)** between the two independent sources — NJ80 per-source geomean 0.286 (3 rows, 1 source), KW84 1.418 (1 row); pooled geomean 0.427; effective n = 2 sources. Leave-one-source-out: KW84-fit → NJ80 over 8.29/4.87/3.01; NJ80-fit → KW84 0.202.
+- **Functional-form, not scale:** NJ80 obs ~ dT^1.73 and RH80 tank law ~ (T+1.8)^1.50 vs closure exactly dT^1.0 (a scalar cannot absorb a power-law mismatch); JPL-Re set all turbulent (Re ≥ 1.1e6).
+- **Sensitivity exponents (measured):** turbulent U^+0.800·L^-0.200·dT^+1.000·C^+1.000; laminar U^+0.500·L^-0.500. L_char geometry: using production L = berg length (40–100 m) drops KW84 ratio 0.705 → 0.55–0.62; NJ80 ratios 4.10/3.44/3.02/2.68 for L=20/50/100/200 m.
+- **Stanton:** model flat-plate St 3.4–4.1e-4 vs obs-implied 5.9e-5–5.9e-4 vs melt-driven glaciological anchor St=0.011 (Jenkins et al. 2010) — convention-level disagreement, not a coefficient offset.
+- **Uncalibratable by design:** natural-convection branch is model×0 = 0 for ANY finite C_gamma (5.7–7.3 orders gap persists; a free-convection floor is new physics).
+- **Literature:** seven named sources (weeksCampbell 1973, bigg 1997, hollandJenkins 1999, jenkinsNicholls 2010, fitzmauriceStern 2018, cenedese 2023, martinAdcroft 2010) DOI-verified via Crossref (network restored); no new bib keys.
+- **Verification:** `python python/tests/test_calibration_assessment.py` must print `TOTAL CHECKS: 212 ERRORS: 0`; 10.8.2 (229) and 10.8.1 (44) regression suites still under CI.
+- **Report:** `docs/validation/stage10.9_calibration_assessment.md` (15 sections, Q1–Q10).
+- **Next (Stage 10.10):** three-equation ice-ocean interface (Holland & Jenkins 1999; melt-driven Stanton; buoyancy-informed per FitzMaurice & Stern 2018) + natural-convection floor, re-scoring the 10.8.2 set as the acceptance criterion. Scalar calibration explicitly NOT recommended.

@@ -82,3 +82,9 @@ jobs:
         run: |
           conda activate iceberg-thermodynamic-model
           python python/tests/test_observational_validation.py
+
+      - name: Run Stage 10.9 Python calibration assessment
+        shell: bash -l {0}
+        run: |
+          conda activate iceberg-thermodynamic-model
+          python python/tests/test_calibration_assessment.py

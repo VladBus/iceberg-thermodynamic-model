@@ -1,7 +1,7 @@
 # Stage 10 — Physics Modernization Plan
 
 **Updated:** 2026-09-10
-**Current stage:** 10.8.2 (observational validation of basal melt; production unchanged)
+**Current stage:** 10.9 (calibration assessment of the basal-melt coefficient; production unchanged)
 **Current classification:** B — PASS WITH LIMITATIONS
 
 ## Purpose
@@ -97,33 +97,52 @@ limitations)**; production physics UNCHANGED. Reference metadata added to
 Orheim, Schild) and `russefl-head` mis-keyed entry corrected (author, journal,
 volume, DOI).
 
+## Stage 10.9 — Calibration assessment of the basal-melt coefficient (DONE)
+
+Source-aware identifiability study of whether the production turbulent
+heat-transfer coefficient can be calibrated against the 10.8.2 observational
+set. **Conclusion: NO scalar coefficient is identifiable** — inferred required
+values span ~8.3x between the two independent sources (NJ80 0.286x, KW84 1.418x;
+pooled geomean 0.427), the NJ80 observation scales as dT^1.73 while the closure
+is dT^1.0 (functional-form mismatch, not a scale offset), and a scalar
+multiplier times zero leaves the quiescent natural-convection branch exactly at
+zero (structurally uncalibratable, 5.7-7.3 orders gap). Corrects two 10.8.2
+claims (basal-plane-dominance, submarine≈basal) and qualifies three others
+(KW84 range, NJ80 factor, inverse-U as basal proxy).
+
+Checks: `python/validation/calibration_assessment.py` +
+`python/tests/test_calibration_assessment.py` (20 blocks, 212 checks, A-T,
+pure-Python). All 7 named literature DOIs Crossref-verified. Report:
+`docs/validation/stage10.9_calibration_assessment.md`. Classification:
+**C (validation insufficient for robust calibration)**; production physics
+UNCHANGED. Next stage is the three-equation interface, not a coefficient retune.
+
 ## Next modernization sequence
 
-### 10.9 — Calibration and/or three-equation closure
+### 10.10 — Three-equation ice-ocean interface
 
-Stage 10.8.2 completed the observational validation pass (report above). The
-next stage should:
+Stage 10.9 ruled out a scalar calibration of the heat-transfer coefficient
+(report above). The next stage should:
 
-1. calibrate the turbulent heat-transfer coefficient against the 10.8.2
-   observational set (production-coefficient change — separate stage requiring
-   sign-off; targets the observed factor 0.7-5.8 spread), or implement the
-   three-equation ice-ocean interface formulation (Holland & Jenkins 1999;
-   Jenkins et al. 2010) with independent confirmation of the Γ_T/Γ_S Stanton
-   convention;
-2. address natural convection at low relative flow (melt plumes) — quantified
-   as the largest structural gap by 10.8.2;
+1. implement the three-equation ice-ocean interface formulation
+   (Holland & Jenkins 1999; Jenkins et al. 2010; melt-driven Stanton
+   St = 0.011; buoyancy-informed per FitzMaurice & Stern 2018) with
+   independent confirmation of the Γ_T/Γ_S Stanton convention, re-scoring the
+   10.8.2 set as the acceptance criterion;
+2. add a natural-convection floor for the low-relative-flow branch (melt
+   plumes) — quantified as the largest structural gap by 10.8.2 and confirmed
+   uncalibratable by 10.9;
 
-Priority candidates (unchanged ordering, refreshed after 10.7):
+Priority candidates (unchanged ordering, refreshed after 10.9):
 
-1. independent validation of basal/lateral melt against published observations or laboratory results;
-2. assessment of the three-equation ice-ocean interface formulation (Holland & Jenkins 1999; Jenkins et al. 2010);
-3. improved treatment of iceberg-specific ocean heat transfer and natural convection;
-4. improved atmospheric stability/transfer treatment if validation demonstrates a material need;
-5. modern seawater thermodynamics, including a full EOS-80/TEOS-10 pathway, only as a dedicated future stage.
+1. three-equation ice-ocean interface formulation (Holland & Jenkins 1999; Jenkins et al. 2010) — recalibration of the current coefficient explicitly NOT recommended (10.9);
+2. improved treatment of iceberg-specific ocean heat transfer and natural convection;
+3. improved atmospheric stability/transfer treatment if validation demonstrates a material need;
+4. modern seawater thermodynamics, including a full EOS-80/TEOS-10 pathway, only as a dedicated future stage.
 
 ### Data and validation foundation
 
-Real-data validation should preserve exact product/version metadata for ERA5, EN4, IBCAO V5.2, OSI-SAF SIC CDR v3.1 and C3S CS2SMOS SIT L4 combined v1.1. Observational iceberg tracks, melt observations and published benchmark cases should be incorporated before calibration is attempted.
+Real-data validation should preserve exact product/version metadata for ERA5, EN4, IBCAO V5.2, OSI-SAF SIC CDR v3.1 and C3S CS2SMOS SIT L4 combined v1.1. Observational iceberg tracks, melt observations and published benchmark cases should be incorporated before any further calibration attempt (Stage 10.9 concluded that the current scalar coefficient is not identifiable from the existing set).
 
 ### Future numerical/scientific infrastructure
 

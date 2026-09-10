@@ -1,8 +1,8 @@
 # Project Roadmap
 
 **Updated:** 2026-09-10
-**Current scientific stage:** Stage 10.8.2 — Observational Validation of the Basal-Melt Closure
-**Current status:** B — PASS WITH LIMITATIONS
+**Current scientific stage:** Stage 10.9 — Calibration Assessment of the Basal-Melt Coefficient
+**Current status:** C — validation insufficient for robust calibration
 
 ## Completed foundation
 
@@ -31,37 +31,39 @@
 | 10.7 | Independent basal-melt validation (analytical + literature) | Complete; classification B; 17 checks |
 | 10.8.1 | Independent Python validation layer (`python/validation/`, 44 checks) | Complete; classification B |
 | 10.8.2 | Observational validation of basal melt vs published observations (19-record dataset, 229 Python checks) | Complete; classification C (validation layer); production unchanged |
+| 10.9 | Calibration assessment of the basal-melt coefficient (212 Python checks; no scalar identifiable from the 2-source set) | Complete; classification C; production unchanged |
 
 ## Immediate next step
 
-### Stage 10.9 — calibration (production coefficients) and/or three-equation closure
+### Stage 10.10 — three-equation ice-ocean interface (and natural-convection floor)
 
-Stage 10.8.2 (`docs/validation/stage10.8.2_observational_validation.md`)
-completed the observational validation pass: the production closure reproduces
-the one forcing-anchored field rate (KW84, 0.70x within the reported range),
-overestimates the NJ80 synthesis by factor 2.1-5.8 at reference parameters, and
-cannot represent quiescent (laboratory) melt (5.7-7.3 orders gap; no
-natural-convection branch). These are documented findings; no coefficient was
-changed.
+Stage 10.9 (`docs/validation/stage10.9_calibration_assessment.md`) assessed
+whether the production heat-transfer coefficient could be calibrated against
+the 10.8.2 observational set and concluded **NO scalar coefficient is
+identifiable**: the two independent sources require ~8.3x different
+coefficients (NJ80 0.286, KW84 1.418), the NJ80 observation scales as dT^1.73
+while the closure is dT^1.0 (functional-form, not scale, mismatch), and the
+natural-convection branch is structurally zero for any finite coefficient.
+The stage also corrected two 10.8.2 claims (basal-plane-dominance and
+submarine≈basal are aspect-ratio-dependent, not universal) and Crossref-verified
+all seven named literature DOIs. No production coefficient was changed.
 
-Priority for the next stage (unchanged ordering, refreshed after 10.8.2):
+Priority for the next stage (refreshed after 10.9):
 
-1. **Calibration of the turbulent heat-transfer coefficient** against the
-   10.8.2 observational set (a production-coefficient change, therefore a
-   separate stage requiring sign-off; the calibration would target the observed
-   factor 0.7-5.8 spread), OR
-2. assessment and implementation of a three-equation ice-ocean interface
-   formulation based on Holland & Jenkins (1999) and Jenkins et al. (2010),
-   with independent confirmation of the Γ_T/Γ_S Stanton convention (open risk
-   from Stage 10.7);
-3. natural convection at low relative flow (melt plumes) — quantified as the
-   largest structural gap by 10.8.2;
-4. atmospheric stability corrections if external validation demonstrates
+1. **Three-equation ice-ocean interface** (Holland & Jenkins 1999; Jenkins
+   et al. 2010, melt-driven Stanton; buoyancy-informed per FitzMaurice & Stern
+   2018), re-scoring the 10.8.2 set as the acceptance criterion; the
+   `Γ_T/Γ_S` Stanton convention (open risk from Stage 10.7) must be confirmed
+   independently. Recalibration of the current scalar coefficient is explicitly
+   NOT recommended — ruled out by 10.9.
+2. natural convection at low relative flow (melt plumes) — largest structural
+   gap by 10.8.2, confirmed uncalibratable by 10.9;
+3. atmospheric stability corrections if external validation demonstrates
    material bias.
 
 ## Longer-term physics
 
-The following are explicit roadmap items and are **not** part of Stage 10.8.1:
+The following are explicit roadmap items and are **not** part of the 10.8/10.9 validation and calibration-assessment stages:
 
 - full seawater thermodynamics / EOS-80 density pathway;
 - TEOS-10 thermodynamic framework;

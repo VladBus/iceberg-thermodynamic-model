@@ -84,7 +84,7 @@ Conversions only at the NetCDF output boundary (`netcdf_output.f90`). Internal C
 - ❌ Do not "fix" FCT anti-diffusion (`CDY*0` in `barotropic_dynamics.f90`) — causes blowup.
 - ❌ Do not use `grid_mode=TEST` basin for production claims.
 - ❌ Do not set `kl1=1` without providing ERA5 d2m/tcc/precip fields.
-- ❌ Before committing, check `.gitignore` — it blocks: `opencode.jsonc`, `.opencode/`, `docs/wiki/`, `data/`, `*.nc`, `*.vtk`, `*.dat`, `*.bak`.
+- ❌ Before committing, check `.gitignore` — it blocks: `opencode.jsonc`, `.opencode/`, `docs/wiki/`, `data/`, `*.nc`, `*.vtk`, `*.dat`, `*.bak`. **Exception:** the curated Stage 10.8.2 observational dataset is versioned (`data/validation/observations/` is un-ignored in `.gitignore`).
 - ❌ Do not delete root-level symlinks: `KOORD.DAT`, `hhh.bar`, `1_k.ice` — required by model, gitignored, point to `data/input/generated/real_grid/`.
 
 ### Iceberg Model Constraints (Stage 9.3)
@@ -403,7 +403,7 @@ All analysis scripts are in `python/analysis/`:
 ## Stage 10.8.2 Summary (Observational Validation of Basal Melt)
 
 - **Classification:** C — validation pass complete with documented systematic limitations; **production physics NOT changed** (no coefficient/parameter edits).
-- **Dataset:** `data/validation/observations/iceberg_basal_melt_observations.csv` (19 records, 16 cols) + provenance md. Tiers: lab-primary (Russell & Head 1980), field-primary (Keys & Williams 1984), synthesis (Neshyba & Josberger 1980), rs-derived (Enderlin & Hamilton 2014; Enderlin et al. 2016/2023) + 1 context row. Rignot calving-face rates EXCLUDED (not submarine melt). All DOIs Crossref-verified.
+- **Dataset:** `data/validation/observations/iceberg_basal_melt_observations.csv` (19 records, 16 cols; **versioned** — un-ignored in `.gitignore` because the test suite and CI depend on it) + provenance md. Tiers: lab-primary (Russell & Head 1980), field-primary (Keys & Williams 1984), synthesis (Neshyba & Josberger 1980), rs-derived (Enderlin & Hamilton 2014; Enderlin et al. 2016/2023) + 1 context row. Rignot calving-face rates EXCLUDED (not submarine melt). All DOIs Crossref-verified.
 - **Code:** `python/validation/observational_validation.py` (loader, metrics, natural-convection gap test, inverse-U bisection, regimes, sensitivity sweep, 6 figures); `python/tests/test_observational_validation.py` (15 blocks, **229 checks**).
 - **Results:** 4 forcing-anchored rows — RMSE 0.108, MAE 0.092, bias +0.083 m/day; KW84 within range (ratio 0.70); NJ80 synthesis overestimated factor 2.1→5.8 (dT 8→2 °C). Natural-convection gap 5.7–7.3 orders (no quiescent branch). Inverse-U: fjord rates reproducible at plausible U_rel 0.1–1.0 m/s (dT 2–4 °C). All comparable obs are turbulent (Re>5e5); laminar branch has no field anchor.
 - **Metrics are computed on 4 rows only** (`include_in_metrics=True`: KW84 + NJ80×3); RH rows = gap test, RS rows = inverse-U, OPEN = context-only.

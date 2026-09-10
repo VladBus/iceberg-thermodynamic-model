@@ -89,7 +89,7 @@ Testing/
 .idea/
 
 # Scientific data
-data/
+data/*
 *.nc
 *.vtk
 *.dat
@@ -99,6 +99,13 @@ data/
 *.grib
 *.grib1
 *.grib2
+
+# Curated observational validation dataset (Stage 10.8.2) — hand-verified,
+# versioned, not generated. Required by python/tests (CI + local).
+!data/validation/
+!data/validation/observations/
+!data/validation/observations/iceberg_basal_melt_observations.csv
+!data/validation/observations/iceberg_basal_melt_observations_provenance.md
 
 # Временные и системные файлы
 *~

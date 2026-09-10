@@ -183,6 +183,42 @@ NEXT
 - CDS credentials in `~/.cdsapirc` — MUST NOT be committed to Git.
 - Important notes that might be lost due to context limits → write to `docs/wiki/` or appropriately named .md file.
 
+## Skills and MCP Tools (MANDATORY)
+
+The project defines **8 skills** (`.opencode/skills/`) and **8 MCP servers** (`opencode.jsonc` + global config). Models MUST load the relevant skill and prefer the MCP tools over ad-hoc/generic implementations for the tasks below. Do not hand-roll equivalents of an available skill/MCP; loading the skill is part of normal workflow.
+
+### Skills (load via the `skill` tool when the task matches)
+
+| Skill | Use when | Purpose |
+|---|---|---|
+| academic-paper | writing/editing an academic paper, abstracts, lit-review, citations, LaTeX/DOCX/PDF | 12-agent paperwriting pipeline (plan/outline/revision/formats) |
+| academic-paper-reviewer | reviewing a manuscript, referee report, re-review | 5-persona peer review (EIC/peers/Devil's Advocate) |
+| academic-pipeline | end-to-end research → paper → integrity → review → finalize | orchestration of deep-research + academic-paper + reviewer |
+| deep-research | literature review, fact-check, systematic review, meta-analysis, 3W scan | 13-agent research pipeline with source verification |
+| data-scientist | analytics, ML, statistical modeling, business intelligence | advanced data analysis |
+| math-modeling | math-modelling competitions (MCM/ICM/美赛/国赛), problem decomposition | modeling workflow to LaTeX paper |
+| coding-agent | programmatically running Codex/Claude Code/OpenCode/Pi agents | external coding-agent control |
+| humanizer | de-AIing prose (review/revise for "AI tells") | rewrite AI-sounding text |
+
+### MCP servers (invoke the matching tool set)
+
+| Server | Use for | Examples |
+|---|---|---|
+| context7 | current library/framework/API docs (resolve id → query docs) | Fortran/fpm/gfortran/netcdf, CLI tooling |
+| firecrawl | web research: search, scrape, map, crawl; `firecrawl_research_*` scan paper index | literature/DOI verification, data-source checks |
+| fetch | plain URL content retrieval (markdown/text) | single static pages |
+| playwright | browser automation on live pages | download flows, web UI verification, screenshots |
+| filesystem | repo file access: read/write/tree/search | standard file operations inside the workspace |
+| github | GitHub API: issues, PRs, branches, commits | repo management, CI status, pull requests |
+| TestSprite | UI/API test generation and execution against a running app | frontend/backend test plans and runs |
+| sequential-thinking | structured multi-step reasoning / planning | decomposing complex problems |
+
+Rules:
+
+- Load exactly one skill per matched task (reload not needed between steps of the same task).
+- Prefer MCP tools over generic web fetch/bash hacks (e.g., use `firecrawl_*`/`context7` instead of guessing URLs).
+- If a skill/MCP is unavailable or fails, note the blocker explicitly and fall back to minimal standard tools; never claim MCP coverage that did not run.
+
 ## Python / ERA5 Environment
 
 ### Conda

@@ -1,8 +1,8 @@
 # Model Equation Ledger — Математическая спецификация текущей модели
 
-**Дата:** 2026-09-10  
-**Current repository stage:** Stage 10.6.1  
-**Production baseline:** Stage 10.6 + documentation correction `40d4a3b`  
+**Дата:** 2026-09-10
+**Current repository stage:** Stage 10.10.1
+**Production baseline:** Stage 10.10 + salt-balance correction `stage10.10.1`
 **Units:** SI in the iceberg module unless explicitly noted.
 
 ---
@@ -11,10 +11,10 @@
 
 The iceberg is a rectangular prism with prognostic dimensions `L`, `W`, `H`.
 
-`V = L W H`  
-`M = rho_ice V`  
-`D = H rho_ice / rho_water`  
-`A_base = L W`  
+`V = L W H`
+`M = rho_ice V`
+`D = H rho_ice / rho_water`
+`A_base = L W`
 `A_lat = 2 H (L + W)`
 
 Constants: `rho_ice = 910 kg m^-3`, `rho_water = 1028 kg m^-3`.
@@ -23,12 +23,12 @@ Geometry is updated after thermodynamic melt. The model does not currently progn
 
 ## 2. Position and coordinates
 
-`dx/dt = u`  
+`dx/dt = u`
 `dy/dt = v`
 
 With the current explicit time step:
 
-`x(n+1) = x(n) + u(n) dt`  
+`x(n+1) = x(n) + u(n) dt`
 `y(n+1) = y(n) + v(n) dt`
 
 `DX = DY = 13890 m`. Model x/y is authoritative for moving forcing. Geographic latitude/longitude are diagnostic and are obtained from the model grid coordinate fields. The stored lat/lon state is not currently updated during every motion step.
@@ -113,9 +113,9 @@ The freezing temperature is
 
 with
 
-`A0 = -0.0575`  
-`A1 = 1.710523e-3`  
-`A2 = 2.154996e-4`  
+`A0 = -0.0575`
+`A1 = 1.710523e-3`
+`A2 = 2.154996e-4`
 `BP = -7.53e-4`.
 
 `S` is practical salinity in PSU and `P = rho_w g z / 1e4` is pressure in dbar. The implementation follows the Fofonoff & Millard (1983)/UNESCO freezing-point formulation, with Gill (1982) as supporting reference.
@@ -172,7 +172,7 @@ Basal melt is then
 
 The implemented correlation is canonical flat-plate forced-convection theory applied as an iceberg approximation. It is not a geometry-specific derivation for an iceberg. At `U_rel = 0`, the current forced-convection closure gives zero transfer; natural convection is not included.
 
-## 10.2 Three-equation ice-ocean interface (Stage 10.10)
+## 10.2 Three-equation ice-ocean interface (Stage 10.10 / 10.10.1)
 
 Selectable separately from the bulk closure of §10 via
 `set_basal_melt_scheme(BASAL_MELT_SCHEME_THREE_EQUATION)`; the bulk closure
@@ -187,16 +187,17 @@ Exchange (Jenkins et al. 2010 Table 2, U-based velocity scale):
 
 Three equations:
 
-(I)`T_B = Tf(S_B, P)`
+(I) `T_B = Tf(S_B, P)`
 
 (II) `rho_w c_w gamma_T (T_w - T_B) = m rho_i [L_f + c_i max(T_B - T_i, 0)]`
 
-(III) `gamma_S (S_w - S_B) = m S_B`
+(III) `rho_w gamma_S (S_w - S_B) = rho_i m S_B`  (Stage 10.10.1 correction)
 
-Reduction and solution: `S_B = gamma_S S_w/(m + gamma_S)`; bisection on
-`[0, m_hi]` with `m_hi` doubled until the Eq.-II residual is non-positive
-(capped at 60 doublings), then 60 bisection iterations (float32 production,
-float64 in the independent Python layer). The residual is
+Reduction and solution: `S_B = gamma_S S_w / (gamma_S + (rho_i/rho_w) m)` with
+`rho_i/rho_w = 910/1028 = 0.8852...`; bisection on `[0, m_hi]` with `m_hi`
+doubled until the Eq.-II residual is non-positive (capped at 60 doublings),
+then 60 bisection iterations (float32 production, float64 in the independent
+Python layer). The residual is
 `F(m) = rho_w c_w gamma_T (T_w - T_B) - m rho_i [L_f + c_i max(T_B - T_i, 0)]`.
 
 Edges: `U_rel <= 0` or `gamma_T <= 0` or `T_w <= Tf(S_w,P)` -> `m = 0`,
@@ -210,14 +211,16 @@ Parameters: `rho_w = 1028`, `c_w = 3974`, `rho_i = 910`, `L_f = 3.34e5`,
 `c_i = 2009`, `T_i = -10` degC (Holland & Jenkins 1999; model `rho_i`, `L_f`).
 The conductive term into the ice interior uses the constant `T_i`; physically
 consistent conduction requires internal thermal evolution, which is a future
-stage.
+stage. Note: `T_i = -10` is a model-selected constant internal temperature,
+not from H&J99 (H&J99 solve shelf conduction explicitly).
 
-Independent validation: the Stage 10.10 Fortran test (19 checks) and
+Independent validation: the Stage 10.10.1 Fortran test (25 checks) and
 `python/validation/three_equation.py` + `python/tests/test_three_equation.py`
-(46 checks), including a shared cross-language contract value
-(`m ~ 9.4457e-9` m/s for the H&J99 Table 1 anchor and `m = 3.998e-6` m/s for
+(65 checks), including a shared cross-language contract value
+(`m ~ 1.0438e-8` m/s for the H&J99 Table 1 anchor and `m = 4.067e-6` m/s for
 the production end-to-end case). See
-`docs/validation/stage10.10_three_equation_interface.md`.
+`docs/validation/stage10.10_three_equation_interface.md` (superseded) and
+`docs/validation/stage10.10.1_three_equation_interface.md`.
 
 ## 11. Lateral melt
 

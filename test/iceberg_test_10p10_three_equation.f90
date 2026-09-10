@@ -1,15 +1,16 @@
 ! ==============================================================================
-! Тест: Stage 10.10 — Independent Scientific Validation of the Three-Equation
-!       Ice-Ocean Interface
+! Тест: Stage 10.10 + 10.10.1 — Independent Scientific Validation of the
+!       Three-Equation Ice-Ocean Interface
 ! Назначение: Независимая научная проверка production-реализации трёхчленного
 !             замыкания интерфейса лёд-океан (Holland & Jenkins 1999; Jenkins
 !             et al. 2010) БЕЗ использования production-функций для ОЖИДАЕМЫХ
 !             значений (паттерн Stage 10.7).
 !
-! Проверяемое замыкание (production, Stage 10.10):
+! Проверяемое замыкание (production, Stage 10.10 + Stage 10.10.1 коррекция):
 !   (I)   T_B = Tf(S_B, P)                     — EOS-80 точка замерзания
 !   (II)  ρ_w c_w γ_T (T_w − T_B) = m·(ρ_i L_f + ρ_i c_i (T_B − T_i))
-!   (III) γ_S (S_w − S_B) = m·S_B              — баланс соли (S_i = 0)
+!   (III) ρ_w γ_S (S_w − S_B) = ρ_i·m·S_B      — баланс соли (S_i = 0)
+!   Редукция: S_B = γ_S S_w / (γ_S + (ρ_i/ρ_w)·m),  ρ_i/ρ_w = 910/1028
 !   Трансферные скорости: γ_T = K_T·U_rel, γ_S = K_S·U_rel  (J2010 Table 2)
 !     K_T = 1.1e-3, K_S = 3.1e-5;  c_w = 3974.0, c_i = 2009.0 (H&J99)
 !
@@ -121,6 +122,12 @@ program iceberg_test_10p10_three_equation
     ! ----------------------------------------------------------
     call check_balances(t_iface, s_iface, m_prod, t_w, s_w, gam_t, gam_s, &
                         n_errors, n_checks)
+
+    ! ----------------------------------------------------------
+    ! N. Stage 10.10.1: плотностная редукция S_B и её пределы
+    !    (ρ_w γ_S (S_w−S_B) = ρ_i·m·S_B)
+    ! ----------------------------------------------------------
+    call check_density_reduction(n_errors, n_checks)
 
     ! ----------------------------------------------------------
     ! E. Теплопроводность в лёд: включена -> плавление меньше (но ~simeq)
@@ -247,6 +254,8 @@ contains
 
     ! ==========================================================
     !   НЕЗАВИСИМАЯ РЕДУКЦИЯ (с эмбеддированными литералами)
+    !   Stage 10.10.1: солевой баланс с плотностным отношением
+    !   ρ_w γ_S (S_w−S_B) = ρ_i·m·S_B  =>  S_B = γ_S S_w/(γ_S + (ρ_i/ρ_w)·m)
     ! ==========================================================
     subroutine independent_reduction(t_w_in, s_w_in, depth_in, gam_t_in, gam_s_in, &
                                      t_ice_in, cond_in, m_out, s_b_out, t_b_out)
@@ -255,8 +264,10 @@ contains
         real, intent(out) :: m_out, s_b_out, t_b_out
 
         real :: tf_sw, m_lo, m_hi, m_mid, lat, f_val, s_b, t_b
+        real :: rho_ratio_ind
         integer :: iter
 
+        rho_ratio_ind = 910.0/1028.0      ! ρ_i/ρ_w (embedded literal)
         tf_sw = tf_eos_ind(s_w_in, depth_in)
         if (gam_t_in .le. 0.0 .or. t_w_in .le. tf_sw) then
             m_out = 0.0
@@ -269,7 +280,7 @@ contains
         m_hi = max(1028.0*3974.0*gam_t_in*(t_w_in - tf_sw)/(910.0*3.34e5), 1.0e-9)
         iter = 0
         do while (.true.)
-            s_b = gam_s_in*s_w_in/(m_hi + gam_s_in)
+            s_b = gam_s_in*s_w_in/(gam_s_in + rho_ratio_ind*m_hi)
             t_b = tf_eos_ind(s_b, depth_in)
             lat = 910.0*3.34e5
             if (cond_in) lat = lat + 910.0*2009.0*max(t_b - t_ice_in, 0.0)
@@ -281,7 +292,7 @@ contains
 
         do iter = 1, 60
             m_mid = 0.5*(m_lo + m_hi)
-            s_b = gam_s_in*s_w_in/(m_mid + gam_s_in)
+            s_b = gam_s_in*s_w_in/(gam_s_in + rho_ratio_ind*m_mid)
             t_b = tf_eos_ind(s_b, depth_in)
             lat = 910.0*3.34e5
             if (cond_in) lat = lat + 910.0*2009.0*max(t_b - t_ice_in, 0.0)
@@ -294,7 +305,7 @@ contains
         end do
 
         m_out = 0.5*(m_lo + m_hi)
-        s_b_out = gam_s_in*s_w_in/(m_out + gam_s_in)
+        s_b_out = gam_s_in*s_w_in/(gam_s_in + rho_ratio_ind*m_out)
         t_b_out = tf_eos_ind(s_b_out, depth_in)
     end subroutine independent_reduction
 
@@ -310,32 +321,124 @@ contains
 
     ! ==========================================================
     !   ПРОВЕРКА БАЛАНСОВ (независимые literals)
+    !   Stage 10.10.1: солевой баланс с плотностями:
+    !     ρ_w γ_S (S_w − S_B) = ρ_i·m·S_B
     ! ==========================================================
     subroutine check_balances(t_b, s_b, m_melt, t_w, s_w, gam_t, gam_s, &
                               n_errors, n_checks)
         real, intent(in) :: t_b, s_b, m_melt, t_w, s_w, gam_t, gam_s
         integer, intent(inout) :: n_errors, n_checks
 
-        real :: heat_lhs, heat_rhs, salt_lhs, salt_rhs, rel1, rel2
+        real :: heat_lhs, heat_rhs, salt_lhs, salt_rhs, fw_lhs, fw_rhs
+        real :: rel1, rel2, rel3
 
         heat_lhs = 1028.0*3974.0*gam_t*(t_w - t_b)
         heat_rhs = m_melt*(910.0*3.34e5 + 910.0*2009.0*max(t_b - (-10.0), 0.0))
         rel1 = abs(heat_lhs - heat_rhs)/max(max(abs(heat_lhs), abs(heat_rhs)), 1.0e-12)
 
-        salt_lhs = gam_s*(s_w - s_b)
-        salt_rhs = m_melt*s_b
+        ! Массовый баланс соли: ρ_w γ_S (S_w − S_B) = ρ_i·m·S_B
+        salt_lhs = 1028.0*gam_s*(s_w - s_b)
+        salt_rhs = 910.0*m_melt*s_b
         rel2 = abs(salt_lhs - salt_rhs)/max(abs(salt_rhs), 1.0e-12)
 
+        ! Эквивалент через поток талой воды: γ_S (S_w − S_B) = (ρ_i/ρ_w)·m·S_B
+        fw_lhs = gam_s*(s_w - s_b)
+        fw_rhs = (910.0/1028.0)*m_melt*s_b
+        rel3 = abs(fw_lhs - fw_rhs)/max(abs(fw_rhs), 1.0e-12)
+
         n_checks = n_checks + 1
-        if (rel1 .lt. 1.0e-3 .and. rel2 .lt. 1.0e-3) then
-            print *, "OK D.x: balance residuals: heat=", rel1, " salt=", rel2
+        if (rel1 .lt. 1.0e-3 .and. rel2 .lt. 1.0e-3 .and. rel3 .lt. 1.0e-3) then
+            print *, "OK D.x: balance residuals: heat=", rel1, &
+                     " salt=", rel2, " fw=", rel3
         else
-            print *, "ERROR D.x: heat res=", rel1, " salt res=", rel2
+            print *, "ERROR D.x: heat res=", rel1, " salt res=", rel2, " fw res=", rel3
             print *, "     heat_lhs=", heat_lhs, " heat_rhs=", heat_rhs
             print *, "     salt_lhs=", salt_lhs, " salt_rhs=", salt_rhs
             n_errors = n_errors + 1
         end if
     end subroutine check_balances
+
+    ! ==========================================================
+    !   STAGE 10.10.1 CHECK: плотностная редукция S_B
+    !   (независимые literals; MOM6/PISM/H&J99-конвенция)
+    ! ==========================================================
+    subroutine check_density_reduction(n_errors, n_checks)
+        integer, intent(inout) :: n_errors, n_checks
+
+        real :: s_b_corr, s_b_equal, m_val, r_val
+        real :: salt_lhs, salt_rhs
+        real :: gamma_s_use, s_w_use
+
+        gamma_s_use = 3.1e-6    ! [м/с] (warm case, U=0.1, K_S=3.1e-5)
+        s_w_use = 0.0345
+        m_val = 4.067408105e-6  ! производственное значение (import не нужен:
+                                ! проверяем FORMULY, а не число)
+
+        r_val = 910.0/1028.0
+        s_b_corr = gamma_s_use*s_w_use/(gamma_s_use + r_val*m_val)
+        s_b_equal = gamma_s_use*s_w_use/(gamma_s_use + m_val)
+
+        ! (1) Плотностная редукция DIMENSIONALLY: массовый баланс соли
+        salt_lhs = 1028.0*gamma_s_use*(s_w_use - s_b_corr)
+        salt_rhs = 910.0*m_val*s_b_corr
+        n_checks = n_checks + 1
+        if (abs(salt_lhs - salt_rhs)/max(abs(salt_rhs), 1.0e-12) .lt. 1.0e-4) then
+            print *, "OK N.1: density-corrected S_B satisfies ρ_w γ_S(Sw−SB)=ρ_i·m·SB"
+        else
+            print *, "ERROR N.1: salt_lhs=", salt_lhs, " salt_rhs=", salt_rhs
+            n_errors = n_errors + 1
+        end if
+
+        ! (2) Коррекция уменьшает фрезерование: S_B(corr) > S_B(equal-density)
+        n_checks = n_checks + 1
+        if (s_b_corr .gt. s_b_equal) then
+            print *, "OK N.2: density correction reduces freshening: S_B_corr=", &
+                     s_b_corr, " > S_B_equal=", s_b_equal
+        else
+            print *, "ERROR N.2: S_B_corr=", s_b_corr, " S_B_equal=", s_b_equal
+            n_errors = n_errors + 1
+        end if
+
+        ! (3) ρ_i/ρ_w → 1 возвращает equal-density редукцию
+        n_checks = n_checks + 1
+        if (abs((gamma_s_use*s_w_use/(gamma_s_use + 1.0*m_val)) - s_b_equal) &
+            .lt. 1.0e-12) then
+            print *, "OK N.3: rho_ratio=1 recovers equal-density form S_B=γS·Sw/(γS+m)"
+        else
+            print *, "ERROR N.3: equal-density limit mismatch"
+            n_errors = n_errors + 1
+        end if
+
+        ! (4) Предел m→0: S_B→S_w
+        n_checks = n_checks + 1
+        if (abs((gamma_s_use*s_w_use/(gamma_s_use + r_val*1.0e-14)) - s_w_use) &
+            .lt. 1.0e-6) then
+            print *, "OK N.4: m→0 limit: S_B→S_w"
+        else
+            print *, "ERROR N.4: m→0 limit failed"
+            n_errors = n_errors + 1
+        end if
+
+        ! (5) Предел m→∞: S_B→0
+        n_checks = n_checks + 1
+        if (abs((gamma_s_use*s_w_use/(gamma_s_use + r_val*1.0e3)) - 0.0) &
+            .lt. 1.0e-6) then
+            print *, "OK N.5: m→∞ limit: S_B→0"
+        else
+            print *, "ERROR N.5: m→∞ limit failed"
+            n_errors = n_errors + 1
+        end if
+
+        ! (6) Монотонность: S_B убывает с ростом m
+        n_checks = n_checks + 1
+        if (s_b_corr .lt. (gamma_s_use*s_w_use/(gamma_s_use + r_val*m_val*0.5)) .and. &
+            s_b_corr .gt. (gamma_s_use*s_w_use/(gamma_s_use + r_val*m_val*2.0))) then
+            print *, "OK N.6: S_B monotonically decreasing in m"
+        else
+            print *, "ERROR N.6: monotonicity violated"
+            n_errors = n_errors + 1
+        end if
+    end subroutine check_density_reduction
 
     ! ==========================================================
     !   J2010 TABLE 2 CONSISTENCY

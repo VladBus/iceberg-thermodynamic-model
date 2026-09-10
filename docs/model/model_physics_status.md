@@ -1,14 +1,16 @@
 # Статус физических блоков модели
 
 **Дата:** 2026-09-10
-**Current repository stage:** Stage 10.9 — Calibration Assessment of the Basal-Melt Coefficient
-**Production baseline:** Stage 10.6.1 (unchanged; 10.7 audit, 10.8.1 Python layer, 10.8.2 observational validation, 10.9 calibration assessment — diagnostics only)
-**FPM test targets:** 51
-**Local status:** 51/51 PASS; strict build clean; `git diff --check` clean
+**Current repository stage:** Stage 10.10.1 — Mass/Salt Convention Correction in Three-Equation Interface
+**Production baseline:** Stage 10.10 + salt-balance correction `stage10.10.1`
+**FPM test targets:** 52
+**Local status:** 52/52 PASS; strict build clean; `git diff --check` clean
 **Stage 10.7 report:** `docs/validation/stage10.7_basal_melt_validation.md`
 **Stage 10.8.1 report:** `docs/validation/stage10.8.1_python_validation.md`
 **Stage 10.8.2 report:** `docs/validation/stage10.8.2_observational_validation.md`
 **Stage 10.9 report:** `docs/validation/stage10.9_calibration_assessment.md`
+**Stage 10.10 report:** `docs/validation/stage10.10_three_equation_interface.md`
+**Stage 10.10.1 report:** `docs/validation/stage10.10.1_three_equation_interface.md`
 
 ## Классификация
 
@@ -41,7 +43,7 @@
 | Ocean heat transfer | Relative flow; laminar/turbulent flat-plate Nu correlation | B |
 | Basal melt | `m_basal = gamma_T * max(T-Tf,0)/(rho_ice*Lf)` (independently audited in Stage 10.7; independent Python layer in `python/validation/`, Stage 10.8.1; observational validation vs published melts, Stage 10.8.2; Stage 10.9: scalar coefficient **not identifiable** across the 10.8.2 sources — no calibration made) | B |
 | Lateral melt | Depth-averaged thermal forcing; legacy/approximate closure | B |
-| Three-equation interface | H&J99/J2010 closure; velocity-scale gamma_T=K_T·U, gamma_S=K_S·U (K_T=1.1e-3, K_S=3.1e-5); separately selectable; conduction to T_i; independently validated (Fortran 19 + Python 46 checks, cross-language contract) | C |
+| Three-equation interface | H&J99/J2010 closure; velocity-scale gamma_T=K_T·U, gamma_S=K_S·U (K_T=1.1e-3, K_S=3.1e-5); Eq. III corrected: `rho_w gamma_S (S_w - S_B) = rho_i m S_B` with `rho_i/rho_w = 910/1028` (Stage 10.10.1); separately selectable; conduction to T_i=-10 (model-selected constant, NOT from H&J99); independently validated (Fortran 25 + Python 65 checks, cross-language contract) | C |
 | Full seawater EOS | Not implemented; freezing point only | E |
 | TEOS-10 | Not implemented | E |
 | Natural convection | Not represented in current ocean heat-transfer closure | E |
@@ -73,7 +75,7 @@ This is a **flat-plate forced-convection approximation**, not a geometry-specifi
 6. Some shortwave attenuation constants require stronger literature provenance/sensitivity documentation.
 7. Independent observational validation of the full coupled thermodynamic evolution remains a future task.
 8. Stored iceberg latitude/longitude are not currently updated from x/y during time stepping.
-9. Three-equation closure (Stage 10.10) uses a constant internal ice temperature `T_i` in the conduction term of Eq. II; physically consistent conduction requires internal thermal evolution (a future stage), and natural convection is absent at zero relative flow as in the bulk closure. The `K_T`/`K_S` convention is U-based (Jenkins et al. 2010 Table 2) rather than a melt-driven `u*`-based Stanton; see `docs/validation/stage10.10_three_equation_interface.md`.
+9. Three-equation closure (Stage 10.10/10.10.1) uses a constant internal ice temperature `T_i = -10` in the conduction term of Eq. II; this is a model-selected constant internal temperature, NOT from H&J99 (H&J99 solve conduction explicitly); physically consistent conduction requires internal thermal evolution (a future stage). Eq. III salt balance was corrected in Stage 10.10.1 from `gamma_S (S_w - S_B) = m S_B` to `rho_w gamma_S (S_w - S_B) = rho_i m S_B` (MOM6/PISM/MITgcm/H&J99 Eq.4 convention). Natural convection remains absent at zero relative flow as in the bulk closure. The `K_T`/`K_S` convention is U-based (Jenkins et al. 2010 Table 2) rather than a melt-driven `u*`-based Stanton; see `docs/validation/stage10.10_three_equation_interface.md` (superseded) and `docs/validation/stage10.10.1_three_equation_interface.md`.
 
 ## Verification policy
 

@@ -1,8 +1,8 @@
 # Stage 10 — Physics Modernization Plan
 
 **Updated:** 2026-09-10
-**Current stage:** 10.9 (calibration assessment of the basal-melt coefficient; production unchanged)
-**Current classification:** B — PASS WITH LIMITATIONS
+**Current stage:** 10.10.1 (mass/salt convention correction in three-equation interface; production updated)
+**Current classification:** C — correction validated; production updated; all tests PASS
 
 ## Purpose
 
@@ -146,6 +146,35 @@ Implemented and independently validated. Separately selectable
   U-based J2010 convention, the melt-driven `u*`-based Stanton (St = 0.011)
   remains an open convention question (Stage 10.9).
 - **Report**: `docs/validation/stage10.10_three_equation_interface.md`.
+
+## Stage 10.10.1 — Mass/salt convention correction in the three-equation interface (DONE)
+
+Corrected the salt balance (Eq. III) from the equal-density reduction
+`gamma_S (S_w - S_B) = m S_B` to the physically consistent mass-conserving
+form `rho_w gamma_S (S_w - S_B) = rho_i m S_B`, which reduces to
+`S_B = gamma_S S_w / (gamma_S + (rho_i/rho_w) m)` with `rho_i/rho_w = 910/1028
+= 0.8852...`. This matches the MOM6 `mom_ice_shelf`, PISM basal-melt, and
+MITgcm shelfice documented conventions, and Holland & Jenkins (1999) Eq. (4)
+(brine salt flux `rho_i M wB (S_I - S_B)`). The Stage 10.10 formulation
+implicitly set `rho_i/rho_w = 1`.
+
+- **Production changes**: `src/iceberg_types.f90` (new constant
+  `RHO_ICE_WATER_RATIO`), `src/iceberg_thermodynamics.f90` (three reduction
+  expressions in `solve_three_equation_interface` + doc block rewrite);
+  `python/validation/three_equation.py` (module docstring, `_s_interface`
+  with optional `rho_ratio` defaulting to the new constant).
+- **Effect**: canonical H&J99 anchor m increases from 9.4457e-9 to 1.0438e-8
+  m/s (+10.5%, amplified by near-zero thermal drive); production end-to-end m
+  increases from 3.998e-6 to 4.067e-6 m/s (+1.7%); warm band 0.351 m/day
+  (inside 0.01-1 m/day).
+- **T_i = -10 degC attribution corrected**: model-selected constant internal
+  temperature, NOT from H&J99 (H&J99 solve conduction explicitly). Docs updated.
+- **Validation**: Fortran test extended to 25 checks (19+6 new density-reduction
+  identity/limit/monotonicity checks); Python suite extended to 65 checks
+  (46+19 new Stage 10.10.1 checks including salt-flux identity, freshwater-flux
+  identity, limits, monotonicity, cross-language contract). All tests PASS.
+  Strict `-Wall -Wextra -fcheck=all` build clean. `git diff --check` clean.
+- **Report**: `docs/validation/stage10.10.1_three_equation_interface.md`.
 
 ## Next modernization sequence
 

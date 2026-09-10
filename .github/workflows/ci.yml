@@ -89,7 +89,7 @@ jobs:
           conda activate iceberg-thermodynamic-model
           python python/tests/test_calibration_assessment.py
 
-      - name: Run Stage 10.10 Python three-equation validation
+      - name: Run Stage 10.10/10.10.1 Python three-equation validation
         shell: bash -l {0}
         run: |
           conda activate iceberg-thermodynamic-model

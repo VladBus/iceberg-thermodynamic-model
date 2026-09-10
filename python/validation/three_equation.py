@@ -11,19 +11,34 @@ ledger ``docs/model/model_equation_ledger.md`` section 10.2) so that this
 package may serve as a second, independently executable numerical reference
 for cross-validation and later calibration work.
 
-Equations reproduced (Stage 10.10 production formulation):
+Equations reproduced (Stage 10.10.1 production formulation):
 
     Tf       = (A0 + A1*sqrt(S) - A2*S)*S + BP*P            [degC]
-    S_B      = gamma_S * S_w / (m + gamma_S)                [Eq. III, S_i = 0]
+    S_B      = gamma_S * S_w / (gamma_S + r*m)              [Eq. III, S_i = 0]
     T_B      = Tf(S_B, P)                                   [Eq. I]
     gamma_T  = K_T * U_rel,  gamma_S = K_S * U_rel          [J2010 Table 2]
     F(m)     = rho_w*c_w*gamma_T*(T_w - T_B)
                - m*rho_i*(L_f + c_i*max(T_B - T_i, 0))      [Eq. II]
+
+    where r = rho_i/rho_w = 910/1028 = 0.8852... is the ice/ocean
+    density ratio (Stage 10.10.1 correction).
+
     F(0) > 0 for T_w > Tf(S_w)  =>  bisection on [0, m_hi]
 
-The melt rate m in Eq. II is in the ice frame (m is a volume loss of ice),
-which is why the ice density multiplies both the latent-heat and the
-conduction terms. This matches the production closure.
+The melt rate m in Eqs. II and III is in the ice frame (m is a volume loss of
+ice: dH/dt = -m), which is why the ice density multiplies both the latent-heat
+and conduction terms AND the salt-freshening term. Stage 10.10.1 corrects the
+salt balance: the meltwater flux seen by the ocean is F_fw = (rho_i/rho_w)*m,
+so the salt balance is
+
+    rho_w*gamma_S*(S_w - S_B) = rho_i*m*S_B  <=>
+    gamma_S*(S_w - S_B)       = F_fw*S_B.
+
+The Stage 10.10 equal-density reduction (gamma_S*(S_w-S_B) = m*S_B, i.e.
+S_B = gamma_S*S_w/(m + gamma_S)) implicitly set rho_i/rho_w = 1. The density
+ratio r = rho_i/rho_w = 910/1028 = 0.8852 appears in exactly the way claimed
+by the MOM6 mom_ice_shelf and PISM three-equation documentation, and by
+Holland & Jenkins (1999) Eq. (4).
 
 Note: production code stores salinity as a mass fraction (kg/kg); the public
 Python API uses the practical salinity in PSU (mass fraction * 1000), matching
@@ -54,6 +69,10 @@ CP_ICE_3EQ = 2009.0         # ice heat capacity c_i [J/(kg K)] (H&J99)
 THREE_EQ_KT = 1.1e-3        # K_T = sqrt(C_d)*Gamma_T [-] (J2010 Table 2)
 THREE_EQ_KS = 3.1e-5        # K_S = sqrt(C_d)*Gamma_S [-] (J2010 Table 2)
 T_ICE = -10.0               # internal ice temperature [degC]
+
+# Stage 10.10.1: ice/ocean density ratio entering the salt balance.
+# gamma_S*(S_w - S_B) = F_fw*S_B with F_fw = (rho_i/rho_w)*m.
+RHO_ICE_WATER_RATIO = RHO_ICE / RHO_WATER    # 910/1028 = 0.8852...
 
 # EOS-80 / UNESCO 1983 (Fofonoff & Millard 1983; Gill 1982 Eq. 3.5.2)
 EOS_FP_A0 = -0.0575             # [degC/PSU]
@@ -238,9 +257,16 @@ def three_equation_basal_melt(
 # ---------------------------------------------------------------------------
 # Internal helpers (Eq. II/III algebra).
 # ---------------------------------------------------------------------------
-def _s_interface(gamma_s: float, s_w: float, m: float) -> float:
-    """S_B from Eq. III: gamma_S*(S_w - S_B) = m*S_B  =>  S_B = gamma_S*S_w/(m+gamma_S)."""
-    return gamma_s * s_w / (m + gamma_s)
+def _s_interface(gamma_s: float, s_w: float, m: float,
+                 rho_ratio: float = RHO_ICE_WATER_RATIO) -> float:
+    """S_B from Eq. III with the Stage 10.10.1 density correction.
+
+    Salt balance: rho_w*gamma_S*(S_w - S_B) = rho_i*m*S_B  =>  solving
+    for S_B with r = rho_i/rho_w gives S_B = gamma_S*S_w/(gamma_S + r*m).
+    With rho_ratio = 1.0 the equal-density Stage 10.10 reduction is
+    recovered (gamma_S*(S_w - S_B) = m*S_B).
+    """
+    return gamma_s * s_w / (gamma_s + rho_ratio * m)
 
 
 def _latent_heat_latent(t_b: float, t_ice: float, use_conduction: bool) -> float:

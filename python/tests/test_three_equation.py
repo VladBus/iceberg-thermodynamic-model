@@ -1,4 +1,5 @@
-"""Stage 10.10 — independent Python validation of the three-equation interface.
+"""Stage 10.10 + 10.10.1 — independent Python validation of the three-equation
+interface.
 
 Checks A-T against the production closure reproduced in
 ``python/validation/three_equation.py``. The expected values are hand-computed
@@ -6,7 +7,16 @@ from embedded literals (EOS-80 coefficients, rho_w=1028, c_w=3974, rho_i=910,
 L_f=3.34e5, c_i=2009, T_i=-10, K_T=1.1e-3, K_S=3.1e-5, H&J99 Table 1
 gamma_T=1e-4, gamma_S=5.05e-7); nothing is compared against Fortran output
 except two documented cross-language contract anchors (blocks C and L) that
-quote the values produced by the Stage 10.10 Fortran test.
+quote the values produced by the Stage 10.10.1 Fortran test.
+
+Block U is the Stage 10.10.1 mass/salt-convention correction: the salt budget
+carries the ice/ocean density ratio rho_i/rho_w so that the meltwater flux
+seen by the ocean is F_fw = (rho_i/rho_w)*m:
+
+    rho_w*gamma_S*(S_w - S_B) = rho_i*m*S_B  =>  S_B = gamma_S*S_w/(gamma_S + r*m)
+
+(reducing to the Stage 10.10 equal-density form only for rho_i/rho_w -> 1).
+This is the MOM6 mom_ice_shelf / PISM / H&J99(Eq.4) convention.
 
 This is validation, not calibration - no coefficient is adjusted.
 
@@ -86,9 +96,9 @@ def test_c_canonical():
     m, t_b, s_b = te.solve_three_equation_interface(
         -1.85, 34.5, 0.0, 0.1, 1.0e-4, 5.05e-7, t_ice=-10.0, use_conduction=True)
     ok(0.0 < m < 1.0e-7, "C.1 magnitude band", f"(m={m:.3e})")
-    ok_rel(m, 9.4456620e-9, "C.2 cross-language contract with Fortran test", 1.0e-3)
-    ok_rel(s_b, 33.866547, "C.3 interface salinity (PSU)", 1.0e-3)
-    ok_rel(t_b, -1.8573717, "C.4 interface temperature (degC)", 1.0e-3)
+    ok_rel(m, 1.043812814e-8, "C.2 cross-language contract with Fortran test", 1.0e-3)
+    ok_rel(s_b, 33.880096396, "C.3 interface salinity (PSU)", 1.0e-3)
+    ok_rel(t_b, -1.858146177, "C.4 interface temperature (degC)", 1.0e-3)
     tf_sw = te.ocean_freezing_point(34.5, 0.0)
     ok(tf_sw < t_b < -1.85, "C.5 T_B between Tf(S_w) and T_w")
     ok(0.0 < s_b < 34.5, "C.6 freshening: 0 < S_B < S_w")
@@ -222,9 +232,9 @@ def test_k_wrapper():
 # ===========================================================================
 def test_l_contract():
     m, t_b, s_b = te.three_equation_basal_melt(2.0, 34.5, 50.0, u_water=0.1)
-    ok_rel(m, 3.99846886e-6, "L.1 production-end contract m (Fortran test L.2)", 1.0e-3)
-    ok_rel(s_b, 15.0666293, "L.2 interface salinity S_B (PSU)", 1.0e-3)
-    ok_rel(t_b, -0.853170931, "L.3 interface temperature T_B (degC)", 1.0e-3)
+    ok_rel(m, 4.067408105e-6, "L.1 production-end contract m (Fortran test L.2)", 1.0e-3)
+    ok_rel(s_b, 15.961431974, "L.2 interface salinity S_B (PSU)", 1.0e-3)
+    ok_rel(t_b, -0.901562565, "L.3 interface temperature T_B (degC)", 1.0e-3)
     tf = te.ocean_freezing_point(34.5, 50.0)
     ok(t_b > tf and 0.0 < s_b < 34.5 and m > 0.0, "L.4 freshening + supercooling-free interface")
 
@@ -281,6 +291,67 @@ def test_t_documented_limitation():
        "documented model limitation")
 
 
+# ===========================================================================
+# U. Stage 10.10.1: density-weighted salt budget
+#    rho_w*gamma_S*(S_w - S_B) = rho_i*m*S_B  =>  S_B = gamma_S*S_w/(gamma_S + r*m)
+#    with r = rho_i/rho_w = 910/1028 = 0.885214... (MOM6/PISM/H&J99 Eq.4)
+# ===========================================================================
+def test_u_mass_salt_convention():
+    r = te.RHO_ICE_WATER_RATIO
+    ok_rel(r, 910.0 / 1028.0, "U.1 density ratio rho_i/rho_w", 1.0e-12)
+    ok(-1.0 < r < 1.0, "U.2 ice lighter than water: 0 < r < 1", f"(r={r:.6f})")
+
+    # Analytic S_B from the corrected reduction satisfies the MASS salt budget.
+    gamma_s = 5.05e-7
+    s_w = 34.5
+    for m_val in (1.0e-9, 1.0e-8, 1.0e-7, 4.0e-6):
+        s_b = te._s_interface(gamma_s, s_w, m_val)
+        lhs = te.RHO_WATER * gamma_s * (s_w - s_b)     # kg-salt/m2/s toward interface
+        rhs = te.RHO_ICE * m_val * s_b                 # kg-salt/m2/s removed by meltwater
+        ok_rel(lhs, rhs, "U.3 mass salt identity rho_w gS(Sw-SB)=rho_i m SB",
+               1.0e-9, f"(m={m_val:.1e})")
+        ok_rel(gamma_s * (s_w - s_b), r * m_val * s_b,
+               "U.4 freshwater-flux form gS(Sw-SB)=F_fw*SB", 1.0e-9)
+
+    # Bounding and monotonicity.
+    s_b = te._s_interface(gamma_s, s_w, 1.0e-8)
+    ok(0.0 < s_b < s_w, "U.5 fresh-water bounded: 0 < S_B < S_w", f"(S_B={s_b:.4f})")
+    s_small = te._s_interface(gamma_s, s_w, 1.0e-16)
+    ok(abs(s_small - s_w) / s_w < 1.0e-9, "U.6 m->0 limit: S_B->S_w")
+    s_large = te._s_interface(gamma_s, s_w, 1.0e5)
+    ok(s_large < 1.0e-9, "U.7 m>>gamma_S limit: S_B->0", f"(S_B={s_large:.2e})")
+    m_seq = (1.0e-9, 1.0e-8, 1.0e-7, 1.0e-6)
+    sbs = [te._s_interface(gamma_s, s_w, m_i) for m_i in m_seq]
+    ok(all(a > b for a, b in zip(sbs, sbs[1:])), "U.8 S_B strictly decreasing in m")
+
+    # Equal-density limit: rho_ratio=1 recovers the Stage 10.10 reduction.
+    s_equal = te._s_interface(gamma_s, s_w, 1.0e-8, rho_ratio=1.0)
+    ok_rel(s_equal, gamma_s * s_w / (gamma_s + 1.0e-8),
+           "U.9 rho_ratio=1 recovers equal-density S_B", 1.0e-12)
+
+    # Correction reduces freshening at a given m (r<1 -> S_B closer to S_w).
+    s_corr = te._s_interface(gamma_s, s_w, 1.0e-8)
+    ok(s_corr > s_equal, "U.10 density correction raises S_B vs equal-density",
+       f"(S_B_corr={s_corr:.5f} S_B_equal={s_equal:.5f})")
+
+    # Solved point automatically respects the corrected identity.
+    m, t_b, s_b = te.solve_three_equation_interface(
+        -1.85, 34.5, 0.0, 0.1, 1.0e-4, 5.05e-7, t_ice=-10.0, use_conduction=True)
+    lhs = te.RHO_WATER * 5.05e-7 * (34.5 - s_b)
+    rhs = te.RHO_ICE * m * s_b
+    ok_rel(lhs, rhs, "U.11 solved canonical satisfies corrected salt budget", 1.0e-3)
+    f_root = te._f_residual(-1.85, t_b, 1.0e-4, m, -10.0, True)
+    flux = te.RHO_WATER * te.CP_SEAWATER * 1.0e-4 * (-1.85 - t_b)
+    ok(abs(f_root) / max(abs(flux), 1.0e-12) < 1.0e-9,
+       "U.12 heat balance Eq. II intact under correction", f"(|F|/flux={abs(f_root)/flux:.2e})")
+
+    # Production end-to-end also satisfies the corrected budget.
+    m_p, _, s_bp = te.three_equation_basal_melt(2.0, 34.5, 50.0, u_water=0.1)
+    lhs_p = te.RHO_WATER * 3.1e-6 * (34.5 - s_bp)
+    rhs_p = te.RHO_ICE * m_p * s_bp
+    ok_rel(lhs_p, rhs_p, "U.13 end-to-end satisfies corrected salt budget", 1.0e-3)
+
+
 def main():
     for f in (
         test_a_eos, test_b_transfer, test_c_canonical, test_d_edges,
@@ -288,16 +359,17 @@ def main():
         test_h_freezing_edge, test_i_depth, test_j_warm_band, test_k_wrapper,
         test_l_contract, test_m_regime_separation, test_n_regression_matrix,
         test_o_determinism, test_t_documented_limitation,
+        test_u_mass_salt_convention,
     ):
         f()
 
     print("----------------------------------------------")
     print(f"TOTAL CHECKS: {_CHECKS}  ERRORS: {_ERRORS}")
     if _ERRORS == 0:
-        print("SUCCESS: Stage 10.10 three-equation validation PASSED")
+        print("SUCCESS: Stage 10.10/10.10.1 three-equation validation PASSED")
         sys.exit(0)
     else:
-        print("FAILURE: Stage 10.10 three-equation validation FAILED")
+        print("FAILURE: Stage 10.10/10.10.1 three-equation validation FAILED")
         sys.exit(1)
 
 

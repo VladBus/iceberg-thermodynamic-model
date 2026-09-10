@@ -415,19 +415,26 @@ contains
     !   (II)  ρ_w c_w γ_T (T_w − T_B) = m (ρ_i L_f + ρ_i c_i (T_B − T_i))
     !                                          — баланс тепла: океанский поток =
     !                                            скрытое тепло + теплопроводность в лёд
-    !   (III) γ_S (S_w − S_B) = m (S_B − S_i), S_i=0 — баланс соли (фрезерование)
+    !   (III) ρ_w γ_S (S_w − S_B) = ρ_i·m·S_B       — баланс соли (S_i=0; Stage 10.10.1)
     !
-    ! Переменные: m — скорость плавления [м/с] (лёд-кадр), T_B — температура
+    ! Переменные: m — скорость плавления [м/с] (лёд-кадр: dH/dt = −m), T_B — температура
     ! интерфейса [°C], S_B — соленость интерфейса [кг/кг].
     ! Трансферные скорости γ_T, γ_S [м/с] ПЕРЕДАЮТСЯ ВЫЗЫВАЮЩИМ (производственные:
     ! γ_T = K_T·U_rel, γ_S = K_S·U_rel по J2010 Table 2; тесты могут подавать
     ! канонические значения H&J99 Table 1). Скрытое и кондуктивное слагаемые —
     ! в лёд-кадре (ρ_i): ρ_i=910, L_f=3.34e5, c_i=2009.0 (H&J99 c_i).
     !
-    ! Редукция: из (III) S_B = γ_S S_w/(m + γ_S) — аналитически; подстановка в (II)
-    ! даёт уравнение F(m) = ρ_w c_w γ_T (T_w − T_B(m)) − m·[ρ_i L_f + ρ_i c_i(T_B(m) − T_i)] = 0.
+    ! Stage 10.10.1 (коррекция): скорость таяния m определена ВО ЛЬДУ-КАДРЕ, поэтому
+    ! плотность льда входит в баланс соли ТАК ЖЕ, как в баланс тепла:
+    !     ρ_w γ_S (S_w − S_B) = ρ_i·m·S_B   (см. MOM6 mom_ice_shelf, PISM ocean-th,
+    !     MITgcm shelfice, H&J99 Eq.4 — независимые источники).
+    ! Делением на ρ_w: γ_S (S_w − S_B) = (ρ_i/ρ_w)·m·S_B = F_fw·S_B,
+    ! где F_fw = (ρ_i/ρ_w)·m — объёмный поток талой воды в океанском кадре.
+    !
+    ! Редукция: из (III) S_B = γ_S S_w/[γ_S + (ρ_i/ρ_w)·m] — аналитически; подстановка в
+    ! (II) даёт уравнение F(m) = ρ_w c_w γ_T (T_w − T_B(m)) − m·[ρ_i L_f + ρ_i c_i(T_B(m)−T_i)] = 0.
     ! F(0) = ρ_w c_w γ_T (T_w − Tf(S_w)) ≥ 0 (иначе melting нет), F(m)→−∞ при m→∞,
-    ! F строго убывает (солевой отклик доминирует) → единственный корень, бисекция.
+    ! F строго убывает (ρ_i·L_f слагаемое доминирует) → единственный корень, бисекция.
     !
     ! Крайние случаи:
     !   u_rel ≤ 0 или γ_T ≤ 0            → m=0, S_B=S_w, T_B=Tf(S_w,P) (нет потока;
@@ -437,7 +444,9 @@ contains
     !   γ_S ≤ 0                          → S_B=S_w, тепло-уравнение без фрезерования
     !
     ! Параметры констант: ρ_w=RHO_WATER=1028, c_w=CP_SEAWATER=3974.0 (H&J99/J2010),
-    ! ρ_i=RHO_ICE=910, L_f=LATENT_HEAT=3.34e5, c_i=CP_ICE_3EQ=2009.0, T_i=T_ICE=−10°C.
+    ! ρ_i=RHO_ICE=910, L_f=LATENT_HEAT=3.34e5, c_i=CP_ICE_3EQ=2009.0, T_i=T_ICE=−10°C
+    ! (модельно-выбранная постоянная внутренней температуры льда; H&J99 учли бы явную
+    ! теплопроводность в толще шельфа, здесь — фиксированная внутренняя температура).
     ! Кондуктивное слагаемое можно отключить (use_conduction=.false.) для тестов.
     !
     ! Аргументы:
@@ -519,7 +528,7 @@ contains
         ! Расширение верхней границы, пока F(m_hi) > 0
         iter = 0
         do while (.true.)
-            s_b = gamma_s*s_w/(m_hi + gamma_s)
+            s_b = gamma_s*s_w/(gamma_s + RHO_ICE_WATER_RATIO*m_hi)
             t_b = ocean_freezing_point(s_b, depth_m)
             l_heat = RHO_ICE*LATENT_HEAT
             if (use_conduction) l_heat = l_heat + RHO_ICE*CP_ICE_3EQ*max(t_b - t_ice, 0.0)
@@ -532,7 +541,7 @@ contains
         ! Бисекция (60 итераций достаточно для float32-конвергенции)
         do iter = 1, 60
             m_mid = 0.5*(m_lo + m_hi)
-            s_b = gamma_s*s_w/(m_mid + gamma_s)
+            s_b = gamma_s*s_w/(gamma_s + RHO_ICE_WATER_RATIO*m_mid)
             t_b = ocean_freezing_point(s_b, depth_m)
             l_heat = RHO_ICE*LATENT_HEAT
             if (use_conduction) l_heat = l_heat + RHO_ICE*CP_ICE_3EQ*max(t_b - t_ice, 0.0)
@@ -545,7 +554,7 @@ contains
         end do
 
         m_basal = 0.5*(m_lo + m_hi)
-        s_interface = gamma_s*s_w/(m_basal + gamma_s)
+        s_interface = gamma_s*s_w/(gamma_s + RHO_ICE_WATER_RATIO*m_basal)
         t_interface = ocean_freezing_point(s_interface, depth_m)
     end subroutine solve_three_equation_interface
 

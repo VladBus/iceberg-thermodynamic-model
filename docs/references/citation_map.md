@@ -13,8 +13,11 @@ This file prevents literature references from being used more strongly than the 
 | Empirical iceberg basal melt context | basal melt comparison | `weeksCampbellIcebergsFreshWater1973` | COMPARISON |
 | Bulk melt-law basis (closed-form) | closed-form melt/draft basis | `biggModellingDynamicsThermodynamics1997` | COMPARISON |
 | Tabular iceberg basal melt | validation/comparison literature | `fitzmauriceSternBasalMeltTabular2018` | COMPARISON/VALIDATION |
-| Ice-ocean three-equation formulation | Eq. I-III closure + conduction term of `solve_three_equation_interface` (Stage 10.10) | `hollandJenkinsThermodynamicIceOcean1999` | CORE, IMPLEMENTED (Stage 10.10) |
+| Ice-ocean three-equation formulation | Eq. I-III closure + conduction term of `solve_three_equation_interface` (Stage 10.10/10.10.1); Eq. III corrected: `rho_w gamma_S (S_w - S_B) = rho_i m S_B` (Stage 10.10.1) | `hollandJenkinsThermodynamicIceOcean1999` | CORE, IMPLEMENTED (Stage 10.10/10.10.1) |
 | Ice-shelf basal ablation / exchange | melt-driven Stanton anchor (St = 0.011) — different convention from the U-based `K_T` implemented in Stage 10.10 | `jenkinsNichollsCorrAblationRonne2010` | COMPARISON/FUTURE (convention) |
+| MOM6 mom_ice_shelf salt budget | salt-budget convention `rho_w gamma_S (S_w - S_B) = rho_i m S_B` confirming Stage 10.10.1 | (Losch et al. 2019; Griffies et al.) | VALIDATION |
+| PISM basal-melt salt flux | mass-flux convention `Q_S^B = rho_I S^B dh/dt` confirming Stage 10.10.1 | PISM documentation | VALIDATION |
+| MITgcm shelfice salt flux | mass-flux form `rho_c gamma_S (S - S_b) = -q (S_b - S_I)` confirming Stage 10.10.1 | (Losch 2008 et seq.) | VALIDATION |
 | Turbulent exchange over sea ice/MIZ | atmospheric/ocean exchange context | `andreasHorstGrachevSummerSeaIce2010` | SUPPORT |
 | Interactive iceberg freshwater flux | coupled modelling context | `martinAdcroftInteractiveIcebergs2010` | BACKGROUND/FUTURE |
 | Observed iceberg submarine-melt band | validation band for basal melt (0.01–1 m/day) | `cenedeseIcebergsMelting2023` | VALIDATION |
@@ -41,17 +44,23 @@ Weeks & Campbell and FitzMaurice & Stern are relevant because they concern icebe
 ### Three-equation physics
 
 Holland & Jenkins (1999) and Jenkins et al. (2010) provide the literature basis
-for the Stage 10.10 three-equation interface, which is now implemented
+for the Stage 10.10/10.10.1 three-equation interface, which is implemented
 (`set_basal_melt_scheme(BASAL_MELT_SCHEME_THREE_EQUATION)` +
 `solve_three_equation_interface` in `src/iceberg_thermodynamics.f90`) and
 independently validated in the Stage 10.10 Fortran and Python test layers and
-report (`docs/validation/stage10.10_three_equation_interface.md`). The
-implemented exchange coefficients are the **U-based** J2010 Table 2 values
+report (`docs/validation/stage10.10_three_equation_interface.md` superseded by
+`stage10.10.1_three_equation_interface.md`). The implemented exchange
+coefficients are the **U-based** J2010 Table 2 values
 (`K_T = sqrt(C_d)*Gamma_T = 1.1e-3`, `K_S = sqrt(C_d)*Gamma_S = 3.1e-5`);
 the melt-driven `u*`-based Stanton anchor St = 0.011 remains a documented
 open convention question for calibration (Stage 10.9), not an implemented
-choice. The bulk flat-plate closure of Stage 10.6 remains the unchanged
-baseline for the non-selected paths.
+choice. The salt balance (Eq. III) was corrected in Stage 10.10.1 from the
+equal-density reduction `gamma_S (S_w - S_B) = m S_B` to the physically
+consistent mass-conserving form `rho_w gamma_S (S_w - S_B) = rho_i m S_B`
+(with `rho_i/rho_w = 910/1028 = 0.8852...`); this matches the MOM6
+`mom_ice_shelf`, PISM, and MITgcm shelfice documented conventions, and the
+Holland & Jenkins (1999) Eq. (4) brine salt flux. The bulk flat-plate closure
+of Stage 10.6 remains the unchanged baseline for the non-selected paths.
 
 ### Stage 10.9 DOI verification
 

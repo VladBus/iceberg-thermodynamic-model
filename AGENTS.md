@@ -41,7 +41,8 @@ fpm test --flag "-I/usr/include" drift_scaling_wind_no_cor       # Wind drift no
 fpm test --flag "-I/usr/include" drift_scaling_current           # Current drift scaling
 fpm test --flag "-I/usr/include" param_sensitivity_30day         # Parameter sensitivity framework
 fpm test --flag "-I/usr/include" iceberg_test_10p10_three_equation  # Stage 10.10 three-equation (19 checks)
-python python/tests/test_three_equation.py                        # Stage 10.10 Python (46 checks)
+fpm test --flag "-I/usr/include" iceberg_test_10p10_three_equation  # Stage 10.10.1 three-equation correction (25 checks)
+python python/tests/test_three_equation.py                        # Stage 10.10/10.10.1 Python (65 checks)
 ```
 
 No CI, no lint, no formatter beyond VS Code (`fprettify`/`fortls`). Python tooling uses conda env `iceberg-thermodynamic-model`.
@@ -423,6 +424,16 @@ All analysis scripts are in `python/analysis/`:
 - **Documented limitations:** constant T_i conduction (internal thermal evolution future); natural-convection floor NOT implemented (U_rel=0 -> m=0, same as bulk); K_T/K_S are the U-based J2010 convention — melt-driven u*-Stanton St=0.011 remains an open convention question (10.9).
 - **Files changed:** src/iceberg_types.f90 (scheme constants/switch/setter, 3eq constants, diag fields), src/iceberg_thermodynamics.f90 (solver + branch + diag), test/iceberg_test_10p10_three_equation.f90 (new), python/validation/three_equation.py (new), python/tests/test_three_equation.py (new), docs/model/* (ledger §10.2, physics status row, plan §10.10), docs/PROJECT_ROADMAP.md, docs/references/*, docs/validation/stage10.10_three_equation_interface.md (new), AGENTS.md, .github/workflows/ci.yml.
 - **Next (Stage 10.11 proposed):** natural-convection floor, then internal thermal evolution, then re-scoring the 10.8.2 set against the 3eq closure.
+
+## Stage 10.10.1 Summary (Mass/Salt Convention Correction in Three-Equation Interface)
+
+- **Classification:** C -- mass/salt convention correction in the three-equation ice-ocean interface implemented and independently validated. Production physics UPDATED on the selectable three-equation path; bulk baseline unchanged.
+- **Physics:** Corrected Eq. III from equal-density reduction `gamma_S (S_w - S_B) = m S_B` to mass-conserving `rho_w gamma_S (S_w - S_B) = rho_i m S_B`, reducing to `S_B = gamma_S S_w / (gamma_S + (rho_i/rho_w) m)` with `rho_i/rho_w = 910/1028 = 0.8852...`. Matches MOM6 `mom_ice_shelf`, PISM basal-melt, MITgcm shelfice, and H&J99 Eq. 4 (brine salt flux `rho_i M wB (S_I - S_B)`). Stage 10.10 implicitly set `rho_i/rho_w = 1`.
+- **Production changes:** `src/iceberg_types.f90` (new constant `RHO_ICE_WATER_RATIO`, public); `src/iceberg_thermodynamics.f90` (three reduction expressions in `solve_three_equation_interface` + solver doc block rewritten with MOM6/PISM/MITgcm/H&J99 Eq.4 references); `python/validation/three_equation.py` (module docstring, `_s_interface` with optional `rho_ratio` defaulting to new constant).
+- **Effect:** canonical H&J99 anchor m increases from 9.4457e-9 to 1.0438e-8 m/s (+10.5%, amplified by near-zero thermal drive); production end-to-end m increases from 3.998e-6 to 4.067e-6 m/s (+1.7%); warm band 0.351 m/day (inside 0.01-1 m/day). `T_i = -10` degC attribution corrected: model-selected constant internal temperature, NOT from H&J99 (H&J99 solve conduction explicitly).
+- **Validation:** Fortran test extended to 25 checks (19+6 new density-reduction identity/limit/monotonicity checks); Python suite extended to 65 checks (46+19 new Stage 10.10.1 checks including salt-flux identity, freshwater-flux identity, limits, monotonicity, cross-language contract). All tests PASS. Strict `-Wall -Wextra -fcheck=all` build clean. `git diff --check` clean.
+- **Files changed:** src/iceberg_types.f90, src/iceberg_thermodynamics.f90, test/iceberg_test_10p10_three_equation.f90, python/validation/three_equation.py, python/tests/test_three_equation.py, docs/model/model_equation_ledger.md, docs/model/model_physics_status.md, docs/model/stage10_modernization_plan.md, docs/PROJECT_ROADMAP.md, docs/references/literature_matrix.md, docs/references/citation_map.md, AGENTS.md, .github/workflows/ci.yml.
+- **Next:** natural-convection floor, then internal thermal evolution, then re-scoring the 10.8.2 set against the corrected 3eq closure.
 
 ## Stage 10.9 Summary (Calibration Assessment of the Basal-Melt Coefficient)
 

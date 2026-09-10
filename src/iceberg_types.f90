@@ -162,6 +162,15 @@ module iceberg_types
     ! (H&J99 c_i; отдельно от C_ICE=2100 — lumped поверхностный слой Stage 10.2).
     real, parameter :: CP_ICE_3EQ = 2009.0     ! [Дж/(кг·К)] (H&J99 c_i)
 
+    !                        STAGE 10.10.1 (коррекция масс/солевого баланса)
+    ! Отношение плотностей льда к морской воде: r = ρ_i/ρ_w.
+    ! Баланс соли на границе (Ice-frame-m, S_i=0):
+    !     ρ_w γ_S (S_w − S_B) = ρ_i·m·S_B  =>  S_B = γ_S·S_w/[γ_S + (ρ_i/ρ_w)·m]
+    ! Плотность льда появляется ОДИНАКОВО в балансе тепла (ρ_i·m·L_f) и соли
+    ! (ρ_i·m·S_B): скорость m — скорость таяния во льду-кадре (dH/dt = −m).
+    ! Классическая редукция без r = 0.8852 неявно полагает ρ_i = ρ_w.
+    real, parameter :: RHO_ICE_WATER_RATIO = RHO_ICE/RHO_WATER   ! 910/1028 ≈ 0.8852
+
     ! Радиационные свойства льда
     real, parameter :: ALBEDO_ICE = 0.7      ! Альбедо льда [безразм.]
     real, parameter :: EMISSIVITY = 0.97     ! Эмиссивность льда [безразм.]
@@ -370,6 +379,7 @@ module iceberg_types
     public :: BASAL_MELT_SCHEME_FORCED_CONVECTION, BASAL_MELT_SCHEME_THREE_EQUATION
     public :: basal_melt_scheme, set_basal_melt_scheme
     public :: THREE_EQ_KT, THREE_EQ_KS, CP_SEAWATER, CP_ICE_3EQ
+    public :: RHO_ICE_WATER_RATIO
     public :: ocean_profile, atmos_forcing, iceberg_diagnostics, iceberg_state
     public :: ocean_freezing_point
     public :: ocean_heat_transfer_coeff

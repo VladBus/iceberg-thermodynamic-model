@@ -1,6 +1,6 @@
 # Literature-to-Model Matrix
 
-**Scope:** current repository state through Stage 10.7 (independent basal-melt validation).
+**Scope:** current repository state through Stage 10.10.1 (three-equation salt-balance correction).
 
 The matrix is deliberately selective: a Zotero record is not automatically a model reference. The role describes how a source is used or should be used in the scientific documentation.
 
@@ -29,8 +29,11 @@ The matrix is deliberately selective: a Zotero record is not automatically a mod
 | Eckert & Drake 1959 | Laminar/turbulent flat-plate heat-transfer correlations | CORE, approximation |
 | Weeks & Campbell 1973 | Empirical iceberg basal-melt context | COMPARISON |
 | FitzMaurice & Stern 2018 | Tabular iceberg basal-melt parameterization comparison | VALIDATION/COMPARISON |
-| Holland & Jenkins 1999 | Three-equation ice-ocean thermodynamics (Eqs. I-III, conduction term) | CORE, IMPLEMENTED (Stage 10.10) |
-| Jenkins, Nicholls & Corr 2010 | Ice-ocean turbulent exchange / basal ablation; Table 2 velocity-scale `K_T`/`K_S` | CORE/COMPARISON, IMPLEMENTED (Stage 10.10) |
+| Holland & Jenkins 1999 | Three-equation ice-ocean thermodynamics (Eqs. I-III, conduction term; Eq. 4 brine salt flux) | CORE, IMPLEMENTED (Stage 10.10/10.10.1) |
+| Jenkins, Nicholls & Corr 2010 | Ice-ocean turbulent exchange / basal ablation; Table 2 velocity-scale `K_T`/`K_S` | CORE/COMPARISON, IMPLEMENTED (Stage 10.10/10.10.1) |
+| MOM6 mom_ice_shelf (Losch et al. 2019; also published in Griffies et al.) | Three-equation salt budget `rho_w gamma_S (S_w - S_B) = rho_i m S_B` convention | VALIDATION (confirms Stage 10.10.1 correction) |
+| PISM basal-melt documentation | Salt flux `Q_S^B = rho_I S^B dh/dt`; melt `w_b = gamma_S rho_W (S^W - S^B)/(rho_I S^B)` | VALIDATION (confirms Stage 10.10.1 correction) |
+| MITgcm shelfice (Losch 2008 et seq.) | Mass-flux form `rho_c gamma_S (S - S_b) = -q (S_b - S_I)` with `S_I = 0` | VALIDATION (confirms Stage 10.10.1 correction) |
 | Andreas et al. 2010 | Air-sea/ice turbulent exchange context | SUPPORT |
 | Martin & Adcroft 2010 | Interactive iceberg freshwater flux in climate modelling | BACKGROUND/FUTURE |
 | Cenedese & Straneo 2023 | Iceberg melt review; observed submarine melt band ~0.01–1 m/day | VALIDATION |
@@ -53,7 +56,7 @@ The curated bibliography already contains important iceberg references including
 | Freezing point | EOS-80/UNESCO equation with pressure term | Fofonoff & Millard 1983; Gill 1982 | C |
 | Basal ocean heat transfer | Re/Nu correlation with laminar/turbulent transition | Eckert & Drake 1959; iceberg applicability is an approximation | B (independently audited in Stage 10.7) |
 | Lateral melt | Legacy depth-averaged formulation | FitzMaurice laboratory literature provides evidence for shear/nonlinearity | B |
-| Three-equation interface physics | Basal closure, separately selectable; U-based `K_T`/`K_S` (1.1e-3/3.1e-5) | Holland & Jenkins 1999; Jenkins et al. 2010 Table 2 | C (Stage 10.10; natural-convection floor and internal thermal evolution remain future) |
+| Three-equation interface physics | Basal closure, separately selectable; U-based `K_T`/`K_S` (1.1e-3/3.1e-5); Eq. III corrected: `rho_w gamma_S (S_w - S_B) = rho_i m S_B` (Stage 10.10.1) | Holland & Jenkins 1999; Jenkins et al. 2010 Table 2; MOM6/PISM/MITgcm confirm density-weighted convention | C (Stage 10.10.1; natural-convection floor and internal thermal evolution remain future) |
 | Full seawater EOS | Not implemented; freezing point only | EOS-80/TEOS-10 literature | FUTURE |
 
 ## Dataset provenance to document

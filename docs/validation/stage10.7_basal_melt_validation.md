@@ -1,7 +1,7 @@
 # Stage 10.7 — Независимая научная валидация базального таяния
 
 **Дата:** 2026-09-10
-**Репозиторий:** HEAD `bf74b1a` (merge `docs/literature-foundation-2026-09`)
+**Состояние репозитория:** Stage 10.7 commit `307c25a35e86d7ba53c58fd30446d7fa433d7d80`
 **Задача:** Independent Scientific Validation of Basal Melt (аудит, НЕ калибровка)
 **Статус:** PASS — независимая аналитическая проверка подтвердила производственную цепочку; классификация остаётся **B** (PASS WITH LIMITATIONS)
 **Тест:** `fpm test --flag "-I/usr/include" iceberg_test_10p7_basal_melt_validation` — 17 проверок, 0 ошибок, STOP 0

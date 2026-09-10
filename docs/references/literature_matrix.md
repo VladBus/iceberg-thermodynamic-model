@@ -34,6 +34,9 @@ The matrix is deliberately selective: a Zotero record is not automatically a mod
 | MOM6 mom_ice_shelf (Losch et al. 2019; also published in Griffies et al.) | Three-equation salt budget `rho_w gamma_S (S_w - S_B) = rho_i m S_B` convention | VALIDATION (confirms Stage 10.10.1 correction) |
 | PISM basal-melt documentation | Salt flux `Q_S^B = rho_I S^B dh/dt`; melt `w_b = gamma_S rho_W (S^W - S^B)/(rho_I S^B)` | VALIDATION (confirms Stage 10.10.1 correction) |
 | MITgcm shelfice (Losch 2008 et seq.) | Mass-flux form `rho_c gamma_S (S - S_b) = -q (S_b - S_I)` with `S_I = 0` | VALIDATION (confirms Stage 10.10.1 correction) |
+| Fujii, Honda & Morioka 1973 | Natural convection heat transfer from downward-facing horizontal surfaces | CORE, IMPLEMENTED (Stage 10.11) |
+| Gayen, Griffiths & Kerr 2016 | Melt-driven convection under a horizontal ice face (LES) | VALIDATION (supports L_char = D for natural convection) |
+| Churchill 1977 | Comprehensive correlating equation for forced, natural and mixed convection | CORE, IMPLEMENTED (Stage 10.11 mixed convection) |
 | Andreas et al. 2010 | Air-sea/ice turbulent exchange context | SUPPORT |
 | Martin & Adcroft 2010 | Interactive iceberg freshwater flux in climate modelling | BACKGROUND/FUTURE |
 | Cenedese & Straneo 2023 | Iceberg melt review; observed submarine melt band ~0.01–1 m/day | VALIDATION |

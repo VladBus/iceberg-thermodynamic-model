@@ -326,13 +326,16 @@ contains
 
         delta_t = t_draft - tf_draft
 
-        if (basal_melt_scheme .eq. BASAL_MELT_SCHEME_THREE_EQUATION) then
+        if (basal_melt_scheme .eq. BASAL_MELT_SCHEME_THREE_EQUATION .or. &
+            basal_melt_scheme .eq. BASAL_MELT_SCHEME_THREE_EQUATION_NATURAL) then
             ! ================================================================
-            !   THREE-EQUATION CLOSURE (Stage 10.10, Holland & Jenkins 1999;
-            !   Jenkins et al. 2010). Базовый baseline-путь НЕ меняется.
+            !   THREE-EQUATION CLOSURE (Stage 10.10/10.11)
+            !   BASAL_MELT_SCHEME_THREE_EQUATION: forced convection only (H&J99/J2010)
+            !   BASAL_MELT_SCHEME_THREE_EQUATION_NATURAL: forced + natural convection
+            !   (Stage 10.11: Fujii et al. 1973 horizontal plate + Churchill 1977 mixing)
             ! ================================================================
             if (delta_t .gt. 0.0) then
-                ! Относительная скорость на глубине осадки (как в baseline)
+                ! Относительная скорость на глубине осадки
                 if (allocated(prof%u_rel)) then
                     u_rel_draft = interp_at_draft(prof, draft, "u_rel")
                 else
@@ -341,16 +344,31 @@ contains
                     u_rel_draft = sqrt((u_draft - u_ice)**2 + (v_draft - v_ice)**2)
                 end if
 
-                ! U-представление трансферных скоростей (J2010 Table 2):
-                !   gamma_T = K_T * U_rel  [м/с],  gamma_S = K_S * U_rel  [м/с]
-                gamma_t_vel = THREE_EQ_KT*u_rel_draft
-                gamma_s_vel = THREE_EQ_KS*u_rel_draft
+                if (basal_melt_scheme .eq. BASAL_MELT_SCHEME_THREE_EQUATION_NATURAL) then
+                    ! ================================================================
+                    !   THREE-EQUATION + NATURAL CONVECTION (Stage 10.11)
+                    !   Передаём длину айсберга L (l_char) как характерную длину
+                    !   для натуральной конвекции (горизонтальный масштаб
+                    !   конвективных ячеек у горизонтального основания;
+                    !   см. Fujii et al. 1973 для пластины, обращённой вниз).
+                    ! ================================================================
+                    call solve_three_equation_interface_natural(t_draft, s_draft, draft, &
+                                                                 u_rel_draft, l_char, &
+                                                                 T_ICE, .true., &
+                                                                 t_iface, s_iface, m_basal)
+                else
+                    ! ================================================================
+                    !   THREE-EQUATION (Stage 10.10) — forced convection only
+                    ! ================================================================
+                    gamma_t_vel = THREE_EQ_KT*u_rel_draft
+                    gamma_s_vel = THREE_EQ_KS*u_rel_draft
 
-                call solve_three_equation_interface(t_draft, s_draft, draft, &
-                                                    u_rel_draft, &
-                                                    gamma_t_vel, gamma_s_vel, &
-                                                    T_ICE, .true., &
-                                                    t_iface, s_iface, m_basal)
+                    call solve_three_equation_interface(t_draft, s_draft, draft, &
+                                                        u_rel_draft, &
+                                                        gamma_t_vel, gamma_s_vel, &
+                                                        T_ICE, .true., &
+                                                        t_iface, s_iface, m_basal)
+                end if
 
                 ! Защита от числового шума (как в baseline)
                 if (m_basal .lt. MELT_RATE_MIN) then
@@ -557,6 +575,152 @@ contains
         s_interface = gamma_s*s_w/(gamma_s + RHO_ICE_WATER_RATIO*m_basal)
         t_interface = ocean_freezing_point(s_interface, depth_m)
     end subroutine solve_three_equation_interface
+
+    ! ========================================================================
+    !   THREE-EQUATION + NATURAL CONVECTION (Stage 10.11)
+    ! ========================================================================
+    ! Аналогичен solve_three_equation_interface, но на каждой итерации бисекции
+    ! пересчитывает эффективные трансферные коэффициенты с учётом натуральной
+    ! конвекции (Fujii et al. 1973 horizontal plate + Churchill 1977 mixing).
+    !
+    ! Физика: при U_rel → 0 форсированная конвекция гаснет, но таяние
+    ! производит плавучесть (тепловая + галлинная) -> натуральная конвекция.
+    ! Характерная длина для натуральной конвекции = осадка D (Gayen et al. 2016).
+    !
+    ! Аргументы:
+    !   t_w, s_w         - дальнее поле [°C, кг/кг]
+    !   depth_m          - глубина для давления в Tf [м]
+    !   u_rel            - форсированная относительная скорость [м/с]
+    !   l_char_nat       - характерная длина для натур. конвекции [м] (осадка D)
+    !   t_ice            - температура внутри льда [°C]
+    !   use_conduction   - включать ли кондуктивное слагаемое
+    !   t_interface      - T_B [°C] (выход)
+    !   s_interface      - S_B [кг/кг] (выход)
+    !   m_basal          - скорость плавления [м/с] (выход)
+    ! ========================================================================
+    subroutine solve_three_equation_interface_natural(t_w, s_w, depth_m, u_rel, &
+                                                        l_char_nat, t_ice, use_conduction, &
+                                                        t_interface, s_interface, m_basal)
+        use iceberg_types, only: natural_convection_transfer_coeff, &
+                                 RHO_ICE_WATER_RATIO
+        real, intent(in) :: t_w
+        real, intent(in) :: s_w
+        real, intent(in) :: depth_m
+        real, intent(in) :: u_rel
+        real, intent(in) :: l_char_nat
+        real, intent(in) :: t_ice
+        logical, intent(in) :: use_conduction
+        real, intent(out) :: t_interface
+        real, intent(out) :: s_interface
+        real, intent(out) :: m_basal
+
+        real :: tf_w, l_heat, f_val, m_lo, m_hi, m_mid, m_est
+        real :: s_b, t_b
+        real :: gamma_t_eff, gamma_s_eff
+        integer :: iter
+
+        tf_w = ocean_freezing_point(s_w, depth_m)
+
+        ! ---- Края: нет термического задействования -> m = 0 ----
+        ! Примечание: даже при u_rel=0 и gamma_t=0 натуральная конвекция
+        ! может дать ненулевое таяние, если T_w > Tf(S_w).
+        ! Поэтому проверяем ТОЛЬКО термическое задействование.
+        if (t_w .le. tf_w) then
+            m_basal = 0.0
+            s_interface = s_w
+            t_interface = tf_w
+            return
+        end if
+
+        ! ---- Край: пресная вода (S_w ≤ 0) ----
+        if (s_w .le. 0.0) then
+            s_interface = 0.0
+            t_interface = ocean_freezing_point(0.0, depth_m)
+            ! Форсированная конвекция (может быть 0)
+            gamma_t_eff = THREE_EQ_KT * u_rel
+            gamma_s_eff = THREE_EQ_KS * u_rel
+            ! Натуральная конвекция: S_w=0 -> delta_s=0, только термический вклад
+            call natural_convection_transfer_coeff(t_w, s_w, t_interface, s_interface, &
+                                                    l_char_nat, u_rel, &
+                                                    gamma_t_eff, gamma_s_eff)
+            l_heat = RHO_ICE*LATENT_HEAT
+            if (use_conduction) l_heat = l_heat + RHO_ICE*CP_ICE_3EQ*max(t_interface - t_ice, 0.0)
+            if (gamma_t_eff .gt. 0.0 .and. l_heat .gt. 0.0) then
+                m_basal = RHO_WATER*CP_SEAWATER*gamma_t_eff*(t_w - t_interface)/l_heat
+            else
+                m_basal = 0.0
+            end if
+            return
+        end if
+
+        ! ---- Край: γ_S ≤ 0 (форсированная) — не должно случиться при u_rel ≥ 0 ----
+        ! Но натуральная γ_S может быть > 0, поэтому проверяем только форсированную
+        if (THREE_EQ_KS*u_rel .le. 0.0 .and. u_rel .le. 0.0) then
+            ! Нет форсированной конвекции, но может быть натуральная
+            ! Для простоты: если u_rel ≤ 0 и нет форсированной γ_S, решаем с натуральной
+            ! (оставим это на общий случай ниже)
+        end if
+
+        ! ---- Основной случай: бисекция с натуральной конвекцией на каждом шаге ----
+        m_lo = 0.0
+        m_est = RHO_WATER*CP_SEAWATER*THREE_EQ_KT*u_rel*(t_w - tf_w)/(RHO_ICE*LATENT_HEAT)
+        ! Начальная оценка с учётом натуральной конвекции при m=0:
+        ! При m=0: T_B = Tf(S_w), S_B = S_w
+        ! Но натуральная конвекция требует ΔT > 0 или ΔS > 0.
+        ! При m=0: ΔT = T_w - Tf(S_w), ΔS = 0.
+        ! Если T_w > Tf(S_w), натуральная конвекция даёт ненулевой γ_T.
+        ! Используем m_est с форсированной + натуральной при m=0 как начальную m_hi.
+        call natural_convection_transfer_coeff(t_w, s_w, tf_w, s_w, &
+                                                l_char_nat, u_rel, &
+                                                gamma_t_eff, gamma_s_eff)
+        m_est = RHO_WATER*CP_SEAWATER*gamma_t_eff*(t_w - tf_w)/(RHO_ICE*LATENT_HEAT)
+        m_hi = max(m_est, 1.0e-9)
+
+        ! Расширение верхней границы
+        iter = 0
+        do while (.true.)
+            s_b = gamma_s_eff*s_w/(gamma_s_eff + RHO_ICE_WATER_RATIO*m_hi)
+            t_b = ocean_freezing_point(s_b, depth_m)
+            l_heat = RHO_ICE*LATENT_HEAT
+            if (use_conduction) l_heat = l_heat + RHO_ICE*CP_ICE_3EQ*max(t_b - t_ice, 0.0)
+            ! Пересчёт эффективных коэффициентов на текущем m_hi
+            call natural_convection_transfer_coeff(t_w, s_w, t_b, s_b, &
+                                                    l_char_nat, u_rel, &
+                                                    gamma_t_eff, gamma_s_eff)
+            f_val = RHO_WATER*CP_SEAWATER*gamma_t_eff*(t_w - t_b) - m_hi*l_heat
+            if (f_val .le. 0.0 .or. iter .ge. 60) exit
+            m_hi = m_hi*2.0
+            iter = iter + 1
+        end do
+
+        ! Бисекция (60 итераций)
+        do iter = 1, 60
+            m_mid = 0.5*(m_lo + m_hi)
+            s_b = gamma_s_eff*s_w/(gamma_s_eff + RHO_ICE_WATER_RATIO*m_mid)
+            t_b = ocean_freezing_point(s_b, depth_m)
+            l_heat = RHO_ICE*LATENT_HEAT
+            if (use_conduction) l_heat = l_heat + RHO_ICE*CP_ICE_3EQ*max(t_b - t_ice, 0.0)
+            ! Пересчёт эффективных коэффициентов на текущем m_mid
+            call natural_convection_transfer_coeff(t_w, s_w, t_b, s_b, &
+                                                    l_char_nat, u_rel, &
+                                                    gamma_t_eff, gamma_s_eff)
+            f_val = RHO_WATER*CP_SEAWATER*gamma_t_eff*(t_w - t_b) - m_mid*l_heat
+            if (f_val .gt. 0.0) then
+                m_lo = m_mid
+            else
+                m_hi = m_mid
+            end if
+        end do
+
+        m_basal = 0.5*(m_lo + m_hi)
+        s_interface = gamma_s_eff*s_w/(gamma_s_eff + RHO_ICE_WATER_RATIO*m_basal)
+        t_interface = ocean_freezing_point(s_interface, depth_m)
+
+        ! Финальная перерасчёт коэффициентов для диагностики
+        call natural_convection_transfer_coeff(t_w, s_w, t_interface, s_interface, &
+                                                l_char_nat, u_rel, &
+                                                gamma_t_eff, gamma_s_eff)
+    end subroutine solve_three_equation_interface_natural
 
     ! ========================================================================
     !   БОКОВОЕ ПЛАВЛЕНИЕ (Stage 9.1 §14, Method A — legacy formula)

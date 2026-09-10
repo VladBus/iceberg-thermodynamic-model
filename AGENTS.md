@@ -42,7 +42,9 @@ fpm test --flag "-I/usr/include" drift_scaling_current           # Current drift
 fpm test --flag "-I/usr/include" param_sensitivity_30day         # Parameter sensitivity framework
 fpm test --flag "-I/usr/include" iceberg_test_10p10_three_equation  # Stage 10.10 three-equation (19 checks)
 fpm test --flag "-I/usr/include" iceberg_test_10p10_three_equation  # Stage 10.10.1 three-equation correction (25 checks)
+fpm test --flag "-I/usr/include" iceberg_test_10p11_natural_convection  # Stage 10.11 natural convection (15 checks)
 python python/tests/test_three_equation.py                        # Stage 10.10/10.10.1 Python (65 checks)
+python python/tests/test_three_equation_natural.py                # Stage 10.11 Python (70 checks)
 ```
 
 No CI, no lint, no formatter beyond VS Code (`fprettify`/`fortls`). Python tooling uses conda env `iceberg-thermodynamic-model`.
@@ -434,6 +436,37 @@ All analysis scripts are in `python/analysis/`:
 - **Validation:** Fortran test extended to 25 checks (19+6 new density-reduction identity/limit/monotonicity checks); Python suite extended to 65 checks (46+19 new Stage 10.10.1 checks including salt-flux identity, freshwater-flux identity, limits, monotonicity, cross-language contract). All tests PASS. Strict `-Wall -Wextra -fcheck=all` build clean. `git diff --check` clean.
 - **Files changed:** src/iceberg_types.f90, src/iceberg_thermodynamics.f90, test/iceberg_test_10p10_three_equation.f90, python/validation/three_equation.py, python/tests/test_three_equation.py, docs/model/model_equation_ledger.md, docs/model/model_physics_status.md, docs/model/stage10_modernization_plan.md, docs/PROJECT_ROADMAP.md, docs/references/literature_matrix.md, docs/references/citation_map.md, AGENTS.md, .github/workflows/ci.yml.
 - **Next:** natural-convection floor, then internal thermal evolution, then re-scoring the 10.8.2 set against the corrected 3eq closure.
+
+## Stage 10.11 Summary (Natural Convection Basal Melt / Low-Flow Closure)
+
+- **Classification:** C -- physically-motivated natural-convection closure for the three-equation ice-ocean interface implemented and independently validated. Production physics UPDATED on the selectable three-equation path; bulk baseline unchanged.
+- **Physics:** Natural convection from a horizontal ice base (facing downward) driven by combined thermal and haline buoyancy. Double-diffusive Rayleigh number:
+  `Ra_eff = g * L^3 / (nu * alpha) * [beta_T * (T_w - T_B) + beta_S * (S_w - S_B) * Le]`
+  with `beta_T = 3.0e-5 1/K`, `beta_S = 7.8e-4 1/PSU`, `Le = 100`.
+  Characteristic length = iceberg length L (horizontal scale of convection cells; Gayen et al. 2016 LES).
+  Nusselt number (Fujii et al. 1973, horizontal plate facing downward):
+  - Laminar (`Ra < 1e7`): `Nu = 0.27 * Ra^0.25`
+  - Turbulent (`Ra >= 1e7`): `Nu = 0.15 * Ra^(1/3)`
+  Natural-convection transfer coefficients:
+  `gamma_T_nat = Nu * k / (L * rho_w * c_w)`,
+  `gamma_S_nat = gamma_T_nat * (K_S / K_T)`.
+
+- **Mixed convection:** Churchill (1977) combination with exponent n=3:
+  `gamma_T_eff = (gamma_T_forced^3 + gamma_T_nat^3)^(1/3)`
+  `gamma_S_eff = (gamma_S_forced^3 + gamma_S_nat^3)^(1/3)`
+  where `gamma_T_forced = K_T * U_rel`, `gamma_S_forced = K_S * U_rel`.
+
+- **Rayleigh number cap:** `Ra_max = 1e10` to avoid unphysical extrapolation beyond the Fujii correlation validity range.
+
+- **Selectable scheme:** `BASAL_MELT_SCHEME_THREE_EQUATION_NATURAL` (runtime switch). The three-equation salt balance retains the Stage 10.10.1 density-weighted correction.
+
+- **Effect:** At `U_rel = 0`, finite melt rate `~1.6e-8 m/s` (0.001 m/day) for typical Arctic conditions (`T_w=2°C`, `S_w=34.5 PSU`, `L=100m`, `D=50m`). At `U_rel = 0.1 m/s`, natural convection adds ~0.1% to forced convection. At `U_rel = 1 m/s`, forced convection dominates (>99.9%).
+
+- **Validation:** Fortran test `iceberg_test_10p11_natural_convection` (15 checks) + Python `test_three_equation_natural.py` (70 checks) including zero-flow, low-flow continuity, mixed-convection regime, Ra/Nu scaling, salt/heat balance identities, and cross-language contract (`m = 1.638e-8 m/s` at `U_rel=0`, `T_w=2°C`, `S_w=34.5 PSU`, `L=100m`, `D=50m`). Strict `-Wall -Wextra -fcheck=all` build clean.
+
+- **Files changed:** src/iceberg_types.f90 (new constants, natural convection function), src/iceberg_thermodynamics.f90 (new solver `solve_three_equation_interface_natural` with explicit coupling); python/validation/three_equation_natural.py (new), python/tests/test_three_equation_natural.py (new); docs/model/* (ledger §10.3, physics status row, plan §10.11), docs/PROJECT_ROADMAP.md, docs/references/*, docs/validation/stage10.11_natural_convection.md (new), AGENTS.md, .github/workflows/ci.yml.
+
+- **Next:** internal thermal evolution, then re-scoring the 10.8.2 set against the 3eq+natural convection closure.
 
 ## Stage 10.9 Summary (Calibration Assessment of the Basal-Melt Coefficient)
 

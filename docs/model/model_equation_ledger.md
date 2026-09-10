@@ -222,6 +222,57 @@ the production end-to-end case). See
 `docs/validation/stage10.10_three_equation_interface.md` (superseded) and
 `docs/validation/stage10.10.1_three_equation_interface.md`.
 
+## 10.3 Natural-convection basal melt (Stage 10.11)
+
+Selectable as an extension of the three-equation scheme via
+`set_basal_melt_scheme(BASAL_MELT_SCHEME_THREE_EQUATION_NATURAL)`.
+When active, the total heat and salt transfer coefficients combine
+forced convection (U-based, §10.2) and natural convection:
+
+Forced convection (U-based, J2010 Table 2):
+    `gamma_T_forced = K_T * U_rel`,  `gamma_S_forced = K_S * U_rel`
+
+Natural convection (Fujii et al. 1973; Gayen et al. 2016; Churchill 1977):
+    Horizontal plate facing downward (heated down / cooled up)
+    Characteristic length = iceberg length `L` (horizontal scale of
+    convection cells; Gayen et al. 2016 LES)
+    Double-diffusive Rayleigh number:
+    `Ra_eff = g * L^3 / (nu * alpha) * [beta_T * (T_w - T_B) + beta_S * (S_w - S_B) * Le]`
+    where `beta_T = 3.0e-5 1/K`, `beta_S = 7.8e-4 1/PSU`, `Le = 100`,
+    `nu = 1.82e-6 m^2/s`, `alpha = k / (rho_w * c_w)`.
+    Nusselt number (Fujii et al. 1973, horizontal plate facing downward):
+    Laminar  (`Ra < 1e7`):  `Nu = 0.27 * Ra^0.25`
+    Turbulent (`Ra >= 1e7`): `Nu = 0.15 * Ra^(1/3)`
+    Natural-convection transfer coefficients:
+    `gamma_T_nat = Nu * k / (L * rho_w * c_w)`,
+    `gamma_S_nat = gamma_T_nat * (K_S / K_T)`.
+
+Mixed convection (Churchill 1977, exponent n=3):
+    `gamma_T_eff = (gamma_T_forced^3 + gamma_T_nat^3)^(1/3)`
+    `gamma_S_eff = (gamma_S_forced^3 + gamma_S_nat^3)^(1/3)`.
+
+The effective transfer coefficients `gamma_T_eff`, `gamma_S_eff` are used
+in the three-equation system (§10.2) in place of the purely forced values.
+The three-equation salt balance (Eq. III) retains the Stage 10.10.1
+density-weighted correction `rho_w gamma_S (S_w - S_B) = rho_i m S_B`.
+
+Rayleigh number is capped at `Ra_max = 1e10` to avoid unphysical
+extrapolation beyond the validated range of the Fujii correlations.
+At `U_rel = 0`, the natural-convection closure provides finite melt rates
+consistent with quiescent laboratory observations (0.01–1 m/day range).
+
+Parameters (Stage 10.11 additions):
+`beta_T = 3.0e-5 1/K`, `beta_S = 7.8e-4 1/PSU`, `Le = 100`,
+`Nu_lam_coeff = 0.27`, `Nu_lam_exp = 0.25`,
+`Nu_turb_coeff = 0.15`, `Nu_turb_exp = 1/3`,
+`Ra_trans = 1e7`, `Ra_max = 1e10`, `Churchill_n = 3`.
+
+Independent validation: Fortran test `iceberg_test_10p11_natural_convection`
+(15 checks) + Python `python/tests/test_three_equation_natural.py` (70 checks),
+including zero-flow, low-flow continuity, mixed-convection regime, and
+cross-language contract (`m = 1.638e-8 m/s` at `U_rel=0`, `T_w=2°C`,
+`S_w=34.5 PSU`, `L=100m`, `D=50m`).
+
 ## 11. Lateral melt
 
 The submerged thermal excess is depth-averaged:

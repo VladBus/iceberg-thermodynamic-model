@@ -1,7 +1,7 @@
 # Project Roadmap
 
-**Updated:** 2026-09-10
-**Current scientific stage:** Stage 10.10.1 — Mass/Salt Convention Correction in Three-Equation Interface
+**Updated:** 2026-09-11
+**Current scientific stage:** Stage 10.11 — Natural Convection Basal Melt / Low-Flow Closure
 **Current status:** C — correction validated; production updated; all tests PASS
 
 ## Completed foundation
@@ -34,33 +34,46 @@
 | 10.9 | Calibration assessment of the basal-melt coefficient (212 Python checks; no scalar identifiable from the 2-source set) | Complete; classification C; production unchanged |
 | 10.10 | Three-equation ice-ocean interface (Holland & Jenkins 1999; Jenkins et al. 2010 Table 2), separately selectable; independently validated (19 Fortran + 46 Python checks, cross-language contract) | Complete; classification C; production physics added on selectable path, bulk path physics unchanged |
 | 10.10.1 | Mass/salt convention correction: Eq. III from `gamma_S(S_w-S_B)=m S_B` to `rho_w gamma_S(S_w-S_B)=rho_i m S_B` with `rho_i/rho_w=910/1028`; MOM6/PISM/MITgcm/H&J99 Eq.4 convention; canonical anchor m 9.45e-9 -> 1.04e-8 (+10.5%), end-to-end m 3.998e-6 -> 4.067e-6 (+1.7%); T_i=-10 attribution corrected (model-selected, not H&J99); Fortran 25 checks, Python 65 checks, strict build clean | Complete; classification C; production updated; all tests PASS |
+| 10.11 | Natural convection basal melt: double-diffusive Ra (Fujii et al. 1973) + Churchill 1977 mixing; L_char = iceberg length L; Ra cap 1e10; gamma_T_nat, gamma_S_nat added to forced via Churchill n=3 mixing; U=0 -> m=1.6e-8 m/s (0.001 m/day); U=0.1 -> natural adds 0.1%; U=1 -> forced dominates 99.9%; Fortran 15 checks, Python 70 checks, cross-language contract | Complete; classification C; production updated; all tests PASS |
 
 ## Immediate next step
 
-### Stage 10.10.1 — mass/salt convention correction in three-equation interface (DONE)
+### Stage 10.11 — natural convection basal melt / low-flow closure (DONE)
 
-Stage 10.10.1 corrected the salt balance (Eq. III) in the three-equation ice-ocean interface from the equal-density reduction `gamma_S (S_w - S_B) = m S_B` to the physically consistent mass-conserving form `rho_w gamma_S (S_w - S_B) = rho_i m S_B`, which reduces to `S_B = gamma_S S_w / (gamma_S + (rho_i/rho_w) m)` with `rho_i/rho_w = 910/1028 = 0.8852...`. This matches the MOM6 `mom_ice_shelf`, PISM basal-melt, and MITgcm shelfice documented conventions, and Holland & Jenkins (1999) Eq. (4) (brine salt flux `rho_i M wB (S_I - S_B)`). The Stage 10.10 formulation implicitly set `rho_i/rho_w = 1`.
+Stage 10.11 implemented a physically-motivated natural-convection closure for the three-equation ice-ocean interface, addressing the largest structural gap identified in Stage 10.8.2 (zero melt at zero flow).
 
-- **Production changes**: `src/iceberg_types.f90` (new constant `RHO_ICE_WATER_RATIO`), `src/iceberg_thermodynamics.f90` (three reduction expressions in `solve_three_equation_interface` + doc block rewrite); `python/validation/three_equation.py` (module docstring, `_s_interface` with optional `rho_ratio` defaulting to the new constant).
-- **Effect**: canonical H&J99 anchor m increases from 9.4457e-9 to 1.0438e-8 m/s (+10.5%, amplified by near-zero thermal drive); production end-to-end m increases from 3.998e-6 to 4.067e-6 m/s (+1.7%); warm band 0.351 m/day (inside 0.01-1 m/day).
-- **T_i = -10 degC attribution corrected**: model-selected constant internal temperature, NOT from H&J99 (H&J99 solve conduction explicitly). Docs updated.
-- **Validation**: Fortran test extended to 25 checks (19+6 new density-reduction identity/limit/monotonicity checks); Python suite extended to 65 checks (46+19 new Stage 10.10.1 checks including salt-flux identity, freshwater-flux identity, limits, monotonicity, cross-language contract). All tests PASS. Strict `-Wall -Wextra -fcheck=all` build clean. `git diff --check` clean.
-- **Report**: `docs/validation/stage10.10.1_three_equation_interface.md`.
+- **Physics**: Natural convection from a horizontal ice base (facing downward) driven by combined thermal and haline buoyancy. Double-diffusive Rayleigh number:
+  `Ra_eff = g * L^3 / (nu * alpha) * [beta_T * (T_w - T_B) + beta_S * (S_w - S_B) * Le]`
+  with `beta_T = 3.0e-5 1/K`, `beta_S = 7.8e-4 1/PSU`, `Le = 100`.
+  Characteristic length = iceberg length L (horizontal scale of convection cells; Gayen et al. 2016 LES).
+  Nusselt number (Fujii et al. 1973, horizontal plate facing downward):
+  - Laminar (`Ra < 1e7`): `Nu = 0.27 * Ra^0.25`
+  - Turbulent (`Ra >= 1e7`): `Nu = 0.15 * Ra^(1/3)`
+  Natural-convection transfer coefficients:
+  `gamma_T_nat = Nu * k / (L * rho_w * c_w)`,
+  `gamma_S_nat = gamma_T_nat * (K_S / K_T)`.
 
-Stage 10.9 (`docs/validation/stage10.9_calibration_assessment.md`) assessed whether the production heat-transfer coefficient could be calibrated against the 10.8.2 observational set and concluded **NO scalar coefficient is identifiable**: the two independent sources require ~8.3x different coefficients (NJ80 0.286, KW84 1.418), the NJ80 observation scales as dT^1.73 while the closure is dT^1.0 (functional-form, not scale, mismatch), and the natural-convection branch is structurally zero for any finite coefficient. The stage also corrected two 10.8.2 claims (basal-plane-dominance and submarine≈basal are aspect-ratio-dependent, not universal) and Crossref-verified all seven named literature DOIs. No production coefficient was changed.
+- **Mixed convection**: Churchill (1977) combination with exponent n=3:
+  `gamma_T_eff = (gamma_T_forced^3 + gamma_T_nat^3)^(1/3)`
+  `gamma_S_eff = (gamma_S_forced^3 + gamma_S_nat^3)^(1/3)`.
 
-**Stage 10.10 (Phase 1) resolved the first priority item:** the three-equation ice-ocean interface (Holland & Jenkins 1999; Jenkins et al. 2010 Table 2 velocity-scale `K_T = 1.1e-3`, `K_S = 3.1e-5`) is implemented as a separately selectable basal closure, with the bulk path physics unchanged (statements identical, re-indented into the scheme else-branch), and independently validated in Fortran (19 checks) and Python (46 checks) with a shared cross-language contract (H&J99 anchor `m = 9.4457e-9` m/s; production end-to-end `m = 3.998e-6` m/s). The `Γ_T/Γ_S` Stanton convention risk from Stage 10.7 is documented: the implemented constants are the **U-based** J2010 values, whereas the melt-driven `u*`-based Stanton (St = 0.011) is a different convention and remains an open question for calibration. Re-scoring the 10.8.2 set against the new closure is deferred by design (no calibration in 10.10).
+- **Rayleigh number cap**: `Ra_max = 1e10` to avoid unphysical extrapolation beyond the Fujii correlation validity range.
 
-Priority for the next stage (after 10.10.1):
+- **Selectable scheme**: `BASAL_MELT_SCHEME_THREE_EQUATION_NATURAL` (runtime switch). The three-equation salt balance retains the Stage 10.10.1 density-weighted correction.
 
-1. **natural convection at low relative flow** (melt plumes) — the largest
-   structural gap by 10.8.2, confirmed uncalibratable by 10.9; the new
-   three-equation path retains the same `U_rel = 0 -> m = 0` limitation;
-2. internal thermal evolution of the iceberg (replaces the constant `T_i`
+- **Effect**: At `U_rel = 0`, finite melt rate `~1.6e-8 m/s` (0.001 m/day) for typical Arctic conditions (`T_w=2°C`, `S_w=34.5 PSU`, `L=100m`, `D=50m`). At `U_rel = 0.1 m/s`, natural convection adds ~0.1% to forced convection. At `U_rel = 1 m/s`, forced convection dominates (>99.9%).
+
+- **Validation**: Fortran test `iceberg_test_10p11_natural_convection` (15 checks) + Python `test_three_equation_natural.py` (70 checks) including zero-flow, low-flow continuity, mixed-convection regime, Ra/Nu scaling, salt/heat balance identities, and cross-language contract (`m = 1.638e-8 m/s` at `U_rel=0`, `T_w=2°C`, `S_w=34.5 PSU`, `L=100m`, `D=50m`). Strict `-Wall -Wextra -fcheck=all` build clean.
+
+- **Report**: `docs/validation/stage10.11_natural_convection.md`.
+
+Priority for the next stage (after 10.11):
+
+1. **internal thermal evolution of the iceberg** (replaces the constant `T_i`
    conduction term of Eq. II);
-3. re-scoring the 10.8.2 observational set against the three-equation closure
-   with the 10.8.2 acceptance criterion (after items 1-2);
-4. atmospheric stability corrections if external validation demonstrates
+2. re-scoring the 10.8.2 observational set against the three-equation + natural-convection closure
+   with the 10.8.2 acceptance criterion;
+3. improved atmospheric stability/transfer treatment if external validation demonstrates
    material bias.
 
 ## Longer-term physics

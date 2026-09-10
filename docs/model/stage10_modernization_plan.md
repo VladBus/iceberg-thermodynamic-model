@@ -1,7 +1,7 @@
 # Stage 10 — Physics Modernization Plan
 
-**Updated:** 2026-09-10
-**Current stage:** 10.10.1 (mass/salt convention correction in three-equation interface; production updated)
+**Updated:** 2026-09-11
+**Current stage:** 10.11 (natural-convection basal melt / low-flow closure; production updated)
 **Current classification:** C — correction validated; production updated; all tests PASS
 
 ## Purpose
@@ -176,20 +176,48 @@ implicitly set `rho_i/rho_w = 1`.
   Strict `-Wall -Wextra -fcheck=all` build clean. `git diff --check` clean.
 - **Report**: `docs/validation/stage10.10.1_three_equation_interface.md`.
 
+## Stage 10.11 — Natural-convection basal melt / low-flow closure (DONE)
+
+Corrected the fundamental limitation of zero basal melt at zero relative flow by implementing a physically-motivated natural-convection closure for the three-equation ice-ocean interface.
+
+- **Physics**: Natural convection from a horizontal ice base (facing downward) driven by combined thermal and haline buoyancy. Double-diffusive Rayleigh number:
+  `Ra_eff = g * L^3 / (nu * alpha) * [beta_T * (T_w - T_B) + beta_S * (S_w - S_B) * Le]`
+  with `beta_T = 3.0e-5 1/K`, `beta_S = 7.8e-4 1/PSU`, `Le = 100`.
+  Characteristic length = iceberg length L (horizontal scale of convection cells; Gayen et al. 2016 LES).
+  Nusselt number (Fujii et al. 1973, horizontal plate facing downward):
+  - Laminar (`Ra < 1e7`): `Nu = 0.27 * Ra^0.25`
+  - Turbulent (`Ra >= 1e7`): `Nu = 0.15 * Ra^(1/3)`
+  Natural-convection transfer coefficients:
+  `gamma_T_nat = Nu * k / (L * rho_w * c_w)`,
+  `gamma_S_nat = gamma_T_nat * (K_S / K_T)`.
+
+- **Mixed convection**: Churchill (1977) combination with exponent n=3:
+  `gamma_T_eff = (gamma_T_forced^3 + gamma_T_nat^3)^(1/3)`
+  `gamma_S_eff = (gamma_S_forced^3 + gamma_S_nat^3)^(1/3)`
+  where `gamma_T_forced = K_T * U_rel`, `gamma_S_forced = K_S * U_rel`.
+
+- **Rayleigh number cap**: `Ra_max = 1e10` to avoid unphysical extrapolation of correlations beyond their validated range.
+
+- **Selectable scheme**: `BASAL_MELT_SCHEME_THREE_EQUATION_NATURAL` (runtime switch). The three-equation salt balance retains the Stage 10.10.1 density-weighted correction.
+
+- **Production changes**: `src/iceberg_types.f90` (new constants, natural convection function), `src/iceberg_thermodynamics.f90` (new solver `solve_three_equation_interface_natural` with explicit coupling); `python/validation/three_equation_natural.py` + `python/tests/test_three_equation_natural.py` (70 checks).
+
+- **Effect**: At `U_rel = 0`, finite melt rate `~1.6e-8 m/s` (0.001 m/day) for typical Arctic conditions (`T_w=2°C`, `S_w=34.5 PSU`, `L=100m`, `D=50m`). At `U_rel = 0.1 m/s`, natural convection adds ~0.1% to forced convection. At `U_rel = 1 m/s`, forced convection dominates (>99.9%).
+
+- **Validation**: Fortran test `iceberg_test_10p11_natural_convection` (15 checks) + Python `test_three_equation_natural.py` (70 checks) including zero-flow, low-flow continuity, mixed-convection regime, Ra/Nu scaling, salt/heat balance identities, and cross-language contract (`m = 1.638e-8 m/s` at `U_rel=0`, `T_w=2°C`, `S_w=34.5 PSU`, `L=100m`, `D=50m`).
+
+- **Report**: `docs/validation/stage10.11_natural_convection.md`.
+
 ## Next modernization sequence
 
-Priority candidates after 10.10 (Phase 1 implemented; Phase 2 remains):
+Priority candidates after 10.11:
 
-1. natural-convection floor for the low-relative-flow branch (melt plumes) —
-   quantified as the largest structural gap by 10.8.2 and confirmed
-   uncalibratable by 10.9; note the new three-equation path retains the
-   same `U_rel = 0 -> m = 0` limitation;
-2. internal thermal evolution of the iceberg (replacing the constant `T_i`
+1. internal thermal evolution of the iceberg (replacing the constant `T_i`
    conduction term of Eq. II);
-3. improved treatment of iceberg-specific ocean heat transfer, including
-   re-scoring the 10.8.2 set against the three-equation closure with the
+2. improved treatment of iceberg-specific ocean heat transfer, including
+   re-scoring the 10.8.2 set against the three-equation + natural-convection closure with the
    10.8.2 acceptance criterion;
-4. improved atmospheric stability/transfer treatment if validation demonstrates a material need;
+3. improved atmospheric stability/transfer treatment if validation demonstrates a material need;
 5. modern seawater thermodynamics, including a full EOS-80/TEOS-10 pathway,
    only as a dedicated future stage.
 

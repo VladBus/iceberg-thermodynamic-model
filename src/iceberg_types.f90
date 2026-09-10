@@ -118,6 +118,12 @@ module iceberg_types
     ! Re_crit ≈ 5e5 (standard value, Eckert & Drake 1959)
     real, parameter :: REYNOLDS_CRITICAL = 5.0e5
 
+    ! Maximum Rayleigh number (physical cap for ultimate regime)
+    ! Standard correlations valid up to Ra ~ 1e10; beyond that, flow enters
+    ! "ultimate regime" with different scaling (Nu ~ Ra^0.5 or similar).
+    ! We cap Ra to avoid unphysically large Nu from extrapolating correlations.
+    real, parameter :: RAYLEIGH_MAX = 1.0e10
+
     ! Characteristic length scale for basal melt Reynolds number
     ! For basal: L_char = iceberg length in flow direction (state%L, but see limitation above)
     ! For lateral: L_char = draft (D) - from Weeks & Campbell (1973)
@@ -135,14 +141,16 @@ module iceberg_types
     real, parameter :: MELT_RATE_MIN = 1.0e-12
 
     ! ========================================================================
-    !   THREE-EQUATION ICE-OCEAN INTERFACE (Stage 10.10)
+    !   THREE-EQUATION ICE-OCEAN INTERFACE (Stage 10.10 / 10.11)
     ! ========================================================================
     ! Переключатель схемы базального плавления (runtime, через set_basal_melt_scheme):
-    !   BASAL_MELT_SCHEME_FORCED_CONVECTION = 0  -- bulk-формулировка Stage 10.6 (baseline)
-    !   BASAL_MELT_SCHEME_THREE_EQUATION   = 1  -- трёхчленное замыкание (H&J99/J2010)
+    !   BASAL_MELT_SCHEME_FORCED_CONVECTION      = 0  -- bulk-формулировка Stage 10.6 (baseline)
+    !   BASAL_MELT_SCHEME_THREE_EQUATION         = 1  -- трёхчленное замыкание (H&J99/J2010)
+    !   BASAL_MELT_SCHEME_THREE_EQUATION_NATURAL = 2  -- + натуральная конвекция (Stage 10.11)
     ! ПО УМОЛЧАНИЮ = 0: production-поведение НЕ меняется до явного переключения.
     integer, parameter :: BASAL_MELT_SCHEME_FORCED_CONVECTION = 0
     integer, parameter :: BASAL_MELT_SCHEME_THREE_EQUATION = 1
+    integer, parameter :: BASAL_MELT_SCHEME_THREE_EQUATION_NATURAL = 2
     integer, save :: basal_melt_scheme = BASAL_MELT_SCHEME_FORCED_CONVECTION
 
     ! Трансферные коэффициенты three-equation в U-представлении (J2010, Table 2):
@@ -170,6 +178,69 @@ module iceberg_types
     ! (ρ_i·m·S_B): скорость m — скорость таяния во льду-кадре (dH/dt = −m).
     ! Классическая редукция без r = 0.8852 неявно полагает ρ_i = ρ_w.
     real, parameter :: RHO_ICE_WATER_RATIO = RHO_ICE/RHO_WATER   ! 910/1028 ≈ 0.8852
+
+    ! ========================================================================
+    !   НАТУРАЛЬНАЯ КОНВЕКЦИЯ (Stage 10.11)
+    ! ========================================================================
+    ! Константы для натуральной конвекции при базальном плавлении горизонтального
+    ! основания айсберга (U_rel → 0). Физика: талый лед (свежий, холодный) создаёт
+    ! плавучесть, ведущую к конвекции типа Релея-Бенара в пограничном слое.
+    !
+    ! Источники:
+    !   - Fujii, T., Honda, H., & Morioka, I. (1973). "A theoretical study of
+    !     natural convection heat transfer from downward-facing horizontal
+    !     surfaces with uniform heat flux." Int. J. Heat Mass Transf., 16, 611-627.
+    !   - Gayen, B., et al. (2016). "Melt-driven convection under a horizontal
+    !     ice face." J. Fluid Mech., 798, 617-641. (LES: конвективные ячейки
+    !     ограничены вертикальной осадкой D, а не длиной L)
+    !   - Kerr, R.C. & McConnochie, C.D. (2015). "Convection-driven melting..."
+    !     J. Phys. Oceanogr., 45, 3099-3116. (свободная конвекция у наклонного/горизонтального льда)
+    !   - McConnochie, C.D. & Kerr, R.C. (2018). "The effect of slope on..."
+    !     J. Fluid Mech., 855, 1070-1095.
+    !   - Churchill, S.W. (1977). "A comprehensive correlating equation for
+    !     forced, natural and mixed convection." AIChE J., 23, 10-16. (смешанная конвекция)
+    !
+    ! Характерная длина для натуральной конвекции на горизонтальном основании
+    ! = осадка D (Gayen et al. 2016: конвективные ячейки масштаба D, не L).
+    !
+    ! Релеевское число для двойной диффузии:
+    !   Ra_eff = g * D^3 / (ν * α) * [β_T * ΔT + β_S * ΔS * Le]
+    ! где Le = α/D_S ≈ 100 (Lewis number для морской воды).
+    !
+    ! Корреляции Fujii et al. (1973) для горизонтальной пластины, обращённой вниз
+    ! (нагрев снизу / охлаждение сверху — аналог тающего основания айсберга):
+    !   Ламинарный (Ra < 1e7):  Nu = 0.27 * Ra^0.25
+    !   Турбулентный (Ra ≥ 1e7): Nu = 0.15 * Ra^(1/3)
+    !
+    ! Комбинация Churchilla (1977) для смешанной конвекции (n=3):
+    !   γ_eff = (γ_forced^3 + γ_natural^3)^(1/3)
+    ! ========================================================================
+
+    ! Коэффициент термического расширения морской воды в точке замерзания [1/K]
+    ! Источник: Fofonoff & Millard (1983), UNESCO 1983; морская вода S=35, T≈-2°C
+    ! Для S>24.7 точка максимальной плотности ниже точки замерзания => β_T > 0
+    real, parameter :: THERMAL_EXPANSION_COEFF = 3.0e-5
+
+    ! Коэффициент галлинного сжатия морской воды [1/PSU]
+    ! Источник: Fofonoff & Millard (1983), UNESCO 1983
+    real, parameter :: HALINE_CONTRACTION_COEFF = 7.8e-4
+
+    ! Число Льюиса для морской воды (отношение термической диффузивности к солёной)
+    ! Le = α / D_S ≈ 100 для морской воды
+    ! Источник: стандартные таблицы свойств морской воды
+    real, parameter :: LEWIS_NUMBER = 100.0
+
+    ! Коэффициенты корреляции Нуссельта — Релея (Fujii et al. 1973)
+    ! Горизонтальная пластина, обращённая вниз (heated down / cooled up)
+    real, parameter :: NU_LAMINAR_COEFF = 0.27
+    real, parameter :: NU_LAMINAR_EXP = 0.25
+    real, parameter :: NU_TURBULENT_COEFF = 0.15
+    real, parameter :: NU_TURBULENT_EXP = 1.0/3.0
+    real, parameter :: RAYLEIGH_TRANSITION = 1.0e7
+
+    ! Показатель степени для комбинации Churchilla (смешанная конвекция)
+    ! Стандартное значение для горизонтальных пластин
+    real, parameter :: MIXED_CONVECTION_EXP = 3.0
 
     ! Радиационные свойства льда
     real, parameter :: ALBEDO_ICE = 0.7      ! Альбедо льда [безразм.]
@@ -377,9 +448,15 @@ module iceberg_types
     public :: SCHMIDT_NUMBER, REYNOLDS_CRITICAL, MELT_RATE_MIN
     ! Stage 10.10 three-equation interface
     public :: BASAL_MELT_SCHEME_FORCED_CONVECTION, BASAL_MELT_SCHEME_THREE_EQUATION
+    public :: BASAL_MELT_SCHEME_THREE_EQUATION_NATURAL
     public :: basal_melt_scheme, set_basal_melt_scheme
     public :: THREE_EQ_KT, THREE_EQ_KS, CP_SEAWATER, CP_ICE_3EQ
     public :: RHO_ICE_WATER_RATIO
+    ! Stage 10.11 natural convection constants
+    public :: THERMAL_EXPANSION_COEFF, HALINE_CONTRACTION_COEFF, LEWIS_NUMBER
+    public :: NU_LAMINAR_COEFF, NU_LAMINAR_EXP, NU_TURBULENT_COEFF, NU_TURBULENT_EXP
+    public :: RAYLEIGH_TRANSITION, MIXED_CONVECTION_EXP
+    public :: natural_convection_transfer_coeff
     public :: ocean_profile, atmos_forcing, iceberg_diagnostics, iceberg_state
     public :: ocean_freezing_point
     public :: ocean_heat_transfer_coeff
@@ -486,11 +563,146 @@ contains
     end subroutine ocean_heat_transfer_coeff
 
     ! ========================================================================
-    !   УСТАНОВКА СХЕМЫ БАЗАЛЬНОГО ПЛАВЛЕНИЯ (Stage 10.10)
+    !   УСТАНОВКА СХЕМЫ БАЗАЛЬНОГО ПЛАВЛЕНИЯ (Stage 10.10 / 10.11)
+    ! ========================================================================
+    !   НАТУРАЛЬНАЯ КОНВЕКЦИЯ: ТЕПЛООБМЕННЫЕ КОЭФФИЦИЕНТЫ (Stage 10.11)
+    ! ========================================================================
+    ! Вычисляет натурально-конвективные тепло- и солеобменные коэффициенты
+    ! для горизонтального основания айсберга (базальное плавление).
+    !
+    ! Физика: при U_rel → 0 таяние производит плавучесть за счёт комбинации
+    ! термического (ΔT = T_w - T_B) и галлинного (ΔS = S_w - S_B) вкладов.
+    ! Талый лед (T≈T_f, S≈0) легче окружающей воды -> нестабильная стратификация
+    ! -> конвекция типа Релея-Бенара в пограничном слое.
+    !
+    ! Двойное-диффузное релеевское число для горизонтальной пластины:
+    !   Ra_eff = g * D^3 / (ν * α) * [β_T * (T_w - T_B) + β_S * (S_w - S_B) * Le]
+    ! где:
+    !   D          = осадка (характерная вертикальная длина конвективных ячеек)
+    !                (Gayen et al. 2016 LES: масштаб ячеек ~ D, не L)
+    !   β_T        = THERMAL_EXPANSION_COEFF [1/K]
+    !   β_S        = HALINE_CONTRACTION_COEFF [1/PSU]
+    !   Le         = LEWIS_NUMBER = α/D_S ≈ 100
+    !   ν          = KINEMATIC_VISCOSITY [m²/s]
+    !   α          = THERMAL_CONDUCTIVITY / (RHO_WATER * CP_SEAWATER) [m²/s]
+    !   S в PSU    = s_mass * 1000
+    !
+    ! Корреляции Нуссельта (Fujii et al. 1973) для горизонтальной пластины,
+    ! обращённой вниз (heated down / cooled up):
+    !   Ламинарный  (Ra < 1e7):  Nu = 0.27 * Ra^0.25
+    !   Турбулентный (Ra ≥ 1e7): Nu = 0.15 * Ra^(1/3)
+    !
+    ! Натурально-конвективный теплообменный коэффициент:
+    !   γ_T_nat = Nu * k / D
+    ! Натурально-конвективный солеобменный коэффициент (то же отношение
+    ! Стэнтона, что и для форсированной конвекции J2010 Table 2):
+    !   γ_S_nat = γ_T_nat * (THREE_EQ_KS / THREE_EQ_KT)
+    !
+    ! Комбинация Churchilla (1977) для смешанной конвекции (экспонента n=3):
+    !   γ_T_eff = (γ_T_forced^3 + γ_T_nat^3)^(1/3)
+    !   γ_S_eff = (γ_S_forced^3 + γ_S_nat^3)^(1/3)
+    !
+    ! Аргументы:
+    !   t_w, s_w     - дальнее поле океана [°C, кг/кг] (intent(in))
+    !   t_b, s_b     - интерфейс [°C, кг/кг] (intent(in))
+    !   l_char       - характерная длина для натуральной конвекции [м]
+    !                  длина айсберга L (горизонтальный масштаб основания,
+    !                  см. Fujii et al. 1973 для пластины, обращённой вниз)
+    !   u_rel        - форсированная относительная скорость [м/с] (intent(in))
+    !   gamma_t      - итоговый теплообменный коэффициент [м/с] (выход)
+    !   gamma_s      - итоговый солеобменный коэффициент [м/с] (выход)
+    ! ========================================================================
+    pure subroutine natural_convection_transfer_coeff(t_w, s_w, t_b, s_b, &
+                                                       l_char, u_rel, &
+                                                       gamma_t, gamma_s)
+        real, intent(in) :: t_w, s_w, t_b, s_b
+        real, intent(in) :: l_char
+        real, intent(in) :: u_rel
+        real, intent(out) :: gamma_t, gamma_s
+
+        real :: delta_t, delta_s_psu
+        real :: ra_eff, nusselt
+        real :: gamma_t_nat, gamma_s_nat
+        real :: gamma_t_forced, gamma_s_forced
+        real :: thermal_diffusivity
+        real :: mixed_exp
+
+        ! Форированная конвекция (U-based, J2010 Table 2)
+        gamma_t_forced = THREE_EQ_KT * u_rel
+        gamma_s_forced = THREE_EQ_KS * u_rel
+
+        ! Натуральная конвекция
+        if (l_char .le. 0.0) then
+            gamma_t_nat = 0.0
+            gamma_s_nat = 0.0
+        else
+            ! Разности температуры и солености (PSU)
+            delta_t = t_w - t_b
+            delta_s_psu = (s_w - s_b) * 1000.0  ! кг/кг -> PSU
+
+            ! Термическая диффузивность α = k / (ρ * c_p)
+            thermal_diffusivity = THERMAL_CONDUCTIVITY / (RHO_WATER * CP_SEAWATER)
+
+            ! Эффективное релеевское число для двойной диффузии
+            ! Ra_eff = g * L^3 / (ν * α) * [β_T * ΔT + β_S * ΔS * Le]
+            ! где L = l_char = длина айсберга (горизонтальный масштаб
+            ! конвективных ячеек у горизонтального основания),
+            ! ΔS в PSU, β_S в [1/PSU]
+            if (delta_t .gt. 0.0 .or. delta_s_psu .gt. 0.0) then
+                ra_eff = GRAVITY * l_char**3 / (KINEMATIC_VISCOSITY * thermal_diffusivity) * &
+                         (THERMAL_EXPANSION_COEFF * delta_t + &
+                          HALINE_CONTRACTION_COEFF * delta_s_psu * LEWIS_NUMBER)
+            else
+                ra_eff = 0.0
+            end if
+
+            ! Нуссельтово число (Fujii et al. 1973)
+            ! Ограничиваем Ra_eff физически разумным максимумом
+            if (ra_eff .gt. RAYLEIGH_MAX) ra_eff = RAYLEIGH_MAX
+            if (ra_eff .gt. 0.0) then
+                if (ra_eff .lt. RAYLEIGH_TRANSITION) then
+                    ! Ламинарный режим
+                    nusselt = NU_LAMINAR_COEFF * ra_eff**NU_LAMINAR_EXP
+                else
+                    ! Турбулентный режим
+                    nusselt = NU_TURBULENT_COEFF * ra_eff**NU_TURBULENT_EXP
+                end if
+            else
+                nusselt = 0.0
+            end if
+
+            ! Натурально-конвективный теплообменный коэффициент
+            ! h = Nu * k / D [W/m²/K] -> γ_T = h / (ρ_w c_w) [m/s]
+            gamma_t_nat = nusselt * THERMAL_CONDUCTIVITY / &
+                          (l_char * RHO_WATER * CP_SEAWATER)
+
+            ! Натурально-конвективный солеобменный коэффициент
+            ! то же отношение Стэнтона, что и для форсированной конвекции
+            gamma_s_nat = gamma_t_nat * (THREE_EQ_KS / THREE_EQ_KT)
+        end if
+
+        ! Комбинация Churchilla (1977) для смешанной конвекции
+        ! γ_eff = (γ_forced^n + γ_natural^n)^(1/n), n = 3
+        mixed_exp = MIXED_CONVECTION_EXP
+        if (gamma_t_forced .gt. 0.0 .and. gamma_t_nat .gt. 0.0) then
+            gamma_t = (gamma_t_forced**mixed_exp + gamma_t_nat**mixed_exp)**(1.0/mixed_exp)
+            gamma_s = (gamma_s_forced**mixed_exp + gamma_s_nat**mixed_exp)**(1.0/mixed_exp)
+        else if (gamma_t_forced .gt. 0.0) then
+            gamma_t = gamma_t_forced
+            gamma_s = gamma_s_forced
+        else
+            gamma_t = gamma_t_nat
+            gamma_s = gamma_s_nat
+        end if
+    end subroutine natural_convection_transfer_coeff
+
+    ! ========================================================================
+    !   УСТАНОВКА СХЕМЫ БАЗАЛЬНОГО ПЛАВЛЕНИЯ (Stage 10.10 / 10.11)
     ! ========================================================================
     ! Runtime-переключатель замыкания базального потока.
-    !   scheme = BASAL_MELT_SCHEME_FORCED_CONVECTION (0)  -> bulk Stage 10.6 (baseline)
-    !   scheme = BASAL_MELT_SCHEME_THREE_EQUATION   (1)  -> H&J99/J2010 three-equation
+    !   scheme = BASAL_MELT_SCHEME_FORCED_CONVECTION      (0) -> bulk Stage 10.6 (baseline)
+    !   scheme = BASAL_MELT_SCHEME_THREE_EQUATION         (1) -> H&J99/J2010 three-equation
+    !   scheme = BASAL_MELT_SCHEME_THREE_EQUATION_NATURAL (2) -> three-equation + natural convection
     ! Неизвестная схема -> аварийная остановка (STOP 1), чтобы не было тихого
     ! падения к default при ошибке вызова (тесты вызывают валидные значения).
     ! ========================================================================
@@ -498,11 +710,14 @@ contains
         integer, intent(in) :: scheme
 
         if (scheme .eq. BASAL_MELT_SCHEME_FORCED_CONVECTION .or. &
-            scheme .eq. BASAL_MELT_SCHEME_THREE_EQUATION) then
+            scheme .eq. BASAL_MELT_SCHEME_THREE_EQUATION .or. &
+            scheme .eq. BASAL_MELT_SCHEME_THREE_EQUATION_NATURAL) then
             basal_melt_scheme = scheme
         else
             print *, "ERROR: set_basal_melt_scheme: unknown scheme=", scheme
-            print *, "  valid: 0 = FORCED_CONVECTION (baseline), 1 = THREE_EQUATION"
+            print *, "  valid: 0 = FORCED_CONVECTION (baseline)"
+            print *, "         1 = THREE_EQUATION"
+            print *, "         2 = THREE_EQUATION_NATURAL"
             stop 1
         end if
     end subroutine set_basal_melt_scheme

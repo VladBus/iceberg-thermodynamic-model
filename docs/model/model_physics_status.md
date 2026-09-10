@@ -41,7 +41,7 @@
 | Ocean heat transfer | Relative flow; laminar/turbulent flat-plate Nu correlation | B |
 | Basal melt | `m_basal = gamma_T * max(T-Tf,0)/(rho_ice*Lf)` (independently audited in Stage 10.7; independent Python layer in `python/validation/`, Stage 10.8.1; observational validation vs published melts, Stage 10.8.2; Stage 10.9: scalar coefficient **not identifiable** across the 10.8.2 sources — no calibration made) | B |
 | Lateral melt | Depth-averaged thermal forcing; legacy/approximate closure | B |
-| Three-equation interface | Not implemented; recommended Stage 10.10 upgrade (Holland & Jenkins 1999) | E |
+| Three-equation interface | H&J99/J2010 closure; velocity-scale gamma_T=K_T·U, gamma_S=K_S·U (K_T=1.1e-3, K_S=3.1e-5); separately selectable; conduction to T_i; independently validated (Fortran 19 + Python 46 checks, cross-language contract) | C |
 | Full seawater EOS | Not implemented; freezing point only | E |
 | TEOS-10 | Not implemented | E |
 | Natural convection | Not represented in current ocean heat-transfer closure | E |
@@ -68,11 +68,12 @@ This is a **flat-plate forced-convection approximation**, not a geometry-specifi
 1. The current iceberg has no orientation, so the streamwise characteristic length is approximated by `L`.
 2. The heat-transfer correlation is inherited from canonical boundary-layer theory rather than derived specifically for a rectangular iceberg.
 3. Natural convection is absent at zero relative flow.
-4. Lateral melt remains an approximate legacy closure and does not yet use the full three-equation ice-ocean interface formulation.
+4. Lateral melt remains an approximate legacy closure and does not yet use the full three-equation ice-ocean interface formulation (the three-equation closure is implemented for the basal path; Stage 10.10).
 5. The EOS-80 implementation computes freezing point only; it is not a full EOS-80/TEOS-10 density equation of state.
 6. Some shortwave attenuation constants require stronger literature provenance/sensitivity documentation.
 7. Independent observational validation of the full coupled thermodynamic evolution remains a future task.
 8. Stored iceberg latitude/longitude are not currently updated from x/y during time stepping.
+9. Three-equation closure (Stage 10.10) uses a constant internal ice temperature `T_i` in the conduction term of Eq. II; physically consistent conduction requires internal thermal evolution (a future stage), and natural convection is absent at zero relative flow as in the bulk closure. The `K_T`/`K_S` convention is U-based (Jenkins et al. 2010 Table 2) rather than a melt-driven `u*`-based Stanton; see `docs/validation/stage10.10_three_equation_interface.md`.
 
 ## Verification policy
 

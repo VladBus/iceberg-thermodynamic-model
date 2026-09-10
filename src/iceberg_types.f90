@@ -134,12 +134,33 @@ module iceberg_types
     ! Порог скорости плавления для предотвращения числового шума [м/с]
     real, parameter :: MELT_RATE_MIN = 1.0e-12
 
-    ! Three-equation constants (Holland & Jenkins 1999, Jenkins et al. 2010) —
-    ! НЕ ИСПОЛЬЗУЮТСЯ в текущей bulk-реализации Stage 10.6.
-    ! Сохранены для документации возможного будущего перехода к three-equation.
-    ! real, parameter :: CD_ICE_OCEAN = 2.2e-3      ! Drag coefficient (Andreas et al. 2010)
-    ! real, parameter :: STANTON_THERMAL = 0.011    ! Thermal Stanton number Γ_T (Jenkins 2010)
-    ! real, parameter :: STANTON_HALINE = 3.1e-4    ! Haline Stanton number Γ_S (Jenkins 2010)
+    ! ========================================================================
+    !   THREE-EQUATION ICE-OCEAN INTERFACE (Stage 10.10)
+    ! ========================================================================
+    ! Переключатель схемы базального плавления (runtime, через set_basal_melt_scheme):
+    !   BASAL_MELT_SCHEME_FORCED_CONVECTION = 0  -- bulk-формулировка Stage 10.6 (baseline)
+    !   BASAL_MELT_SCHEME_THREE_EQUATION   = 1  -- трёхчленное замыкание (H&J99/J2010)
+    ! ПО УМОЛЧАНИЮ = 0: production-поведение НЕ меняется до явного переключения.
+    integer, parameter :: BASAL_MELT_SCHEME_FORCED_CONVECTION = 0
+    integer, parameter :: BASAL_MELT_SCHEME_THREE_EQUATION = 1
+    integer, save :: basal_melt_scheme = BASAL_MELT_SCHEME_FORCED_CONVECTION
+
+    ! Трансферные коэффициенты three-equation в U-представлении (J2010, Table 2):
+    !   K_T = sqrt(C_d) * Gamma_T = 0.0011   (термический)
+    !   K_S = sqrt(C_d) * Gamma_S = 3.1e-5   (галинный)
+    ! Observationally constrained are только ПРОИЗВЕДЕНИЯ sqrt(C_d)*Gamma;
+    ! сами C_d и Gamma по отдельности плохо ограничены (J2010 §6).
+    ! U-представление: gamma_T = K_T * U_rel [м/с], gamma_S = K_S * U_rel [м/с].
+    real, parameter :: THREE_EQ_KT = 1.1e-3     ! [безразм.] (J2010 Table 2)
+    real, parameter :: THREE_EQ_KS = 3.1e-5     ! [безразм.] (J2010 Table 2)
+
+    ! Теплоёмкость морской воды для океанского теплового потока (H&J99/J2010 c_w).
+    ! Отдельно от CP_WATER=4186.8 (пресная вода, поверхностный бюджет Stage 10.2).
+    real, parameter :: CP_SEAWATER = 3974.0    ! [Дж/(кг·К)] (H&J99 c_w)
+
+    ! Теплоёмкость льда для линеаризованной теплопроводности вглубь льда
+    ! (H&J99 c_i; отдельно от C_ICE=2100 — lumped поверхностный слой Stage 10.2).
+    real, parameter :: CP_ICE_3EQ = 2009.0     ! [Дж/(кг·К)] (H&J99 c_i)
 
     ! Радиационные свойства льда
     real, parameter :: ALBEDO_ICE = 0.7      ! Альбедо льда [безразм.]
@@ -265,6 +286,9 @@ module iceberg_types
         real :: tf_draft     ! Точка замерзания на глубине осадки [°C]
         real :: delta_t_ocean ! Термическое задействование на осадке T - Tf [°C]
         ! (необрезанное, может быть ≤ 0; Stage 10.5)
+        ! Граница лёд-океан (Stage 10.10, трёхчленное замыкание; = T_w/S_w для bulk)
+        real :: t_interface   ! Температура на границе T_B [°C]
+        real :: s_interface   ! Соленость на границе S_B [кг/кг]
 
         ! Силы [Н]
         real :: f_wind_x     ! Ветровая сила по X
@@ -342,6 +366,10 @@ module iceberg_types
     ! Stage 10.6 ocean-side heat transfer constants (bulk formulation)
     public :: PRANDTL_NUMBER, KINEMATIC_VISCOSITY, THERMAL_CONDUCTIVITY
     public :: SCHMIDT_NUMBER, REYNOLDS_CRITICAL, MELT_RATE_MIN
+    ! Stage 10.10 three-equation interface
+    public :: BASAL_MELT_SCHEME_FORCED_CONVECTION, BASAL_MELT_SCHEME_THREE_EQUATION
+    public :: basal_melt_scheme, set_basal_melt_scheme
+    public :: THREE_EQ_KT, THREE_EQ_KS, CP_SEAWATER, CP_ICE_3EQ
     public :: ocean_profile, atmos_forcing, iceberg_diagnostics, iceberg_state
     public :: ocean_freezing_point
     public :: ocean_heat_transfer_coeff
@@ -446,5 +474,27 @@ contains
         ! Heat transfer coefficient: γ_T = Nu * k / L
         gamma_t = nusselt*THERMAL_CONDUCTIVITY/l_char
     end subroutine ocean_heat_transfer_coeff
+
+    ! ========================================================================
+    !   УСТАНОВКА СХЕМЫ БАЗАЛЬНОГО ПЛАВЛЕНИЯ (Stage 10.10)
+    ! ========================================================================
+    ! Runtime-переключатель замыкания базального потока.
+    !   scheme = BASAL_MELT_SCHEME_FORCED_CONVECTION (0)  -> bulk Stage 10.6 (baseline)
+    !   scheme = BASAL_MELT_SCHEME_THREE_EQUATION   (1)  -> H&J99/J2010 three-equation
+    ! Неизвестная схема -> аварийная остановка (STOP 1), чтобы не было тихого
+    ! падения к default при ошибке вызова (тесты вызывают валидные значения).
+    ! ========================================================================
+    subroutine set_basal_melt_scheme(scheme)
+        integer, intent(in) :: scheme
+
+        if (scheme .eq. BASAL_MELT_SCHEME_FORCED_CONVECTION .or. &
+            scheme .eq. BASAL_MELT_SCHEME_THREE_EQUATION) then
+            basal_melt_scheme = scheme
+        else
+            print *, "ERROR: set_basal_melt_scheme: unknown scheme=", scheme
+            print *, "  valid: 0 = FORCED_CONVECTION (baseline), 1 = THREE_EQUATION"
+            stop 1
+        end if
+    end subroutine set_basal_melt_scheme
 
 end module iceberg_types

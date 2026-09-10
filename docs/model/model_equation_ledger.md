@@ -172,6 +172,53 @@ Basal melt is then
 
 The implemented correlation is canonical flat-plate forced-convection theory applied as an iceberg approximation. It is not a geometry-specific derivation for an iceberg. At `U_rel = 0`, the current forced-convection closure gives zero transfer; natural convection is not included.
 
+## 10.2 Three-equation ice-ocean interface (Stage 10.10)
+
+Selectable separately from the bulk closure of §10 via
+`set_basal_melt_scheme(BASAL_MELT_SCHEME_THREE_EQUATION)`; the bulk closure
+remains the baseline (the bulk statements in the scheme else-branch are unchanged;
+only re-indentation and diagnostic-only outputs were added). Salinity as practical [PSU] (`S = 1000*S_kg`); pressure
+`P = rho_w*g*z/1e4` [dbar].
+
+Exchange (Jenkins et al. 2010 Table 2, U-based velocity scale):
+
+`gamma_T = K_T U_rel`,  `gamma_S = K_S U_rel`,
+`K_T = sqrt(C_d) Gamma_T = 1.1e-3`,  `K_S = sqrt(C_d) Gamma_S = 3.1e-5`.
+
+Three equations:
+
+(I)`T_B = Tf(S_B, P)`
+
+(II) `rho_w c_w gamma_T (T_w - T_B) = m rho_i [L_f + c_i max(T_B - T_i, 0)]`
+
+(III) `gamma_S (S_w - S_B) = m S_B`
+
+Reduction and solution: `S_B = gamma_S S_w/(m + gamma_S)`; bisection on
+`[0, m_hi]` with `m_hi` doubled until the Eq.-II residual is non-positive
+(capped at 60 doublings), then 60 bisection iterations (float32 production,
+float64 in the independent Python layer). The residual is
+`F(m) = rho_w c_w gamma_T (T_w - T_B) - m rho_i [L_f + c_i max(T_B - T_i, 0)]`.
+
+Edges: `U_rel <= 0` or `gamma_T <= 0` or `T_w <= Tf(S_w,P)` -> `m = 0`,
+`S_B = S_w`, `T_B = Tf(S_w,P)` (natural convection not implemented — same
+documented limitation as §10); `S_w <= 0` -> heat-only balance with
+`S_B = 0`; `gamma_S <= 0` -> heat-only balance with `S_B = S_w`. After
+solution, `compute_basal_melt` applies the MELT_RATE_MIN noise guard as for
+the bulk path.
+
+Parameters: `rho_w = 1028`, `c_w = 3974`, `rho_i = 910`, `L_f = 3.34e5`,
+`c_i = 2009`, `T_i = -10` degC (Holland & Jenkins 1999; model `rho_i`, `L_f`).
+The conductive term into the ice interior uses the constant `T_i`; physically
+consistent conduction requires internal thermal evolution, which is a future
+stage.
+
+Independent validation: the Stage 10.10 Fortran test (19 checks) and
+`python/validation/three_equation.py` + `python/tests/test_three_equation.py`
+(46 checks), including a shared cross-language contract value
+(`m ~ 9.4457e-9` m/s for the H&J99 Table 1 anchor and `m = 3.998e-6` m/s for
+the production end-to-end case). See
+`docs/validation/stage10.10_three_equation_interface.md`.
+
 ## 11. Lateral melt
 
 The submerged thermal excess is depth-averaged:
@@ -192,7 +239,7 @@ The standard thermodynamic/dynamic production time step is one hour unless an ex
 
 ## 14. Verification versus validation
 
-The FPM suite currently contains 50 test targets. Tests establish implementation identities, numerical regressions and selected analytical properties. They do not constitute independent observational validation.
+The FPM suite currently contains 52 test targets. Tests establish implementation identities, numerical regressions and selected analytical properties. They do not constitute independent observational validation.
 
 The scientific validation requirement for future stages is: equation/source provenance + independent analytical check + regression coverage + external observation/benchmark where available.
 

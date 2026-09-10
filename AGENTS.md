@@ -40,6 +40,8 @@ fpm test --flag "-I/usr/include" drift_scaling_wind              # Wind drift sc
 fpm test --flag "-I/usr/include" drift_scaling_wind_no_cor       # Wind drift no Coriolis
 fpm test --flag "-I/usr/include" drift_scaling_current           # Current drift scaling
 fpm test --flag "-I/usr/include" param_sensitivity_30day         # Parameter sensitivity framework
+fpm test --flag "-I/usr/include" iceberg_test_10p10_three_equation  # Stage 10.10 three-equation (19 checks)
+python python/tests/test_three_equation.py                        # Stage 10.10 Python (46 checks)
 ```
 
 No CI, no lint, no formatter beyond VS Code (`fprettify`/`fortls`). Python tooling uses conda env `iceberg-thermodynamic-model`.
@@ -411,6 +413,16 @@ All analysis scripts are in `python/analysis/`:
 - **Bib:** 8 new verified entries in `docs/references/references.bib` (enderin x3, josberger, keys, neshyba, orheim, schild); legacy key `russefl-headMELTINGFREEDRIFTINGICEBERGS` KEPT (citation compatibility) but record corrected (author Russell-Head, journal Annals of Glaciology, vol 1, DOI 10.3189/S0260305500017092).
 - **Report:** `docs/validation/stage10.8.2_observational_validation.md` (12 sections; claims #7/#8 corrected and #1/#2/#4 qualified in Stage 10.9).
 - **Corrected claims (Stage 10.9):** "basal plane dominating; side melt second" is aspect-ratio-dependent (side ~ basal for D/L~0.2); "submarine ≈ basal" is not universal; the KW84 0.70x anchor only holds at L=draft (production L = berg length gives 0.55–0.62x).
+
+## Stage 10.10 Summary (Three-Equation Ice-Ocean Interface)
+
+- **Classification:** C -- modern three-equation ice-ocean interface implemented and independently validated. Production physics ADDED on a separately selectable path; bulk baseline unchanged (bulk path statements identical; re-indented into the scheme else-branch with diagnostic-only additions).
+- **Physics:** `set_basal_melt_scheme(BASAL_MELT_SCHEME_THREE_EQUATION)` + `solve_three_equation_interface` in `src/iceberg_thermodynamics.f90`. Holland & Jenkins 1999 / Jenkins et al. 2010 Table 2: gamma_T=K_T·U_rel, gamma_S=K_S·U_rel (K_T=1.1e-3, K_S=3.1e-5); Eq. I T_B=Tf(S_B,P); Eq. II rho_w·c_w·gamma_T·(T_w−T_B)=m·rho_i·(L_f+c_i·max(T_B−T_i,0)); Eq. III S_B=gamma_S·S_w/(m+gamma_S); bisection with doubling upper bound (60+60, float32). Constants rho_w=1028, c_w=3974, c_i=2009, T_i=−10 (H&J99).
+- **Real bug found & fixed during implementation:** local `latent_heat` shadowed module constant `LATENT_HEAT` (Fortran case-insensitive) -> uninitialised read -> m=Infinity in production while an isolated copy converged. Renamed local to `l_heat`. Diagnostics: `t_interface`, `s_interface` added to `iceberg_diagnostics`.
+- **Validation:** Fortran `iceberg_test_10p10_three_equation` (19 checks, 0 errors) + Python `python/validation/three_equation.py` / `python/tests/test_three_equation.py` (46 checks, 0 errors). Cross-language contracts: H&J99 anchor m=9.4457e-9 m/s and production end-to-end m=3.998e-6 m/s (rel < 1e-4 Fortran float32 vs Python float64). Warm-ocean 0.345 m/day within observed 0.01–1 m/day band. All 52 fpm tests pass; strict `-Wall -Wextra` clean; Python suites 229/212/44/46 all 0 errors.
+- **Documented limitations:** constant T_i conduction (internal thermal evolution future); natural-convection floor NOT implemented (U_rel=0 -> m=0, same as bulk); K_T/K_S are the U-based J2010 convention — melt-driven u*-Stanton St=0.011 remains an open convention question (10.9).
+- **Files changed:** src/iceberg_types.f90 (scheme constants/switch/setter, 3eq constants, diag fields), src/iceberg_thermodynamics.f90 (solver + branch + diag), test/iceberg_test_10p10_three_equation.f90 (new), python/validation/three_equation.py (new), python/tests/test_three_equation.py (new), docs/model/* (ledger §10.2, physics status row, plan §10.10), docs/PROJECT_ROADMAP.md, docs/references/*, docs/validation/stage10.10_three_equation_interface.md (new), AGENTS.md, .github/workflows/ci.yml.
+- **Next (Stage 10.11 proposed):** natural-convection floor, then internal thermal evolution, then re-scoring the 10.8.2 set against the 3eq closure.
 
 ## Stage 10.9 Summary (Calibration Assessment of the Basal-Melt Coefficient)
 

@@ -117,28 +117,52 @@ pure-Python). All 7 named literature DOIs Crossref-verified. Report:
 **C (validation insufficient for robust calibration)**; production physics
 UNCHANGED. Next stage is the three-equation interface, not a coefficient retune.
 
+## Stage 10.10 — Three-equation ice-ocean interface (DONE)
+
+Implemented and independently validated. Separately selectable
+`BASAL_MELT_SCHEME_THREE_EQUATION`; bulk path physics unchanged (statements identical, re-indented into the scheme else-branch).
+
+- **Physics**: three-equation closure (Holland & Jenkins 1999; Jenkins et al.
+  2010 Table 2). `gamma_T = K_T U_rel`, `gamma_S = K_S U_rel` with
+  `K_T = 1.1e-3`, `K_S = 3.1e-5`; Eq. I `T_B = Tf(S_B,P)`, Eq. II
+  `rho_w c_w gamma_T (T_w - T_B) = m rho_i (L_f + c_i max(T_B - T_i,0))`,
+  Eq. III `gamma_S (S_w - S_B) = m S_B`; bisection with doubling upper bound.
+  Constants `rho_w=1028`, `c_w=3974`, `c_i=2009`, `T_i=-10` (H&J99), `rho_i`,
+  `L_f` production.
+- **Diagnostics**: `t_interface`, `s_interface` added to the basal diagnostics.
+- **Bug found & fixed during implementation**: local variable `latent_heat`
+  shadowed the module constant `LATENT_HEAT` (Fortran case-insensitivity),
+  corrupting Eq. II (m -> Infinity once `latent_heat` read as 0). Renamed the
+  local to `l_heat`. Class: real implementation bug, no literature conflict.
+- **Validation**: Fortran test `iceberg_test_10p10_three_equation` (19 checks,
+  0 errors) + `python/validation/three_equation.py` /
+  `python/tests/test_three_equation.py` (46 checks, 0 errors); cross-language
+  contract: H&J99 anchor `m = 9.4457e-9` m/s and production end-to-end
+  `m = 3.998e-6` m/s agree to rel < 1e-4 between Fortran float32 and Python
+  float64; warm-ocean rate 0.345 m/day inside the observed 0.01-1 m/day band.
+- **Remaining (documented)**: constant `T_i` conduction (internal thermal
+  evolution deferred); natural-convection floor for the low-flow branch not
+  implemented (the largest structural gap from 10.8.2); `K_T`/`K_S` are the
+  U-based J2010 convention, the melt-driven `u*`-based Stanton (St = 0.011)
+  remains an open convention question (Stage 10.9).
+- **Report**: `docs/validation/stage10.10_three_equation_interface.md`.
+
 ## Next modernization sequence
 
-### 10.10 — Three-equation ice-ocean interface
+Priority candidates after 10.10 (Phase 1 implemented; Phase 2 remains):
 
-Stage 10.9 ruled out a scalar calibration of the heat-transfer coefficient
-(report above). The next stage should:
-
-1. implement the three-equation ice-ocean interface formulation
-   (Holland & Jenkins 1999; Jenkins et al. 2010; melt-driven Stanton
-   St = 0.011; buoyancy-informed per FitzMaurice & Stern 2018) with
-   independent confirmation of the Γ_T/Γ_S Stanton convention, re-scoring the
-   10.8.2 set as the acceptance criterion;
-2. add a natural-convection floor for the low-relative-flow branch (melt
-   plumes) — quantified as the largest structural gap by 10.8.2 and confirmed
-   uncalibratable by 10.9;
-
-Priority candidates (unchanged ordering, refreshed after 10.9):
-
-1. three-equation ice-ocean interface formulation (Holland & Jenkins 1999; Jenkins et al. 2010) — recalibration of the current coefficient explicitly NOT recommended (10.9);
-2. improved treatment of iceberg-specific ocean heat transfer and natural convection;
-3. improved atmospheric stability/transfer treatment if validation demonstrates a material need;
-4. modern seawater thermodynamics, including a full EOS-80/TEOS-10 pathway, only as a dedicated future stage.
+1. natural-convection floor for the low-relative-flow branch (melt plumes) —
+   quantified as the largest structural gap by 10.8.2 and confirmed
+   uncalibratable by 10.9; note the new three-equation path retains the
+   same `U_rel = 0 -> m = 0` limitation;
+2. internal thermal evolution of the iceberg (replacing the constant `T_i`
+   conduction term of Eq. II);
+3. improved treatment of iceberg-specific ocean heat transfer, including
+   re-scoring the 10.8.2 set against the three-equation closure with the
+   10.8.2 acceptance criterion;
+4. improved atmospheric stability/transfer treatment if validation demonstrates a material need;
+5. modern seawater thermodynamics, including a full EOS-80/TEOS-10 pathway,
+   only as a dedicated future stage.
 
 ### Data and validation foundation
 

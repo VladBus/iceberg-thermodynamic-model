@@ -1,8 +1,8 @@
 # Project Roadmap
 
 **Updated:** 2026-09-10
-**Current scientific stage:** Stage 10.9 — Calibration Assessment of the Basal-Melt Coefficient
-**Current status:** C — validation insufficient for robust calibration
+**Current scientific stage:** Stage 10.10 — Three-Equation Ice-Ocean Interface
+**Current status:** C — modern formulation implemented and independently validated; calibration deferred
 
 ## Completed foundation
 
@@ -32,10 +32,15 @@
 | 10.8.1 | Independent Python validation layer (`python/validation/`, 44 checks) | Complete; classification B |
 | 10.8.2 | Observational validation of basal melt vs published observations (19-record dataset, 229 Python checks) | Complete; classification C (validation layer); production unchanged |
 | 10.9 | Calibration assessment of the basal-melt coefficient (212 Python checks; no scalar identifiable from the 2-source set) | Complete; classification C; production unchanged |
+| 10.10 | Three-equation ice-ocean interface (Holland & Jenkins 1999; Jenkins et al. 2010 Table 2), separately selectable; independently validated (19 Fortran + 46 Python checks, cross-language contract) | Complete; classification C; production physics added on selectable path, bulk path physics unchanged |
 
 ## Immediate next step
 
-### Stage 10.10 — three-equation ice-ocean interface (and natural-convection floor)
+### Stage 10.10 — three-equation ice-ocean interface (DONE, Phase 1)
+
+Phase 1 of Stage 10.10 (the three-equation ice-ocean interface, Holland &
+Jenkins 1999; Jenkins et al. 2010) is implemented and independently validated;
+see `docs/validation/stage10.10_three_equation_interface.md`.
 
 Stage 10.9 (`docs/validation/stage10.9_calibration_assessment.md`) assessed
 whether the production heat-transfer coefficient could be calibrated against
@@ -48,17 +53,29 @@ The stage also corrected two 10.8.2 claims (basal-plane-dominance and
 submarine≈basal are aspect-ratio-dependent, not universal) and Crossref-verified
 all seven named literature DOIs. No production coefficient was changed.
 
-Priority for the next stage (refreshed after 10.9):
+**Stage 10.10 (Phase 1) resolved the first priority item:** the three-equation
+ice-ocean interface (Holland & Jenkins 1999; Jenkins et al. 2010 Table 2
+velocity-scale `K_T = 1.1e-3`, `K_S = 3.1e-5`) is implemented as a separately
+selectable basal closure, with the bulk path physics unchanged (statements
+identical, re-indented into the scheme else-branch),
+and independently validated in Fortran (19 checks) and Python (46 checks) with
+a shared cross-language contract (H&J99 anchor `m = 9.4457e-9` m/s; production
+end-to-end `m = 3.998e-6` m/s). The `Γ_T/Γ_S` Stanton convention risk from
+Stage 10.7 is documented: the implemented constants are the **U-based** J2010
+values, whereas the melt-driven `u*`-based Stanton (St = 0.011) is a different
+convention and remains an open question for calibration. Re-scoring the 10.8.2
+set against the new closure is deferred by design (no calibration in 10.10).
 
-1. **Three-equation ice-ocean interface** (Holland & Jenkins 1999; Jenkins
-   et al. 2010, melt-driven Stanton; buoyancy-informed per FitzMaurice & Stern
-   2018), re-scoring the 10.8.2 set as the acceptance criterion; the
-   `Γ_T/Γ_S` Stanton convention (open risk from Stage 10.7) must be confirmed
-   independently. Recalibration of the current scalar coefficient is explicitly
-   NOT recommended — ruled out by 10.9.
-2. natural convection at low relative flow (melt plumes) — largest structural
-   gap by 10.8.2, confirmed uncalibratable by 10.9;
-3. atmospheric stability corrections if external validation demonstrates
+Priority for the next stage (after 10.10 Phase 1):
+
+1. **natural convection at low relative flow** (melt plumes) — the largest
+   structural gap by 10.8.2, confirmed uncalibratable by 10.9; the new
+   three-equation path retains the same `U_rel = 0 -> m = 0` limitation;
+2. internal thermal evolution of the iceberg (replaces the constant `T_i`
+   conduction term of Eq. II);
+3. re-scoring the 10.8.2 observational set against the three-equation closure
+   with the 10.8.2 acceptance criterion (after items 1-2);
+4. atmospheric stability corrections if external validation demonstrates
    material bias.
 
 ## Longer-term physics

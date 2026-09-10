@@ -13,8 +13,8 @@ This file prevents literature references from being used more strongly than the 
 | Empirical iceberg basal melt context | basal melt comparison | `weeksCampbellIcebergsFreshWater1973` | COMPARISON |
 | Bulk melt-law basis (closed-form) | closed-form melt/draft basis | `biggModellingDynamicsThermodynamics1997` | COMPARISON |
 | Tabular iceberg basal melt | validation/comparison literature | `fitzmauriceSternBasalMeltTabular2018` | COMPARISON/VALIDATION |
-| Ice-ocean three-equation formulation | recommended next interface closure (Stage 10.10) | `hollandJenkinsThermodynamicIceOcean1999` | RECOMMENDED NEXT |
-| Ice-shelf basal ablation / exchange | melt-driven Stanton anchor (St = 0.011) | `jenkinsNichollsCorrAblationRonne2010` | COMPARISON/FUTURE |
+| Ice-ocean three-equation formulation | Eq. I-III closure + conduction term of `solve_three_equation_interface` (Stage 10.10) | `hollandJenkinsThermodynamicIceOcean1999` | CORE, IMPLEMENTED (Stage 10.10) |
+| Ice-shelf basal ablation / exchange | melt-driven Stanton anchor (St = 0.011) — different convention from the U-based `K_T` implemented in Stage 10.10 | `jenkinsNichollsCorrAblationRonne2010` | COMPARISON/FUTURE (convention) |
 | Turbulent exchange over sea ice/MIZ | atmospheric/ocean exchange context | `andreasHorstGrachevSummerSeaIce2010` | SUPPORT |
 | Interactive iceberg freshwater flux | coupled modelling context | `martinAdcroftInteractiveIcebergs2010` | BACKGROUND/FUTURE |
 | Observed iceberg submarine-melt band | validation band for basal melt (0.01–1 m/day) | `cenedeseIcebergsMelting2023` | VALIDATION |
@@ -40,7 +40,18 @@ Weeks & Campbell and FitzMaurice & Stern are relevant because they concern icebe
 
 ### Three-equation physics
 
-Holland & Jenkins (1999) and Jenkins et al. (2010) provide a literature basis for a future interface formulation. They are not evidence that the current Stage 10.6 closure already implements the three-equation boundary condition. In Stage 10.9 this was made concrete: the flat-plate shear Stanton St ~ 3-4e-4 (production) is an order of magnitude below the melt-driven glaciological anchor St = 0.011 (Jenkins et al. 2010), and the required single coefficient spans ~8x across the two 10.8.2 sources, so the three-equation interface is the recommended Stage 10.10 upgrade rather than a scalar calibration.
+Holland & Jenkins (1999) and Jenkins et al. (2010) provide the literature basis
+for the Stage 10.10 three-equation interface, which is now implemented
+(`set_basal_melt_scheme(BASAL_MELT_SCHEME_THREE_EQUATION)` +
+`solve_three_equation_interface` in `src/iceberg_thermodynamics.f90`) and
+independently validated in the Stage 10.10 Fortran and Python test layers and
+report (`docs/validation/stage10.10_three_equation_interface.md`). The
+implemented exchange coefficients are the **U-based** J2010 Table 2 values
+(`K_T = sqrt(C_d)*Gamma_T = 1.1e-3`, `K_S = sqrt(C_d)*Gamma_S = 3.1e-5`);
+the melt-driven `u*`-based Stanton anchor St = 0.011 remains a documented
+open convention question for calibration (Stage 10.9), not an implemented
+choice. The bulk flat-plate closure of Stage 10.6 remains the unchanged
+baseline for the non-selected paths.
 
 ### Stage 10.9 DOI verification
 

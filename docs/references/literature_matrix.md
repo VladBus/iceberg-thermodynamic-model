@@ -29,8 +29,8 @@ The matrix is deliberately selective: a Zotero record is not automatically a mod
 | Eckert & Drake 1959 | Laminar/turbulent flat-plate heat-transfer correlations | CORE, approximation |
 | Weeks & Campbell 1973 | Empirical iceberg basal-melt context | COMPARISON |
 | FitzMaurice & Stern 2018 | Tabular iceberg basal-melt parameterization comparison | VALIDATION/COMPARISON |
-| Holland & Jenkins 1999 | Three-equation ice-ocean thermodynamics | FUTURE/COMPARISON |
-| Jenkins, Nicholls & Corr 2010 | Ice-ocean turbulent exchange / basal ablation | COMPARISON |
+| Holland & Jenkins 1999 | Three-equation ice-ocean thermodynamics (Eqs. I-III, conduction term) | CORE, IMPLEMENTED (Stage 10.10) |
+| Jenkins, Nicholls & Corr 2010 | Ice-ocean turbulent exchange / basal ablation; Table 2 velocity-scale `K_T`/`K_S` | CORE/COMPARISON, IMPLEMENTED (Stage 10.10) |
 | Andreas et al. 2010 | Air-sea/ice turbulent exchange context | SUPPORT |
 | Martin & Adcroft 2010 | Interactive iceberg freshwater flux in climate modelling | BACKGROUND/FUTURE |
 | Cenedese & Straneo 2023 | Iceberg melt review; observed submarine melt band ~0.01–1 m/day | VALIDATION |
@@ -53,7 +53,7 @@ The curated bibliography already contains important iceberg references including
 | Freezing point | EOS-80/UNESCO equation with pressure term | Fofonoff & Millard 1983; Gill 1982 | C |
 | Basal ocean heat transfer | Re/Nu correlation with laminar/turbulent transition | Eckert & Drake 1959; iceberg applicability is an approximation | B (independently audited in Stage 10.7) |
 | Lateral melt | Legacy depth-averaged formulation | FitzMaurice laboratory literature provides evidence for shear/nonlinearity | B |
-| Three-equation interface physics | Not implemented | Holland & Jenkins 1999; Jenkins et al. 2010 | FUTURE |
+| Three-equation interface physics | Basal closure, separately selectable; U-based `K_T`/`K_S` (1.1e-3/3.1e-5) | Holland & Jenkins 1999; Jenkins et al. 2010 Table 2 | C (Stage 10.10; natural-convection floor and internal thermal evolution remain future) |
 | Full seawater EOS | Not implemented; freezing point only | EOS-80/TEOS-10 literature | FUTURE |
 
 ## Dataset provenance to document

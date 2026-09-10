@@ -236,7 +236,8 @@ contains
         ! Характерная длина для базального плавления = L (длина в направлении X)
         call compute_basal_melt(ocean_prof, diag%draft, state%L, state%u, state%v, &
                                 t_draft, s_draft, tf_draft, &
-                                delta_t_basal, m_basal)
+                                delta_t_basal, m_basal, &
+                                diag%t_interface, diag%s_interface)
 
         diag%t_draft = t_draft
         diag%s_draft = s_draft
@@ -303,16 +304,20 @@ contains
     !   m_basal     - базальная скорость плавления [м/с] (выход)
     ! ========================================================================
     subroutine compute_basal_melt(prof, draft, l_char, u_ice, v_ice, &
-                                  t_draft, s_draft, tf_draft, delta_t, m_basal)
+                                  t_draft, s_draft, tf_draft, delta_t, m_basal, &
+                                  t_interface, s_interface)
         type(ocean_profile), intent(in) :: prof
         real, intent(in) :: draft
         real, intent(in) :: l_char
         real, intent(in) :: u_ice, v_ice
         real, intent(out) :: t_draft, s_draft, tf_draft
         real, intent(out) :: delta_t, m_basal
+        real, intent(out), optional :: t_interface, s_interface
 
         real :: u_rel_draft, gamma_t, q_basal
         real :: u_draft, v_draft
+        real :: gamma_t_vel, gamma_s_vel
+        real :: t_iface, s_iface
 
         t_draft = interp_at_draft(prof, draft, "temp")
         s_draft = interp_at_draft(prof, draft, "salt")
@@ -321,34 +326,228 @@ contains
 
         delta_t = t_draft - tf_draft
 
-        if (delta_t .gt. 0.0) then
-            ! Относительная скорость на глубине осадки
-            ! Если профиль содержит u_rel, используем его, иначе вычисляем из u,v
-            if (allocated(prof%u_rel)) then
-                u_rel_draft = interp_at_draft(prof, draft, "u_rel")
+        if (basal_melt_scheme .eq. BASAL_MELT_SCHEME_THREE_EQUATION) then
+            ! ================================================================
+            !   THREE-EQUATION CLOSURE (Stage 10.10, Holland & Jenkins 1999;
+            !   Jenkins et al. 2010). Базовый baseline-путь НЕ меняется.
+            ! ================================================================
+            if (delta_t .gt. 0.0) then
+                ! Относительная скорость на глубине осадки (как в baseline)
+                if (allocated(prof%u_rel)) then
+                    u_rel_draft = interp_at_draft(prof, draft, "u_rel")
+                else
+                    u_draft = interp_at_draft(prof, draft, "u")
+                    v_draft = interp_at_draft(prof, draft, "v")
+                    u_rel_draft = sqrt((u_draft - u_ice)**2 + (v_draft - v_ice)**2)
+                end if
+
+                ! U-представление трансферных скоростей (J2010 Table 2):
+                !   gamma_T = K_T * U_rel  [м/с],  gamma_S = K_S * U_rel  [м/с]
+                gamma_t_vel = THREE_EQ_KT*u_rel_draft
+                gamma_s_vel = THREE_EQ_KS*u_rel_draft
+
+                call solve_three_equation_interface(t_draft, s_draft, draft, &
+                                                    u_rel_draft, &
+                                                    gamma_t_vel, gamma_s_vel, &
+                                                    T_ICE, .true., &
+                                                    t_iface, s_iface, m_basal)
+
+                ! Защита от числового шума (как в baseline)
+                if (m_basal .lt. MELT_RATE_MIN) then
+                    m_basal = 0.0
+                    t_iface = tf_draft
+                    s_iface = s_draft
+                end if
             else
-                ! Вычисляем из u и v на глубине осадки
-                u_draft = interp_at_draft(prof, draft, "u")
-                v_draft = interp_at_draft(prof, draft, "v")
-                u_rel_draft = sqrt((u_draft - u_ice)**2 + (v_draft - v_ice)**2)
+                m_basal = 0.0
+                delta_t = 0.0
+                t_iface = tf_draft
+                s_iface = s_draft
             end if
-
-            ! Теплообменный коэффициент через bulk-формулировку
-            call ocean_heat_transfer_coeff(u_rel_draft, l_char, gamma_t)
-
-            ! Тепловой флюс через основание
-            q_basal = gamma_t*delta_t
-
-            ! Скорость плавления [м/с]
-            m_basal = q_basal/(RHO_ICE*LATENT_HEAT)
-
-            ! Защита от числового шума
-            if (m_basal .lt. MELT_RATE_MIN) m_basal = 0.0
         else
-            m_basal = 0.0
-            delta_t = 0.0
+            ! ================================================================
+            !   BASELINE BULK CLOSURE (Stage 10.6) — БЕЗ ИЗМЕНЕНИЙ
+            ! ================================================================
+            if (delta_t .gt. 0.0) then
+                ! Относительная скорость на глубине осадки
+                ! Если профиль содержит u_rel, используем его, иначе вычисляем из u,v
+                if (allocated(prof%u_rel)) then
+                    u_rel_draft = interp_at_draft(prof, draft, "u_rel")
+                else
+                    ! Вычисляем из u и v на глубине осадки
+                    u_draft = interp_at_draft(prof, draft, "u")
+                    v_draft = interp_at_draft(prof, draft, "v")
+                    u_rel_draft = sqrt((u_draft - u_ice)**2 + (v_draft - v_ice)**2)
+                end if
+
+                ! Теплообменный коэффициент через bulk-формулировку
+                call ocean_heat_transfer_coeff(u_rel_draft, l_char, gamma_t)
+
+                ! Тепловой флюс через основание
+                q_basal = gamma_t*delta_t
+
+                ! Скорость плавления [м/с]
+                m_basal = q_basal/(RHO_ICE*LATENT_HEAT)
+
+                ! Защита от числового шума
+                if (m_basal .lt. MELT_RATE_MIN) m_basal = 0.0
+
+                ! Диагностика границы (bulk: интерфейс = дальнее поле)
+                t_iface = t_draft
+                s_iface = s_draft
+            else
+                m_basal = 0.0
+                delta_t = 0.0
+                t_iface = tf_draft
+                s_iface = s_draft
+            end if
         end if
+
+        if (present(t_interface)) t_interface = t_iface
+        if (present(s_interface)) s_interface = s_iface
     end subroutine compute_basal_melt
+
+    ! ========================================================================
+    !   ТРЁХЧЛЕННОЕ ЗАМЫКАНИЕ ИНТЕРФЕЙСА ЛЁД-ОКЕАН (Stage 10.10)
+    ! ========================================================================
+    ! Физика: три уравнения интерфейса (Holland & Jenkins 1999; Jenkins et al. 2010):
+    !   (I)   T_B = Tf(S_B, P)                       — точка замерзания на границе (EOS-80)
+    !   (II)  ρ_w c_w γ_T (T_w − T_B) = m (ρ_i L_f + ρ_i c_i (T_B − T_i))
+    !                                          — баланс тепла: океанский поток =
+    !                                            скрытое тепло + теплопроводность в лёд
+    !   (III) γ_S (S_w − S_B) = m (S_B − S_i), S_i=0 — баланс соли (фрезерование)
+    !
+    ! Переменные: m — скорость плавления [м/с] (лёд-кадр), T_B — температура
+    ! интерфейса [°C], S_B — соленость интерфейса [кг/кг].
+    ! Трансферные скорости γ_T, γ_S [м/с] ПЕРЕДАЮТСЯ ВЫЗЫВАЮЩИМ (производственные:
+    ! γ_T = K_T·U_rel, γ_S = K_S·U_rel по J2010 Table 2; тесты могут подавать
+    ! канонические значения H&J99 Table 1). Скрытое и кондуктивное слагаемые —
+    ! в лёд-кадре (ρ_i): ρ_i=910, L_f=3.34e5, c_i=2009.0 (H&J99 c_i).
+    !
+    ! Редукция: из (III) S_B = γ_S S_w/(m + γ_S) — аналитически; подстановка в (II)
+    ! даёт уравнение F(m) = ρ_w c_w γ_T (T_w − T_B(m)) − m·[ρ_i L_f + ρ_i c_i(T_B(m) − T_i)] = 0.
+    ! F(0) = ρ_w c_w γ_T (T_w − Tf(S_w)) ≥ 0 (иначе melting нет), F(m)→−∞ при m→∞,
+    ! F строго убывает (солевой отклик доминирует) → единственный корень, бисекция.
+    !
+    ! Крайние случаи:
+    !   u_rel ≤ 0 или γ_T ≤ 0            → m=0, S_B=S_w, T_B=Tf(S_w,P) (нет потока;
+    !                                       натуральная конвекция не реализована — limitation)
+    !   T_w ≤ Tf(S_w, P)                 → m=0, S_B=S_w, T_B=Tf(S_w,P)
+    !   S_w ≤ 0 (пресная)                → солевой поток нулевой; тепло-уравнение с S_B=0
+    !   γ_S ≤ 0                          → S_B=S_w, тепло-уравнение без фрезерования
+    !
+    ! Параметры констант: ρ_w=RHO_WATER=1028, c_w=CP_SEAWATER=3974.0 (H&J99/J2010),
+    ! ρ_i=RHO_ICE=910, L_f=LATENT_HEAT=3.34e5, c_i=CP_ICE_3EQ=2009.0, T_i=T_ICE=−10°C.
+    ! Кондуктивное слагаемое можно отключить (use_conduction=.false.) для тестов.
+    !
+    ! Аргументы:
+    !   t_w, s_w        - дальнее поле на осадке [°C, кг/кг] (intent(in))
+    !   depth_m         - глубина осадки [м] — для давления в Tf (intent(in))
+    !   u_rel           - относительная скорость [м/с] (intent(in), только для краёв)
+    !   gamma_t,gamma_s - скорости обмена [м/с] (intent(in))
+    !   t_ice           - температура внутри льда [°C] (intent(in))
+    !   use_conduction  - включать ли линеаризованную теплопроводность (intent(in))
+    !   t_interface     - T_B [°C] (выход)
+    !   s_interface     - S_B [кг/кг] (выход)
+    !   m_basal         - скорость плавления [м/с] (выход)
+    ! ========================================================================
+    subroutine solve_three_equation_interface(t_w, s_w, depth_m, u_rel, &
+                                              gamma_t, gamma_s, t_ice, use_conduction, &
+                                              t_interface, s_interface, m_basal)
+        real, intent(in) :: t_w
+        real, intent(in) :: s_w
+        real, intent(in) :: depth_m
+        real, intent(in) :: u_rel
+        real, intent(in) :: gamma_t
+        real, intent(in) :: gamma_s
+        real, intent(in) :: t_ice
+        logical, intent(in) :: use_conduction
+        real, intent(out) :: t_interface
+        real, intent(out) :: s_interface
+        real, intent(out) :: m_basal
+
+        real :: tf_w, l_heat, ocean_flux_coeff
+        real :: s_b, t_b, f_val, m_lo, m_hi, m_mid, m_est
+        integer :: iter
+
+        tf_w = ocean_freezing_point(s_w, depth_m)
+
+        ! ---- Края: нет потока → m = 0, интерфейс = замерзание дальнего поля ----
+        if (u_rel .le. 0.0 .or. gamma_t .le. 0.0 .or. t_w .le. tf_w) then
+            m_basal = 0.0
+            s_interface = s_w
+            t_interface = tf_w
+            return
+        end if
+
+        ! ---- Край: пресная вода (S_w ≤ 0): солевой поток нулевой, тепло-уравнение ----
+        if (s_w .le. 0.0) then
+            s_interface = 0.0
+            t_interface = ocean_freezing_point(0.0, depth_m)
+            l_heat = RHO_ICE*LATENT_HEAT
+            if (use_conduction) l_heat = l_heat + RHO_ICE*CP_ICE_3EQ*max(t_interface - t_ice, 0.0)
+            ocean_flux_coeff = RHO_WATER*CP_SEAWATER*gamma_t*(t_w - t_interface)
+            if (ocean_flux_coeff .gt. 0.0 .and. l_heat .gt. 0.0) then
+                m_basal = ocean_flux_coeff/l_heat
+            else
+                m_basal = 0.0
+            end if
+            return
+        end if
+
+        ! ---- Край: γ_S ≤ 0: нет фрезерования, тепло-уравнение с S_B = S_w ----
+        if (gamma_s .le. 0.0) then
+            s_interface = s_w
+            t_interface = tf_w
+            l_heat = RHO_ICE*LATENT_HEAT
+            if (use_conduction) l_heat = l_heat + RHO_ICE*CP_ICE_3EQ*max(tf_w - t_ice, 0.0)
+            ocean_flux_coeff = RHO_WATER*CP_SEAWATER*gamma_t*(t_w - tf_w)
+            if (ocean_flux_coeff .gt. 0.0 .and. l_heat .gt. 0.0) then
+                m_basal = ocean_flux_coeff/l_heat
+            else
+                m_basal = 0.0
+            end if
+            return
+        end if
+
+        ! ---- Основной случай: бисекция по m ∈ [0, m_hi] ----
+        ! F(0) = ρ_w c_w γ_T (T_w − Tf(S_w)) > 0 (гарантировано t_w > tf_w выше)
+        m_lo = 0.0
+        m_est = RHO_WATER*CP_SEAWATER*gamma_t*(t_w - tf_w)/(RHO_ICE*LATENT_HEAT)
+        m_hi = max(m_est, 1.0e-9)
+
+        ! Расширение верхней границы, пока F(m_hi) > 0
+        iter = 0
+        do while (.true.)
+            s_b = gamma_s*s_w/(m_hi + gamma_s)
+            t_b = ocean_freezing_point(s_b, depth_m)
+            l_heat = RHO_ICE*LATENT_HEAT
+            if (use_conduction) l_heat = l_heat + RHO_ICE*CP_ICE_3EQ*max(t_b - t_ice, 0.0)
+            f_val = RHO_WATER*CP_SEAWATER*gamma_t*(t_w - t_b) - m_hi*l_heat
+            if (f_val .le. 0.0 .or. iter .ge. 60) exit
+            m_hi = m_hi*2.0
+            iter = iter + 1
+        end do
+
+        ! Бисекция (60 итераций достаточно для float32-конвергенции)
+        do iter = 1, 60
+            m_mid = 0.5*(m_lo + m_hi)
+            s_b = gamma_s*s_w/(m_mid + gamma_s)
+            t_b = ocean_freezing_point(s_b, depth_m)
+            l_heat = RHO_ICE*LATENT_HEAT
+            if (use_conduction) l_heat = l_heat + RHO_ICE*CP_ICE_3EQ*max(t_b - t_ice, 0.0)
+            f_val = RHO_WATER*CP_SEAWATER*gamma_t*(t_w - t_b) - m_mid*l_heat
+            if (f_val .gt. 0.0) then
+                m_lo = m_mid
+            else
+                m_hi = m_mid
+            end if
+        end do
+
+        m_basal = 0.5*(m_lo + m_hi)
+        s_interface = gamma_s*s_w/(m_basal + gamma_s)
+        t_interface = ocean_freezing_point(s_interface, depth_m)
+    end subroutine solve_three_equation_interface
 
     ! ========================================================================
     !   БОКОВОЕ ПЛАВЛЕНИЕ (Stage 9.1 §14, Method A — legacy formula)

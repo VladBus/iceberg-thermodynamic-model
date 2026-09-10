@@ -68,6 +68,6 @@ Exact dataset citations and machine-independent acquisition metadata belong in t
 
 ## Metadata audit
 
-The original Zotero collection contains 127 records. One incomplete Keghouche record is a duplicate of `keghoucheModelingDynamicsThermodynamics2010` and is excluded from the repository bibliography. The repository bibliography therefore retains 126 original records and adds 11 verified references required by the current model documentation, giving **137 unique records**.
+The original Zotero collection contains 127 records. One incomplete Keghouche record is a duplicate of `keghoucheModelingDynamicsThermodynamics2010` and is excluded from the repository bibliography. The repository bibliography therefore retains 126 original records and adds 19 verified references required by the current model documentation (11 from the earlier stages, 8 JSON/DOI-verified additions from Stage 10.8.2: Enderlin & Hamilton 2014, Enderlin et al. 2016, Enderlin et al. 2023, Josberger & Neshyba 1980, Keys & Williams 1984, Neshyba & Josberger 1980, Orheim 1980, Schild et al. 2021), giving **145 unique records**. The legacy misspelled key `russefl-headMELTINGFREEDRIFTINGICEBERGS` is retained for citation compatibility but its record was corrected (author, journal, volume, DOI; see `references.bib`).
 
 The local `work_references.bib` may retain Zotero `file` paths for PDF lookup. Those paths are intentionally absent from the repository-facing bibliography because they are machine-specific and not reproducible.

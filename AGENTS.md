@@ -399,3 +399,15 @@ All analysis scripts are in `python/analysis/`:
 - **All fpm tests PASS** (51 auto-discovered, exit 0); `-Wall -Wextra` build clean; `git diff --check` clean.
 - **Files changed:** test/iceberg_test_10p7_basal_melt_validation.f90 (new), docs/validation/stage10.7_basal_melt_validation.md (new), docs/model/model_physics_status.md, docs/model/stage10_modernization_plan.md, docs/references/literature_matrix.md, docs/references/citation_map.md, docs/PROJECT_ROADMAP.md, AGENTS.md.
 - **Network blocker documented:** external web/bib verification unavailable (search/firecrawl/fetch failures) — in-repo bibliography primary; Γ_T Stanton convention is an open risk for Stage 10.8.
+
+## Stage 10.8.2 Summary (Observational Validation of Basal Melt)
+
+- **Classification:** C — validation pass complete with documented systematic limitations; **production physics NOT changed** (no coefficient/parameter edits).
+- **Dataset:** `data/validation/observations/iceberg_basal_melt_observations.csv` (19 records, 16 cols) + provenance md. Tiers: lab-primary (Russell & Head 1980), field-primary (Keys & Williams 1984), synthesis (Neshyba & Josberger 1980), rs-derived (Enderlin & Hamilton 2014; Enderlin et al. 2016/2023) + 1 context row. Rignot calving-face rates EXCLUDED (not submarine melt). All DOIs Crossref-verified.
+- **Code:** `python/validation/observational_validation.py` (loader, metrics, natural-convection gap test, inverse-U bisection, regimes, sensitivity sweep, 6 figures); `python/tests/test_observational_validation.py` (15 blocks, **229 checks**).
+- **Results:** 4 forcing-anchored rows — RMSE 0.108, MAE 0.092, bias +0.083 m/day; KW84 within range (ratio 0.70); NJ80 synthesis overestimated factor 2.1→5.8 (dT 8→2 °C). Natural-convection gap 5.7–7.3 orders (no quiescent branch). Inverse-U: fjord rates reproducible at plausible U_rel 0.1–1.0 m/s (dT 2–4 °C). All comparable obs are turbulent (Re>5e5); laminar branch has no field anchor.
+- **Metrics are computed on 4 rows only** (`include_in_metrics=True`: KW84 + NJ80×3); RH rows = gap test, RS rows = inverse-U, OPEN = context-only.
+- **Verification:** `python python/tests/test_observational_validation.py` must print `TOTAL CHECKS: 229 ERRORS: 0`; regression `test_basal_melt_validation.py` (44) still under CI.
+- **Bib:** 8 new verified entries in `docs/references/references.bib` (enderin x3, josberger, keys, neshyba, orheim, schild); legacy key `russefl-headMELTINGFREEDRIFTINGICEBERGS` KEPT (citation compatibility) but record corrected (author Russell-Head, journal Annals of Glaciology, vol 1, DOI 10.3189/S0260305500017092).
+- **Report:** `docs/validation/stage10.8.2_observational_validation.md` (12 sections).
+- **Next (Stage 10.9):** calibration of the turbulent heat-transfer coefficient against the 10.8.2 set (production-coefficient change, separate sign-off) OR three-equation ice-ocean interface; natural convection quantified as the largest structural gap.

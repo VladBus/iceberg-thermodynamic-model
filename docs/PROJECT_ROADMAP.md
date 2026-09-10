@@ -1,7 +1,7 @@
 # Project Roadmap
 
 **Updated:** 2026-09-10
-**Current scientific stage:** Stage 10.8.1 — Independent Python Validation Layer Complete
+**Current scientific stage:** Stage 10.8.2 — Observational Validation of the Basal-Melt Closure
 **Current status:** B — PASS WITH LIMITATIONS
 
 ## Completed foundation
@@ -30,19 +30,34 @@
 | 10.6.1 | Independent heat-transfer audit + documentation correction | Complete; classification B |
 | 10.7 | Independent basal-melt validation (analytical + literature) | Complete; classification B; 17 checks |
 | 10.8.1 | Independent Python validation layer (`python/validation/`, 44 checks) | Complete; classification B |
+| 10.8.2 | Observational validation of basal melt vs published observations (19-record dataset, 229 Python checks) | Complete; classification C (validation layer); production unchanged |
 
 ## Immediate next step
 
-### Stage 10.8 — observational validation / calibration and next closure
+### Stage 10.9 — calibration (production coefficients) and/or three-equation closure
 
-Stage 10.7 completed the independent analytical-literature audit of basal melt (`docs/validation/stage10.7_basal_melt_validation.md`). The next target should be selected from a scientifically defined problem, not from an implementation gap.
+Stage 10.8.2 (`docs/validation/stage10.8.2_observational_validation.md`)
+completed the observational validation pass: the production closure reproduces
+the one forcing-anchored field rate (KW84, 0.70x within the reported range),
+overestimates the NJ80 synthesis by factor 2.1-5.8 at reference parameters, and
+cannot represent quiescent (laboratory) melt (5.7-7.3 orders gap; no
+natural-convection branch). These are documented findings; no coefficient was
+changed.
 
-Priority order:
+Priority for the next stage (unchanged ordering, refreshed after 10.8.2):
 
-1. Observational validation of basal/lateral melt against public iceberg catalogues, mooring/CTD data and laboratory benchmarks (hard mortality/melt metrics). The independent Python validation layer (Stage 10.8.1) is available to support this.
-2. Scientific assessment and, if justified, implementation of a three-equation ice-ocean interface formulation based on Holland & Jenkins (1999) and Jenkins et al. (2010), with independent confirmation of the Γ_T/Γ_S Stanton convention (open risk from Stage 10.7).
-3. Iceberg-specific ocean heat-transfer improvements, including natural convection and geometry/orientation effects.
-4. Atmospheric stability corrections if external validation demonstrates material bias.
+1. **Calibration of the turbulent heat-transfer coefficient** against the
+   10.8.2 observational set (a production-coefficient change, therefore a
+   separate stage requiring sign-off; the calibration would target the observed
+   factor 0.7-5.8 spread), OR
+2. assessment and implementation of a three-equation ice-ocean interface
+   formulation based on Holland & Jenkins (1999) and Jenkins et al. (2010),
+   with independent confirmation of the Γ_T/Γ_S Stanton convention (open risk
+   from Stage 10.7);
+3. natural convection at low relative flow (melt plumes) — quantified as the
+   largest structural gap by 10.8.2;
+4. atmospheric stability corrections if external validation demonstrates
+   material bias.
 
 ## Longer-term physics
 

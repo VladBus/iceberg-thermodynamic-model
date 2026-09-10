@@ -1,7 +1,7 @@
 # Stage 10 — Physics Modernization Plan
 
 **Updated:** 2026-09-10
-**Current stage:** 10.8.1 (independent Python validation layer; production unchanged)
+**Current stage:** 10.8.2 (observational validation of basal melt; production unchanged)
 **Current classification:** B — PASS WITH LIMITATIONS
 
 ## Purpose
@@ -69,17 +69,49 @@ reference `m = 1.5852e-6 m/s` (residual ≈ 2.8e-5, reference-digit rounding;
 raw float32-vs-float64 ≈ 1.3e-7). Report:
 `docs/validation/stage10.8.1_python_validation.md`.
 
+## Stage 10.8.2 — Observational validation of basal melt (DONE)
+
+Curated 19-record observational dataset of published, DOI-verified submerged
+melt rates (lab-primary Russell & Head 1980; field-primary Keys & Williams
+1984; synthesis Neshyba & Josberger 1980; remote-sensing Enderlin & Hamilton
+2014, Enderlin et al. 2016/2023; context Orheim/Budd et al. — Rignot et al.
+2010 explicitly excluded as calving not submarine). `python/validation/
+observational_validation.py` evaluates the **production** closure bit-identical
+to the 10.8.1 layer and reports:
+
+- point metrics on the 4 forcing-anchored rows: RMSE 0.108, MAE 0.092,
+  bias +0.083 m/day; KW84 reproduced within range (ratio 0.70); NJ80 synthesis
+  overestimated by factor 2.1-5.8 (dT 8 -> 2 °C);
+- natural-convection gap: quiescent-lab melt 0.04-1.59 m/day vs model 0.0 —
+  5.7-7.3 orders above the model floor;
+- inverse-U: Greenland fjord rates (0.16-0.5 m/day) reproducible at plausible
+  U_rel 0.1-1.0 m/s (dT 2-4 °C);
+- all comparable observations fall in the turbulent regime (Re > 5e5); laminar
+  branch has no field anchor.
+
+Checks: `python/tests/test_observational_validation.py` (15 blocks, 229
+checks). Report: `docs/validation/stage10.8.2_observational_validation.md`.
+Classification of the validation pass: **C (pass with documented systematic
+limitations)**; production physics UNCHANGED. Reference metadata added to
+`docs/references/references.bib` (Enderlin x3, Josberger, Keys, Neshyba,
+Orheim, Schild) and `russefl-head` mis-keyed entry corrected (author, journal,
+volume, DOI).
+
 ## Next modernization sequence
 
-### 10.8 — Observational validation / calibration and next closure
+### 10.9 — Calibration and/or three-equation closure
 
-Stage 10.7 completed the analytical-literature audit. 10.8.1 added the
-independent Python validation layer (`python/validation/`). The next stage
-should:
+Stage 10.8.2 completed the observational validation pass (report above). The
+next stage should:
 
-1. validate basal/lateral melt against published observations or laboratory results (hard metric: drift-life and Δmatching of public iceberg catalogues; mooring/CTD around bergs; lab U^0.8 test);
-2. implement the three-equation ice-ocean interface formulation (Holland & Jenkins 1999; Jenkins et al. 2010) with independent confirmation of the Γ_T/Γ_S Stanton convention (open risk: network verification was unavailable during 10.7);
-3. address natural convection at low relative flow (melt plumes);
+1. calibrate the turbulent heat-transfer coefficient against the 10.8.2
+   observational set (production-coefficient change — separate stage requiring
+   sign-off; targets the observed factor 0.7-5.8 spread), or implement the
+   three-equation ice-ocean interface formulation (Holland & Jenkins 1999;
+   Jenkins et al. 2010) with independent confirmation of the Γ_T/Γ_S Stanton
+   convention;
+2. address natural convection at low relative flow (melt plumes) — quantified
+   as the largest structural gap by 10.8.2;
 
 Priority candidates (unchanged ordering, refreshed after 10.7):
 

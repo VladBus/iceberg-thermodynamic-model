@@ -17,6 +17,15 @@ This file prevents literature references from being used more strongly than the 
 | Turbulent exchange over sea ice/MIZ | atmospheric/ocean exchange context | `andreasHorstGrachevSummerSeaIce2010` | SUPPORT |
 | Interactive iceberg freshwater flux | coupled modelling context | `martinAdcroftInteractiveIcebergs2010` | BACKGROUND/FUTURE |
 | Observed iceberg submarine-melt band | validation band for basal melt (0.01–1 m/day) | `cenedeseIcebergsMelting2023` | VALIDATION |
+| Lab submarine melt | observational dataset (Stage 10.8.2) | `russefl-headMELTINGFREEDRIFTINGICEBERGS` | VALIDATION |
+| Lab melt-driven convection | context for lab plume/melt interpretation | `josbergerIcebergMeltDrivenConvection1980` | VALIDATION |
+| Field submarine melt (Southern Ocean) | forcing-anchored field rate (KW84), 10.8.2 | `keysWilliamsFieldMeasurementsSubmarine1984` | VALIDATION |
+| Antarctic sub-antarctic melt synthesis | synthesis curve NJ80, 10.8.2 | `neshybaEstimationAntarcticIceberg1980` | VALIDATION |
+| Greenland fjord melt remotely sensed | inverse-U analysis rows, 10.8.2 | `enderinHamiltonIcebergSubmarineMelt2014` | VALIDATION |
+| Greenland fjord meltwater fluxes | inverse-U analysis rows, 10.8.2 | `enderinIcebergMeltwaterFluxes2016` | VALIDATION |
+| Antarctic iceberg melt synthesis (review) | rs-derived rows + context, 10.8.2 | `enderinAntarcticIcebergMeltRate2023` | VALIDATION |
+| Giant-iceberg life expectancy | exclusion rationale; context only | `orheimPhysicalCharacteristicsLife1980` | CONTEXT |
+| Calving-face melt rates | explicitly excluded (not submarine melt), 10.8.2; source discussed in `stage10.8.2_observational_validation.md` §1 | (Rignot et al. 2010 — not in bibliography) | CONTEXT/EXCLUDED |
 
 ## Important scope statements
 

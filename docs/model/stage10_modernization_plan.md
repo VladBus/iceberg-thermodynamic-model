@@ -1,7 +1,7 @@
 # Stage 10 — Physics Modernization Plan
 
 **Updated:** 2026-09-10
-**Current stage:** 10.7 (independent basal-melt validation; audit only, production unchanged)
+**Current stage:** 10.8.1 (independent Python validation layer; production unchanged)
 **Current classification:** B — PASS WITH LIMITATIONS
 
 ## Purpose
@@ -55,16 +55,31 @@ Independent scientific audit of the basal-melt chain (Re/Nu/γ_T/Tf/ΔT/m) with 
 
 Validation report: `docs/validation/stage10.7_basal_melt_validation.md`. Test: `iceberg_test_10p7_basal_melt_validation` (17 checks).
 
+## Stage 10.8.1 — Independent Python validation layer (DONE)
+
+A minimal, pure-Python re-implementation of the production basal-melt chain
+(EOS-80 Tf, `U_rel`, Re, Nu, `gamma_T`, `DeltaT`, `m_basal`) that is
+mathematically independent of the Fortran code (no Fortran calling/import/
+output parsing). Located in `python/validation/basal_melt.py`, with a 44-check
+analytical suite in `python/tests/test_basal_melt_validation.py` (plain-Python
+runner; pytest-compatible). Production Fortran unchanged; classification remains
+**B — PASS WITH LIMITATIONS** (numerical consistency validated, not
+observational validity). Cross-check reproduces the Stage 10.7 float32
+reference `m = 1.5852e-6 m/s` (residual ≈ 2.8e-5, reference-digit rounding;
+raw float32-vs-float64 ≈ 1.3e-7). Report:
+`docs/validation/stage10.8.1_python_validation.md`.
+
 ## Next modernization sequence
 
 ### 10.8 — Observational validation / calibration and next closure
 
-Stage 10.7 completed the analytical-literature audit. The next stage should:
+Stage 10.7 completed the analytical-literature audit. 10.8.1 added the
+independent Python validation layer (`python/validation/`). The next stage
+should:
 
 1. validate basal/lateral melt against published observations or laboratory results (hard metric: drift-life and Δmatching of public iceberg catalogues; mooring/CTD around bergs; lab U^0.8 test);
 2. implement the three-equation ice-ocean interface formulation (Holland & Jenkins 1999; Jenkins et al. 2010) with independent confirmation of the Γ_T/Γ_S Stanton convention (open risk: network verification was unavailable during 10.7);
 3. address natural convection at low relative flow (melt plumes);
-4. add the minimal Python validation layer (`python/analysis/` independent `gamma/m` calculator, tolerance 1e-3 vs production float32).
 
 Priority candidates (unchanged ordering, refreshed after 10.7):
 

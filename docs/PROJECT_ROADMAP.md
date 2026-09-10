@@ -1,7 +1,7 @@
 # Project Roadmap
 
 **Updated:** 2026-09-10
-**Current scientific stage:** Stage 10.7 — Independent Basal Melt Validation Complete
+**Current scientific stage:** Stage 10.8.1 — Independent Python Validation Layer Complete
 **Current status:** B — PASS WITH LIMITATIONS
 
 ## Completed foundation
@@ -29,6 +29,7 @@
 | 10.6 | Relative ocean flow and heat transfer | Complete |
 | 10.6.1 | Independent heat-transfer audit + documentation correction | Complete; classification B |
 | 10.7 | Independent basal-melt validation (analytical + literature) | Complete; classification B; 17 checks |
+| 10.8.1 | Independent Python validation layer (`python/validation/`, 44 checks) | Complete; classification B |
 
 ## Immediate next step
 
@@ -38,14 +39,14 @@ Stage 10.7 completed the independent analytical-literature audit of basal melt (
 
 Priority order:
 
-1. Observational validation of basal/lateral melt against public iceberg catalogues, mooring/CTD data and laboratory benchmarks (hard mortality/melt metrics), plus the minimal Python validation layer (tolerance 1e-3).
+1. Observational validation of basal/lateral melt against public iceberg catalogues, mooring/CTD data and laboratory benchmarks (hard mortality/melt metrics). The independent Python validation layer (Stage 10.8.1) is available to support this.
 2. Scientific assessment and, if justified, implementation of a three-equation ice-ocean interface formulation based on Holland & Jenkins (1999) and Jenkins et al. (2010), with independent confirmation of the Γ_T/Γ_S Stanton convention (open risk from Stage 10.7).
 3. Iceberg-specific ocean heat-transfer improvements, including natural convection and geometry/orientation effects.
 4. Atmospheric stability corrections if external validation demonstrates material bias.
 
 ## Longer-term physics
 
-The following are explicit roadmap items and are **not** part of Stage 10.7:
+The following are explicit roadmap items and are **not** part of Stage 10.8.1:
 
 - full seawater thermodynamics / EOS-80 density pathway;
 - TEOS-10 thermodynamic framework;
@@ -56,7 +57,7 @@ The following are explicit roadmap items and are **not** part of Stage 10.7:
 
 ## Scientific infrastructure
 
-A future Python analysis/visualization layer should support reproducible diagnostics, maps, time series, uncertainty/sensitivity analysis and comparison with observations. It should remain a validation/research layer and should not silently duplicate production physics.
+A Python analysis/visualization layer supports reproducible diagnostics, maps, time series, uncertainty/sensitivity analysis and comparison with observations. The Stage 10.8.1 validation layer (`python/validation/`) is the first independent numerical reference for such work. The Python layer remains a validation/research layer and does not silently duplicate production physics.
 
 The literature foundation is maintained in:
 

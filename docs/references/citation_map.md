@@ -19,7 +19,7 @@ This file prevents literature references from being used more strongly than the 
 | PISM basal-melt salt flux | mass-flux convention `Q_S^B = rho_I S^B dh/dt` confirming Stage 10.10.1 | PISM documentation | VALIDATION |
 | MITgcm shelfice salt flux | mass-flux form `rho_c gamma_S (S - S_b) = -q (S_b - S_I)` confirming Stage 10.10.1 | (Losch 2008 et seq.) | VALIDATION |
 | Natural convection horizontal plate | Fujii et al. 1973 Nu-Ra correlations for downward-facing heated plate | `fujiiHondaMoriokaNaturalConvection1973` | CORE, IMPLEMENTED (Stage 10.11) |
-| Melt-driven convection horizontal ice | LES of natural convection under horizontal ice (Gayen et al. 2016) | `gayenGriffithsKerrMeltDrivenConvection2016` | VALIDATION (supports L_char = D) |
+| Melt-driven convection (vertical ice face) | LES of convection at a VERTICAL ice face dissolving into saline water (Gayen et al. 2016) | `gayenGriffithsKerrMeltDrivenConvection2016` | CONTEXT only — does NOT set a cell scale for a horizontal base (mis-citation corrected in Stage 10.11.2) |
 | Churchill mixed convection | Comprehensive correlating equation for mixed convection | `churchillComprehensiveCorrelatingEquation1977` | CORE, IMPLEMENTED (Stage 10.11) |
 | Turbulent exchange over sea ice/MIZ | atmospheric/ocean exchange context | `andreasHorstGrachevSummerSeaIce2010` | SUPPORT |
 | Interactive iceberg freshwater flux | coupled modelling context | `martinAdcroftInteractiveIcebergs2010` | BACKGROUND/FUTURE |

@@ -232,10 +232,13 @@ forced convection (U-based, §10.2) and natural convection:
 Forced convection (U-based, J2010 Table 2):
     `gamma_T_forced = K_T * U_rel`,  `gamma_S_forced = K_S * U_rel`
 
-Natural convection (Fujii et al. 1973; Gayen et al. 2016; Churchill 1977):
+Natural convection (Fujii et al. 1973 horizontal-plate correlation; Churchill 1977 mixing):
     Horizontal plate facing downward (heated down / cooled up)
-    Characteristic length = iceberg length `L` (horizontal scale of
-    convection cells; Gayen et al. 2016 LES)
+    Characteristic length = iceberg length `L` (horizontal scale of the plate,
+    per Fujii et al. 1973; production caller passes `state%L`. Gayen et al.
+    2016 is CONTEXT only — it studies a vertical ice face and does not set a
+    cell scale for a horizontal base; the L_char = D attribution was a
+    mis-citation, removed in the Stage 10.11.2 audit)
     Double-diffusive Rayleigh number:
     `Ra_eff = g * L^3 / (nu * alpha) * [beta_T * (T_w - T_B) + beta_S * (S_w - S_B) * Le]`
     where `beta_T = 3.0e-5 1/K`, `beta_S = 7.8e-4 1/PSU`, `Le = 100`,
@@ -268,7 +271,9 @@ Parameters (Stage 10.11 additions):
 `Ra_trans = 1e7`, `Ra_max = 1e10`, `Churchill_n = 3`.
 
 Independent validation: Fortran test `iceberg_test_10p11_natural_convection`
-(15 checks) + Python `python/tests/test_three_equation_natural.py` (70 checks),
+(23 checks, delivered in the Stage 10.11.2 audit; the original Stage 10.11
+claim of a 15-check Fortran test was never delivered in commit 6a0014e) +
+Python `python/tests/test_three_equation_natural.py` (70 checks),
 including zero-flow, low-flow continuity, mixed-convection regime, and
 cross-language contract (`m = 1.638e-8 m/s` at `U_rel=0`, `T_w=2°C`,
 `S_w=34.5 PSU`, `L=100m`, `D=50m`).

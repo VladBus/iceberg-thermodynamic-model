@@ -190,9 +190,10 @@ module iceberg_types
     !   - Fujii, T., Honda, H., & Morioka, I. (1973). "A theoretical study of
     !     natural convection heat transfer from downward-facing horizontal
     !     surfaces with uniform heat flux." Int. J. Heat Mass Transf., 16, 611-627.
-    !   - Gayen, B., et al. (2016). "Melt-driven convection under a horizontal
-    !     ice face." J. Fluid Mech., 798, 617-641. (LES: конвективные ячейки
-    !     ограничены вертикальной осадкой D, а не длиной L)
+    !   - Gayen, B., Griffiths, R.W., & Kerr, R.C. (2016). "Simulation of
+    !     convection at a vertical ice face dissolving into saline water."
+    !     J. Fluid Mech., 798, 284-298. (LES/DNS melt-driven конвекции у
+    !     ВЕРТИКАЛЬНОЙ ледяной стенки; контекст melt-driven convection)
     !   - Kerr, R.C. & McConnochie, C.D. (2015). "Convection-driven melting..."
     !     J. Phys. Oceanogr., 45, 3099-3116. (свободная конвекция у наклонного/горизонтального льда)
     !   - McConnochie, C.D. & Kerr, R.C. (2018). "The effect of slope on..."
@@ -201,10 +202,15 @@ module iceberg_types
     !     forced, natural and mixed convection." AIChE J., 23, 10-16. (смешанная конвекция)
     !
     ! Характерная длина для натуральной конвекции на горизонтальном основании
-    ! = осадка D (Gayen et al. 2016: конвективные ячейки масштаба D, не L).
+    ! = длина айсберга L (горизонтальный масштаб основания — характерный
+    ! размер пластины в корреляции Fujii et al. 1973). Вызывающий код
+    ! передаёт state%L (см. compute_basal_melt); вертикальная осадка D НЕ
+    ! используется. Примечание: Gayen et al. 2016 изучает ВЕРТИКАЛЬНУЮ
+    ! ледяную стенку и НЕ задаёт масштаб ячеек для горизонтального основания;
+    ! выбор L = модель, документально зафиксированная, не источник.
     !
     ! Релеевское число для двойной диффузии:
-    !   Ra_eff = g * D^3 / (ν * α) * [β_T * ΔT + β_S * ΔS * Le]
+    !   Ra_eff = g * L^3 / (ν * α) * [β_T * ΔT + β_S * ΔS * Le]
     ! где Le = α/D_S ≈ 100 (Lewis number для морской воды).
     !
     ! Корреляции Fujii et al. (1973) для горизонтальной пластины, обращённой вниз
@@ -576,10 +582,12 @@ contains
     ! -> конвекция типа Релея-Бенара в пограничном слое.
     !
     ! Двойное-диффузное релеевское число для горизонтальной пластины:
-    !   Ra_eff = g * D^3 / (ν * α) * [β_T * (T_w - T_B) + β_S * (S_w - S_B) * Le]
+    !   Ra_eff = g * L^3 / (ν * α) * [β_T * (T_w - T_B) + β_S * (S_w - S_B) * Le]
     ! где:
-    !   D          = осадка (характерная вертикальная длина конвективных ячеек)
-    !                (Gayen et al. 2016 LES: масштаб ячеек ~ D, не L)
+    !   L          = длина айсберга (горизонтальный масштаб пластины Fujii
+    !                et al. 1973); вызывающий код передаёт state%L. Gayen
+    !                et al. 2016 НЕ задаёт масштаб для горизонтального
+    !                основания (его LES — о вертикальной ледяной стенке).
     !   β_T        = THERMAL_EXPANSION_COEFF [1/K]
     !   β_S        = HALINE_CONTRACTION_COEFF [1/PSU]
     !   Le         = LEWIS_NUMBER = α/D_S ≈ 100
@@ -593,7 +601,7 @@ contains
     !   Турбулентный (Ra ≥ 1e7): Nu = 0.15 * Ra^(1/3)
     !
     ! Натурально-конвективный теплообменный коэффициент:
-    !   γ_T_nat = Nu * k / D
+    !   γ_T_nat = Nu * k / L
     ! Натурально-конвективный солеобменный коэффициент (то же отношение
     ! Стэнтона, что и для форсированной конвекции J2010 Table 2):
     !   γ_S_nat = γ_T_nat * (THREE_EQ_KS / THREE_EQ_KT)
@@ -672,7 +680,7 @@ contains
             end if
 
             ! Натурально-конвективный теплообменный коэффициент
-            ! h = Nu * k / D [W/m²/K] -> γ_T = h / (ρ_w c_w) [m/s]
+            ! h = Nu * k / L [W/m²/K] -> γ_T = h / (ρ_w c_w) [m/s]
             gamma_t_nat = nusselt * THERMAL_CONDUCTIVITY / &
                           (l_char * RHO_WATER * CP_SEAWATER)
 

@@ -13,19 +13,25 @@ Three-equation interface (Holland & Jenkins 1999; Jenkins et al. 2010):
     (II)  rho_w c_w gamma_T (T_w - T_B) = m rho_i [L_f + c_i max(T_B - T_i, 0)]
     (III) rho_w gamma_S (S_w - S_B) = rho_i m S_B   (Stage 10.10.1 correction)
 
-Natural convection (Fujii et al. 1973; Gayen et al. 2016; Churchill 1977):
+Natural convection (Fujii et al. 1973; Churchill 1977):
     For horizontal ice base (facing downward / cooled up):
-    Characteristic length = draft D (Gayen et al. 2016 LES: cell scale ~ D)
+    Characteristic length L = iceberg length (horizontal scale of the
+    Fujii plate). The production caller passes state%L via compute_basal_melt
+    (see src/iceberg_thermodynamics.f90 line ~237); the draft D is NOT used.
+    Stage 10.11.2 audit corrected a doc-only inconsistency (comments claimed
+    D = draft per Gayen et al. 2016 — that paper studies a VERTICAL ice face
+    and does not set a cell scale for a horizontal base; the claim was
+    unsupported and removed).
 
     Double-diffusive Rayleigh number:
-        Ra_eff = g D^3 / (nu alpha) * [beta_T (T_w - T_B) + beta_S (S_w - S_B) * Le]
+        Ra_eff = g L^3 / (nu alpha) * [beta_T (T_w - T_B) + beta_S (S_w - S_B) * Le]
 
     Nusselt number:
         Laminar  (Ra < 1e7):  Nu = 0.27 * Ra^0.25
         Turbulent (Ra >= 1e7): Nu = 0.15 * Ra^(1/3)
 
     Natural-convection transfer coefficients:
-        gamma_T_nat = Nu * k / D
+        gamma_T_nat = Nu * k / L
         gamma_S_nat = gamma_T_nat * (K_S / K_T)   (same Stanton ratio as forced)
 
 Mixed convection (Churchill 1977, n=3):

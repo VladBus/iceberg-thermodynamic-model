@@ -183,7 +183,10 @@ Corrected the fundamental limitation of zero basal melt at zero relative flow by
 - **Physics**: Natural convection from a horizontal ice base (facing downward) driven by combined thermal and haline buoyancy. Double-diffusive Rayleigh number:
   `Ra_eff = g * L^3 / (nu * alpha) * [beta_T * (T_w - T_B) + beta_S * (S_w - S_B) * Le]`
   with `beta_T = 3.0e-5 1/K`, `beta_S = 7.8e-4 1/PSU`, `Le = 100`.
-  Characteristic length = iceberg length L (horizontal scale of convection cells; Gayen et al. 2016 LES).
+  Characteristic length = iceberg length L (horizontal scale of the Fujii
+  plate; production passes state%L. Gayen et al. 2016 is CONTEXT only — it
+  studies a VERTICAL ice face; the "L_char = D per Gayen" attribution was a
+  mis-citation, removed in the Stage 10.11.2 audit).
   Nusselt number (Fujii et al. 1973, horizontal plate facing downward):
   - Laminar (`Ra < 1e7`): `Nu = 0.27 * Ra^0.25`
   - Turbulent (`Ra >= 1e7`): `Nu = 0.15 * Ra^(1/3)`
@@ -202,9 +205,9 @@ Corrected the fundamental limitation of zero basal melt at zero relative flow by
 
 - **Production changes**: `src/iceberg_types.f90` (new constants, natural convection function), `src/iceberg_thermodynamics.f90` (new solver `solve_three_equation_interface_natural` with explicit coupling); `python/validation/three_equation_natural.py` + `python/tests/test_three_equation_natural.py` (70 checks).
 
-- **Effect**: At `U_rel = 0`, finite melt rate `~1.6e-8 m/s` (0.001 m/day) for typical Arctic conditions (`T_w=2°C`, `S_w=34.5 PSU`, `L=100m`, `D=50m`). At `U_rel = 0.1 m/s`, natural convection adds ~0.1% to forced convection. At `U_rel = 1 m/s`, forced convection dominates (>99.9%).
+- **Effect**: At `U_rel = 0`, finite melt rate `~1.6e-8 m/s` (0.001 m/day) for typical Arctic conditions (`T_w=2°C`, `S_w=34.5 PSU`, `L=100m`, `D=50m`). At `U_rel = 0.1 m/s`, natural convection contributes only `gamma_eff/gamma_forced - 1 = 2.18e-8` (≈2.2e-6 %, NOT ~0.1% as originally claimed — corrected in the Stage 10.11.2 audit). At `U_rel = 1 m/s`, forced convection dominates (>99.9999999%).
 
-- **Validation**: Fortran test `iceberg_test_10p11_natural_convection` (15 checks) + Python `test_three_equation_natural.py` (70 checks) including zero-flow, low-flow continuity, mixed-convection regime, Ra/Nu scaling, salt/heat balance identities, and cross-language contract (`m = 1.638e-8 m/s` at `U_rel=0`, `T_w=2°C`, `S_w=34.5 PSU`, `L=100m`, `D=50m`).
+- **Validation**: Fortran test `iceberg_test_10p11_natural_convection` (23 checks, DELIVERED in the Stage 10.11.2 audit; the original Stage 10.11 delivery claimed 15 checks that were never written) + Python `test_three_equation_natural.py` (70 checks) including zero-flow, low-flow continuity, mixed-convection regime, Ra/Nu scaling, salt/heat balance identities, and cross-language contract (`m = 1.638e-8 m/s` at `U_rel=0`, `T_w=2°C`, `S_w=34.5 PSU`, `L=100m`, `D=50m`).
 
 - **Report**: `docs/validation/stage10.11_natural_convection.md`.
 

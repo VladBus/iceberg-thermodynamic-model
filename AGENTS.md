@@ -42,9 +42,7 @@ fpm test --flag "-I/usr/include" drift_scaling_current           # Current drift
 fpm test --flag "-I/usr/include" param_sensitivity_30day         # Parameter sensitivity framework
 fpm test --flag "-I/usr/include" iceberg_test_10p10_three_equation  # Stage 10.10 three-equation (19 checks)
 fpm test --flag "-I/usr/include" iceberg_test_10p10_three_equation  # Stage 10.10.1 three-equation correction (25 checks)
-# NOTE: Stage 10.11 Fortran unit test (iceberg_test_10p11_natural_convection) was NOT
-# delivered in 6a0014e; natural-convection validation currently rests on the Python
-# suite below (70 checks) + compile-time integration. Fortran test pending Stage 10.11 audit.
+fpm test --flag "-I/usr/include" iceberg_test_10p11_natural_convection  # Stage 10.11.2 natural-convection audit (23 checks)
 python python/tests/test_three_equation.py                        # Stage 10.10/10.10.1 Python (65 checks)
 python python/tests/test_three_equation_natural.py                # Stage 10.11 Python (70 checks)
 ```
@@ -474,13 +472,29 @@ All analysis scripts are in `python/analysis/`:
 - **Files changed:** src/iceberg_types.f90, src/iceberg_thermodynamics.f90, test/iceberg_test_10p10_three_equation.f90, python/validation/three_equation.py, python/tests/test_three_equation.py, docs/model/model_equation_ledger.md, docs/model/model_physics_status.md, docs/model/stage10_modernization_plan.md, docs/PROJECT_ROADMAP.md, docs/references/literature_matrix.md, docs/references/citation_map.md, AGENTS.md, .github/workflows/ci.yml.
 - **Next:** natural-convection floor, then internal thermal evolution, then re-scoring the 10.8.2 set against the corrected 3eq closure.
 
+## Stage 10.11.2 Summary (Natural-Convection Audit + Fortran Test Delivery)
+
+- **Classification:** B -- PASS WITH LIMITATIONS. Scientific audit of the Stage 10.11 natural-convection closure; the missing Fortran unit test was delivered; three doc/verification problems fixed (comment-only src changes, zero production-numerics change).
+- **Problems found & fixed:**
+  1. Claimed Fortran test `iceberg_test_10p11_natural_convection` was NEVER delivered in 6a0014e (stage report falsely claimed "15 checks"). This stage delivers it: **23 checks, 0 errors** (embedded-literal independent replicas; blocks A-J: cold edge, zero-flow anchor, laminar/turbulent/capped scaling, Churchill mixing, monotonicity, linear-U, production end-to-end, scheme regression).
+  2. "~0.1% at U_rel = 0.1 m/s" claim was wrong by ~5 orders: float64 replica gives `gamma_eff/gamma_forced - 1 = 2.177e-8` (≈2.2e-6 %); float32 production m(0.1) NATURAL vs THREE_EQUATION agree to 2.2e-7 relative.
+  3. Gayen et al. 2016 MIS-CITED (in src comments + docs) as "Melt-driven convection under a horizontal ice face, JFM 798, 617-641". Real paper: "Simulation of convection at a **vertical** ice face dissolving into saline water", JFM **798, 284-298**, DOI 10.1017/jfm.2016.315 (Cross-ref-verified). VERTICAL face → does NOT support "L_char = D" claim. Corrected to CONTEXT-only; characteristic length is berg length L (production passes state%L; matches Fujii plate scale).
+- **Audit finding (documented limitation):** Ra cap `1e10` is ALWAYS active for realistic bergs (thermal-only crossover L≈1.3 m; with haline term L≈0.06 m; production L=40-100 m → Ra_eff≈1e19-1e20) → Nu pinned at `0.15·(1e10)^(1/3)=323.165`; laminar branch + 1e7 transition are numerically latent in production.
+- **Verified references:** Fujii et al. 1973 (IJHMT 16, 611-627, DOI 10.1016/0017-9310(73)90227-5), Churchill 1977 (AIChE J 23(1):10-16, DOI 10.1002/aic.690230103, n=3). Added 3 bib entries (148 total).
+- **Changes:** `test/iceberg_test_10p11_natural_convection.f90` (new, 23 checks); comment-only fixes in `src/iceberg_types.f90` + `src/iceberg_thermodynamics.f90` (L not D, Gayen corrected); `python/validation/three_equation_natural.py` docstring; `docs/validation/stage10.11.2_natural_convection_audit.md` (new, A-I report); `docs/references/*` (bib + literature_matrix + citation_map); `docs/model/*` (ledger §10.3, physics status, plan §10.11); `docs/validation/stage10.11_natural_convection.md` (§5.1/§6/§8 claims corrected); `docs/PROJECT_ROADMAP.md`; AGENTS.md.
+- **Not done (per rules):** no Stage 10.12, no lateral melt/stability/EOS/geometry changes, no calibration, no U_min/gamma_floor, no physics change.
+- **Next:** internal thermal evolution, then re-scoring the 10.8.2 set against the 3eq+natural convection closure.
+
 ## Stage 10.11 Summary (Natural Convection Basal Melt / Low-Flow Closure)
 
 - **Classification:** C -- physically-motivated natural-convection closure for the three-equation ice-ocean interface implemented and independently validated. Production physics UPDATED on the selectable three-equation path; bulk baseline unchanged.
 - **Physics:** Natural convection from a horizontal ice base (facing downward) driven by combined thermal and haline buoyancy. Double-diffusive Rayleigh number:
   `Ra_eff = g * L^3 / (nu * alpha) * [beta_T * (T_w - T_B) + beta_S * (S_w - S_B) * Le]`
   with `beta_T = 3.0e-5 1/K`, `beta_S = 7.8e-4 1/PSU`, `Le = 100`.
-  Characteristic length = iceberg length L (horizontal scale of convection cells; Gayen et al. 2016 LES).
+  Characteristic length = iceberg length L (horizontal scale of the Fujii
+  plate; production passes state%L. Gayen et al. 2016 is CONTEXT only — it
+  studies a VERTICAL ice face; the "L_char = D per Gayen" attribution was a
+  mis-citation, removed in the Stage 10.11.2 audit).
   Nusselt number (Fujii et al. 1973, horizontal plate facing downward):
   - Laminar (`Ra < 1e7`): `Nu = 0.27 * Ra^0.25`
   - Turbulent (`Ra >= 1e7`): `Nu = 0.15 * Ra^(1/3)`
@@ -497,9 +511,9 @@ All analysis scripts are in `python/analysis/`:
 
 - **Selectable scheme:** `BASAL_MELT_SCHEME_THREE_EQUATION_NATURAL` (runtime switch). The three-equation salt balance retains the Stage 10.10.1 density-weighted correction.
 
-- **Effect:** At `U_rel = 0`, finite melt rate `~1.6e-8 m/s` (0.001 m/day) for typical Arctic conditions (`T_w=2°C`, `S_w=34.5 PSU`, `L=100m`, `D=50m`). At `U_rel = 0.1 m/s`, natural convection adds ~0.1% to forced convection. At `U_rel = 1 m/s`, forced convection dominates (>99.9%).
+- **Effect:** At `U_rel = 0`, finite melt rate `~1.6e-8 m/s` (0.001 m/day) for typical Arctic conditions (`T_w=2°C`, `S_w=34.5 PSU`, `L=100m`, `D=50m`). At `U_rel = 0.1 m/s`, natural convection contributes only `gamma_eff/gamma_forced - 1 = 2.18e-8` (≈2.2e-6 %, NOT ~0.1% as originally claimed — corrected in the Stage 10.11.2 audit). At `U_rel = 1 m/s`, forced convection dominates (>99.9999999%).
 
-- **Validation:** Python `test_three_equation_natural.py` (70 checks) including zero-flow, low-flow continuity, mixed-convection regime, Ra/Nu scaling, salt/heat balance identities, and cross-language contract (`m = 1.638e-8 m/s` at `U_rel=0`, `T_w=2°C`, `S_w=34.5 PSU`, `L=100m`, `D=50m`). Natural-convection Fortran code compiles and is integrated (scheme selector + solver), but the claimed Fortran unit test `iceberg_test_10p11_natural_convection` was NOT delivered in 6a0014e — it is pending the Stage 10.11 audit. Strict `-Wall -Wextra -fcheck=all` build clean.
+- **Validation:** Python `test_three_equation_natural.py` (70 checks) including zero-flow, low-flow continuity, mixed-convection regime, Ra/Nu scaling, salt/heat balance identities, and cross-language contract (`m = 1.638e-8 m/s` at `U_rel=0`, `T_w=2°C`, `S_w=34.5 PSU`, `L=100m`, `D=50m`). **Fortran unit test `iceberg_test_10p11_natural_convection` DELIVERED in the Stage 10.11.2 audit** (23 checks, 0 errors; the Stage 10.11 commit 6a0014e claimed but did not deliver it). Strict `-Wall -Wextra -fcheck=all` build clean.
 
 - **Files changed:** src/iceberg_types.f90 (new constants, natural convection function), src/iceberg_thermodynamics.f90 (new solver `solve_three_equation_interface_natural` with explicit coupling); python/validation/three_equation_natural.py (new), python/tests/test_three_equation_natural.py (new); docs/model/* (ledger §10.3, physics status row, plan §10.11), docs/PROJECT_ROADMAP.md, docs/references/*, docs/validation/stage10.11_natural_convection.md (new), AGENTS.md, .github/workflows/ci.yml.
 

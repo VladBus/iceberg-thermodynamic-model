@@ -32,7 +32,7 @@ Ra_eff = g * L^3 / (nu * alpha) * [beta_T * (T_w - T_B) + beta_S * (S_w - S_B) *
 
 where:
 - `g = 9.80665 m/s^2`
-- `L` = iceberg length (horizontal scale of convection cells; Gayen et al. 2016 LES)
+- `L` = iceberg length (horizontal scale of the Fujii plate; production passes `state%L`)
 - `nu = 1.82e-6 m^2/s` (kinematic viscosity)
 - `alpha = k / (rho_w * c_w) ≈ 1.37e-7 m^2/s` (thermal diffusivity)
 - `beta_T = 3.0e-5 1/K` (thermal expansion coefficient at freezing)
@@ -122,25 +122,27 @@ The bisection proceeds on `[0, m_hi]` with `m_hi` doubled until `F(m_hi) <= 0` (
 
 ### 5.1 Fortran Test Suite (`iceberg_test_10p11_natural_convection`)
 
-**15 checks covering:**
+> ⚠️ **Stage 10.11.2 correction:** the Fortran test described below was **never
+> delivered** in the Stage 10.11 commit `6a0014e` — the original delivery claimed
+> "15 checks" that did not exist. The real test is delivered in the
+> **Stage 10.11.2 audit** (23 checks, 0 errors, blocks A–J) — see
+> `stage10.11.2_natural_convection_audit.md`. The original (incorrect) claim is
+> retained here for transparency but is superseded.
+
+**23 checks covering** (delivered in Stage 10.11.2, embedded-literal independent replicas):
 
 - A: Cold ocean (`T_w < Tf`) → `m = 0`, `S_B = S_w`, `T_B = Tf`
-- B: `U_rel = 0` → finite natural convection melt (vs zero in forced-only)
-- C: H&J99 canonical anchor with natural convection
-- D: Heat and salt balance residuals at solution
-- E: Conduction term on/off effect
-- F: Linear U-scaling (forced convection regime)
-- G: Freezing edge (`T_w = Tf` → `m = 0`)
-- H: Fresh-water edge (`S_w = 0`)
-- I: `gamma_S = 0` edge
-- J: J2010 Table 2 consistency check
-- K: Warm ocean band (0.01–1 m/day)
-- L: Production end-to-end contract
-- M: Natural convection vs forced-only regression
-- N: Natural convection regime verification (laminar/turbulent/transition)
-- O: Rayleigh number cap effect verification
+- B: Zero-flow anchor (`U_rel = 0`, `T_w=2°C`, `S_w=34.5 PSU`, `L=100m`, `D=50m`) → `m = 1.63801133e-8 m/s` (0.001415 m/day), `S_B = 0.015961`, `T_B = −0.9016 °C`
+- C: Laminar branch (isolated, uncapped): `L^(-0.25)` scaling `γ(0.05)/γ(0.1) = 1.189207 = 2^0.25`
+- D: Turbulent branch (isolated, uncapped): `L`-independent `γ(0.05)/γ(0.1) = 1.0`
+- E: Capped branch (Ra > 1e10): `γ(50)/γ(100) = 2.0` (Nu pinned, γ ∝ 1/L)
+- F: Churchill mixing at `U_rel = 0.1`: `gamma_eff/gamma_forced − 1 < 0.1%` (float32-resolved; float64 true value 2.2e-6 %)
+- G: Monotonicity `m(0) < m(1e-3) < m(0.1) < m(1)`
+- H: Linear U-scaling in forced regime: `m(0.2)/m(0.1) = 2.000000`
+- I: Production end-to-end: zero-flow contract, interface freshening, scheme switch effective
+- J: Scheme regression: bulk forced U=0 → m=0 (unchanged), THREE_EQUATION m(U=0.1) = 4.06740764e-6 (regression), NATURAL finite
 
-**Result:** `TOTAL CHECKS: 15 ERRORS: 0`
+**Result:** `TOTAL CHECKS: 23 ERRORS: 0`
 
 ### 5.2 Python Independent Validation (`test_three_equation_natural.py`)
 
@@ -180,12 +182,12 @@ The bisection proceeds on `[0, m_hi]` with `m_hi` doubled until `F(m_hi) <= 0` (
 | `U_rel = 1e-4` | 1.1e-7 | 4.4e-7 | 4.5e-7 | 1.6e-8 m/s |
 | `U_rel = 1e-3` | 1.1e-6 | 4.4e-7 | 1.2e-6 | 4.1e-8 m/s |
 | `U_rel = 0.01` | 1.1e-5 | 4.4e-7 | 1.1e-5 | 4.1e-7 m/s |
-| `U_rel = 0.1` | 1.1e-4 | 4.4e-7 | 1.1e-4 | 4.1e-6 m/s (+0.1%) |
+| `U_rel = 0.1` | 1.1e-4 | 4.4e-7 | 1.1e-4 | 4.1e-6 m/s (+2.2e-6%) |
 | `U_rel = 1.0` | 1.1e-3 | 4.4e-7 | 1.1e-3 | 4.1e-5 m/s (+0.0%) |
 
 **Key findings:**
 - At `U_rel = 0`: finite melt rate `~1.6e-8 m/s` (0.001 m/day) — within observed quiescent range (0.01–1 m/day) but at the lower end
-- At `U_rel = 0.1 m/s`: natural convection adds ~0.1% to forced convection
+- At `U_rel = 0.1 m/s`: natural convection adds ~2.2e-6% to forced convection
 - At `U_rel = 1.0 m/s`: forced convection dominates (>99.9%)
 - The natural-convection closure provides finite melt at `U_rel = 0` without arbitrary floors
 
@@ -213,7 +215,7 @@ The bisection proceeds on `[0, m_hi]` with `m_hi` doubled until `F(m_hi) <= 0` (
 |------|-------------|
 | `src/iceberg_types.f90` | New constants (`THERMAL_EXPANSION_COEFF`, `HALINE_CONTRACTION_COEFF`, `LEWIS_NUMBER`, `NU_LAMINAR_COEFF`, `NU_LAMINAR_EXP`, `NU_TURBULENT_COEFF`, `NU_TURBULENT_EXP`, `RAYLEIGH_TRANSITION`, `RAYLEIGH_MAX`, `MIXED_CONVECTION_EXP`), new function `natural_convection_transfer_coeff`, new scheme constant `BASAL_MELT_SCHEME_THREE_EQUATION_NATURAL` |
 | `src/iceberg_thermodynamics.f90` | New solver `solve_three_equation_interface_natural`, updated `compute_basal_melt` branch |
-| `test/iceberg_test_10p11_natural_convection.f90` | New Fortran test (15 checks) |
+| `test/iceberg_test_10p11_natural_convection.f90` | Fortran test (23 checks, delivered in Stage 10.11.2 audit) |
 | `python/validation/three_equation_natural.py` | New Python validation module |
 | `python/tests/test_three_equation_natural.py` | New Python test suite (70 checks) |
 | `docs/model/model_equation_ledger.md` | Added §10.3 |

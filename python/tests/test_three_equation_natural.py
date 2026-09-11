@@ -7,9 +7,13 @@ Run:
 """
 
 import sys
-sys.path.insert(0, "/home/vlad/Programing_work/vscode_work/iceberg-thermodynamic-model/python/validation")
+from pathlib import Path
 
-import three_equation_natural as ten11
+# Portable import bootstrap: python/tests + ../validation, robust in a clean
+# GitHub Actions checkout (no reliance on developer PYTHONPATH or cwd).
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "validation"))
+
+import three_equation_natural as ten11  # noqa: E402
 import three_equation as ten10
 
 # ============================================================

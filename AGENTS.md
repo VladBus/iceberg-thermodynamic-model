@@ -42,7 +42,9 @@ fpm test --flag "-I/usr/include" drift_scaling_current           # Current drift
 fpm test --flag "-I/usr/include" param_sensitivity_30day         # Parameter sensitivity framework
 fpm test --flag "-I/usr/include" iceberg_test_10p10_three_equation  # Stage 10.10 three-equation (19 checks)
 fpm test --flag "-I/usr/include" iceberg_test_10p10_three_equation  # Stage 10.10.1 three-equation correction (25 checks)
-fpm test --flag "-I/usr/include" iceberg_test_10p11_natural_convection  # Stage 10.11 natural convection (15 checks)
+# NOTE: Stage 10.11 Fortran unit test (iceberg_test_10p11_natural_convection) was NOT
+# delivered in 6a0014e; natural-convection validation currently rests on the Python
+# suite below (70 checks) + compile-time integration. Fortran test pending Stage 10.11 audit.
 python python/tests/test_three_equation.py                        # Stage 10.10/10.10.1 Python (65 checks)
 python python/tests/test_three_equation_natural.py                # Stage 10.11 Python (70 checks)
 ```
@@ -188,9 +190,38 @@ NEXT
 - CDS credentials in `~/.cdsapirc` — MUST NOT be committed to Git.
 - Important notes that might be lost due to context limits → write to `docs/wiki/` or appropriately named .md file.
 
+## OpenCode Environment
+
+OpenCode version: **1.18.30**
+
+### Plugins
+
+| Plugin | Purpose |
+|---|---|
+| oh-my-opencode | OpenCode agent orchestration / skill utilities |
+| opencode-dynamic-context-pruning | context-window management (pruning) during long sessions |
+| opencode-git-master | git operations integration (commits, history, rebase) |
+| opencode-supermemory | persistent memory (project/user knowledge recall) |
+
+### Roles
+
+OpenCode provides three complementary execution/planning roles. Select by task
+complexity — most tasks use one role, not all three.
+
+| Role | Kind | Use for |
+|---|---|---|
+| Prometheus | Plan Builder | decomposition of complex tasks; stage planning; dependency/risk identification; preparation before implementation |
+| Hephaestus | Deep Agent | deep implementation; complex debugging; detailed repository work; multi-step technical execution |
+| Sisyphus | Ultraworker | intensive multi-step execution; integration; persistence across a complex task; bringing implementation through verification to completion |
+
 ## Skills and MCP Tools (MANDATORY)
 
-The project defines **8 skills** (`.opencode/skills/`) and **8 MCP servers** (`opencode.jsonc` + global config). Models MUST load the relevant skill and prefer the MCP tools over ad-hoc/generic implementations for the tasks below. Do not hand-roll equivalents of an available skill/MCP; loading the skill is part of normal workflow.
+The project defines **8 skills** (`.opencode/skills/`) and the OpenCode environment
+exposes **12 MCP servers** (`opencode.jsonc` + global config) plus **2 security
+skills** (`/security-review`, `/security-research`). Models MUST load the relevant
+skill and prefer the MCP tools over ad-hoc/generic implementations for the tasks
+below. Do not hand-roll equivalents of an available skill/MCP; loading the skill
+is part of normal workflow.
 
 ### Skills (load via the `skill` tool when the task matches)
 
@@ -204,19 +235,25 @@ The project defines **8 skills** (`.opencode/skills/`) and **8 MCP servers** (`o
 | math-modeling | math-modelling competitions (MCM/ICM/美赛/国赛), problem decomposition | modeling workflow to LaTeX paper |
 | coding-agent | programmatically running Codex/Claude Code/OpenCode/Pi agents | external coding-agent control |
 | humanizer | de-AIing prose (review/revise for "AI tells") | rewrite AI-sounding text |
+| /security-review | security review of source code, dependency/configuration risks, CI/CD security, unsafe file/process/network behavior, secrets/credential exposure | team-mode security audit of the codebase |
+| /security-research | researching security advisories, CVEs, dependency vulnerabilities, external security guidance, current security info requiring web research | web-based security threat research |
 
 ### MCP servers (invoke the matching tool set)
 
 | Server | Use for | Examples |
 |---|---|---|
+| websearch | real-time web search (auto/fast/deep) | current events, recent data, web facts |
 | context7 | current library/framework/API docs (resolve id → query docs) | Fortran/fpm/gfortran/netcdf, CLI tooling |
 | firecrawl | web research: search, scrape, map, crawl; `firecrawl_research_*` scan paper index | literature/DOI verification, data-source checks |
 | fetch | plain URL content retrieval (markdown/text) | single static pages |
-| playwright | browser automation on live pages | download flows, web UI verification, screenshots |
-| filesystem | repo file access: read/write/tree/search | standard file operations inside the workspace |
+| grep_app | GitHub code search over public repos (grep.app index) | real-world usage examples |
 | github | GitHub API: issues, PRs, branches, commits | repo management, CI status, pull requests |
+| lsp | language server diagnostics / symbols / references / rename | editor-grade code analysis |
+| codegraph | code graph / codebase insight | **Disabled in configuration** |
 | TestSprite | UI/API test generation and execution against a running app | frontend/backend test plans and runs |
+| playwright | browser automation on live pages | download flows, web UI verification, screenshots |
 | sequential-thinking | structured multi-step reasoning / planning | decomposing complex problems |
+| filesystem | repo file access: read/write/tree/search | standard file operations inside the workspace |
 
 Rules:
 
@@ -462,7 +499,7 @@ All analysis scripts are in `python/analysis/`:
 
 - **Effect:** At `U_rel = 0`, finite melt rate `~1.6e-8 m/s` (0.001 m/day) for typical Arctic conditions (`T_w=2°C`, `S_w=34.5 PSU`, `L=100m`, `D=50m`). At `U_rel = 0.1 m/s`, natural convection adds ~0.1% to forced convection. At `U_rel = 1 m/s`, forced convection dominates (>99.9%).
 
-- **Validation:** Fortran test `iceberg_test_10p11_natural_convection` (15 checks) + Python `test_three_equation_natural.py` (70 checks) including zero-flow, low-flow continuity, mixed-convection regime, Ra/Nu scaling, salt/heat balance identities, and cross-language contract (`m = 1.638e-8 m/s` at `U_rel=0`, `T_w=2°C`, `S_w=34.5 PSU`, `L=100m`, `D=50m`). Strict `-Wall -Wextra -fcheck=all` build clean.
+- **Validation:** Python `test_three_equation_natural.py` (70 checks) including zero-flow, low-flow continuity, mixed-convection regime, Ra/Nu scaling, salt/heat balance identities, and cross-language contract (`m = 1.638e-8 m/s` at `U_rel=0`, `T_w=2°C`, `S_w=34.5 PSU`, `L=100m`, `D=50m`). Natural-convection Fortran code compiles and is integrated (scheme selector + solver), but the claimed Fortran unit test `iceberg_test_10p11_natural_convection` was NOT delivered in 6a0014e — it is pending the Stage 10.11 audit. Strict `-Wall -Wextra -fcheck=all` build clean.
 
 - **Files changed:** src/iceberg_types.f90 (new constants, natural convection function), src/iceberg_thermodynamics.f90 (new solver `solve_three_equation_interface_natural` with explicit coupling); python/validation/three_equation_natural.py (new), python/tests/test_three_equation_natural.py (new); docs/model/* (ledger §10.3, physics status row, plan §10.11), docs/PROJECT_ROADMAP.md, docs/references/*, docs/validation/stage10.11_natural_convection.md (new), AGENTS.md, .github/workflows/ci.yml.
 

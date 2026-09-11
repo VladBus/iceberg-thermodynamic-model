@@ -12,7 +12,7 @@
 !
 ! Режимы (переменная окружения ICEBERG_OCEAN_VELOCITY_INIT):
 !   zero          — u=v=0
-!   synthetic     — canonical drift 0.20/0.10 cm/s
+!   synthetic     — эталонный дрейф 0.20/0.10 см/с
 !   reference_level — thermal wind с u=v=0 на k_ref (по умолчанию 600m)
 !   realistic_ref  — thermal wind с u_ref, v_ref на k_ref (из env vars)
 !   dynamic_height — reference_level + SSH из dynamic height

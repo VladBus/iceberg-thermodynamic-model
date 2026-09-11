@@ -403,8 +403,8 @@ contains
 
         ! Проверка согласованности массового бюджета (подавляем предупреждение, только проверка)
         if (abs((diag%basal_mass_loss + diag%lateral_mass_loss + &
-              diag%surface_mass_loss + diag%vapor_mass_loss) - &
-              RHO_ICE*dV) .gt. 1.0e-4*RHO_ICE*abs(dV)) then
+                 diag%surface_mass_loss + diag%vapor_mass_loss) - &
+                RHO_ICE*dV) .gt. 1.0e-4*RHO_ICE*abs(dV)) then
             ! Небольшая несогласованность из-за ограничения max(0) и плавающей точки
         end if
     end subroutine iceberg_update_geometry

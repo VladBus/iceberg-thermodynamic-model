@@ -123,6 +123,7 @@ Thumbs.db
 .opencode/
 opencode.jsonc
 docs/wiki/
+.omo/
 
 # Internal live TODO (kept locally, NOT tracked in Git)
 docs/wiki/ERA5_INTEGRATION_TODO.md

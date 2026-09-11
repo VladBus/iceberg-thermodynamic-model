@@ -67,69 +67,69 @@ module iceberg_types
     ! ========================================================================
     ! Bulk formulation параметры для базального и бокового плавления.
     ! Источники:
-    !   - Weeks & Campbell (1973) J. Glaciol. 12, 207-233 — original bulk parameterization
-    !   - Eckert & Drake (1959) "Analysis of Heat and Mass Transfer" — Nu = 0.037 Re^0.8 Pr^1/3
-    !   - FitzMaurice & Stern (2018) Ocean Modelling 131, 54-69 — comparison with three-equation
-    !   - Martin & Adcroft (2010) J. Geophys. Res. 115, C08016 — implementation in climate models
+    !   - Weeks & Campbell (1973) J. Glaciol. 12, 207-233 — исходная bulk-параметризация
+    !   - Eckert & Drake (1959) "Heat and Mass Transfer" — Nu = 0.037 Re^0.8 Pr^1/3
+    !   - FitzMaurice & Stern (2018) Ocean Modelling 130, 66-78 — сравнение с трёхуравнением
+    !   - Martin & Adcroft (2010) Ocean Modelling 34, 111-124 — реализация в климатических моделях
     !
     ! Для айсбергов масштаба L ~ 100-1000 м (малые по сравнению с радиусом
     ! деформации ~15 км) применима bulk-формулировка по Re = U*L/ν (FitzMaurice & Stern 2018).
-    ! Heat transfer coefficient: γ_T = 0.037 * k * Pr^(1/3) * U^0.8 * ν^-0.8 * L^(-0.2)  [W/(m²·K)]
-    ! Melt rate: m = γ_T * (T - Tf) / (ρ_ice * L_f)  [m/s]
-    ! Stanton number: St = γ_T / U
+    ! Коэффициент теплообмена: γ_T = 0.037 * k * Pr^(1/3) * U^0.8 * ν^-0.8 * L^(-0.2)  [Вт/(м²·К)]
+    ! Скорость таяния: m = γ_T * (T - Tf) / (ρ_ice * L_f)  [м/с]
+    ! Число Стэнтона: St = γ_T / U
     !
     ! ВАЖНО: Характерная длина L_char для базального плавления — это длина айсберга
     ! в НАПРАВЛЕНИИ ПОТОКА (streamwise length). Текущая модель НЕ имеет прогностической
     ! ориентации айсберга (state%L всегда вдоль X, state%W вдоль Y).
     ! Поэтому L_char = state%L использует X-размер как приближение.
     ! Это ограничение: для потока не вдоль X физическая корректность не гарантирована.
-    ! Для бокового плавления Weeks & Campbell (1973) предлагают L_char = D (черновик).
+    ! Для бокового плавления Weeks & Campbell (1973) предлагают L_char = D (осадка).
     !
     ! Константы bulk-формулировки:
-    !   Pr (Prandtl number) seawater: ~13.8 at 0°C
-    !   ν (kinematic viscosity) seawater: ~1.82e-6 m²/s at 0°C, S=34.8
-    !   k (thermal conductivity) seawater: ~0.56 W/(m·K) at 0°C
-    !   Sc (Schmidt number) seawater: ~2400 (not used in bulk, for reference)
-    !   Re_crit (laminar-turbulent transition): ~5e5 (flat plate)
-    !   Three-equation constants (H&J99, J10) — НЕ ИСПОЛЬЗУЮТСЯ в текущей реализации,
+    !   Pr (число Прандтля) морской воды: ~13.8 при 0°C
+    !   ν (кинематическая вязкость) морской воды: ~1.82e-6 м²/с при 0°C, S=34.8
+    !   k (теплопроводность) морской воды: ~0.56 Вт/(м·К) при 0°C
+    !   Sc (число Шмидта) морской воды: ~2400 (в bulk не используется, справочно)
+    !   Re_crit (переход ламинарный/турбулентный): ~5e5 (плоская пластина)
+    !   Константы трёхуравнения (H&J99, J10) — НЕ ИСПОЛЬЗУЮТСЯ в текущей реализации,
     !     сохранены только для документации возможного будущего перехода:
-    !     C_d (drag): 0.0015-0.0097, Γ_T: 0.011, Γ_S: 3.1e-4
+    !     C_d (сопротивление): 0.0015-0.0097, Γ_T: 0.011, Γ_S: 3.1e-4
     ! ========================================================================
 
-    ! Prandtl number for seawater (ratio of viscosity to thermal diffusivity)
-    ! Pr = ν / κ_T ≈ 1.8e-6 / 1.3e-7 ≈ 13.8 at 0°C, S=34.8
+    ! Число Прандтля для морской воды (отношение вязкости к температуропроводности)
+    ! Pr = ν / κ_T ≈ 1.8e-6 / 1.3e-7 ≈ 13.8 при 0°C, S=34.8
     ! Источник: стандартные таблицы свойств морской воды
     real, parameter :: PRANDTL_NUMBER = 13.8
 
-    ! Kinematic viscosity of seawater [m²/s] at 0°C, S=34.8
+    ! Кинематическая вязкость морской воды [м²/с] при 0°C, S=34.8
     ! Источник: UNESCO 1983 / Fofonoff & Millard
     real, parameter :: KINEMATIC_VISCOSITY = 1.82e-6
 
-    ! Thermal conductivity of seawater [W/(m·K)] at 0°C
+    ! Теплопроводность морской воды [Вт/(м·К)] при 0°C
     ! Источник: стандартные таблицы свойств морской воды
     real, parameter :: THERMAL_CONDUCTIVITY = 0.56
 
-    ! Schmidt number for seawater (ratio of viscosity to salt diffusivity)
+    ! Число Шмидта для морской воды (отношение вязкости к диффузии соли)
     ! Sc = ν / κ_S ≈ 1.8e-6 / 7.5e-10 ≈ 2400
-    ! Not directly used in bulk formulation but for reference
+    ! В bulk-формулировке напрямую не используется, справочно
     real, parameter :: SCHMIDT_NUMBER = 2400.0
 
-    ! Critical Reynolds number for laminar-turbulent transition on flat plate
-    ! Re_crit ≈ 5e5 (standard value, Eckert & Drake 1959)
+    ! Критическое число Рейнольдса перехода ламинарный/турбулентный на плоской пластине
+    ! Re_crit ≈ 5e5 (стандартное значение, Eckert & Drake 1959)
     real, parameter :: REYNOLDS_CRITICAL = 5.0e5
 
-    ! Maximum Rayleigh number (physical cap for ultimate regime)
-    ! Standard correlations valid up to Ra ~ 1e10; beyond that, flow enters
-    ! "ultimate regime" with different scaling (Nu ~ Ra^0.5 or similar).
-    ! We cap Ra to avoid unphysically large Nu from extrapolating correlations.
+    ! Максимальное число Рэлея (физический предел для предельного режима)
+    ! Стандартные корреляции справедливы до Ra ~ 1e10; за этим пределом поток
+    ! переходит в предельный режим с другим масштабированием (Nu ~ Ra^0.5 и т.п.).
+    ! Ограничиваем Ra, чтобы избежать нефизически больших Nu при экстраполяции корреляций.
     real, parameter :: RAYLEIGH_MAX = 1.0e10
 
-    ! Characteristic length scale for basal melt Reynolds number
-    ! For basal: L_char = iceberg length in flow direction (state%L, but see limitation above)
-    ! For lateral: L_char = draft (D) - from Weeks & Campbell (1973)
-    ! These are set per-call based on geometry, not compile-time constants
+    ! Характерный масштаб длины для числа Рейнольдса базального плавления
+    ! Для базального: L_char = длина айсберга по направлению потока (state%L, см. ограничение выше)
+    ! Для бокового: L_char = осадка (D) — по Weeks & Campbell (1973)
+    ! Задаются при каждом вызове по геометрии, а не константами времени компиляции
 
-    ! Coefficients плавления [м/(с·К)] — LEGACY (Stage 9.3, retained for reference)
+    ! Коэффициенты плавления [м/(с·К)] — LEGACY (Stage 9.3, сохранены для справки)
     ! Исправлены в Stage 9.3: были 1e-4 [м/с] с делением на (ρᵢ·L_f),
     ! стало 1e-6 [м/(с·К)] с формулой m = C * ΔT (без деления на ρᵢ·L_f).
     ! Физический смысл: γ_T = h/(ρᵢ·L_f), где h ≈ 300 Вт/(м²·К) → γ_T ≈ 1e-6.
@@ -141,11 +141,11 @@ module iceberg_types
     real, parameter :: MELT_RATE_MIN = 1.0e-12
 
     ! ========================================================================
-    !   THREE-EQUATION ICE-OCEAN INTERFACE (Stage 10.10 / 10.11)
+    !   ТРЁХУРАВНЕННЫЙ ИНТЕРФЕЙС ЛЁД-ОКЕАН (Stage 10.10 / 10.11)
     ! ========================================================================
     ! Переключатель схемы базального плавления (runtime, через set_basal_melt_scheme):
     !   BASAL_MELT_SCHEME_FORCED_CONVECTION      = 0  -- bulk-формулировка Stage 10.6 (baseline)
-    !   BASAL_MELT_SCHEME_THREE_EQUATION         = 1  -- трёхчленное замыкание (H&J99/J2010)
+    !   BASAL_MELT_SCHEME_THREE_EQUATION         = 1  -- трёхуравненное замыкание (H&J99/J2010)
     !   BASAL_MELT_SCHEME_THREE_EQUATION_NATURAL = 2  -- + натуральная конвекция (Stage 10.11)
     ! ПО УМОЛЧАНИЮ = 0: production-поведение НЕ меняется до явного переключения.
     integer, parameter :: BASAL_MELT_SCHEME_FORCED_CONVECTION = 0
@@ -194,10 +194,14 @@ module iceberg_types
     !     convection at a vertical ice face dissolving into saline water."
     !     J. Fluid Mech., 798, 284-298. (LES/DNS melt-driven конвекции у
     !     ВЕРТИКАЛЬНОЙ ледяной стенки; контекст melt-driven convection)
-    !   - Kerr, R.C. & McConnochie, C.D. (2015). "Convection-driven melting..."
-    !     J. Phys. Oceanogr., 45, 3099-3116. (свободная конвекция у наклонного/горизонтального льда)
-    !   - McConnochie, C.D. & Kerr, R.C. (2018). "The effect of slope on..."
-    !     J. Fluid Mech., 855, 1070-1095.
+    !   - Kerr, R.C. & McConnochie, C.D. (2015). "Dissolution of a vertical
+    !     solid surface by turbulent compositional convection."
+    !     J. Fluid Mech., 765, 211-228. (турбулентная композиционная конвекция
+    !     у ВЕРТИКАЛЬНОЙ твёрдой поверхности; контекст melt-driven convection)
+    !   - McConnochie, C.D. & Kerr, R.C. (2018). "Dissolution of a sloping solid
+    !     surface by turbulent compositional convection."
+    !     J. Fluid Mech., 846, 563-577. (то же для НАКЛОННОЙ поверхности;
+    !     контекст melt-driven convection)
     !   - Churchill, S.W. (1977). "A comprehensive correlating equation for
     !     forced, natural and mixed convection." AIChE J., 23, 10-16. (смешанная конвекция)
     !
@@ -372,7 +376,7 @@ module iceberg_types
         real :: tf_draft     ! Точка замерзания на глубине осадки [°C]
         real :: delta_t_ocean ! Термическое задействование на осадке T - Tf [°C]
         ! (необрезанное, может быть ≤ 0; Stage 10.5)
-        ! Граница лёд-океан (Stage 10.10, трёхчленное замыкание; = T_w/S_w для bulk)
+        ! Граница лёд-океан (Stage 10.10, трёхуравненное замыкание; = T_w/S_w для bulk)
         real :: t_interface   ! Температура на границе T_B [°C]
         real :: s_interface   ! Соленость на границе S_B [кг/кг]
 
@@ -449,16 +453,16 @@ module iceberg_types
     public :: MURPHY_KOOP_A, MURPHY_KOOP_B, MURPHY_KOOP_C, MURPHY_KOOP_D
     public :: EOS_FP_A0, EOS_FP_A1, EOS_FP_A2, EOS_FP_BP
     public :: OMEGA
-    ! Stage 10.6 ocean-side heat transfer constants (bulk formulation)
+    ! Константы теплообмена со стороны океана (bulk-формулировка, Stage 10.6)
     public :: PRANDTL_NUMBER, KINEMATIC_VISCOSITY, THERMAL_CONDUCTIVITY
     public :: SCHMIDT_NUMBER, REYNOLDS_CRITICAL, MELT_RATE_MIN
-    ! Stage 10.10 three-equation interface
+    ! Трёхуравненный интерфейс (Stage 10.10)
     public :: BASAL_MELT_SCHEME_FORCED_CONVECTION, BASAL_MELT_SCHEME_THREE_EQUATION
     public :: BASAL_MELT_SCHEME_THREE_EQUATION_NATURAL
     public :: basal_melt_scheme, set_basal_melt_scheme
     public :: THREE_EQ_KT, THREE_EQ_KS, CP_SEAWATER, CP_ICE_3EQ
     public :: RHO_ICE_WATER_RATIO
-    ! Stage 10.11 natural convection constants
+    ! Константы натуральной конвекции (Stage 10.11)
     public :: THERMAL_EXPANSION_COEFF, HALINE_CONTRACTION_COEFF, LEWIS_NUMBER
     public :: NU_LAMINAR_COEFF, NU_LAMINAR_EXP, NU_TURBULENT_COEFF, NU_TURBULENT_EXP
     public :: RAYLEIGH_TRANSITION, MIXED_CONVECTION_EXP
@@ -551,20 +555,20 @@ contains
             return
         end if
 
-        ! Reynolds number: Re = U * L / ν
+        ! Число Рейнольдса: Re = U * L / ν
         reynolds = u_rel*l_char/KINEMATIC_VISCOSITY
 
-        ! Nusselt number: laminar/turbulent regime per Eckert & Drake (1959)
-        ! Transition at Re_crit = 5e5 (flat plate). Use turbulent for Re >= Re_crit.
+        ! Число Нуссельта: ламинарный/турбулентный режим по Eckert & Drake (1959)
+        ! Переход при Re_crit = 5e5 (плоская пластина). Турбулентный режим при Re >= Re_crit.
         if (reynolds .ge. REYNOLDS_CRITICAL) then
-            ! Turbulent regime: Nu = 0.037 * Re^0.8 * Pr^(1/3)
+            ! Турбулентный режим: Nu = 0.037 * Re^0.8 * Pr^(1/3)
             nusselt = 0.037*(reynolds**0.8)*(PRANDTL_NUMBER**(1.0/3.0))
         else
-            ! Laminar regime: Nu = 0.664 * Re^0.5 * Pr^(1/3)
+            ! Ламинарный режим: Nu = 0.664 * Re^0.5 * Pr^(1/3)
             nusselt = 0.664*sqrt(reynolds)*(PRANDTL_NUMBER**(1.0/3.0))
         end if
 
-        ! Heat transfer coefficient: γ_T = Nu * k / L
+        ! Коэффициент теплообмена: γ_T = Nu * k / L
         gamma_t = nusselt*THERMAL_CONDUCTIVITY/l_char
     end subroutine ocean_heat_transfer_coeff
 
@@ -621,8 +625,8 @@ contains
     !   gamma_s      - итоговый солеобменный коэффициент [м/с] (выход)
     ! ========================================================================
     pure subroutine natural_convection_transfer_coeff(t_w, s_w, t_b, s_b, &
-                                                       l_char, u_rel, &
-                                                       gamma_t, gamma_s)
+                                                      l_char, u_rel, &
+                                                      gamma_t, gamma_s)
         real, intent(in) :: t_w, s_w, t_b, s_b
         real, intent(in) :: l_char
         real, intent(in) :: u_rel
@@ -635,9 +639,9 @@ contains
         real :: thermal_diffusivity
         real :: mixed_exp
 
-        ! Форированная конвекция (U-based, J2010 Table 2)
-        gamma_t_forced = THREE_EQ_KT * u_rel
-        gamma_s_forced = THREE_EQ_KS * u_rel
+        ! Форсированная конвекция (U-представление, J2010 Table 2)
+        gamma_t_forced = THREE_EQ_KT*u_rel
+        gamma_s_forced = THREE_EQ_KS*u_rel
 
         ! Натуральная конвекция
         if (l_char .le. 0.0) then
@@ -646,10 +650,10 @@ contains
         else
             ! Разности температуры и солености (PSU)
             delta_t = t_w - t_b
-            delta_s_psu = (s_w - s_b) * 1000.0  ! кг/кг -> PSU
+            delta_s_psu = (s_w - s_b)*1000.0  ! кг/кг -> PSU
 
             ! Термическая диффузивность α = k / (ρ * c_p)
-            thermal_diffusivity = THERMAL_CONDUCTIVITY / (RHO_WATER * CP_SEAWATER)
+            thermal_diffusivity = THERMAL_CONDUCTIVITY/(RHO_WATER*CP_SEAWATER)
 
             ! Эффективное релеевское число для двойной диффузии
             ! Ra_eff = g * L^3 / (ν * α) * [β_T * ΔT + β_S * ΔS * Le]
@@ -657,9 +661,9 @@ contains
             ! конвективных ячеек у горизонтального основания),
             ! ΔS в PSU, β_S в [1/PSU]
             if (delta_t .gt. 0.0 .or. delta_s_psu .gt. 0.0) then
-                ra_eff = GRAVITY * l_char**3 / (KINEMATIC_VISCOSITY * thermal_diffusivity) * &
-                         (THERMAL_EXPANSION_COEFF * delta_t + &
-                          HALINE_CONTRACTION_COEFF * delta_s_psu * LEWIS_NUMBER)
+                ra_eff = GRAVITY*l_char**3/(KINEMATIC_VISCOSITY*thermal_diffusivity)* &
+                         (THERMAL_EXPANSION_COEFF*delta_t + &
+                          HALINE_CONTRACTION_COEFF*delta_s_psu*LEWIS_NUMBER)
             else
                 ra_eff = 0.0
             end if
@@ -670,10 +674,10 @@ contains
             if (ra_eff .gt. 0.0) then
                 if (ra_eff .lt. RAYLEIGH_TRANSITION) then
                     ! Ламинарный режим
-                    nusselt = NU_LAMINAR_COEFF * ra_eff**NU_LAMINAR_EXP
+                    nusselt = NU_LAMINAR_COEFF*ra_eff**NU_LAMINAR_EXP
                 else
                     ! Турбулентный режим
-                    nusselt = NU_TURBULENT_COEFF * ra_eff**NU_TURBULENT_EXP
+                    nusselt = NU_TURBULENT_COEFF*ra_eff**NU_TURBULENT_EXP
                 end if
             else
                 nusselt = 0.0
@@ -681,12 +685,12 @@ contains
 
             ! Натурально-конвективный теплообменный коэффициент
             ! h = Nu * k / L [W/m²/K] -> γ_T = h / (ρ_w c_w) [m/s]
-            gamma_t_nat = nusselt * THERMAL_CONDUCTIVITY / &
-                          (l_char * RHO_WATER * CP_SEAWATER)
+            gamma_t_nat = nusselt*THERMAL_CONDUCTIVITY/ &
+                          (l_char*RHO_WATER*CP_SEAWATER)
 
             ! Натурально-конвективный солеобменный коэффициент
             ! то же отношение Стэнтона, что и для форсированной конвекции
-            gamma_s_nat = gamma_t_nat * (THREE_EQ_KS / THREE_EQ_KT)
+            gamma_s_nat = gamma_t_nat*(THREE_EQ_KS/THREE_EQ_KT)
         end if
 
         ! Комбинация Churchilla (1977) для смешанной конвекции

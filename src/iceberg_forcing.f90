@@ -446,7 +446,7 @@ contains
     ! Аргументы:
     !   prof       - профиль океана (intent(in))
     !   draft      - глубина осадки [м] (intent(in))
-    !   field_name - "temp", "salt", "u", "v", "u_rel" (intent(in))
+    !   field_name - имя поля: "temp", "salt", "u", "v", "u_rel" (intent(in))
     !   val        - интерполированное значение (выход)
     ! ========================================================================
     function interp_at_draft(prof, draft, field_name) result(val)
@@ -463,8 +463,8 @@ contains
             select case (field_name)
             case ("temp"); val = prof%temp(1)
             case ("salt"); val = prof%salt(1)
-            case ("u");    val = prof%u(1)
-            case ("v");    val = prof%v(1)
+            case ("u"); val = prof%u(1)
+            case ("v"); val = prof%v(1)
             case ("u_rel"); val = prof%u_rel(1)
             case default; val = 0.0
             end select
@@ -476,8 +476,8 @@ contains
             select case (field_name)
             case ("temp"); val = prof%temp(prof%nlevels)
             case ("salt"); val = prof%salt(prof%nlevels)
-            case ("u");    val = prof%u(prof%nlevels)
-            case ("v");    val = prof%v(prof%nlevels)
+            case ("u"); val = prof%u(prof%nlevels)
+            case ("v"); val = prof%v(prof%nlevels)
             case ("u_rel"); val = prof%u_rel(prof%nlevels)
             case default; val = 0.0
             end select

@@ -133,7 +133,7 @@ contains
                         ro_min = min(ro_min, ro_arr(i, j, k))
                     end if
 
-                    ! Speed
+                    ! Скорость
                     if (u_arr(i, j, k) .eq. u_arr(i, j, k) .and. &
                         v_arr(i, j, k) .eq. v_arr(i, j, k)) then
                         speed_max = max(speed_max, sqrt(u_arr(i, j, k)**2 + v_arr(i, j, k)**2))

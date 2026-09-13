@@ -34,9 +34,13 @@ The matrix is deliberately selective: a Zotero record is not automatically a mod
 | MOM6 mom_ice_shelf (Losch et al. 2019; also published in Griffies et al.) | Three-equation salt budget `rho_w gamma_S (S_w - S_B) = rho_i m S_B` convention | VALIDATION (confirms Stage 10.10.1 correction) |
 | PISM basal-melt documentation | Salt flux `Q_S^B = rho_I S^B dh/dt`; melt `w_b = gamma_S rho_W (S^W - S^B)/(rho_I S^B)` | VALIDATION (confirms Stage 10.10.1 correction) |
 | MITgcm shelfice (Losch 2008 et seq.) | Mass-flux form `rho_c gamma_S (S - S_b) = -q (S_b - S_I)` with `S_I = 0` | VALIDATION (confirms Stage 10.10.1 correction) |
-| Fujii, Honda & Morioka 1973 | Natural convection heat transfer from downward-facing horizontal surfaces | CORE, IMPLEMENTED (Stage 10.11) |
+| Lloyd & Moran 1974 | Horizontal-plate natural convection (planforms); `Sh = 0.15·Ra^(1/3)`, `L* = A/p` | CORE, IMPLEMENTED (Stage 10.11; operative turbulent coefficient — attribution corrected in Stage 10.11.3) |
+| Fujii, Honda & Morioka 1973 | Natural convection from downward-facing horizontal surfaces with **uniform heat flux** (theoretical, laminar, `Nu ~ Ra^(1/5)`) | CONTEXT/MIS-CITED — does NOT supply the production `0.27`/`0.15` constants (Stage 10.11.3) |
 | Gayen, Griffiths & Kerr 2016 | Simulation of convection at a **vertical** ice face dissolving into saline water (LES) | CONTEXT (melt-driven convection in ice-ocean systems; does NOT set a cell scale for a horizontal base — see Stage 10.11.2 audit) |
-| Churchill 1977 | Comprehensive correlating equation for forced, natural and mixed convection | CORE, IMPLEMENTED (Stage 10.11 mixed convection) |
+| Churchill 1977 | Comprehensive correlating equation for forced, natural and mixed convection (vertical laminar assisting) | CORE, IMPLEMENTED (Stage 10.11 mixed convection; geometry extrapolation noted in Stage 10.11.3) |
+| Martin & Kauffman 1977 | Turbulent and laminar convection under a horizontal ice sheet on warm salty water; ~2x diffusive melt; double-diffusive | KEY PRIMARY / VALIDATION (real quiescent mechanism; Stage 10.11.3) |
+| Keitzl, Mellado & Notz 2016 | Diffusive / intermediate / high-T regimes of bottom melting; ~2.5-3.1x turbulent enhancement | VALIDATION (diffusion-limited quiescent melt; Stage 10.11.3) |
+| Middleton, Vreugdenhil, Holland & Taylor 2021 | Melt-driven double-diffusive fluxes beneath an ice shelf; stable salinity + unstable temperature | VALIDATION (physical mechanism reference; Stage 10.11.3) |
 | Andreas et al. 2010 | Air-sea/ice turbulent exchange context | SUPPORT |
 | Martin & Adcroft 2010 | Interactive iceberg freshwater flux in climate modelling | BACKGROUND/FUTURE |
 | Cenedese & Straneo 2023 | Iceberg melt review; observed submarine melt band ~0.01–1 m/day | VALIDATION |

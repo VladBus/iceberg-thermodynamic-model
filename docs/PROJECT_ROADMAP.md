@@ -1,7 +1,7 @@
 # Project Roadmap
 
 **Updated:** 2026-09-11
-**Current scientific stage:** Stage 10.11 — Natural Convection Basal Melt / Low-Flow Closure
+**Current scientific stage:** Stage 10.11.3 — Deep Audit & Sensitivity of Natural-Convection Basal Melt
 **Current status:** C — correction validated; production updated; all tests PASS
 
 ## Completed foundation
@@ -34,7 +34,8 @@
 | 10.9 | Calibration assessment of the basal-melt coefficient (212 Python checks; no scalar identifiable from the 2-source set) | Complete; classification C; production unchanged |
 | 10.10 | Three-equation ice-ocean interface (Holland & Jenkins 1999; Jenkins et al. 2010 Table 2), separately selectable; independently validated (19 Fortran + 46 Python checks, cross-language contract) | Complete; classification C; production physics added on selectable path, bulk path physics unchanged |
 | 10.10.1 | Mass/salt convention correction: Eq. III from `gamma_S(S_w-S_B)=m S_B` to `rho_w gamma_S(S_w-S_B)=rho_i m S_B` with `rho_i/rho_w=910/1028`; MOM6/PISM/MITgcm/H&J99 Eq.4 convention; canonical anchor m 9.45e-9 -> 1.04e-8 (+10.5%), end-to-end m 3.998e-6 -> 4.067e-6 (+1.7%); T_i=-10 attribution corrected (model-selected, not H&J99); Fortran 25 checks, Python 65 checks, strict build clean | Complete; classification C; production updated; all tests PASS |
-| 10.11 | Natural convection basal melt: double-diffusive Ra (Fujii et al. 1973) + Churchill 1977 mixing; L_char = iceberg length L; Ra cap 1e10; gamma_T_nat, gamma_S_nat added to forced via Churchill n=3 mixing; U=0 -> m=1.6e-8 m/s (0.001 m/day); U=0.1 -> natural adds only 2.2e-6% (NOT 0.1% as originally claimed — corrected in Stage 10.11.2); U=1 -> forced dominates 99.9999999%; Fortran 23 checks (delivered in Stage 10.11.2 audit; original claim of 15 checks was never delivered in 6a0014e), Python 70 checks, cross-language contract | Complete; classification C (10.11) / B (10.11.2 audit); production updated; all tests PASS |
+| 10.11 | Natural convection basal melt: double-diffusive Ra + Churchill 1977 mixing; L_char = iceberg length L; Ra cap 1e10; gamma_T_nat, gamma_S_nat added to forced via Churchill n=3 mixing; U=0 -> m=1.6e-8 m/s (0.001 m/day); U=0.1 -> natural adds only 2.2e-6% (NOT 0.1% as originally claimed — corrected in Stage 10.11.2); U=1 -> forced dominates 99.9999999%; Fortran 23 checks (delivered in Stage 10.11.2 audit; original claim of 15 checks was never delivered in 6a0014e), Python 70 checks, cross-language contract | Complete; classification C (10.11) / B (10.11.2 audit); production updated; all tests PASS |
+| 10.11.3 | Deep scientific audit + sensitivity of the natural-convection closure: independent Python replica (tables A-J); cap always active (uncapped Ra=5.7e19) -> Nu pinned 323.17, haline/Le and beta_T/beta_S inert, laminar branch latent; haline sign opposite to physical (stabilizing) role; operative `0.15*Ra^(1/3)` attributed to Lloyd & Moran 1974 (not Fujii 1973); zero-flow m=1.4e-3 m/day is 7-700x below observed quiescent band (does NOT close the 10.8.2 gap); real mechanism double-diffusive (Martin & Kauffman 1977; Keitzl et al. 2016; Middleton et al. 2021); documentation corrected; production source diff ZERO | Complete; classification B; production UNCHANGED; all tests PASS |
 
 ## Immediate next step
 
@@ -70,13 +71,17 @@ Stage 10.11 implemented a physically-motivated natural-convection closure for th
 
 - **Report**: `docs/validation/stage10.11_natural_convection.md`.
 
-Priority for the next stage (after 10.11):
+Priority for the next stage (after 10.11.3):
 
 1. **internal thermal evolution of the iceberg** (replaces the constant `T_i`
    conduction term of Eq. II);
-2. re-scoring the 10.8.2 observational set against the three-equation + natural-convection closure
+2. a double-diffusive / diffusion-limited low-flow parameterization, validated
+   against Martin & Kauffman (1977) and Keitzl et al. (2016) — the Stage 10.11.3
+   audit showed the current capped natural-convection closure is a cap-determined
+   floor that does not reach the observed quiescent band;
+3. re-scoring the 10.8.2 observational set against the three-equation + natural-convection closure
    with the 10.8.2 acceptance criterion;
-3. improved atmospheric stability/transfer treatment if external validation demonstrates
+4. improved atmospheric stability/transfer treatment if external validation demonstrates
    material bias.
 
 ## Longer-term physics

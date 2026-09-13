@@ -18,9 +18,13 @@ This file prevents literature references from being used more strongly than the 
 | MOM6 mom_ice_shelf salt budget | salt-budget convention `rho_w gamma_S (S_w - S_B) = rho_i m S_B` confirming Stage 10.10.1 | (Losch et al. 2019; Griffies et al.) | VALIDATION |
 | PISM basal-melt salt flux | mass-flux convention `Q_S^B = rho_I S^B dh/dt` confirming Stage 10.10.1 | PISM documentation | VALIDATION |
 | MITgcm shelfice salt flux | mass-flux form `rho_c gamma_S (S - S_b) = -q (S_b - S_I)` confirming Stage 10.10.1 | (Losch 2008 et seq.) | VALIDATION |
-| Natural convection horizontal plate | Fujii et al. 1973 Nu-Ra correlations for downward-facing heated plate | `fujiiHondaMoriokaNaturalConvection1973` | CORE, IMPLEMENTED (Stage 10.11) |
+| Natural convection horizontal plate | Horizontal-plate correlations; operative turbulent `0.15·Ra^(1/3)` (`Sh=0.15Ra^(1/3)`, `L*=A/p`) | `lloydMoranNaturalConvection1974` | CORE, IMPLEMENTED (Stage 10.11; attribution corrected in Stage 10.11.3) |
+| Natural convection horizontal plate (uniform heat flux) | Theoretical laminar downward-facing plate, `Nu ~ Ra^(1/5)` — NOT the source of the production constants | `fujiiHondaMoriokaNaturalConvection1973` | CONTEXT/MIS-CITED (Stage 10.11.3) |
 | Melt-driven convection (vertical ice face) | LES of convection at a VERTICAL ice face dissolving into saline water (Gayen et al. 2016) | `gayenGriffithsKerrMeltDrivenConvection2016` | CONTEXT only — does NOT set a cell scale for a horizontal base (mis-citation corrected in Stage 10.11.2) |
-| Churchill mixed convection | Comprehensive correlating equation for mixed convection | `churchillComprehensiveCorrelatingEquation1977` | CORE, IMPLEMENTED (Stage 10.11) |
+| Churchill mixed convection | Comprehensive correlating equation for mixed convection (vertical laminar assisting) | `churchillComprehensiveCorrelatingEquation1977` | CORE, IMPLEMENTED (Stage 10.11; geometry extrapolation noted in Stage 10.11.3) |
+| Quiescent melt under horizontal ice | Double-diffusive / diffusion-limited convection, ~2x diffusive melt | `martinKauffmanConvectionHorizontalIce1977` | KEY PRIMARY (physical mechanism; Stage 10.11.3) |
+| Diffusion-limited bottom melt regimes | Diffusive / intermediate / high-T melt laws; ~2.5-3.1x enhancement | `keitzlMelladoNotzBottomMelting2016` | VALIDATION (Stage 10.11.3) |
+| Melt-driven double-diffusive fluxes (ice shelf) | Stable salinity + unstable temperature; diffusive-convection regime | `middletonVreugdenhilHollandTaylor2021` | VALIDATION (Stage 10.11.3) |
 | Turbulent exchange over sea ice/MIZ | atmospheric/ocean exchange context | `andreasHorstGrachevSummerSeaIce2010` | SUPPORT |
 | Interactive iceberg freshwater flux | coupled modelling context | `martinAdcroftInteractiveIcebergs2010` | BACKGROUND/FUTURE |
 | Observed iceberg submarine-melt band | validation band for basal melt (0.01–1 m/day) | `cenedeseIcebergsMelting2023` | VALIDATION |

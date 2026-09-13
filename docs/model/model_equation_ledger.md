@@ -232,20 +232,28 @@ forced convection (U-based, §10.2) and natural convection:
 Forced convection (U-based, J2010 Table 2):
     `gamma_T_forced = K_T * U_rel`,  `gamma_S_forced = K_S * U_rel`
 
-Natural convection (Fujii et al. 1973 horizontal-plate correlation; Churchill 1977 mixing):
-    Horizontal plate facing downward (heated down / cooled up)
-    Characteristic length = iceberg length `L` (horizontal scale of the plate,
-    per Fujii et al. 1973; production caller passes `state%L`. Gayen et al.
-    2016 is CONTEXT only — it studies a vertical ice face and does not set a
-    cell scale for a horizontal base; the L_char = D attribution was a
-    mis-citation, removed in the Stage 10.11.2 audit)
+Natural convection (horizontal-plate correlation, see attribution note below;
+Churchill 1977 mixing):
+    Horizontal plate facing downward
+    Characteristic length = iceberg length `L` (horizontal scale of the plate;
+    production caller passes `state%L`. Note the source correlations use the
+    Goldstein-Sparrow-Jones scale `L* = A/p` (area/perimeter), not `L`; see
+    Stage 10.11.3 audit §10. Gayen et al. 2016 is CONTEXT only — it studies a
+    vertical ice face and does not set a cell scale for a horizontal base; the
+    L_char = D attribution was a mis-citation, removed in the Stage 10.11.2 audit)
     Double-diffusive Rayleigh number:
     `Ra_eff = g * L^3 / (nu * alpha) * [beta_T * (T_w - T_B) + beta_S * (S_w - S_B) * Le]`
     where `beta_T = 3.0e-5 1/K`, `beta_S = 7.8e-4 1/PSU`, `Le = 100`,
     `nu = 1.82e-6 m^2/s`, `alpha = k / (rho_w * c_w)`.
-    Nusselt number (Fujii et al. 1973, horizontal plate facing downward):
+    Nusselt number (horizontal plate):
     Laminar  (`Ra < 1e7`):  `Nu = 0.27 * Ra^0.25`
     Turbulent (`Ra >= 1e7`): `Nu = 0.15 * Ra^(1/3)`
+    Attribution (corrected in Stage 10.11.3): the operative turbulent
+    `0.15*Ra^(1/3)` coefficient is from Lloyd & Moran 1974 (JHT 96(4):443-447,
+    electrochemical, `L* = A/p`, turbulent range 8e6-1.6e9), NOT from Fujii
+    et al. 1973 — the latter is a theoretical, laminar, uniform-heat-flux study
+    whose reported dependence is `Nu ~ Ra^(1/5)`. The laminar `0.27*Ra^(1/4)`
+    coefficient is the standard stable-orientation horizontal-plate value.
     Natural-convection transfer coefficients:
     `gamma_T_nat = Nu * k / (L * rho_w * c_w)`,
     `gamma_S_nat = gamma_T_nat * (K_S / K_T)`.
@@ -260,9 +268,24 @@ The three-equation salt balance (Eq. III) retains the Stage 10.10.1
 density-weighted correction `rho_w gamma_S (S_w - S_B) = rho_i m S_B`.
 
 Rayleigh number is capped at `Ra_max = 1e10` to avoid unphysical
-extrapolation beyond the validated range of the Fujii correlations.
-At `U_rel = 0`, the natural-convection closure provides finite melt rates
-consistent with quiescent laboratory observations (0.01–1 m/day range).
+extrapolation beyond the validated range of the horizontal-plate correlations.
+Stage 10.11.3 audit finding: the cap is ALWAYS active for realistic icebergs
+(uncapped anchor `Ra = 5.7e19` at `L=100 m`; `L` for cap = 0.056 m haline-only /
+1.43 m thermal-only), so `Nu` is pinned at `0.15*(1e10)^(1/3) = 323.17` and the
+zero-flow result is set by the cap rather than by the physics. In this regime the
+haline term (including its `Le=100` factor) is numerically inert: dropping it
+entirely reproduces the same `m`, and `beta_T`/`beta_S` variations of +-1 order
+leave `m` unchanged.
+At `U_rel = 0`, the closure provides a finite, cap-determined low-flow floor
+`m = 1.638e-8 m/s = 1.4e-3 m/day` (anchor `T_w=2 C`, `S_w=34.5 PSU`,
+`L=100 m`, `D=50 m`). This is **7-700x below** the observed quiescent
+laboratory/field band of 0.01-1 m/day (Stage 10.8.2), i.e. it does NOT close the
+zero-flow gap. The earlier Stage 10.11 claim of consistency with the 0.01-1 m/day
+band was incorrect and is removed. The physically motivated (stabilizing) haline
+sign would instead give `Ra<0 -> Nu=0 -> m=0`; the real quiescent mechanism is
+double-diffusive / diffusion-limited convection (Martin & Kauffman 1977;
+Keitzl et al. 2016; Middleton et al. 2021), which this closure does not
+represent. See `docs/validation/stage10.11.3_natural_convection_physics_audit.md`.
 
 Parameters (Stage 10.11 additions):
 `beta_T = 3.0e-5 1/K`, `beta_S = 7.8e-4 1/PSU`, `Le = 100`,

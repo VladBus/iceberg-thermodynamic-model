@@ -10,8 +10,6 @@ link = ["netcdff"]
 external-modules = ["netcdf"]
 
 [dependencies]
-stdlib.git = "https://github.com/fortran-lang/stdlib"
-stdlib.branch = "stdlib-fpm"
 
 [executable]
 name = "iceberg_model"

@@ -59,3 +59,7 @@ main = "iceberg_test_2_zero_gradient.f90"
 #[test.iceberg_30day_offline]
 #source-dir = "test"
 #main = "iceberg_test_11_30day_offline.f90"
+
+[test.iceberg_test_10p13_low_flow]
+source-dir = "test"
+main = "iceberg_test_10p13_low_flow.f90"

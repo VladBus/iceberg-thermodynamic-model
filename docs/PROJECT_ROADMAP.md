@@ -1,8 +1,8 @@
 # Project Roadmap
 
 **Updated:** 2026-09-15
-**Current scientific stage:** Stage 10.13 Phase A — diffusion-limited / double-diffusive low-flow closure (design + literature audit; production unchanged)
-**Current status:** Phase A in progress. Stage 10.12 complete and pushed: two-node lumped interior (Fortran 21 + Python 35 checks; production updated)
+**Current scientific stage:** Stage 10.13 — low-flow closure (Phase C: production integration complete, selectable, OFF by default)
+**Current status:** Phase C complete (implemented + tested; not committed at time of writing). Stage 10.12 complete and pushed: two-node lumped interior (Fortran 21 + Python 35 checks; production updated)
 
 ## Completed foundation
 
@@ -37,23 +37,27 @@
 | 10.11 | Natural convection basal melt: double-diffusive Ra + Churchill 1977 mixing; L_char = iceberg length L; Ra cap 1e10; gamma_T_nat, gamma_S_nat added to forced via Churchill n=3 mixing; U=0 -> m=1.6e-8 m/s (0.001 m/day); U=0.1 -> natural adds only 2.2e-6% (NOT 0.1% as originally claimed — corrected in Stage 10.11.2); U=1 -> forced dominates 99.9999999%; Fortran 23 checks (delivered in Stage 10.11.2 audit; original claim of 15 checks was never delivered in 6a0014e), Python 70 checks, cross-language contract | Complete; classification C (10.11) / B (10.11.2 audit); production updated; all tests PASS |
 | 10.11.3 | Deep scientific audit + sensitivity of the natural-convection closure: independent Python replica (tables A-J); cap always active (uncapped Ra=5.7e19) -> Nu pinned 323.17, haline/Le and beta_T/beta_S inert, laminar branch latent; haline sign opposite to physical (stabilizing) role; operative `0.15*Ra^(1/3)` attributed to Lloyd & Moran 1974 (not Fujii 1973); zero-flow m=1.4e-3 m/day is 7-700x below observed quiescent band (does NOT close the 10.8.2 gap); real mechanism double-diffusive (Martin & Kauffman 1977; Keitzl et al. 2016; Middleton et al. 2021); documentation corrected; production source diff ZERO | Complete; classification B; production UNCHANGED; all tests PASS |
 | 10.12 | Prognostic internal thermal evolution: two-node lumped interior, prognostic `state%T_ice` replaces constant `T_i=-10` in Eq. II; `q_cond = 2*K_ICE*(T_s-T_i)/H` (K_ICE=2.2), `q_bot = m*rho_i*CP_ICE_3EQ*max(T_B-T_i,0)`, explicit Euler, clamp [-100,0]°C, switch `thermal_evolution_enabled` — fully gates the stage in the step (OFF = bit-identical legacy, verified by F.1–F.4); energy-conserving lagged skin coupling (`q_internal_exchange`); Fortran 21 + Python 35 checks, cross-language contract C_int(50 m); unused stdlib dependency removed from fpm.toml | Complete; classification C; production updated; all tests PASS |
-| 10.13 | Diffusion-limited / double-diffusive low-flow closure: Phase A (scientific formulation + literature audit; MK77 / Keitzl16 / Middleton21 mechanism synthesis); candidate = diffusion-limited shield + diffusive-convection enhancement governed by Ri* and density ratio R_ρ; three-equation interface preserved | **Phase A in progress**; design note drafted; production unchanged |
+| 10.13 | Diffusion-limited / double-diffusive low-flow closure: Phase A (scientific formulation + literature audit) → Phase B (research prototype, 167 checks, sweep 246/270 in band, 10.8.2 quiescent 5/5) → Phase C (production integration: selectable `low_flow_closure_enabled`, OFF default, three-equation preserved, forced branch bit-identical at high U, Fortran 23 checks + Python/Fortran comparison 56 checks; research parameterization, not universal validation) | **Complete** (Phases A–C); classification: research parameterization; production updated behind switch; commit pending |
 
 ## Immediate next step
 
-### Stage 10.13 — diffusion-limited / double-diffusive low-flow closure (Phase A IN PROGRESS)
+### Stage 10.13 — diffusion-limited / double-diffusive low-flow closure (COMPLETE)
 
-Phase A (scientific formulation + literature audit, production unchanged) is
-drafted in `docs/validation/stage10.13_diffusion_limited_low_flow_design_note.md`.
-It synthesizes the mechanism from Martin & Kauffman (1977), Keitzl et al. (2016)
-and Middleton et al. (2021): a diffusion-limited sublayer at the horizontal
-basal interface with diffusive-convection (double-diffusive) enhancement
-governed by the Richardson number Ri* and the density ratio R_ρ, with the
-haline buoyancy acting STABILIZING (opposite to the Stage 10.11 production
-sign). The three-equation interface is preserved as the boundary-condition
-framework. Phase B (independent Python implementation + parameter sweep +
-10.8.2 re-scoring) follows only after the acceptance criteria in the design
-note are agreed.
+Phases A–C delivered:
+- Phase A: design note + literature audit (MK77 / Keitzl16 / Middleton21).
+- Phase B: research prototype `python/validation/low_flow.py` (167 checks;
+  sweep 246/270 in band vs baseline 135/270; 10.8.2 quiescent rows 5/5 in band,
+  ddc within 1.1–2.2× of RH80 observations, no calibration).
+- Phase C: production integration — `low_flow_closure_enabled` (OFF default),
+  three-equation interface preserved, forced branch bit-identical at high U,
+  legacy OFF verified; Fortran 23/23, Python/Fortran comparison 56/56,
+  full battery exit 0, strict build clean.
+- Reports: `docs/validation/stage10.13_phase_b_results.md`,
+  `docs/validation/stage10.13_phase_c_results.md`.
+
+**Known status**: research parameterization (t_scale, f_dc, κ_S convention
+uncertainties documented; not universal validation). Commit of Phase C
+pending user review.
 
 ### Stage 10.11 — natural convection basal melt / low-flow closure (DONE)
 
@@ -130,8 +134,10 @@ Priority for the next stage (after 10.12):
 1. a double-diffusive / diffusion-limited low-flow parameterization, validated
    against Martin & Kauffman (1977) and Keitzl et al. (2016) — the Stage 10.11.3
    audit showed the current capped natural-convection closure is a cap-determined
-   floor that does not reach the observed quiescent band — **Phase A started;
-   design note drafted, see the Stage 10.13 block above**;
+   floor that does not reach the observed quiescent band — **Stages 10.13
+   Phases A–C complete (research parameterization behind a switch, OFF
+   default); further validation of t_scale/f_dc is a follow-up research item,
+   not a new production stage**;
 2. re-scoring the 10.8.2 observational set against the three-equation + natural-convection closure
    with the 10.8.2 acceptance criterion;
 3. improved atmospheric stability/transfer treatment if external validation demonstrates

@@ -247,6 +247,33 @@ module iceberg_types
     ! Источник: стандартные таблицы свойств морской воды
     real, parameter :: LEWIS_NUMBER = 100.0
 
+    ! ========================================================================
+    !   LOW-FLOW CLOSURE (Stage 10.13) — research parameterization; OFF by default
+    !   Diffusion-limited / double-diffusive low-flow basal melt (candidate C;
+    !   Phase A design note §5-7; Python reference python/validation/low_flow.py).
+    !   Переиспользуемые свойства среды: THERMAL_CONDUCTIVITY, KINEMATIC_VISCOSITY,
+    !   THERMAL_EXPANSION_COEFF, HALINE_CONTRACTION_COEFF, LEWIS_NUMBER,
+    !   CP_SEAWATER, CD_WATER, VON_KARMAN, GRAVITY (не дублируются).
+    ! ========================================================================
+    real, parameter :: LOW_FLOW_TIME_SCALE_S = 86400.0    ! диагностический масштаб времени подслоя [с]
+    real, parameter :: LOW_FLOW_DELTA_MIN_M = 1.0e-4      ! мин. толщина солевого подслоя [м]
+    real, parameter :: LOW_FLOW_DELTA_MAX_M = 5.0e-2      ! кап толщины подслоя (стеккейс) [м]
+    real, parameter :: LOW_FLOW_F_DC = 2.5                ! коэффициент усиления diffusive convection (безразм.)
+    real, parameter :: LOW_FLOW_DS_FLOOR_PSU = 1.0e-2     ! регуляризация ΔS для R_ρ и N² [PSU]
+    real, parameter :: LOW_FLOW_U_LOW = 1.0e-3            ! начало перехода low-flow → forced [м/с]
+    real, parameter :: LOW_FLOW_U_HIGH = 1.0e-2           ! конец перехода low-flow → forced [м/с]
+    integer, parameter :: LOW_FLOW_MAX_ITER = 4           ! внешние итерации Picard для γ_low
+    real, parameter :: LOW_FLOW_TOL = 1.0e-6              ! относительная сходимость m (безразм.)
+    ! Машиночитаемые режимы (поле diag%low_flow_regime)
+    integer, parameter :: LOW_FLOW_REGIME_OFF = 0          ! legacy/выключено
+    integer, parameter :: LOW_FLOW_REGIME_FORCED = 1       ! forced
+    integer, parameter :: LOW_FLOW_REGIME_DIFFUSION = 2    ! diffusion-limited
+    integer, parameter :: LOW_FLOW_REGIME_DOUBLE_DIFFUSIVE = 3  ! double-diffusive (DC active)
+    integer, parameter :: LOW_FLOW_REGIME_HYBRID_TRANSITION = 4 ! переход
+    integer, parameter :: LOW_FLOW_REGIME_INVALID = 5      ! invalid/fallback
+    ! Переключатель Stage 10.13 (OFF = legacy-поведение без изменений)
+    logical, save :: low_flow_closure_enabled = .false.
+
     ! Коэффициенты корреляции Нуссельта — Релея (Fujii et al. 1973)
     ! Горизонтальная пластина, обращённая вниз (heated down / cooled up)
     real, parameter :: NU_LAMINAR_COEFF = 0.27
@@ -395,6 +422,22 @@ module iceberg_types
         real :: q_bot        ! Базальный чувствительный тепловой поток [Вт/м²]
         logical :: t_ice_bound ! Флаг достижения границы температуры
 
+        ! Low-flow closure (Stage 10.13)
+        logical :: low_flow_enabled   ! переключатель включён
+        logical :: low_flow_active    ! ветка low-flow вносит вклад (w < 1)
+        integer :: low_flow_regime    ! LOW_FLOW_REGIME_* (0..5)
+        real :: low_flow_u_rel        ! относительная скорость [м/с]
+        real :: low_flow_re_b         ! диагностический Re_b (безразм.)
+        real :: low_flow_ri_star      ! Ri* (безразм.)
+        real :: low_flow_r_rho        ! R_ρ (безразм.)
+        real :: low_flow_delta_s      ! толщина солевого подслоя [м]
+        real :: low_flow_delta_t      ! термический драйвинг T_w - T_B [К]
+        real :: low_flow_f            ! эффективный enhancement (1 или LOW_FLOW_F_DC)
+        real :: low_flow_gamma_t      ! эффективный γ_T [м/с]
+        real :: low_flow_gamma_s      ! эффективный γ_S [м/с]
+        integer :: low_flow_iter      ! использовано внешних итераций
+        logical :: low_flow_converged ! сходимость внешних итераций
+
         ! Силы [Н]
         real :: f_wind_x     ! Ветровая сила по X
         real :: f_wind_y     ! Ветровая сила по Y
@@ -489,6 +532,17 @@ module iceberg_types
     ! Внутренняя термальная эволюция (Stage 10.12)
     public :: thermal_evolution_enabled
     public :: set_thermal_evolution
+    ! Low-flow closure (Stage 10.13)
+    public :: LOW_FLOW_TIME_SCALE_S, LOW_FLOW_DELTA_MIN_M, LOW_FLOW_DELTA_MAX_M
+    public :: LOW_FLOW_F_DC, LOW_FLOW_DS_FLOOR_PSU, LOW_FLOW_U_LOW, LOW_FLOW_U_HIGH
+    public :: LOW_FLOW_MAX_ITER, LOW_FLOW_TOL
+    public :: LOW_FLOW_REGIME_OFF, LOW_FLOW_REGIME_FORCED, LOW_FLOW_REGIME_DIFFUSION
+    public :: LOW_FLOW_REGIME_DOUBLE_DIFFUSIVE, LOW_FLOW_REGIME_HYBRID_TRANSITION
+    public :: LOW_FLOW_REGIME_INVALID
+    public :: low_flow_closure_enabled, set_low_flow_closure
+    public :: low_flow_delta_s, low_flow_density_ratio, low_flow_reynolds_b
+    public :: low_flow_richardson_star, low_flow_enhancement, low_flow_blend_weight
+    public :: low_flow_regime_value
     public :: ocean_profile, atmos_forcing, iceberg_diagnostics, iceberg_state
     public :: ocean_freezing_point
     public :: ocean_heat_transfer_coeff
@@ -512,7 +566,7 @@ contains
         real, intent(out) :: h_int
 
         h_int = max(state%H - H_EFF, H_MIN_INT)
-        c_eff_int = RHO_ICE * C_ICE * h_int
+        c_eff_int = RHO_ICE*C_ICE*h_int
     end subroutine compute_iceberg_thermal_capacity
 
     ! ========================================================================
@@ -534,7 +588,7 @@ contains
         if (state%H .le. 0.0) then
             q_cond = 0.0
         else
-            q_cond = 2.0 * K_ICE * (state%T_surface - state%T_ice) / state%H
+            q_cond = 2.0*K_ICE*(state%T_surface - state%T_ice)/state%H
         end if
     end subroutine compute_iceberg_conductive_coupling
 
@@ -573,8 +627,8 @@ contains
             return
         end if
 
-        dT_dt = (q_cond - q_bot) / c_eff_int
-        T_new = state%T_ice + dT_dt * dt
+        dT_dt = (q_cond - q_bot)/c_eff_int
+        T_new = state%T_ice + dT_dt*dt
 
         ! Границы температуры
         if (T_new .gt. T_ICE_MAX) then
@@ -843,6 +897,132 @@ contains
             gamma_s = gamma_s_nat
         end if
     end subroutine natural_convection_transfer_coeff
+
+    ! ========================================================================
+    !   LOW-FLOW CLOSURE HELPER (Stage 10.13)
+    !   Diffusion-limited / double-diffusive low-flow basal melt (candidate C).
+    !   Формулы — по Phase A design note §6-7 и Python-референсу low_flow.py.
+    !   Единицы: T [°C], S [кг/кг], U [м/с], δ [м], безразм. группы безразмерны.
+    ! ========================================================================
+
+    ! Переключатель Stage 10.13 (OFF = legacy)
+    subroutine set_low_flow_closure(enabled)
+        logical, intent(in) :: enabled
+        low_flow_closure_enabled = enabled
+    end subroutine set_low_flow_closure
+
+    ! δ_S = clip(max(δ_min, sqrt(κ_S·t)), δ_max); κ_S = κ_T/Le (κ_T из THERMAL_CONDUCTIVITY)
+    ! [source] рост подслоя Middleton21; δ_min/δ_max — [inferred] (Phase B)
+    pure function low_flow_delta_s(time_scale_s) result(delta_s)
+        real, intent(in) :: time_scale_s
+        real :: delta_s
+        real :: kappa_s
+        kappa_s = (THERMAL_CONDUCTIVITY/(RHO_WATER*CP_SEAWATER))/LEWIS_NUMBER
+        if (time_scale_s .le. 0.0) then
+            delta_s = LOW_FLOW_DELTA_MIN_M
+        else
+            delta_s = sqrt(kappa_s*time_scale_s)
+            delta_s = max(delta_s, LOW_FLOW_DELTA_MIN_M)
+            delta_s = min(delta_s, LOW_FLOW_DELTA_MAX_M)
+        end if
+    end function low_flow_delta_s
+
+    ! R_ρ = α_T·ΔT/(β_S·ΔS_psu) (Middleton convention); ΔT≤0 → 0; ΔS floored [inferred]
+    pure function low_flow_density_ratio(t_w, t_b, s_w, s_b) result(r_rho)
+        real, intent(in) :: t_w, t_b, s_w, s_b
+        real :: r_rho
+        real :: d_t, d_s_psu
+        d_t = max(t_w - t_b, 0.0)
+        if (d_t .le. 0.0) then
+            r_rho = 0.0
+            return
+        end if
+        d_s_psu = max((s_w - s_b)*1000.0, LOW_FLOW_DS_FLOOR_PSU)
+        r_rho = THERMAL_EXPANSION_COEFF*d_t/(HALINE_CONTRACTION_COEFF*d_s_psu)
+    end function low_flow_density_ratio
+
+    ! Re_b = ε/(ν·N²); ε = u_*³/(κ_vK·δ_S), u_* = sqrt(C_D_w)·U; N² = g·β_S·ΔS_psu/δ_S.
+    ! Без velocity floor: ε → 0 при U = 0 (решение Phase B, тест B.7). Диагностика, не доказательство режима.
+    pure function low_flow_reynolds_b(u_rel, s_w, s_b, delta_s) result(re_b)
+        real, intent(in) :: u_rel, s_w, s_b, delta_s
+        real :: re_b
+        real :: u_star, eps, n2, d_s_psu
+        if (delta_s .le. 0.0) then
+            re_b = 0.0
+            return
+        end if
+        u_star = sqrt(CD_WATER)*max(u_rel, 0.0)
+        d_s_psu = max((s_w - s_b)*1000.0, LOW_FLOW_DS_FLOOR_PSU)
+        n2 = GRAVITY*HALINE_CONTRACTION_COEFF*d_s_psu/delta_s
+        if (n2 .le. 0.0) then
+            re_b = 0.0
+            return
+        end if
+        eps = u_star**3/(VON_KARMAN*delta_s)
+        re_b = eps/(KINEMATIC_VISCOSITY*n2)
+    end function low_flow_reynolds_b
+
+    ! w* = (g·α_T·κ_T·ΔT)^(1/3); Ri* = g·β_S·ΔS_psu·δ_S/w*²  [analytic; Keitzl16 structure]
+    pure subroutine low_flow_richardson_star(t_w, t_b, s_w, s_b, delta_s, ri_star, w_star)
+        real, intent(in) :: t_w, t_b, s_w, s_b, delta_s
+        real, intent(out) :: ri_star, w_star
+        real :: d_t, d_s_psu, kappa_t
+        d_t = max(t_w - t_b, 0.0)
+        kappa_t = THERMAL_CONDUCTIVITY/(RHO_WATER*CP_SEAWATER)
+        w_star = (GRAVITY*THERMAL_EXPANSION_COEFF*kappa_t*d_t)**(1.0/3.0)
+        if (w_star .le. 0.0 .or. delta_s .le. 0.0) then
+            ri_star = 0.0
+            return
+        end if
+        d_s_psu = max((s_w - s_b)*1000.0, LOW_FLOW_DS_FLOOR_PSU)
+        ri_star = GRAVITY*HALINE_CONTRACTION_COEFF*d_s_psu*delta_s/(w_star*w_star)
+    end subroutine low_flow_richardson_star
+
+    ! f = LOW_FLOW_F_DC, если DC активен: R_ρ > κ_S/κ_T И Re_b < 1 (Middleton21);
+    ! иначе 1.0. Критерий жёсткий (как в Python-референсе); сглаживание — через
+    ! blend-вес (низкоскоростная ветка затухает в переходе).
+    pure function low_flow_enhancement(r_rho, re_b) result(f)
+        real, intent(in) :: r_rho, re_b
+        real :: f
+        if (r_rho .gt. 1.0/LEWIS_NUMBER .and. re_b .lt. 1.0) then
+            f = LOW_FLOW_F_DC
+        else
+            f = 1.0
+        end if
+    end function low_flow_enhancement
+
+    ! Cosine smoothstep w ∈ [0,1] over [LOW_FLOW_U_LOW, LOW_FLOW_U_HIGH]
+    pure function low_flow_blend_weight(u_rel) result(w)
+        real, intent(in) :: u_rel
+        real :: w, t
+        real, parameter :: PI = 4.0*atan(1.0)
+        if (u_rel .le. LOW_FLOW_U_LOW) then
+            w = 0.0
+        else if (u_rel .ge. LOW_FLOW_U_HIGH) then
+            w = 1.0
+        else
+            t = (u_rel - LOW_FLOW_U_LOW)/(LOW_FLOW_U_HIGH - LOW_FLOW_U_LOW)
+            w = 0.5 - 0.5*cos(PI*t)
+        end if
+    end function low_flow_blend_weight
+
+    ! Режим: 0 legacy/disabled; 5 invalid (ΔT≤0); 1 forced (w=1); 4 переход (0<w<1);
+    ! 3 double-diffusive (w=0, f>1); 2 diffusion-limited (w=0, f=1)
+    pure function low_flow_regime_value(w, f, d_t) result(regime)
+        real, intent(in) :: w, f, d_t
+        integer :: regime
+        if (d_t .le. 0.0) then
+            regime = LOW_FLOW_REGIME_INVALID
+        else if (w .ge. 1.0) then
+            regime = LOW_FLOW_REGIME_FORCED
+        else if (w .gt. 0.0) then
+            regime = LOW_FLOW_REGIME_HYBRID_TRANSITION
+        else if (f .gt. 1.0) then
+            regime = LOW_FLOW_REGIME_DOUBLE_DIFFUSIVE
+        else
+            regime = LOW_FLOW_REGIME_DIFFUSION
+        end if
+    end function low_flow_regime_value
 
     ! ========================================================================
     !   УСТАНОВКА СХЕМЫ БАЗАЛЬНОГО ПЛАВЛЕНИЯ (Stage 10.10 / 10.11)

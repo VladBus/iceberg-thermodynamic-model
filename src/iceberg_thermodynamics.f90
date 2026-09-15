@@ -238,7 +238,7 @@ contains
         call compute_basal_melt(state, ocean_prof, diag%draft, state%L, state%u, state%v, &
                                 t_draft, s_draft, tf_draft, &
                                 delta_t_basal, m_basal, &
-                                diag%t_interface, diag%s_interface)
+                                diag%t_interface, diag%s_interface, diag)
 
         diag%t_draft = t_draft
         diag%s_draft = s_draft
@@ -330,9 +330,9 @@ contains
     !   delta_t     - T - Tf [°C] (выход)
     !   m_basal     - базальная скорость плавления [м/с] (выход)
     ! ========================================================================
-subroutine compute_basal_melt(state, prof, draft, l_char, u_ice, v_ice, &
-                              t_draft, s_draft, tf_draft, delta_t, m_basal, &
-                              t_interface, s_interface)
+    subroutine compute_basal_melt(state, prof, draft, l_char, u_ice, v_ice, &
+                                  t_draft, s_draft, tf_draft, delta_t, m_basal, &
+                                  t_interface, s_interface, diag)
         type(iceberg_state), intent(in) :: state
         type(ocean_profile), intent(in) :: prof
         real, intent(in) :: draft
@@ -341,11 +341,31 @@ subroutine compute_basal_melt(state, prof, draft, l_char, u_ice, v_ice, &
         real, intent(out) :: t_draft, s_draft, tf_draft
         real, intent(out) :: delta_t, m_basal
         real, intent(out), optional :: t_interface, s_interface
+        type(iceberg_diagnostics), intent(inout), optional :: diag
 
         real :: u_rel_draft, gamma_t, q_basal
         real :: u_draft, v_draft
         real :: gamma_t_vel, gamma_s_vel
         real :: t_iface, s_iface
+
+        ! Диагностика Stage 10.13: по умолчанию определённые legacy-значения
+        ! (перезаписываются low-flow солвером при активации ветки)
+        if (present(diag)) then
+            diag%low_flow_enabled = low_flow_closure_enabled
+            diag%low_flow_active = .false.
+            diag%low_flow_regime = LOW_FLOW_REGIME_OFF
+            diag%low_flow_u_rel = 0.0
+            diag%low_flow_re_b = 0.0
+            diag%low_flow_ri_star = 0.0
+            diag%low_flow_r_rho = 0.0
+            diag%low_flow_delta_s = 0.0
+            diag%low_flow_delta_t = 0.0
+            diag%low_flow_f = 1.0
+            diag%low_flow_gamma_t = 0.0
+            diag%low_flow_gamma_s = 0.0
+            diag%low_flow_iter = 0
+            diag%low_flow_converged = .false.
+        end if
 
         t_draft = interp_at_draft(prof, draft, "temp")
         s_draft = interp_at_draft(prof, draft, "salt")
@@ -394,11 +414,26 @@ subroutine compute_basal_melt(state, prof, draft, l_char, u_ice, v_ice, &
                 else
                     ! ================================================================
                     !   ТРЁХУРАВНЕННОЕ (Stage 10.10) — только форсированная конвекция
+                    !   Stage 10.13: low-flow закрытие (диффузионный подслой + DC
+                    !   усиление) модифицирует γ_T/γ_S перед тем же 3eq-солвером;
+                    !   переключатель low_flow_closure_enabled (OFF = legacy).
                     ! ================================================================
                     gamma_t_vel = THREE_EQ_KT*u_rel_draft
                     gamma_s_vel = THREE_EQ_KS*u_rel_draft
 
-                    if (thermal_evolution_enabled) then
+                    if (low_flow_closure_enabled) then
+                        if (thermal_evolution_enabled) then
+                            call solve_three_equation_interface_low_flow( &
+                                t_draft, s_draft, draft, u_rel_draft, &
+                                state%T_ice, gamma_t_vel, gamma_s_vel, &
+                                t_iface, s_iface, m_basal, diag)
+                        else
+                            call solve_three_equation_interface_low_flow( &
+                                t_draft, s_draft, draft, u_rel_draft, &
+                                T_ICE_INIT, gamma_t_vel, gamma_s_vel, &
+                                t_iface, s_iface, m_basal, diag)
+                        end if
+                    else if (thermal_evolution_enabled) then
                         call solve_three_equation_interface(t_draft, s_draft, draft, &
                                                             u_rel_draft, &
                                                             gamma_t_vel, gamma_s_vel, &
@@ -525,7 +560,8 @@ subroutine compute_basal_melt(state, prof, draft, l_char, u_ice, v_ice, &
     ! ========================================================================
     subroutine solve_three_equation_interface(t_w, s_w, depth_m, u_rel, &
                                               gamma_t, gamma_s, t_ice_in, use_conduction, &
-                                              t_interface, s_interface, m_basal)
+                                              t_interface, s_interface, m_basal, &
+                                              allow_zero_flow)
         real, intent(in) :: t_w
         real, intent(in) :: s_w
         real, intent(in) :: depth_m
@@ -537,15 +573,25 @@ subroutine compute_basal_melt(state, prof, draft, l_char, u_ice, v_ice, &
         real, intent(out) :: t_interface
         real, intent(out) :: s_interface
         real, intent(out) :: m_basal
+        logical, intent(in), optional :: allow_zero_flow
 
         real :: tf_w, l_heat, ocean_flux_coeff
         real :: s_b, t_b, f_val, m_lo, m_hi, m_mid, m_est
         integer :: iter
+        logical :: allow_zero
+
+        allow_zero = .false.
+        if (present(allow_zero_flow)) allow_zero = allow_zero_flow
 
         tf_w = ocean_freezing_point(s_w, depth_m)
 
         ! ---- Края: нет потока → m = 0, интерфейс = замерзание дальнего поля ----
-        if (u_rel .le. 0.0 .or. gamma_t .le. 0.0 .or. t_w .le. tf_w) then
+        ! Легаси-контракт: при u_rel <= 0 (без внешнего/низкоскоростного потока)
+        ! m = 0. Stage 10.13 low-flow закрытие передаёт allow_zero_flow = .true.,
+        ! чтобы 3eq-солвер мог работать при U=0 с транспортом γ_low > 0
+        ! (u_rel в теле солвера не используется — только как страж).
+        if ((.not. allow_zero .and. u_rel .le. 0.0) .or. &
+            gamma_t .le. 0.0 .or. t_w .le. tf_w) then
             m_basal = 0.0
             s_interface = s_w
             t_interface = tf_w
@@ -557,7 +603,7 @@ subroutine compute_basal_melt(state, prof, draft, l_char, u_ice, v_ice, &
             s_interface = 0.0
             t_interface = ocean_freezing_point(0.0, depth_m)
             l_heat = RHO_ICE*LATENT_HEAT
-            if (use_conduction) l_heat = l_heat + RHO_ICE*CP_ICE_3EQ*max(t_interface - t_ice_in, 0.0)
+           if (use_conduction) l_heat = l_heat + RHO_ICE*CP_ICE_3EQ*max(t_interface - t_ice_in, 0.0)
             ocean_flux_coeff = RHO_WATER*CP_SEAWATER*gamma_t*(t_w - t_interface)
             if (ocean_flux_coeff .gt. 0.0 .and. l_heat .gt. 0.0) then
                 m_basal = ocean_flux_coeff/l_heat
@@ -620,6 +666,107 @@ subroutine compute_basal_melt(state, prof, draft, l_char, u_ice, v_ice, &
         s_interface = gamma_s*s_w/(gamma_s + RHO_ICE_WATER_RATIO*m_basal)
         t_interface = ocean_freezing_point(s_interface, depth_m)
     end subroutine solve_three_equation_interface
+
+    ! ========================================================================
+    !   ТРЁХУРАВНЕННЫЙ ИНТЕРФЕЙС С LOW-FLOW ЗАМЫКАНИЕМ (Stage 10.13)
+    ! ========================================================================
+    ! Low-flow (диффузионно-ограниченный подслой + diffusive-convection
+    ! усиление) модифицирует ЭФФЕКТИВНЫЕ коэффициенты переноса γ_T, γ_S,
+    ! после чего решается СУЩЕСТВУЮЩЕЕ трёхуравненное замыкание (H&J99/J2010):
+    !
+    !   γ_T_low = f·k_w·(L_f + c_i·max(T_B−T_i,0)) / (δ_S·ρ_w·c_w·L_f)   [м/с]
+    !   γ_S_low = γ_T_low·(K_S/K_T)                (конвенция J2010; flux-ratio [unresolved])
+    !   γ_T_eff = (1−w)·γ_T_low + w·γ_T_forced,  γ_S_eff аналогично      (w — smoothstep по U)
+    !   → solve_three_equation_interface(γ_T_eff, γ_S_eff)
+    !
+    ! Внешняя итерация Picard (LOW_FLOW_MAX_ITER): γ_low зависит от T_B (conduction);
+    ! сходимость по относительной разности m (LOW_FLOW_TOL). Безразмерные группы
+    ! (R_ρ, Re_b, Ri*) используют РЕГУЛЯРИЗОВАННУЮ солёность s_b_crit = S_w − dS_floor
+    ! (конвенция Python-референса: критерий DC не должен зависеть от опреснённого
+    ! интерфейсного S_B из 3eq-солвера; иначе итерация выключает DC). Fallback при
+    ! NaN — форсированная ветка; диагностика в diag (если передан).
+    ! ========================================================================
+    subroutine solve_three_equation_interface_low_flow(t_w, s_w, depth_m, u_rel, &
+                                                       t_ice_in, gamma_t_forced, gamma_s_forced, &
+                                                       t_iface, s_iface, m_basal, diag)
+        real, intent(in) :: t_w, s_w, depth_m, u_rel, t_ice_in
+        real, intent(in) :: gamma_t_forced, gamma_s_forced
+        real, intent(out) :: t_iface, s_iface, m_basal
+        type(iceberg_diagnostics), intent(inout), optional :: diag
+
+        real :: delta_s, d_t, r_rho, re_b, ri_star, w_star, f, w
+        real :: kappa_t, kappa_s, k_w
+        real :: gamma_t_low, gamma_s_low, gamma_t, gamma_s, l_heat
+        real :: t_b_est, s_b_crit, m_prev
+        integer :: iter
+        logical :: conv
+
+        kappa_t = THERMAL_CONDUCTIVITY/(RHO_WATER*CP_SEAWATER)
+        kappa_s = kappa_t/LEWIS_NUMBER
+        k_w = RHO_WATER*CP_SEAWATER*kappa_t
+
+        delta_s = low_flow_delta_s(LOW_FLOW_TIME_SCALE_S)
+        ! Начальная оценка интерфейса (как в Python-референсе): T_B = Tf(S_w, depth)
+        t_b_est = ocean_freezing_point(s_w, depth_m)
+        ! Регуляризованная солёность критерия (Python: S_B = S_w − dS_floor_psu)
+        s_b_crit = s_w - LOW_FLOW_DS_FLOOR_PSU*1.0e-3
+        m_prev = 0.0
+        conv = .false.
+
+        do iter = 1, LOW_FLOW_MAX_ITER
+            d_t = max(t_w - t_b_est, 0.0)
+            r_rho = low_flow_density_ratio(t_w, t_b_est, s_w, s_b_crit)
+            re_b = low_flow_reynolds_b(u_rel, s_w, s_b_crit, delta_s)
+            call low_flow_richardson_star(t_w, t_b_est, s_w, s_b_crit, delta_s, ri_star, w_star)
+            f = low_flow_enhancement(r_rho, re_b)
+            w = low_flow_blend_weight(u_rel)
+
+            l_heat = LATENT_HEAT + CP_ICE_3EQ*max(t_b_est - t_ice_in, 0.0)
+            gamma_t_low = f*k_w*l_heat/(delta_s*RHO_WATER*CP_SEAWATER*LATENT_HEAT)
+            gamma_s_low = gamma_t_low*(THREE_EQ_KS/THREE_EQ_KT)
+
+            gamma_t = (1.0 - w)*gamma_t_low + w*gamma_t_forced
+            gamma_s = (1.0 - w)*gamma_s_low + w*gamma_s_forced
+
+            call solve_three_equation_interface(t_w, s_w, depth_m, u_rel, &
+                                                gamma_t, gamma_s, t_ice_in, .true., &
+                                                t_iface, s_iface, m_basal, .true.)
+
+            ! Fallback: NaN → только форсированная ветка (безопасный legacy)
+            if (m_basal .ne. m_basal) then
+                call solve_three_equation_interface(t_w, s_w, depth_m, u_rel, &
+                                                    gamma_t_forced, gamma_s_forced, &
+                                                    t_ice_in, .true., &
+                                                    t_iface, s_iface, m_basal, .true.)
+                conv = .false.
+                exit
+            end if
+
+            if (abs(m_basal - m_prev) .le. LOW_FLOW_TOL*max(m_basal, MELT_RATE_MIN)) then
+                conv = .true.
+                exit
+            end if
+            t_b_est = t_iface
+            m_prev = m_basal
+        end do
+
+        if (present(diag)) then
+            diag%low_flow_enabled = low_flow_closure_enabled
+            diag%low_flow_active = (w .lt. 1.0)
+            diag%low_flow_regime = low_flow_regime_value(w, f, t_w - t_b_est)
+            diag%low_flow_u_rel = u_rel
+            diag%low_flow_re_b = re_b
+            diag%low_flow_ri_star = ri_star
+            diag%low_flow_r_rho = r_rho
+            diag%low_flow_delta_s = delta_s
+            diag%low_flow_delta_t = max(t_w - t_iface, 0.0)
+            diag%low_flow_f = f
+            diag%low_flow_gamma_t = gamma_t
+            diag%low_flow_gamma_s = gamma_s
+            diag%low_flow_iter = iter
+            diag%low_flow_converged = conv
+        end if
+    end subroutine solve_three_equation_interface_low_flow
 
     ! ========================================================================
     !   ТРЁХУРАВНЕННОЕ + НАТУРАЛЬНАЯ КОНВЕКЦИЯ (Stage 10.11)
@@ -691,7 +838,7 @@ subroutine compute_basal_melt(state, prof, draft, l_char, u_ice, v_ice, &
                                                    l_char_nat, u_rel, &
                                                    gamma_t_eff, gamma_s_eff)
             l_heat = RHO_ICE*LATENT_HEAT
-            if (use_conduction) l_heat = l_heat + RHO_ICE*CP_ICE_3EQ*max(t_interface - t_ice_in, 0.0)
+           if (use_conduction) l_heat = l_heat + RHO_ICE*CP_ICE_3EQ*max(t_interface - t_ice_in, 0.0)
             if (gamma_t_eff .gt. 0.0 .and. l_heat .gt. 0.0) then
                 m_basal = RHO_WATER*CP_SEAWATER*gamma_t_eff*(t_w - t_interface)/l_heat
             else
@@ -921,7 +1068,7 @@ subroutine compute_basal_melt(state, prof, draft, l_char, u_ice, v_ice, &
             ! === ОСЛАБЛЕНИЕ В АТМОСФЕРЕ (Stage 10.1.2) ===
             ! Широкополосная параметризация: SW_down = S0 * cos_zenith * T_clear * T_cloud
             ! где:
-            !   S0 * cos_zenith       = поток солнечной радиации на горизонтальную поверхность
+            !   S0 * cos_zenith       = поток сол��ечной радиации на горизонтальную поверхность
             !   T_clear               = пропускание атмосферы при ясном небе
             !   T_cloud               = пропускание облаков (функция от tcc)
             !

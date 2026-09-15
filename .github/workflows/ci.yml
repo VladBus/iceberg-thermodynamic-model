@@ -1,6 +1,6 @@
 # ==============================================================================
 # GitHub Actions CI for AARI Iceberg Thermodynamic & Dynamics Model
-# Runs all Fortran tests via fpm auto-discovery (51 targets)
+# Runs all Fortran tests via fpm auto-discovery (54 targets)
 # Requires: -I/usr/include for netcdf.mod (system package libnetcdff-dev)
 # ==============================================================================
 
@@ -89,8 +89,20 @@ jobs:
           conda activate iceberg-thermodynamic-model
           python python/tests/test_calibration_assessment.py
 
+      - name: Run Stage 10.10/10.10.1 Python three-equation validation
+        shell: bash -l {0}
+        run: |
+          conda activate iceberg-thermodynamic-model
+          python python/tests/test_three_equation.py
+
       - name: Run Stage 10.11 Python natural convection validation
         shell: bash -l {0}
         run: |
           conda activate iceberg-thermodynamic-model
           python python/tests/test_three_equation_natural.py
+
+      - name: Run Stage 10.12 Python internal thermal evolution validation
+        shell: bash -l {0}
+        run: |
+          conda activate iceberg-thermodynamic-model
+          python python/tests/test_internal_thermal_evolution.py

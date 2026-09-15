@@ -76,7 +76,8 @@ contains
         state%time = 0.0
         state%active = .true.
         state%grounded = .false.
-        state%T_surface = T_ICE  ! Инициализация прогностической температуры поверхности legacy-значением
+        state%T_surface = T_ICE_INIT  ! Инициализация прогностической температуры поверхности
+        state%T_ice = T_ICE_INIT      ! Инициализация прогностической внутренней температуры (Stage 10.12)
 
         if (present(u0)) then
             state%u = u0

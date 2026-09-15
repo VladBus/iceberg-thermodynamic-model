@@ -301,6 +301,55 @@ including zero-flow, low-flow continuity, mixed-convection regime, and
 cross-language contract (`m = 1.638e-8 m/s` at `U_rel=0`, `T_w=2°C`,
 `S_w=34.5 PSU`, `L=100m`, `D=50m`).
 
+## 10.4 Prognostic internal thermal evolution (Stage 10.12)
+
+Two-node lumped interior model (design note Variant C; effective bulk
+parametrization — Bi ≫ 1, diffusion time ≫ run length). The interior
+temperature `T_ice` becomes a prognostic state variable replacing the
+constant `T_i = -10` (now `T_ICE_INIT`, an initial condition) inside the
+three-equation basal closure Eq. II.
+
+Definitions:
+
+    H_int  = max(H - H_EFF, H_MIN_INT)               [m]  (H_MIN_INT = 0.5)
+    C_int  = rho_i * C_ICE * H_int                   [J/(m2 K)]
+    q_cond = 2 * K_ICE * (T_surface - T_ice) / H     [W/m2]  (K_ICE = 2.2)
+    q_bot  = m_basal * rho_i * CP_ICE_3EQ * max(T_B - T_ice, 0)  [W/m2]
+
+Interior ODE (explicit Euler, clamped to [T_ICE_MIN, T_ICE_MAX] = [-100, 0] C):
+
+    C_int dT_ice/dt = q_cond - q_bot
+
+Energy-conserving lagged coupling: `q_cond` is subtracted from the surface
+net flux inside `compute_surface_melt` (`q_internal_exchange`), so energy
+leaving the skin enters the interior; `q_bot` exits to the base. The factor 2
+in `q_cond` is the harmonic layer-centre separation `d = H/2`.
+
+Switch: `thermal_evolution_enabled` (default `.true.`, setter
+`set_thermal_evolution`). Fully gates Stage 10.12 in
+`iceberg_thermodynamics_step`: ON computes `q_cond`, subtracts it from the
+surface budget and updates the interior; OFF skips all of it
+(`compute_surface_melt` called without the optional argument, interior
+frozen, 10.12 diagnostics defined at legacy values) — bit-identical legacy
+for both bulk and three-equation paths (3eq solver `T_ice` argument was
+already gated). Verified by test block F.1-F.4 (OFF-switch legacy
+invariance, surface budget bitwise-equal to a legacy call).
+
+New diagnostics: `t_ice`, `dT_ice_dt`, `c_eff_int`, `t_ice_bound`.
+Initial condition: `iceberg_init` sets `T_ice = T_ICE_INIT = -10 C`.
+
+Independent validation: Fortran `iceberg_test_10p12_thermal_evolution`
+(21 checks, 21/21 PASS, incl. OFF-switch legacy invariance F.1-F.4) +
+Python float64 replica
+`python/validation/internal_thermal.py` /
+`python/tests/test_internal_thermal_evolution.py` (35 checks, 35/35 PASS);
+cross-language contract `C_int(50 m) = 94594496 (float32) / 94594500 (float64)`.
+Known limitations: lumped parametrization, no internal melt at `T_ice = 0`
+(excess energy discarded at the clamp), removed-ice enthalpy not tracked
+(intensive `T_ice` through geometry shrink), `K_ICE = 2.2 W/(m K)` is a model
+parameter (literature range 2.0-2.3), not calibrated.
+See `docs/validation/stage10.12_internal_thermal_evolution.md`.
+
 ## 11. Lateral melt
 
 The submerged thermal excess is depth-averaged:

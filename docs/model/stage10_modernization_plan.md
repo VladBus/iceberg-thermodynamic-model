@@ -1,8 +1,8 @@
 # Stage 10 — Physics Modernization Plan
 
-**Updated:** 2026-09-11
-**Current stage:** 10.11 (natural-convection basal melt / low-flow closure; production updated)
-**Current classification:** C — correction validated; production updated; all tests PASS
+**Updated:** 2026-09-15
+**Current stage:** 10.12 (prognostic internal thermal evolution; production updated)
+**Current classification:** C — two-node lumped interior implemented and independently validated (Fortran 17 + Python 35 checks); production updated
 
 ## Purpose
 
@@ -211,17 +211,32 @@ Corrected the fundamental limitation of zero basal melt at zero relative flow by
 
 - **Report**: `docs/validation/stage10.11_natural_convection.md`.
 
+## Stage 10.12 — Prognostic internal thermal evolution (DONE)
+
+- **Classification**: C — production physics ADDED on a separately switchable path; two-node lumped interior implemented and independently validated (Fortran 17 + Python 35 checks).
+- **Physics**: prognostic `state%T_ice` replaces the constant `T_i = -10` (now `T_ICE_INIT`, an initial condition) inside the three-equation Eq. II conduction term:
+  `H_int = max(H - H_EFF, H_MIN_INT)`; `C_int = rho_i * C_ICE * H_int`;
+  `q_cond = 2 * K_ICE * (T_surface - T_ice) / H` (K_ICE = 2.2 W/(m K));
+  `q_bot = m_basal * rho_i * CP_ICE_3EQ * max(T_B - T_ice, 0)`;
+  `C_int dT_ice/dt = q_cond - q_bot` (explicit Euler, clamp [-100, 0] °C).
+  Energy-conserving lagged coupling: `q_cond` subtracted from the surface net
+  flux inside `compute_surface_melt` (`q_internal_exchange`).
+- **Switch**: `thermal_evolution_enabled` (default `.true.`, `set_thermal_evolution`); OFF substitutes `T_ICE_INIT` in the three-equation solvers. **Documented gap**: the interior update still runs when OFF (not bit-identical legacy for the interior path) — see validation report §4.1.
+- **Diagnostics**: `t_ice`, `dT_ice_dt`, `c_eff_int`, `t_ice_bound`.
+- **Validation**: Fortran `iceberg_test_10p12_thermal_evolution` (17/17 PASS; C.5 lower-clamp check uses an amplified diagnostic flux q=-30000 W/m², documented in-test) + Python float64 replica `python/validation/internal_thermal.py` / `python/tests/test_internal_thermal_evolution.py` (35/35 PASS); cross-language contract `C_int(50 m) = 94594496 (float32) / 94594500 (float64)`.
+- **Known limitations**: lumped parametrization (Bi ≫ 1, τ ≫ run); no internal melt at T_ice = 0 (excess energy discarded at clamp); removed-ice enthalpy not tracked; K_ICE not calibrated.
+- **Report**: `docs/validation/stage10.12_internal_thermal_evolution.md` (design note: `stage10.12_internal_thermal_evolution_design_note.md`).
+- **Build**: unused `stdlib` git dependency removed from `fpm.toml` (offline reproducibility).
+
 ## Next modernization sequence
 
-Priority candidates after 10.11:
+Priority candidates after 10.12:
 
-1. internal thermal evolution of the iceberg (replacing the constant `T_i`
-   conduction term of Eq. II);
-2. improved treatment of iceberg-specific ocean heat transfer, including
+1. improved treatment of iceberg-specific ocean heat transfer, including
    re-scoring the 10.8.2 set against the three-equation + natural-convection closure with the
    10.8.2 acceptance criterion;
-3. improved atmospheric stability/transfer treatment if validation demonstrates a material need;
-5. modern seawater thermodynamics, including a full EOS-80/TEOS-10 pathway,
+2. improved atmospheric stability/transfer treatment if validation demonstrates a material need;
+3. modern seawater thermodynamics, including a full EOS-80/TEOS-10 pathway,
    only as a dedicated future stage.
 
 ### Data and validation foundation

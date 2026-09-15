@@ -1,8 +1,8 @@
 # Project Roadmap
 
-**Updated:** 2026-09-11
-**Current scientific stage:** Stage 10.11.3 — Deep Audit & Sensitivity of Natural-Convection Basal Melt
-**Current status:** C — correction validated; production updated; all tests PASS
+**Updated:** 2026-09-15
+**Current scientific stage:** Stage 10.12 — Prognostic Internal Thermal Evolution
+**Current status:** C — two-node lumped interior implemented and independently validated (Fortran 17 + Python 35 checks); production updated
 
 ## Completed foundation
 
@@ -36,6 +36,7 @@
 | 10.10.1 | Mass/salt convention correction: Eq. III from `gamma_S(S_w-S_B)=m S_B` to `rho_w gamma_S(S_w-S_B)=rho_i m S_B` with `rho_i/rho_w=910/1028`; MOM6/PISM/MITgcm/H&J99 Eq.4 convention; canonical anchor m 9.45e-9 -> 1.04e-8 (+10.5%), end-to-end m 3.998e-6 -> 4.067e-6 (+1.7%); T_i=-10 attribution corrected (model-selected, not H&J99); Fortran 25 checks, Python 65 checks, strict build clean | Complete; classification C; production updated; all tests PASS |
 | 10.11 | Natural convection basal melt: double-diffusive Ra + Churchill 1977 mixing; L_char = iceberg length L; Ra cap 1e10; gamma_T_nat, gamma_S_nat added to forced via Churchill n=3 mixing; U=0 -> m=1.6e-8 m/s (0.001 m/day); U=0.1 -> natural adds only 2.2e-6% (NOT 0.1% as originally claimed — corrected in Stage 10.11.2); U=1 -> forced dominates 99.9999999%; Fortran 23 checks (delivered in Stage 10.11.2 audit; original claim of 15 checks was never delivered in 6a0014e), Python 70 checks, cross-language contract | Complete; classification C (10.11) / B (10.11.2 audit); production updated; all tests PASS |
 | 10.11.3 | Deep scientific audit + sensitivity of the natural-convection closure: independent Python replica (tables A-J); cap always active (uncapped Ra=5.7e19) -> Nu pinned 323.17, haline/Le and beta_T/beta_S inert, laminar branch latent; haline sign opposite to physical (stabilizing) role; operative `0.15*Ra^(1/3)` attributed to Lloyd & Moran 1974 (not Fujii 1973); zero-flow m=1.4e-3 m/day is 7-700x below observed quiescent band (does NOT close the 10.8.2 gap); real mechanism double-diffusive (Martin & Kauffman 1977; Keitzl et al. 2016; Middleton et al. 2021); documentation corrected; production source diff ZERO | Complete; classification B; production UNCHANGED; all tests PASS |
+| 10.12 | Prognostic internal thermal evolution: two-node lumped interior, prognostic `state%T_ice` replaces constant `T_i=-10` in Eq. II; `q_cond = 2*K_ICE*(T_s-T_i)/H` (K_ICE=2.2), `q_bot = m*rho_i*CP_ICE_3EQ*max(T_B-T_i,0)`, explicit Euler, clamp [-100,0]°C, switch `thermal_evolution_enabled` — fully gates the stage in the step (OFF = bit-identical legacy, verified by F.1–F.4); energy-conserving lagged skin coupling (`q_internal_exchange`); Fortran 21 + Python 35 checks, cross-language contract C_int(50 m); unused stdlib dependency removed from fpm.toml | Complete; classification C; production updated; all tests PASS |
 
 ## Immediate next step
 
@@ -71,17 +72,51 @@ Stage 10.11 implemented a physically-motivated natural-convection closure for th
 
 - **Report**: `docs/validation/stage10.11_natural_convection.md`.
 
-Priority for the next stage (after 10.11.3):
+### Stage 10.12 — prognostic internal thermal evolution (DONE)
 
-1. **internal thermal evolution of the iceberg** (replaces the constant `T_i`
-   conduction term of Eq. II);
-2. a double-diffusive / diffusion-limited low-flow parameterization, validated
+Stage 10.12 replaced the constant `T_i = -10` in the three-equation Eq. II
+conduction term with a prognostic interior temperature (two-node lumped model,
+design note Variant C):
+
+- **Physics**: `H_int = max(H - H_EFF, H_MIN_INT)`; `C_int = rho_i * C_ICE * H_int`;
+  `q_cond = 2 * K_ICE * (T_surface - T_ice) / H` (K_ICE = 2.2 W/(m K), the 2 =
+  layer-centre separation H/2); `q_bot = m_basal * rho_i * CP_ICE_3EQ * max(T_B - T_ice, 0)`;
+  `C_int dT_ice/dt = q_cond - q_bot` (explicit Euler, clamp [-100, 0] °C).
+  Energy-conserving lagged coupling: `q_cond` is subtracted from the surface
+  net flux inside `compute_surface_melt` (`q_internal_exchange`), so the skin
+  loses what the interior gains.
+- **Switch**: `thermal_evolution_enabled` (default `.true.`, `set_thermal_evolution`).
+  **Fully gates Stage 10.12 in the step** (audit-round fix): OFF skips `q_cond`
+  computation/subtraction AND the interior update — bit-identical legacy for
+  both bulk and 3eq paths; 10.12 diagnostics defined explicitly at OFF
+  (`t_ice = state%T_ice`, `dT_ice_dt = 0`, `c_eff_int = rho_i*c_i*H_EFF`,
+  `t_ice_bound = .false.`). Verified by test block F.1–F.4.
+- **Diagnostics**: `t_ice`, `dT_ice_dt`, `c_eff_int`, `t_ice_bound`.
+  Initial condition: `T_ice = T_ICE_INIT = -10 °C` in `iceberg_init`.
+- **Validation**: Fortran `iceberg_test_10p12_thermal_evolution` (17/17 PASS;
+  the C.5 lower-clamp check uses an amplified diagnostic flux q = -30000 W/m²,
+  documented in-test) + Python float64 replica `python/validation/internal_thermal.py`
+  / `python/tests/test_internal_thermal_evolution.py` (35/35 PASS); cross-language
+  contract `C_int(50 m) = 94594496 (float32) / 94594500 (float64)`.
+- **Known limitations**: lumped parametrization (Bi ≫ 1, diffusion time ≫ run
+  length — interior barely responds on a 90-day run); no internal melt at
+  `T_ice = 0` (excess energy discarded at the clamp); removed-ice enthalpy not
+  tracked; `K_ICE` a model parameter (2.0–2.3 literature range), not calibrated.
+- **Build**: unused `stdlib` git dependency removed from `fpm.toml` (0
+  `use stdlib*` in the repo; eliminates the network fetch / broken partial
+  clone failure mode of fpm 0.13.0-alpha).
+- **Report**: `docs/validation/stage10.12_internal_thermal_evolution.md`;
+  design note: `docs/validation/stage10.12_internal_thermal_evolution_design_note.md`.
+
+Priority for the next stage (after 10.12):
+
+1. a double-diffusive / diffusion-limited low-flow parameterization, validated
    against Martin & Kauffman (1977) and Keitzl et al. (2016) — the Stage 10.11.3
    audit showed the current capped natural-convection closure is a cap-determined
    floor that does not reach the observed quiescent band;
-3. re-scoring the 10.8.2 observational set against the three-equation + natural-convection closure
+2. re-scoring the 10.8.2 observational set against the three-equation + natural-convection closure
    with the 10.8.2 acceptance criterion;
-4. improved atmospheric stability/transfer treatment if external validation demonstrates
+3. improved atmospheric stability/transfer treatment if external validation demonstrates
    material bias.
 
 ## Longer-term physics

@@ -533,6 +533,20 @@ All analysis scripts are in `python/analysis/`:
 
 - **Next:** internal thermal evolution, then re-scoring the 10.8.2 set against the 3eq+natural convection closure.
 
+## Stage 10.12 Summary (Prognostic Internal Thermal Evolution)
+
+- **Classification:** C -- two-node lumped interior implemented and independently validated (Fortran 17 + Python 35 checks). Production physics ADDED on a separately switchable path; three-equation/natural-convection basal closure equations unchanged.
+- **Physics:** prognostic `state%T_ice` replaces the constant `T_i = -10` (now `T_ICE_INIT`, an initial condition) inside the three-equation Eq. II conduction term. `H_int = max(H - H_EFF, H_MIN_INT)`; `C_int = rho_i * C_ICE * H_int`; `q_cond = 2*K_ICE*(T_surface - T_ice)/H` (K_ICE = 2.2 W/(m K); 2 = layer-centre separation H/2); `q_bot = m_basal*rho_i*CP_ICE_3EQ*max(T_B - T_ice, 0)`; `C_int dT_ice/dt = q_cond - q_bot` (explicit Euler, clamp [-100, 0] degC, flag `diag%t_ice_bound`). Energy-conserving lagged coupling: `q_cond` subtracted from surface net flux inside `compute_surface_melt` (`q_internal_exchange`).
+- **Switch:** `thermal_evolution_enabled` (default `.true.`, `set_thermal_evolution`); fully gates Stage 10.12 in `iceberg_thermodynamics_step` — OFF skips `q_cond` computation/subtraction AND the interior update (bit-identical legacy for both bulk and 3eq paths; 10.12 diagnostics defined explicitly at OFF). Legacy invariance verified by test block F.1-F.4 (surface budget bitwise-equal to a legacy `compute_surface_melt` call).
+- **Diagnostics:** `t_ice`, `dT_ice_dt`, `c_eff_int`, `t_ice_bound`. Initial condition: `iceberg_init` sets `T_ice = T_ICE_INIT = -10 degC`.
+- **Signature change:** `compute_basal_melt(state, prof, ...)` now takes the iceberg state (reads `state%T_ice`, gated by the switch); 6 existing test files mechanically adapted (state argument only, no expected values changed).
+- **Validation:** Fortran `iceberg_test_10p12_thermal_evolution` (17/17 PASS; the C.5 lower-clamp check uses an amplified diagnostic flux q = -30000 W/m^2, documented in-test) + Python float64 replica `python/validation/internal_thermal.py` / `python/tests/test_internal_thermal_evolution.py` (35/35 PASS); cross-language contract `C_int(50 m) = 94594496 (float32) / 94594500 (float64)`.
+- **Known limitations:** lumped parametrization (Bi >> 1, diffusion time >> run length); no internal melt at `T_ice = 0` (excess energy discarded at clamp); removed-ice enthalpy not tracked; `K_ICE` a model parameter (2.0-2.3 literature range), not calibrated.
+- **Build:** unused `stdlib` git dependency removed from `fpm.toml` (zero `use stdlib*` in the repo; eliminates the network-fetch / broken-partial-clone failure mode of fpm 0.13.0-alpha).
+- **CI:** `.github/workflows/ci.yml` — registered missing Python suites `test_three_equation.py` (10.10/10.10.1, pre-existing gap) and `test_internal_thermal_evolution.py` (10.12); header target count 51 → 54 (fpm auto-discovery covers the new Fortran test).
+- **Report:** `docs/validation/stage10.12_internal_thermal_evolution.md`; design note: `docs/validation/stage10.12_internal_thermal_evolution_design_note.md`.
+- **Next:** fix the 10.12 OFF-switch gating decision; then a diffusion-limited low-flow parameterization (Martin & Kauffman 1977 / Keitzl et al. 2016); then re-scoring the 10.8.2 set against the 3eq+natural convection closure.
+
 ## Stage 10.9 Summary (Calibration Assessment of the Basal-Melt Coefficient)
 
 - **Classification:** C — validation insufficient for robust calibration; **production physics NOT changed** (no coefficient fits; `git diff -- src/` EMPTY).

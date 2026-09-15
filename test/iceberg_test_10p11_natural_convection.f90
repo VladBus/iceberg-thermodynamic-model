@@ -28,14 +28,14 @@
 ! ==============================================================================
 
 program iceberg_test_10p11_natural_convection
-    use iceberg_types, only: ocean_profile, set_basal_melt_scheme, &
+    use iceberg_types, only: ocean_profile, iceberg_state, T_ICE_INIT, set_basal_melt_scheme, &
                              BASAL_MELT_SCHEME_THREE_EQUATION, &
                              BASAL_MELT_SCHEME_FORCED_CONVECTION, &
                              BASAL_MELT_SCHEME_THREE_EQUATION_NATURAL, &
                              natural_convection_transfer_coeff
     use iceberg_thermodynamics, only: compute_basal_melt, &
-                             solve_three_equation_interface, &
-                             solve_three_equation_interface_natural
+                                 solve_three_equation_interface, &
+                                 solve_three_equation_interface_natural
     implicit none
 
     integer :: n_errors, n_checks
@@ -499,28 +499,84 @@ contains
     ! ==========================================================
     !   PRODUCTION END-TO-END (текущая схема, U через профиль)
     ! ==========================================================
-    subroutine singular_basal_melt(t_val, s_val, draft, l_char, u_val, &
-                                   v_val, m_out, t_if, s_if)
-        real, intent(in) :: t_val, s_val, draft, l_char, u_val, v_val
-        real, intent(out) :: m_out, t_if, s_if
-        type(ocean_profile) :: prof
+subroutine singular_basal_melt(t_val, s_val, draft, l_char, u_val, &
+                               v_val, m_out, t_if, s_if)
+    real, intent(in) :: t_val, s_val, draft, l_char, u_val, v_val
+    real, intent(out) :: m_out, t_if, s_if
+    type(ocean_profile) :: prof
+    type(iceberg_state) :: state
+    real :: t_draft, s_draft, tf_draft, delta_t
 
-        call build_profile(t_val, s_val, u_val, v_val, prof)
-        call compute_basal_melt(prof, draft, l_char, u_val, v_val, &
-                                t_draft, s_draft, tf_draft, delta_t, &
-                                m_out, t_if, s_if)
-    end subroutine singular_basal_melt
+    call build_profile(t_val, s_val, u_val, v_val, prof)
+    state%T_ice = T_ICE_INIT
+    state%T_surface = T_ICE_INIT
+    state%L = l_char
+    state%W = 50.0
+    state%H = draft
+    state%x = 0.0
+    state%y = 0.0
+    state%u = 0.0
+    state%v = 0.0
+    state%latitude = 0.0
+    state%longitude = 0.0
+    state%nstep = 0
+    state%time = 0.0
+    state%active = .true.
+    state%grounded = .false.
+    state%T_ice = T_ICE_INIT
+    state%T_surface = T_ICE_INIT
+    call compute_basal_melt(state, prof, draft, l_char, 0.0, 0.0, &
+                            t_draft, s_draft, tf_draft, delta_t, &
+                            m_out, t_if, s_if)
+end subroutine singular_basal_melt
 
     subroutine check_production_chain(n_errors, n_checks)
         integer, intent(inout) :: n_errors, n_checks
         type(ocean_profile) :: prof
+        type(iceberg_state) :: state
         real :: m_exp, s_b_exp, t_b_exp, u_rel_d
         real :: m_bulk
 
+        ! Initialize state
+        state%T_ice = T_ICE_INIT
+        state%T_surface = T_ICE_INIT
+        state%L = 100.0
+        state%W = 50.0
+        state%H = 50.0
+        state%x = 0.0
+        state%y = 0.0
+        state%u = 0.0
+        state%v = 0.0
+        state%latitude = 0.0
+        state%longitude = 0.0
+        state%nstep = 0
+        state%time = 0.0
+        state%active = .true.
+        state%grounded = .false.
+        state%T_ice = T_ICE_INIT
+        state%T_surface = T_ICE_INIT
+
         ! (a) Ноль-поток anchor через production-путь
         call build_profile(t_w, s_w, 0.0, 0.0, prof)
+        state%T_ice = T_ICE_INIT
+        state%T_surface = T_ICE_INIT
+        state%L = 100.0
+        state%W = 50.0
+        state%H = 50.0
+        state%x = 0.0
+        state%y = 0.0
+        state%u = 0.0
+        state%v = 0.0
+        state%latitude = 0.0
+        state%longitude = 0.0
+        state%nstep = 0
+        state%time = 0.0
+        state%active = .true.
+        state%grounded = .false.
+        state%T_ice = T_ICE_INIT
+        state%T_surface = T_ICE_INIT
         call set_basal_melt_scheme(BASAL_MELT_SCHEME_THREE_EQUATION_NATURAL)
-        call compute_basal_melt(prof, 50.0, 100.0, 0.0, 0.0, &
+        call compute_basal_melt(state, prof, 50.0, 100.0, 0.0, 0.0, &
                                 t_draft, s_draft, tf_draft, delta_t, m_basal, &
                                 t_iface, s_iface)
         call independent_reduction_natural(t_draft, s_draft, 50.0, 0.0, 100.0, &
@@ -546,7 +602,7 @@ contains
 
         n_checks = n_checks + 1
         call set_basal_melt_scheme(BASAL_MELT_SCHEME_THREE_EQUATION)
-        call compute_basal_melt(prof, 50.0, 100.0, 0.0, 0.0, &
+        call compute_basal_melt(state, prof, 50.0, 100.0, 0.0, 0.0, &
                                 t_draft, s_draft, tf_draft, delta_t, m_bulk)
         if (m_bulk .eq. 0.0 .and. m_basal .gt. 0.0) then
             print *, "OK I.3: scheme switch effective: NATURAL m=", m_basal, &
@@ -561,7 +617,7 @@ contains
         u_rel_d = 0.1
         call set_basal_melt_scheme(BASAL_MELT_SCHEME_THREE_EQUATION_NATURAL)
         call build_profile(t_w, s_w, u_rel_d, 0.0, prof)
-        call compute_basal_melt(prof, 50.0, 100.0, 0.0, 0.0, &
+        call compute_basal_melt(state, prof, 50.0, 100.0, 0.0, 0.0, &
                                 t_draft, s_draft, tf_draft, delta_t, m_basal, &
                                 t_iface, s_iface)
         call independent_reduction_natural(t_draft, s_draft, 50.0, u_rel_d, &

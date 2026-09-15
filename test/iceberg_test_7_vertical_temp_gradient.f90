@@ -169,6 +169,7 @@ contains
     !   STAGE 10.5 AUDIT БЛОК
     ! ========================================================================
     subroutine stage_10p5_audit(prof, n_checks, n_errors, diag, raw_delta)
+        use iceberg_types, only: iceberg_state, T_ICE_INIT
         type(ocean_profile), intent(in) :: prof
         integer, intent(inout) :: n_checks, n_errors
         type(iceberg_diagnostics), intent(in) :: diag
@@ -186,6 +187,7 @@ contains
         real :: replica, tot, z_top, z_bot, dz_l, tf_l, dt_l, avg_replica, prod_avg
         real :: avg_out, m_lat
         type(ocean_profile) :: prof_cold
+        type(iceberg_state) :: state
 
         print *, "=================================================="
         print *, "  STAGE 10.5 AUDIT: OCEAN THERMAL FORCING"
@@ -317,6 +319,24 @@ contains
         ! ----------------------------------------------------------
         ! C. Зависимость выборки T от осадки D = H·ρ_i/ρ_w
         ! ----------------------------------------------------------
+        ! Stage 10.12: compute_basal_melt требует state (T_ice). Схема BULK
+        ! (по умолчанию) state%T_ice не читает — значения не влияют на
+        ! ожидаемые результаты; инициализация — паттерн 10p6/10p7.
+        state%T_ice = T_ICE_INIT
+        state%T_surface = T_ICE_INIT
+        state%L = 100.0
+        state%W = 50.0
+        state%H = 50.0
+        state%x = 0.0
+        state%y = 0.0
+        state%u = 0.0
+        state%v = 0.0
+        state%latitude = 0.0
+        state%longitude = 0.0
+        state%nstep = 0
+        state%time = 0.0
+        state%active = .true.
+        state%grounded = .false.
         ! 10.5.12: H=50/100/150 → t_draft == 5 - 0.065*D (линейная зона),
         !          D>100 → -1.5 (клэмп); строго убывает с глубиной
         n_checks = n_checks + 1
@@ -324,7 +344,7 @@ contains
         do i = 1, 3
             d = h_samp(i)*RHO_ICE/RHO_WATER
             ! l_char = 100.0 (характерная длина для тестового айсберга), u_ice=v_ice=0.0
-            call compute_basal_melt(prof, d, 100.0, 0.0, 0.0, t_samp(i), s_samp(i), tf_samp(i), &
+            call compute_basal_melt(state, prof, d, 100.0, 0.0, 0.0, t_samp(i), s_samp(i), tf_samp(i), &
                                     dt_samp(i), m_samp(i))
             if (d .le. 100.0) then
                 ana = 5.0 - 0.065*d
@@ -349,7 +369,7 @@ contains
         ! 10.5.13: T < Tf → без плавления, сырое задействование < 0
         n_checks = n_checks + 1
         ! l_char = 100.0, u_ice=v_ice=0.0
-        call compute_basal_melt(prof_cold, 10.0, 100.0, 0.0, 0.0, t, s, tf, dtb, m)
+        call compute_basal_melt(state, prof_cold, 10.0, 100.0, 0.0, 0.0, t, s, tf, dtb, m)
         if (m .eq. 0.0 .and. (t - tf) .lt. 0.0) then
             print *, "OK 10.5.13: T<Tf → m_basal=0, raw=(T-Tf)<0"
         else
@@ -361,7 +381,7 @@ contains
         n_checks = n_checks + 1
         call build_cold_profile(prof_cold, ocean_freezing_point(0.0345, 10.0))
         ! l_char = 100.0, u_ice=v_ice=0.0
-        call compute_basal_melt(prof_cold, 10.0, 100.0, 0.0, 0.0, t, s, tf, dtb, m)
+        call compute_basal_melt(state, prof_cold, 10.0, 100.0, 0.0, 0.0, t, s, tf, dtb, m)
         if (m .eq. 0.0 .and. abs(t - tf) .lt. 1.0e-6) then
             print *, "OK 10.5.14: T=Tf → m_basal=0"
         else
@@ -376,7 +396,7 @@ contains
         prof_cold%u(1) = 0.05
         prof_cold%u(2) = 0.05
         ! l_char = 100.0, u_ice=v_ice=0.0
-        call compute_basal_melt(prof_cold, 10.0, 100.0, 0.0, 0.0, t, s, tf, dtb, m)
+        call compute_basal_melt(state, prof_cold, 10.0, 100.0, 0.0, 0.0, t, s, tf, dtb, m)
         ! Expected m = gamma_T * delta_T / (rho_ice * L_f)
         ! gamma_T = 0.037 * k * Pr^(1/3) * U^0.8 * nu^-0.8 * L^(-0.2)
         ! With U=0.05, L=100, k=0.56, Pr=13.8, nu=1.82e-6

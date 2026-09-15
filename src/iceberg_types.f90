@@ -44,6 +44,13 @@ module iceberg_types
     real, parameter :: H_EFF = 0.5           ! Эффективная толщина поверхностного слоя [м]
     real, parameter :: T_MELT = 0.0          ! Температура плавления [°C]
 
+    ! Прогностическая внутренняя температура льда (Stage 10.12)
+    real, parameter :: K_ICE = 2.2           ! Теплопроводность льда [Вт/(м·К)]
+    real, parameter :: H_MIN_INT = 0.5       ! Минимальная толщина внутреннего слоя [м]
+    real, parameter :: T_ICE_INIT = -10.0    ! Начальная внутренняя температура [°C] (модельное допущение)
+    real, parameter :: T_ICE_MIN = -100.0    ! Нижний предел внутренней температуры [°C] (числовой страж)
+    real, parameter :: T_ICE_MAX = 0.0       ! Верхний предел внутренней температуры [°C] (точка плавления)
+
     ! Гравитация
     real, parameter :: GRAVITY = 9.80665      ! Ускорение свободного падения [м/с²]
 
@@ -257,14 +264,14 @@ module iceberg_types
     real, parameter :: EMISSIVITY = 0.97     ! Эмиссивность льда [безразм.]
     real, parameter :: STEFAN_BOLTZ = 5.670374419e-8 ! Постоянная Стефана-Больцмана [Вт/(м²·К⁴)]
 
-    ! Внутренняя температура льда (lumped capacitance)
-    real, parameter :: T_ICE = -10.0          ! Температура внутри айсберга [°C]
-
     ! Минимальная толщина для активного айсберга [м]
     real, parameter :: MIN_THICKNESS = 1.0
 
     ! Угловая скорость вращения Земли [рад/с]
     real, parameter :: OMEGA = 7.2921150e-5
+
+    ! Переключатель термической эволюции (Stage 10.12)
+    logical, save :: thermal_evolution_enabled = .true.
 
     ! ========================================================================
     !   СОВРЕМЕННЫЙ ТУРБУЛЕНТНЫЙ ОБМЕН ТЕПЛОМ/ВЛАГОЙ (Stage 10.3)
@@ -380,6 +387,14 @@ module iceberg_types
         real :: t_interface   ! Температура на границе T_B [°C]
         real :: s_interface   ! Соленость на границе S_B [кг/кг]
 
+        ! Внутренняя термодинамика (Stage 10.12)
+        real :: t_ice        ! Внутренняя температура льда [°C]
+        real :: dT_ice_dt    ! Скорость изменения внутренней температуры [К/с]
+        real :: c_eff_int    ! Эффективная теплоёмкость внутреннего слоя [Дж/(м²·К)]
+        real :: q_cond       ! Проводимый тепловой поток коз к внутреннему льду [Вт/м²]
+        real :: q_bot        ! Базальный чувствительный тепловой поток [Вт/м²]
+        logical :: t_ice_bound ! Флаг достижения границы температуры
+
         ! Силы [Н]
         real :: f_wind_x     ! Ветровая сила по X
         real :: f_wind_y     ! Ветровая сила по Y
@@ -431,6 +446,9 @@ module iceberg_types
         ! Прогностическая температура поверхности [°C] (Stage 10.2)
         real :: T_surface         ! Температура поверхности льда
 
+        ! Прогностическая внутренняя температура льда [°C] (Stage 10.12)
+        real :: T_ice             ! Внутренняя температура льда
+
         ! Счетчики
         integer :: nstep          ! Номер шага интегрирования
         real :: time              ! Модельное время [с]
@@ -447,8 +465,8 @@ module iceberg_types
     public :: CD_AIR, CD_WATER
     public :: C_BASAL, C_LATERAL
     public :: ALBEDO_ICE, EMISSIVITY, STEFAN_BOLTZ
-    public :: T_ICE, MIN_THICKNESS
-    public :: C_ICE, H_EFF, T_MELT
+    public :: T_ICE_INIT, T_ICE_MIN, T_ICE_MAX, MIN_THICKNESS
+    public :: C_ICE, H_EFF, T_MELT, K_ICE, H_MIN_INT
     public :: CP_AIR, L_S, VON_KARMAN, Z0_ICE, Z_REF, C_H_NEUTRAL, C_E_NEUTRAL
     public :: MURPHY_KOOP_A, MURPHY_KOOP_B, MURPHY_KOOP_C, MURPHY_KOOP_D
     public :: EOS_FP_A0, EOS_FP_A1, EOS_FP_A2, EOS_FP_BP
@@ -467,11 +485,129 @@ module iceberg_types
     public :: NU_LAMINAR_COEFF, NU_LAMINAR_EXP, NU_TURBULENT_COEFF, NU_TURBULENT_EXP
     public :: RAYLEIGH_TRANSITION, MIXED_CONVECTION_EXP
     public :: natural_convection_transfer_coeff
+
+    ! Внутренняя термальная эволюция (Stage 10.12)
+    public :: thermal_evolution_enabled
+    public :: set_thermal_evolution
     public :: ocean_profile, atmos_forcing, iceberg_diagnostics, iceberg_state
     public :: ocean_freezing_point
     public :: ocean_heat_transfer_coeff
 
 contains
+
+! ========================================================================
+    !   ВНУТРЕННЯЯ ТЕРМИЧЕСКАЯ ЭВОЛЮЦИЯ (Stage 10.12)
+    ! ========================================================================
+    ! Эффективная теплоёмкость внутреннего слоя [Дж/(м²·К)].
+    ! C_int = ρ_i * c_i * H_int, где H_int = max(H - H_EFF, H_MIN_INT).
+    !
+    ! Аргументы:
+    !   state - состояние айсберга (intent(in))
+    !   c_eff_int - эффективная теплоёмкость [Дж/(м²·К)] (выход)
+    !   h_int - толщина внутреннего слоя [м] (выход)
+    ! ========================================================================
+    pure subroutine compute_iceberg_thermal_capacity(state, c_eff_int, h_int)
+        type(iceberg_state), intent(in) :: state
+        real, intent(out) :: c_eff_int
+        real, intent(out) :: h_int
+
+        h_int = max(state%H - H_EFF, H_MIN_INT)
+        c_eff_int = RHO_ICE * C_ICE * h_int
+    end subroutine compute_iceberg_thermal_capacity
+
+    ! ========================================================================
+    !   ПРОВОДЯЩИЙ ТЕПЛОВОЙ ПОТОК КОЖА → ВНУТРЬ (Stage 10.12)
+    ! ========================================================================
+    ! Вычисляет проводимый тепловой поток от поверхностного слоя к внутреннему льду
+    ! по закону Фурье: q_cond = k_i * (T_surface - T_ice) / d,
+    ! где d = H/2 (среднее расстояние между центрами слоёв толщиной H_EFF и H_int).
+    ! Положительный q_cond = поток от поверхности к внутреннему льду.
+    !
+    ! Аргументы:
+    !   state - состояние айсберга (intent(in))
+    !   q_cond - проводимый тепловой поток [Вт/м²] (выход)
+    ! ========================================================================
+    pure subroutine compute_iceberg_conductive_coupling(state, q_cond)
+        type(iceberg_state), intent(in) :: state
+        real, intent(out) :: q_cond
+
+        if (state%H .le. 0.0) then
+            q_cond = 0.0
+        else
+            q_cond = 2.0 * K_ICE * (state%T_surface - state%T_ice) / state%H
+        end if
+    end subroutine compute_iceberg_conductive_coupling
+
+    ! ========================================================================
+    !   ОБНОВЛЕНИЕ ВНУТРЕННЕЙ ТЕМПЕРАТУРЫ ЛЬДА (Stage 10.12)
+    ! ========================================================================
+    ! Явная схема Эйлера: C_int * dT_ice/dt = q_cond - q_bot
+    ! где q_cond = проводимый поток от поверхности (вход),
+    !       q_bot = m_basal * ρ_i * c_i * max(T_B - T_ice, 0) [Вт/м²] —
+    !       базальный чувствительный тепловой поток (уходит из внутреннего слоя).
+    !
+    ! Аргументы:
+    !   state        - состояние айсберга (intent(inout), обновляется T_ice)
+    !   dt           - шаг по времени [с] (intent(in))
+    !   q_cond       - проводимый поток от поверхности [Вт/м²] (intent(in))
+    !   q_bot        - базальный чувствительный поток [Вт/м²] (intent(in))
+    !   diag         - диагностики (intent(inout), обновляются t_ice, dT_ice_dt, c_eff_int, t_ice_bound)
+    ! ========================================================================
+    subroutine update_iceberg_internal_temperature(state, dt, q_cond, q_bot, diag)
+        type(iceberg_state), intent(inout) :: state
+        real, intent(in) :: dt
+        real, intent(in) :: q_cond
+        real, intent(in) :: q_bot
+        type(iceberg_diagnostics), intent(inout) :: diag
+
+        real :: c_eff_int, h_int, dT_dt, T_new
+
+        ! Эффективная теплоёмкость внутреннего слоя
+        call compute_iceberg_thermal_capacity(state, c_eff_int, h_int)
+
+        if (c_eff_int .le. 0.0 .or. dt .le. 0.0) then
+            diag%c_eff_int = c_eff_int
+            diag%dT_ice_dt = 0.0
+            diag%t_ice = state%T_ice
+            diag%t_ice_bound = .false.
+            return
+        end if
+
+        dT_dt = (q_cond - q_bot) / c_eff_int
+        T_new = state%T_ice + dT_dt * dt
+
+        ! Границы температуры
+        if (T_new .gt. T_ICE_MAX) then
+            T_new = T_ICE_MAX
+            diag%t_ice_bound = .true.
+        else if (T_new .lt. T_ICE_MIN) then
+            T_new = T_ICE_MIN
+            diag%t_ice_bound = .true.
+        else
+            diag%t_ice_bound = .false.
+        end if
+
+        state%T_ice = T_new
+        diag%t_ice = T_new
+        diag%dT_ice_dt = dT_dt
+        diag%c_eff_int = c_eff_int
+    end subroutine update_iceberg_internal_temperature
+
+    ! ========================================================================
+    !   УСТАНОВКА РЕЖИМА ТЕРМИЧЕСКОЙ ЭВОЛЮЦИИ (Stage 10.12)
+    ! ========================================================================
+    ! Включает/выключает прогностическую внутреннюю температуру.
+    !   enabled = .true.  -> прогностическая T_ice (новое поведение)
+    !   enabled = .false. -> постоянная T_ICE_INIT (legacy, бит-в-бит совместимость)
+    !
+    ! Аргументы:
+    !   enabled - .true. включает прогностическую T_ice, .false. выключает
+    ! ========================================================================
+    subroutine set_thermal_evolution(enabled)
+        logical, intent(in) :: enabled
+
+        thermal_evolution_enabled = enabled
+    end subroutine set_thermal_evolution
 
     ! ========================================================================
     !   ТОЧКА ЗАМЕРЗАНИЯ МОРСКОЙ ВОДЫ Tf = f(S, p) (Stage 10.5)

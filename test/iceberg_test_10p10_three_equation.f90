@@ -21,9 +21,9 @@
 ! ==============================================================================
 
 program iceberg_test_10p10_three_equation
-    use iceberg_types, only: ocean_profile, set_basal_melt_scheme, &
+    use iceberg_types, only: ocean_profile, iceberg_state, set_basal_melt_scheme, &
                              BASAL_MELT_SCHEME_THREE_EQUATION, &
-                             BASAL_MELT_SCHEME_FORCED_CONVECTION
+                             BASAL_MELT_SCHEME_FORCED_CONVECTION, T_ICE_INIT
     use iceberg_thermodynamics, only: compute_basal_melt, solve_three_equation_interface
     implicit none
 
@@ -32,6 +32,7 @@ program iceberg_test_10p10_three_equation
     real :: t_w, s_w, u_rel, gam_t, gam_s
     real :: gamma_t_vel, gamma_s_vel
     real :: m_basal, t_draft, s_draft, tf_draft, delta_t
+    type(iceberg_state) :: state
 
     n_errors = 0
     n_checks = 0
@@ -466,18 +467,39 @@ contains
     ! ==========================================================
     !   PRODUCTION END-TO-END (compute_basal_melt, scheme=THREE_EQUATION)
     ! ==========================================================
+    ! ==========================================================
+    !   ПРОВЕРКА ПРОДАКШЕН ЦЕПОЧКИ (Stage 10.10/10.10.1)
+    ! ==========================================================
     subroutine check_production_chain(n_errors, n_checks)
         integer, intent(inout) :: n_errors, n_checks
         type(ocean_profile) :: prof
+        type(iceberg_state) :: state
         real :: u_rel_d, gam_t_v, gam_s_v, m_exp, s_b_exp, t_b_exp
         real :: t_b, s_b
         real :: m_default
 
         call build_profile(2.0, 0.1, prof)
 
+        ! Initialize minimal iceberg state
+        state%T_ice = T_ICE_INIT
+        state%T_surface = T_ICE_INIT
+        state%L = 100.0
+        state%W = 50.0
+        state%H = 50.0
+        state%x = 0.0
+        state%y = 0.0
+        state%u = 0.0
+        state%v = 0.0
+        state%latitude = 0.0
+        state%longitude = 0.0
+        state%nstep = 0
+        state%time = 0.0
+        state%active = .true.
+        state%grounded = .false.
+
         ! (a) Трёхчленная схема через production-переключатель
         call set_basal_melt_scheme(BASAL_MELT_SCHEME_THREE_EQUATION)
-        call compute_basal_melt(prof, 50.0, 100.0, 0.0, 0.0, &
+        call compute_basal_melt(state, prof, 50.0, 100.0, 0.0, 0.0, &
                                 t_draft, s_draft, tf_draft, delta_t, m_basal, &
                                 t_b, s_b)
 
@@ -515,7 +537,7 @@ contains
 
         ! (b) Возврат к baseline scheme: производство НЕ должно измениться
         call set_basal_melt_scheme(BASAL_MELT_SCHEME_FORCED_CONVECTION)
-        call compute_basal_melt(prof, 50.0, 100.0, 0.0, 0.0, &
+        call compute_basal_melt(state, prof, 50.0, 100.0, 0.0, 0.0, &
                                 t_draft, s_draft, tf_draft, delta_t, m_default)
         call independent_reduction(t_draft, s_draft, 50.0, 1.1e-3*0.1, 3.1e-5*0.1, &
                                    -10.0, .true., m_exp, s_b_exp, t_b_exp)

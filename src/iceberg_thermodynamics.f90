@@ -231,10 +231,11 @@ contains
         real :: delta_t_basal, delta_t_lateral_avg
         real :: m_basal, m_lateral, m_surface
         real :: q_net
+        real :: q_cond, q_bot
 
         ! 1. Базальное плавление
         ! Характерная длина для базального плавления = L (длина в направлении X)
-        call compute_basal_melt(ocean_prof, diag%draft, state%L, state%u, state%v, &
+        call compute_basal_melt(state, ocean_prof, diag%draft, state%L, state%u, state%v, &
                                 t_draft, s_draft, tf_draft, &
                                 delta_t_basal, m_basal, &
                                 diag%t_interface, diag%s_interface)
@@ -251,9 +252,35 @@ contains
 
         diag%m_lateral = m_lateral
 
-        ! 3. Поверхностное плавление
-        call compute_surface_melt(state, atmos, diag, q_net, m_surface, dt, &
-                                  nat(1), nat(2), nat(3), nat(4))
+        ! 3-5. Внутренняя тепловая эволюция (Stage 10.12) — только при
+        !      thermal_evolution_enabled = .true. При OFF — полный legacy:
+        !      q_cond не вычисляется и НЕ вычитается из бюджета поверхности
+        !      (аргумент q_internal_exchange не передаётся), внутренняя
+        !      температура не обновляется. Бит-в-бит legacy-путь.
+        if (thermal_evolution_enabled) then
+            call compute_iceberg_conductive_coupling(state, q_cond)
+
+            call compute_surface_melt(state, atmos, diag, q_net, m_surface, dt, &
+                                      nat(1), nat(2), nat(3), nat(4), q_cond)
+
+            if (diag%t_interface .gt. state%T_ice) then
+                q_bot = m_basal*RHO_ICE*CP_ICE_3EQ*(diag%t_interface - state%T_ice)
+            else
+                q_bot = 0.0
+            end if
+
+            call update_iceberg_internal_temperature(state, dt, q_cond, q_bot, diag)
+        else
+            call compute_surface_melt(state, atmos, diag, q_net, m_surface, dt, &
+                                      nat(1), nat(2), nat(3), nat(4))
+
+            q_cond = 0.0
+            q_bot = 0.0
+            diag%t_ice = state%T_ice
+            diag%dT_ice_dt = 0.0
+            diag%c_eff_int = RHO_ICE*C_ICE*H_EFF
+            diag%t_ice_bound = .false.
+        end if
 
         diag%q_net_surface = q_net
         diag%m_surface = m_surface
@@ -303,9 +330,10 @@ contains
     !   delta_t     - T - Tf [°C] (выход)
     !   m_basal     - базальная скорость плавления [м/с] (выход)
     ! ========================================================================
-    subroutine compute_basal_melt(prof, draft, l_char, u_ice, v_ice, &
-                                  t_draft, s_draft, tf_draft, delta_t, m_basal, &
-                                  t_interface, s_interface)
+subroutine compute_basal_melt(state, prof, draft, l_char, u_ice, v_ice, &
+                              t_draft, s_draft, tf_draft, delta_t, m_basal, &
+                              t_interface, s_interface)
+        type(iceberg_state), intent(in) :: state
         type(ocean_profile), intent(in) :: prof
         real, intent(in) :: draft
         real, intent(in) :: l_char
@@ -352,10 +380,17 @@ contains
                     !   конвективных ячеек у горизонтального основания;
                     !   см. Fujii et al. 1973 для пластины, обращённой вниз).
                     ! ================================================================
-                    call solve_three_equation_interface_natural(t_draft, s_draft, draft, &
-                                                                u_rel_draft, l_char, &
-                                                                T_ICE, .true., &
-                                                                t_iface, s_iface, m_basal)
+                    if (thermal_evolution_enabled) then
+                        call solve_three_equation_interface_natural(t_draft, s_draft, draft, &
+                                                                    u_rel_draft, l_char, &
+                                                                    state%T_ice, .true., &
+                                                                    t_iface, s_iface, m_basal)
+                    else
+                        call solve_three_equation_interface_natural(t_draft, s_draft, draft, &
+                                                                    u_rel_draft, l_char, &
+                                                                    T_ICE_INIT, .true., &
+                                                                    t_iface, s_iface, m_basal)
+                    end if
                 else
                     ! ================================================================
                     !   ТРЁХУРАВНЕННОЕ (Stage 10.10) — только форсированная конвекция
@@ -363,11 +398,19 @@ contains
                     gamma_t_vel = THREE_EQ_KT*u_rel_draft
                     gamma_s_vel = THREE_EQ_KS*u_rel_draft
 
-                    call solve_three_equation_interface(t_draft, s_draft, draft, &
-                                                        u_rel_draft, &
-                                                        gamma_t_vel, gamma_s_vel, &
-                                                        T_ICE, .true., &
-                                                        t_iface, s_iface, m_basal)
+                    if (thermal_evolution_enabled) then
+                        call solve_three_equation_interface(t_draft, s_draft, draft, &
+                                                            u_rel_draft, &
+                                                            gamma_t_vel, gamma_s_vel, &
+                                                            state%T_ice, .true., &
+                                                            t_iface, s_iface, m_basal)
+                    else
+                        call solve_three_equation_interface(t_draft, s_draft, draft, &
+                                                            u_rel_draft, &
+                                                            gamma_t_vel, gamma_s_vel, &
+                                                            T_ICE_INIT, .true., &
+                                                            t_iface, s_iface, m_basal)
+                    end if
                 end if
 
                 ! Защита от числового шума (как в baseline)
@@ -757,7 +800,7 @@ contains
         end if
     end subroutine compute_lateral_melt
 
-    ! ========================================================================
+! ========================================================================
     !   ПОВЕРХНОСТНОЕ ПЛАВЛЕНИЕ С ПРОГНОСТИЧЕСКОЙ ТЕМПЕРАТУРОЙ (Stage 10.2 + 10.4.1)
     ! ========================================================================
     ! Stage 10.4.1 КОРРЕКТНОЕ РАСПРЕДЕЛЕНИЕ ЭНЕРГИИ:
@@ -766,12 +809,17 @@ contains
     ! Q_surface = Q_nonlatent + Q_LH                     [полная энергия поверхности]
     ! C_eff dT_surface/dt = Q_surface   (T_surface < T_melt)
     !
+    ! Stage 10.12: внутренняя термическая эволюция
+    !   q_cond = проводимый поток от поверхности к внутреннему льду [Вт/м²]
+    !   Положительный q_cond = поток от поверхности к внутреннему льду.
+    !   Получает поверхность энергию Q_surface_eff = Q_surface - q_cond.
+    !
     ! Логика фазового перехода (корректная):
     !   если T_surface < T_melt:
-    !       dT = Q_surface * dt / C_eff
+    !       dT = Q_surface_eff * dt / C_eff
     !       T_surface_new = T_surface + dT
     !       если T_surface_new >= T_melt:
-    !           excess_energy = Q_surface - C_eff * (T_melt - T_surface) / dt
+    !           excess_energy = Q_surface_eff - C_eff * (T_melt - T_surface) / dt
     !           Q_melt = max(excess_energy, 0)  ! остаток после достижения T_melt
     !           m_surface = Q_melt / (rho_ice * L_f)
     !           T_surface = T_melt
@@ -779,7 +827,7 @@ contains
     !           m_surface = 0
     !   иначе:  ! T_surface >= T_melt
     !       T_surface = T_melt
-    !       Q_melt = max(Q_surface, 0)  ! вся Q_surface доступна для плавления
+    !       Q_melt = max(Q_surface_eff, 0)
     !       m_surface = Q_melt / (rho_ice * L_f)
     !
     ! Массовый поток пара (Stage 10.4):
@@ -803,15 +851,18 @@ contains
     !   q_net       - суммарный тепловой поток [Вт/м²] (выход, остаток после плавления)
     !   m_surface   - скорость поверхностного таяния [м/с] (выход)
     !   year, month, day, hour - референс-дата (UTC)
+    !   q_internal_exchange - проводимый поток от поверхности к внутреннему льду [Вт/м²]
+    !                         (optional, default=0). Положительный = сток с поверхности.
     ! ========================================================================
     subroutine compute_surface_melt(state, atmos, diag, q_net, m_surface, dt, &
-                                    year, month, day, hour)
+                                    year, month, day, hour, q_internal_exchange)
         type(iceberg_state), intent(inout) :: state
         type(atmos_forcing), intent(in) :: atmos
         type(iceberg_diagnostics), intent(inout) :: diag
         real, intent(out) :: q_net, m_surface
         real, intent(in) :: dt
         integer, intent(in) :: year, month, day, hour
+        real, intent(in), optional :: q_internal_exchange
 
         real :: t_air_k, t_surf_k, t_dew_k
         real :: p_atm, rho_air_local, q_air, q_sat
@@ -985,9 +1036,13 @@ contains
         !   m_vapor < 0 -> сублимация -> Q_LH < 0 -> сток энергии
         !   m_vapor > 0 -> осаждение  -> Q_LH > 0 -> источник энергии
         !
-        ! T_surface < T_melt:  Q_surface идёт на чувствительное нагревание
+        ! Stage 10.12: q_cond = проводимый поток от поверхности к внутреннему льду [Вт/м²]
+        !              Положительный q_cond = сток энергии с поверхности.
+        !   Q_surface_eff = Q_surface - q_cond  [энергия, доступная поверхности]
+        !
+        ! T_surface < T_melt:  Q_surface_eff идёт на чувствительное нагревание
         ! T_surface пересекает T_melt: энергия делится на чувствительную + остаточную
-        ! T_surface = T_melt:  Q_melt = max(Q_surface, 0)
+        ! T_surface = T_melt:  Q_melt = max(Q_surface_eff, 0)
         !
         ! Это заменяет прежнюю неверную схему:
         !   Q_net_non_melt = SW + LW + SH + LH
@@ -996,6 +1051,11 @@ contains
         q_nonlatent = sw_absorbed + lw_down + lw_up + sh_flux
         q_lh = lh_flux
         q_surface = q_nonlatent + q_lh
+
+        ! Stage 10.12: внутренний тепловой обмен (q_cond — сток с поверхности)
+        if (present(q_internal_exchange)) then
+            q_surface = q_surface - q_internal_exchange
+        end if
 
         ! === ПРОГНОСТИЧЕСКАЯ ТЕМПЕРАТУРА ПОВЕРХНОСТИ С КОРРЕКТНЫМ РАСПРЕДЕЛЕНИЕМ ЭНЕРГИИ ===
         if (state%T_surface .lt. T_MELT) then

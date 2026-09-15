@@ -21,7 +21,7 @@
 ! ==============================================================================
 
 program iceberg_test_10p7_basal_melt_validation
-    use iceberg_types, only: ocean_profile, ocean_heat_transfer_coeff
+    use iceberg_types, only: ocean_profile, iceberg_state, T_ICE_INIT, ocean_heat_transfer_coeff
     use iceberg_thermodynamics, only: compute_basal_melt
     implicit none
 
@@ -33,6 +33,7 @@ program iceberg_test_10p7_basal_melt_validation
     real :: gamma_below, gamma_above, jump_ratio
     real :: g1, g2, ratio, ratio_expected
     real :: tf_draft_i, m_basal_i, delta_t_i
+    type(iceberg_state) :: state
 
     n_errors = 0
     n_checks = 0
@@ -256,9 +257,27 @@ contains
         integer, intent(inout) :: n_errors, n_checks
         real, intent(out) :: m_basal
         type(ocean_profile) :: prof
+        type(iceberg_state) :: state
         real :: t_draft, s_draft, tf_draft, delta_t
         call build_profile(-2.6, 0.1, prof)
-        call compute_basal_melt(prof, 50.0, 100.0, 0.0, 0.0, &
+        state%T_ice = T_ICE_INIT
+        state%T_surface = T_ICE_INIT
+        state%L = 100.0
+        state%W = 50.0
+        state%H = 50.0
+        state%x = 0.0
+        state%y = 0.0
+        state%u = 0.0
+        state%v = 0.0
+        state%latitude = 0.0
+        state%longitude = 0.0
+        state%nstep = 0
+        state%time = 0.0
+        state%active = .true.
+        state%grounded = .false.
+        state%T_ice = T_ICE_INIT
+        state%T_surface = T_ICE_INIT
+        call compute_basal_melt(state, prof, 50.0, 100.0, 0.0, 0.0, &
                                 t_draft, s_draft, tf_draft, delta_t, m_basal)
         if (m_basal .eq. 0.0) then
             print *, "OK A.1: T(D) < Tf(D) -> m_basal = 0 (m=", m_basal, ")"
@@ -271,16 +290,35 @@ contains
     subroutine check_delta_scaling(n_errors, n_checks)
         integer, intent(inout) :: n_errors, n_checks
         type(ocean_profile) :: prof1, prof2, prof3
+        type(iceberg_state) :: state
         real :: t1, s1, tf1, d1, m1
         real :: t2, s2, tf2, d2, m2
         real :: t3, s3, tf3, d3, m3
         real :: r1, r2
         call build_profile(-1.4, 0.5, prof1)
-        call compute_basal_melt(prof1, 50.0, 100.0, 0.0, 0.0, t1, s1, tf1, d1, m1)
+        state%T_ice = T_ICE_INIT
+        state%T_surface = T_ICE_INIT
+        state%L = 100.0
+        state%W = 50.0
+        state%H = 50.0
+        state%x = 0.0
+        state%y = 0.0
+        state%u = 0.0
+        state%v = 0.0
+        state%latitude = 0.0
+        state%longitude = 0.0
+        state%nstep = 0
+        state%time = 0.0
+        state%active = .true.
+        state%grounded = .false.
+        state%T_ice = T_ICE_INIT
+        state%T_surface = T_ICE_INIT
+        call build_profile(-1.4, 0.5, prof1)
+        call compute_basal_melt(state, prof1, 50.0, 100.0, 0.0, 0.0, t1, s1, tf1, d1, m1)
         call build_profile(1.6, 0.5, prof2)
-        call compute_basal_melt(prof2, 50.0, 100.0, 0.0, 0.0, t2, s2, tf2, d2, m2)
+        call compute_basal_melt(state, prof2, 50.0, 100.0, 0.0, 0.0, t2, s2, tf2, d2, m2)
         call build_profile(4.6, 0.5, prof3)
-        call compute_basal_melt(prof3, 50.0, 100.0, 0.0, 0.0, t3, s3, tf3, d3, m3)
+        call compute_basal_melt(state, prof3, 50.0, 100.0, 0.0, 0.0, t3, s3, tf3, d3, m3)
         r1 = (m2/m1)/(d2/d1)
         r2 = (m3/m1)/(d3/d1)
         if (m1 .gt. 0.0 .and. abs(r1 - 1.0) .lt. 1.0e-3 .and. abs(r2 - 1.0) .lt. 1.0e-3) then
@@ -294,9 +332,28 @@ contains
     subroutine check_zero_flow_warm_ocean(n_errors, n_checks)
         integer, intent(inout) :: n_errors, n_checks
         type(ocean_profile) :: prof
+        type(iceberg_state) :: state
         real :: t_draft, s_draft, tf_draft, delta_t, m_basal
         call build_profile(2.0, 0.0, prof)
-        call compute_basal_melt(prof, 50.0, 100.0, 0.0, 0.0, &
+        state%T_ice = T_ICE_INIT
+        state%T_surface = T_ICE_INIT
+        state%L = 100.0
+        state%W = 50.0
+        state%H = 50.0
+        state%x = 0.0
+        state%y = 0.0
+        state%u = 0.0
+        state%v = 0.0
+        state%latitude = 0.0
+        state%longitude = 0.0
+        state%nstep = 0
+        state%time = 0.0
+        state%active = .true.
+        state%grounded = .false.
+        state%T_ice = T_ICE_INIT
+        state%T_surface = T_ICE_INIT
+        call build_profile(2.0, 0.0, prof)
+        call compute_basal_melt(state, prof, 50.0, 100.0, 0.0, 0.0, &
                                 t_draft, s_draft, tf_draft, delta_t, m_basal)
         if (m_basal .eq. 0.0) then
             print *, "OK H.2: warm ocean but U_rel=0 -> m_basal=0 (documented limitation:"
@@ -310,10 +367,29 @@ contains
     subroutine check_end_to_end(n_errors, n_checks)
         integer, intent(inout) :: n_errors, n_checks
         type(ocean_profile) :: prof
+        type(iceberg_state) :: state
         real :: t_draft, s_draft, tf_draft, delta_t, m_basal
         real :: u_rel, l_char, re, nu, gamma, tf_ind, dt_ind, m_ind
         call build_profile(2.0, 0.1, prof)
-        call compute_basal_melt(prof, 50.0, 100.0, 0.0, 0.0, &
+        state%T_ice = T_ICE_INIT
+        state%T_surface = T_ICE_INIT
+        state%L = 100.0
+        state%W = 50.0
+        state%H = 50.0
+        state%x = 0.0
+        state%y = 0.0
+        state%u = 0.0
+        state%v = 0.0
+        state%latitude = 0.0
+        state%longitude = 0.0
+        state%nstep = 0
+        state%time = 0.0
+        state%active = .true.
+        state%grounded = .false.
+        state%T_ice = T_ICE_INIT
+        state%T_surface = T_ICE_INIT
+        call build_profile(2.0, 0.1, prof)
+        call compute_basal_melt(state, prof, 50.0, 100.0, 0.0, 0.0, &
                                 t_draft, s_draft, tf_draft, delta_t, m_basal)
 
         u_rel = 0.1
@@ -358,9 +434,28 @@ contains
     subroutine check_magnitude_band(n_errors, n_checks)
         integer, intent(inout) :: n_errors, n_checks
         type(ocean_profile) :: prof
+        type(iceberg_state) :: state
         real :: t_draft, s_draft, tf_draft, delta_t, m_basal, m_per_day
         call build_profile(2.0, 0.5, prof)
-        call compute_basal_melt(prof, 50.0, 100.0, 0.0, 0.0, &
+        state%T_ice = T_ICE_INIT
+        state%T_surface = T_ICE_INIT
+        state%L = 100.0
+        state%W = 50.0
+        state%H = 50.0
+        state%x = 0.0
+        state%y = 0.0
+        state%u = 0.0
+        state%v = 0.0
+        state%latitude = 0.0
+        state%longitude = 0.0
+        state%nstep = 0
+        state%time = 0.0
+        state%active = .true.
+        state%grounded = .false.
+        state%T_ice = T_ICE_INIT
+        state%T_surface = T_ICE_INIT
+        call build_profile(2.0, 0.5, prof)
+        call compute_basal_melt(state, prof, 50.0, 100.0, 0.0, 0.0, &
                                 t_draft, s_draft, tf_draft, delta_t, m_basal)
         m_per_day = m_basal*86400.0
         ! Observed submarine melt range ~0.01-1 m/day (Cenedese & Straneo 2023 review).

@@ -1,10 +1,10 @@
 # Статус физических блоков модели
 
-**Дата:** 2026-09-13
-**Current repository stage:** Stage 10.11.3 — Deep Audit & Sensitivity of Natural-Convection Basal Melt
-**Production baseline:** Stage 10.11 (three-equation + natural convection; unchanged by 10.11.3)
-**FPM test targets:** 53
-**Local status:** 53/53 PASS; strict build clean; `git diff --check` clean
+**Дата:** 2026-09-15
+**Current repository stage:** Stage 10.12 — Prognostic Internal Thermal Evolution
+**Production baseline:** Stage 10.12 (two-node lumped interior; three-equation + natural convection unchanged)
+**FPM test targets:** 54
+**Local status:** 10.12 Fortran 17/17 + Python 35/35 PASS; full fpm battery PASS (exit 0); all 6 Python suites 0 errors (65+70+44+229+212+35 = 655 checks); strict `-Wall -Wextra -fcheck=all` build clean; `git diff --check` clean
 **Stage 10.7 report:** `docs/validation/stage10.7_basal_melt_validation.md`
 **Stage 10.8.1 report:** `docs/validation/stage10.8.1_python_validation.md`
 **Stage 10.8.2 report:** `docs/validation/stage10.8.2_observational_validation.md`
@@ -13,6 +13,7 @@
 **Stage 10.11.3 report:** `docs/validation/stage10.11.3_natural_convection_physics_audit.md`
 **Stage 10.10.1 report:** `docs/validation/stage10.10.1_three_equation_interface.md`
 **Stage 10.11 report:** `docs/validation/stage10.11_natural_convection.md`
+**Stage 10.12 report:** `docs/validation/stage10.12_internal_thermal_evolution.md`
 
 ## Классификация
 
@@ -40,6 +41,7 @@
 | Sensible heat | Neutral bulk transfer, fixed coefficient | C/B |
 | Latent heat | Neutral bulk transfer + ice saturation from Murphy & Koop 2005 | C/B |
 | Surface temperature | Prognostic T_surface with finite effective heat capacity | B |
+| Internal temperature | Prognostic two-node lumped interior (Stage 10.12): T_ice via explicit Euler, q_cond = 2·K_ICE·(T_s−T_i)/H, q_bot basal sensible sink, clamp [−100, 0]°C; switchable; Fortran 17 + Python 35 checks | C |
 | Phase change | Explicit melt/sublimation/deposition partition and latent heat | B |
 | Freezing point | EOS-80/UNESCO pressure-dependent freezing-point equation | C |
 | Ocean heat transfer | Relative flow; laminar/turbulent flat-plate Nu correlation | B |
@@ -78,7 +80,7 @@ This is a **flat-plate forced-convection approximation**, not a geometry-specifi
 6. Some shortwave attenuation constants require stronger literature provenance/sensitivity documentation.
 7. Independent observational validation of the full coupled thermodynamic evolution remains a future task.
 8. Stored iceberg latitude/longitude are not currently updated from x/y during time stepping.
-10. Three-equation closure (Stage 10.10/10.10.1) uses a constant internal ice temperature `T_i = -10` in the conduction term of Eq. II; this is a model-selected constant internal temperature, NOT from H&J99 (H&J99 solve conduction explicitly); physically consistent conduction requires internal thermal evolution (a future stage). Eq. III salt balance was corrected in Stage 10.10.1 from `gamma_S (S_w - S_B) = m S_B` to `rho_w gamma_S (S_w - S_B) = rho_i m S_B` (MOM6/PISM/MITgcm/H&J99 Eq.4 convention). Natural convection remains absent at zero relative flow as in the bulk closure. The `K_T`/`K_S` convention is U-based (Jenkins et al. 2010 Table 2) rather than a melt-driven `u*`-based Stanton; see `docs/validation/stage10.10_three_equation_interface.md` (superseded) and `docs/validation/stage10.10.1_three_equation_interface.md`.
+10. Three-equation closure (Stage 10.10/10.10.1) previously used a constant internal ice temperature `T_i = -10` in the conduction term of Eq. II (model-selected, NOT from H&J99); **Stage 10.12 replaces the constant with prognostic `state%T_ice`** (two-node lumped interior, explicit Euler, switch `thermal_evolution_enabled` — fully gated in `iceberg_thermodynamics_step`, OFF is bit-identical legacy verified by test block F.1–F.4; see `docs/validation/stage10.12_internal_thermal_evolution.md` §4.1). Eq. III salt balance was corrected in Stage 10.10.1 from `gamma_S (S_w - S_B) = m S_B` to `rho_w gamma_S (S_w - S_B) = rho_i m S_B` (MOM6/PISM/MITgcm/H&J99 Eq.4 convention). Natural convection remains absent at zero relative flow as in the bulk closure. The `K_T`/`K_S` convention is U-based (Jenkins et al. 2010 Table 2) rather than a melt-driven `u*`-based Stanton; see `docs/validation/stage10.10_three_equation_interface.md` (superseded) and `docs/validation/stage10.10.1_three_equation_interface.md`.
 11. Natural convection (Stage 10.11; audited in Stage 10.11.3, classification B). The closure uses a horizontal-plate correlation with a double-diffusive Rayleigh number and Churchill (1977) mixed-convection mixing. Stage 10.11.3 audit findings: (a) the operative turbulent coefficient `0.15*Ra^(1/3)` is from Lloyd & Moran (1974), not Fujii et al. (1973) (which is a theoretical laminar uniform-heat-flux study with `Nu ~ Ra^(1/5)`); (b) the Rayleigh cap `1e10` is ALWAYS active for realistic bergs (uncapped anchor `Ra=5.7e19`), so `Nu` is pinned at 323.17 and the laminar branch/transition (`Ra=1e7`, 113% discontinuity) are latent; (c) in the capped regime the haline term (including `Le=100`) and the values of `beta_T`/`beta_S` are numerically inert (dropping the haline term reproduces the same `m`); (d) the haline term is carried with a positive sign although meltwater freshening is gravitationally stabilizing — the physical minus sign gives `Ra<0 -> Nu=0 -> m=0`; (e) the characteristic length is `state%L`, whereas the source correlations use `L* = A/p`; (f) zero-flow melt is `m = 1.4e-3 m/day`, **7-700x below** the observed quiescent band 0.01-1 m/day, so Stage 10.11 did NOT close the 10.8.2 gap (the earlier "consistent with 0.01-1 m/day" claim was incorrect and is removed); (g) the real mechanism is double-diffusive / diffusion-limited convection (Martin & Kauffman 1977; Keitzl et al. 2016; Middleton et al. 2021), which the closure does not represent. Gayen et al. (2016) remains context only (vertical ice face). Production physics is unchanged by 10.11.3; the recommended follow-up is a future diffusion-limited low-flow parameterization. See `docs/validation/stage10.11.3_natural_convection_physics_audit.md`.
 
 ## Verification policy

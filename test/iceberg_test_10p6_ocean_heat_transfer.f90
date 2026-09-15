@@ -354,11 +354,12 @@ program iceberg_test_10p6_ocean_heat_transfer
 contains
 
     subroutine test_production_consistency(n_checks, n_errors)
-        use iceberg_types, only: ocean_profile
+        use iceberg_types, only: ocean_profile, iceberg_state, T_ICE_INIT
         use iceberg_forcing, only: interp_at_draft
         use iceberg_thermodynamics, only: compute_basal_melt, ocean_freezing_point
         integer, intent(inout) :: n_checks, n_errors
         type(ocean_profile) :: prof
+        type(iceberg_state) :: state
         real :: t_draft, s_draft, tf_draft, delta_t, m_basal
         real :: u_rel_draft, gamma_t
 
@@ -374,9 +375,27 @@ contains
         prof%v = (/ 0.0, 0.0, 0.0 /)
         prof%u_rel = (/ 0.1, 0.1, 0.1 /)  ! iceberg at rest
 
+        ! Minimal iceberg state (Stage 10.12 signature). Bulk scheme (default)
+        ! does not read state%T_ice; values mirror iceberg_test_10p7 pattern.
+        state%T_ice = T_ICE_INIT
+        state%T_surface = T_ICE_INIT
+        state%L = 100.0
+        state%W = 50.0
+        state%H = 50.0
+        state%x = 0.0
+        state%y = 0.0
+        state%u = 0.0
+        state%v = 0.0
+        state%latitude = 0.0
+        state%longitude = 0.0
+        state%nstep = 0
+        state%time = 0.0
+        state%active = .true.
+        state%grounded = .false.
+
         ! Call production subroutine
         n_checks = n_checks + 1
-        call compute_basal_melt(prof, 50.0, 100.0, 0.0, 0.0, &
+        call compute_basal_melt(state, prof, 50.0, 100.0, 0.0, 0.0, &
                                 t_draft, s_draft, tf_draft, delta_t, m_basal)
 
         ! Independent calculation

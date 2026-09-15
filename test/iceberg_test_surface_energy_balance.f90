@@ -157,7 +157,7 @@ program iceberg_test_surface_energy_balance
                       90.0, 0.0, 0.0, 0.0)  ! North pole
     call init_zero_ocean(ocean_prof)
 
-    atmos%t2m = 263.15  ! -10°C = T_ICE
+    atmos%t2m = 263.15  ! -10°C = T_ICE_INIT
     atmos%d2m = 263.15
     atmos%tcc = 0.0
     atmos%msl = 101325.0
@@ -169,7 +169,7 @@ program iceberg_test_surface_energy_balance
                                      q_net_prod, m_surf_prod)
 
     print *, ""
-    print *, "Case 4: Polar night, T_air = T_ICE (-10°C)"
+    print *, "Case 4: Polar night, T_air = T_ICE_INIT (-10°C)"
     print *, "  Q_net = ", q_net_prod
     print *, "  m_surf = ", m_surf_prod
 
@@ -232,7 +232,7 @@ contains
 
         t_air_k = atmos_in%t2m
         t_dew_k = atmos_in%d2m
-        t_surf_k = T_ICE + 273.15
+        t_surf_k = T_ICE_INIT + 273.15
 
         p_atm = atmos_in%msl
         rho_air_local = p_atm/(GAS_CONST_AIR*t_air_k)

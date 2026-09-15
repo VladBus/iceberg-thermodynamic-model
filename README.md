@@ -1,3 +1,78 @@
 # iceberg-thermodynamic-model
 
-Master's thesis on modernization and supplementation of the Thermodynamic Model of Icebergs for modeling processes in the Arctic Ocean developed by Dmitrev in 1995.
+Магистерская работа по модернизации и дополнению термодинамической модели
+айсбергов для моделирования процессов в Арктическом океане (разработка
+Дмитриева, 1995).
+
+Репозиторий содержит **лагранжев модуль айсберга**, встроенный в унаследованный
+эйлеров каркас модели океана/морского льда. Айсберг — прямоугольный призму,
+положение, скорость и размеры которой эволюционируют во времени под
+действием атмосферного, океанического, батиметрического и ледового форсинга.
+
+## Состояние проекта
+
+- **Текущая стадия:** Stage 10.13 — low-flow закрытие базального таяния
+  (исследовательская параметризация за переключателем, OFF по умолчанию).
+- **Статус физики и switches:** `docs/model/model_physics_status.md`
+- **План и статус стадий:** `docs/PROJECT_ROADMAP.md`
+
+## Компоненты репозитория
+
+| Компонент                                          | Назначение                                                                                 |
+| -------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `src/`                                             | Исходный код модели (Fortran): океан/лёд (этот каркас), `iceberg_*.f90` — лагранжев модуль |
+| `app/main.f90`                                     | Оркестратор: цикл по времени, форсинг, вывод                                               |
+| `test/`                                            | Fortran-тесты (fpm)                                                                        |
+| `python/validation/`                               | Независимые Python-эталонные модели и кросс-языковые сравнения                             |
+| `python/tests/`                                    | Python-тесты валидационного слоя                                                           |
+| `python/analysis/`, `python/era5/`, `python/grid/` | Анализ, загрузка ERA5, генерация реальной сетки                                            |
+| `data/`                                            | Входные данные (ERA5, EN4, IBCAO, наблюдения) и выходы прогонов (gitignored)               |
+| `docs/`                                            | Документация: модель, валидация, архив стадий                                              |
+
+## Быстрый старт
+
+```bash
+# Сборка и тесты (всегда с -I/usr/include; перед fpm test: rm -rf build)
+fpm test --flag "-I/usr/include"
+
+# Строгая сборка
+fpm build --flag "-I/usr/include -Wall -Wextra -fcheck=all -ffpe-trap=invalid,zero,overflow"
+
+# Прогон
+fpm run --flag "-I/usr/include" -- <run_id> [era5_file]
+
+# После свежего клона — регенерация входов реальной сетки:
+python python/grid/build_real_grid_inputs.py
+```
+
+Python: conda-окружение `iceberg-thermodynamic-model`
+(`conda activate iceberg-thermodynamic-model`).
+
+## Навигация по документации
+
+```
+README.md ──→ docs/README.md ──→ docs/model/README.md
+                                  ├─ model_physics_status.md (статус физики)
+                                  ├─ model_equation_ledger.md (уравнения)
+                                  └─ model_description.md (описание)
+                    docs/validation/INDEX.md (активная валидация, Stage 10)
+                    docs/wiki/INDEX.md (исторические отчёты стадий 3–10)
+                    docs/DECISIONS.md (ключевые решения)
+```
+
+| Что ищу                     | Куда идти                            |
+| --------------------------- | ------------------------------------ |
+| Правила для AI-агентов      | `AGENTS.md`                          |
+| Правила процесса разработки | `RULES.md`                           |
+| Стиль кода и документов     | `STYLE.md`                           |
+| Актуальные ограничения      | `KNOWN_ISSUES.md`                    |
+| История изменений           | `CHANGELOG.md`                       |
+| Статус физики               | `docs/model/model_physics_status.md` |
+| Активную валидацию          | `docs/validation/INDEX.md`           |
+| Архив стадий 3–10           | `docs/wiki/INDEX.md`                 |
+
+## Ссылки
+
+- Лицензия: `LICENSE`
+- Ключевые решения: `docs/DECISIONS.md`
+- Карта всей документации: `docs/README.md`

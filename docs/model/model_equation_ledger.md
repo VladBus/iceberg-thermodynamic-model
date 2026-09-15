@@ -1,8 +1,8 @@
 # Model Equation Ledger — Математическая спецификация текущей модели
 
-**Дата:** 2026-09-10
-**Current repository stage:** Stage 10.10.1
-**Production baseline:** Stage 10.10 + salt-balance correction `stage10.10.1`
+**Дата:** 2026-09-15
+**Current repository stage:** Stage 10.13 — low-flow closure (Phase C: production integration, OFF by default)
+**Production baseline:** Stage 10.13 (low-flow closure behind `low_flow_closure_enabled`; OFF = Stage 10.12/10.10 behavior unchanged)
 **Units:** SI in the iceberg module unless explicitly noted.
 
 ---
@@ -182,8 +182,8 @@ only re-indentation and diagnostic-only outputs were added). Salinity as practic
 
 Exchange (Jenkins et al. 2010 Table 2, U-based velocity scale):
 
-`gamma_T = K_T U_rel`,  `gamma_S = K_S U_rel`,
-`K_T = sqrt(C_d) Gamma_T = 1.1e-3`,  `K_S = sqrt(C_d) Gamma_S = 3.1e-5`.
+`gamma_T = K_T U_rel`, `gamma_S = K_S U_rel`,
+`K_T = sqrt(C_d) Gamma_T = 1.1e-3`, `K_S = sqrt(C_d) Gamma_S = 3.1e-5`.
 
 Three equations:
 
@@ -191,7 +191,7 @@ Three equations:
 
 (II) `rho_w c_w gamma_T (T_w - T_B) = m rho_i [L_f + c_i max(T_B - T_i, 0)]`
 
-(III) `rho_w gamma_S (S_w - S_B) = rho_i m S_B`  (Stage 10.10.1 correction)
+(III) `rho_w gamma_S (S_w - S_B) = rho_i m S_B` (Stage 10.10.1 correction)
 
 Reduction and solution: `S_B = gamma_S S_w / (gamma_S + (rho_i/rho_w) m)` with
 `rho_i/rho_w = 910/1028 = 0.8852...`; bisection on `[0, m_hi]` with `m_hi`
@@ -220,7 +220,7 @@ Independent validation: the Stage 10.10.1 Fortran test (25 checks) and
 (`m ~ 1.0438e-8` m/s for the H&J99 Table 1 anchor and `m = 4.067e-6` m/s for
 the production end-to-end case). See
 `docs/validation/stage10.10_three_equation_interface.md` (superseded) and
-`docs/validation/stage10.10.1_three_equation_interface.md`.
+`docs/validation/stage10.10_three_equation_interface.md`.
 
 ## 10.3 Natural-convection basal melt (Stage 10.11)
 
@@ -230,37 +230,37 @@ When active, the total heat and salt transfer coefficients combine
 forced convection (U-based, §10.2) and natural convection:
 
 Forced convection (U-based, J2010 Table 2):
-    `gamma_T_forced = K_T * U_rel`,  `gamma_S_forced = K_S * U_rel`
+`gamma_T_forced = K_T * U_rel`, `gamma_S_forced = K_S * U_rel`
 
 Natural convection (horizontal-plate correlation, see attribution note below;
 Churchill 1977 mixing):
-    Horizontal plate facing downward
-    Characteristic length = iceberg length `L` (horizontal scale of the plate;
-    production caller passes `state%L`. Note the source correlations use the
-    Goldstein-Sparrow-Jones scale `L* = A/p` (area/perimeter), not `L`; see
-    Stage 10.11.3 audit §10. Gayen et al. 2016 is CONTEXT only — it studies a
-    vertical ice face and does not set a cell scale for a horizontal base; the
-    L_char = D attribution was a mis-citation, removed in the Stage 10.11.2 audit)
-    Double-diffusive Rayleigh number:
-    `Ra_eff = g * L^3 / (nu * alpha) * [beta_T * (T_w - T_B) + beta_S * (S_w - S_B) * Le]`
-    where `beta_T = 3.0e-5 1/K`, `beta_S = 7.8e-4 1/PSU`, `Le = 100`,
-    `nu = 1.82e-6 m^2/s`, `alpha = k / (rho_w * c_w)`.
-    Nusselt number (horizontal plate):
-    Laminar  (`Ra < 1e7`):  `Nu = 0.27 * Ra^0.25`
-    Turbulent (`Ra >= 1e7`): `Nu = 0.15 * Ra^(1/3)`
-    Attribution (corrected in Stage 10.11.3): the operative turbulent
-    `0.15*Ra^(1/3)` coefficient is from Lloyd & Moran 1974 (JHT 96(4):443-447,
-    electrochemical, `L* = A/p`, turbulent range 8e6-1.6e9), NOT from Fujii
-    et al. 1973 — the latter is a theoretical, laminar, uniform-heat-flux study
-    whose reported dependence is `Nu ~ Ra^(1/5)`. The laminar `0.27*Ra^(1/4)`
-    coefficient is the standard stable-orientation horizontal-plate value.
-    Natural-convection transfer coefficients:
-    `gamma_T_nat = Nu * k / (L * rho_w * c_w)`,
-    `gamma_S_nat = gamma_T_nat * (K_S / K_T)`.
+Horizontal plate facing downward
+Characteristic length = iceberg length `L` (horizontal scale of the plate;
+production caller passes `state%L`. Note the source correlations use the
+Goldstein-Sparrow-Jones scale `L* = A/p` (area/perimeter), not `L`; see
+Stage 10.11.3 audit §10. Gayen et al. 2016 is CONTEXT only — it studies a
+vertical ice face and does not set a cell scale for a horizontal base; the
+L_char = D attribution was a mis-citation, removed in the Stage 10.11.2 audit)
+Double-diffusive Rayleigh number:
+`Ra_eff = g * L^3 / (nu * alpha) * [beta_T * (T_w - T_B) + beta_S * (S_w - S_B) * Le]`
+where `beta_T = 3.0e-5 1/K`, `beta_S = 7.8e-4 1/PSU`, `Le = 100`,
+`nu = 1.82e-6 m^2/s`, `alpha = k / (rho_w * c_w)`.
+Nusselt number (horizontal plate):
+Laminar (`Ra < 1e7`): `Nu = 0.27 * Ra^0.25`
+Turbulent (`Ra >= 1e7`): `Nu = 0.15 * Ra^(1/3)`
+Attribution (corrected in Stage 10.11.3): the operative turbulent
+`0.15*Ra^(1/3)` coefficient is from Lloyd & Moran 1974 (JHT 96(4):443-447,
+electrochemical, `L* = A/p`, turbulent range 8e6-1.6e9), NOT from Fujii
+et al. 1973 — the latter is a theoretical, laminar, uniform-heat-flux study
+whose reported dependence is `Nu ~ Ra^(1/5)`. The laminar `0.27*Ra^(1/4)`
+coefficient is the standard stable-orientation horizontal-plate value.
+Natural-convection transfer coefficients:
+`gamma_T_nat = Nu * k / (L * rho_w * c_w)`,
+`gamma_S_nat = gamma_T_nat * (K_S / K_T)`.
 
 Mixed convection (Churchill 1977, exponent n=3):
-    `gamma_T_eff = (gamma_T_forced^3 + gamma_T_nat^3)^(1/3)`
-    `gamma_S_eff = (gamma_S_forced^3 + gamma_S_nat^3)^(1/3)`.
+`gamma_T_eff = (gamma_T_forced^3 + gamma_T_nat^3)^(1/3)`
+`gamma_S_eff = (gamma_S_forced^3 + gamma_S_nat^3)^(1/3)`.
 
 The effective transfer coefficients `gamma_T_eff`, `gamma_S_eff` are used
 in the three-equation system (§10.2) in place of the purely forced values.
@@ -349,6 +349,64 @@ Known limitations: lumped parametrization, no internal melt at `T_ice = 0`
 (intensive `T_ice` through geometry shrink), `K_ICE = 2.2 W/(m K)` is a model
 parameter (literature range 2.0-2.3), not calibrated.
 See `docs/validation/stage10.12_internal_thermal_evolution.md`.
+
+## 10.5 Diffusion-limited / double-diffusive low-flow closure (Stage 10.13)
+
+Research parameterization behind the switch `low_flow_closure_enabled`
+(default `.false.`; setter `set_low_flow_closure`). Active only inside the
+`BASAL_MELT_SCHEME_THREE_EQUATION` branch of `compute_basal_melt`; the bulk
+and `THREE_EQUATION_NATURAL` paths are unchanged. Formulation (Phase A design
+note; prototype `python/validation/low_flow.py`; Phase C production
+`solve_three_equation_interface_low_flow` in `src/iceberg_thermodynamics.f90`):
+
+Diffusion-limited sublayer thickness (regularized; MK77/Keitzl16 scale):
+
+    delta_S = clip(sqrt(kappa_S * t_scale), delta_min, delta_max)      [m]
+    kappa_T = THERMAL_CONDUCTIVITY / (rho_w * c_w)     (= 1.371e-7 m2/s)
+    kappa_S = kappa_T / LEWIS_NUMBER                  (= 1.371e-9 m2/s)
+    t_scale = LOW_FLOW_TIME_SCALE_S = 86400 s
+    delta_min = 1e-4 m, delta_max = 5e-2 m
+
+Double-diffusive enhancement factor (Middleton et al. 2021 criterion):
+
+    R_rho  = alpha_T dT / (beta_S dS_psu)             (dS_psu regularized)
+    Re_b   = eps / (nu * N^2),  eps = (sqrt(C_D_w) U)^3 / (k_vK delta_S)
+    N^2    = g * beta_S * dS_psu / delta_S
+    f      = LOW_FLOW_F_DC (=2.5)  if (R_rho > 1/Le AND Re_b < 1), else 1
+
+Blend into the effective transfer coefficients (cosine smoothstep):
+
+    w = 0.5 * (1 - cos(pi * clip((U - U_low)/(U_high - U_low), 0, 1)))
+    U_low = 1e-3 m/s, U_high = 1e-2 m/s
+    gamma_T_low = f * k_w * (L_f + c_i * max(T_B - T_i, 0)) / (delta_S * rho_w * c_w * L_f)
+    gamma_S_low = gamma_T_low * (K_S / K_T)
+    gamma_T_eff = (1 - w) * gamma_T_low + w * gamma_T_forced      (same for S)
+
+The melt rate is then obtained from the **unchanged** three-equation solve
+(`solve_three_equation_interface` with `allow_zero_flow = .true.` on this
+path only; the legacy guard `U_rel <= 0 -> m = 0` remains the default of the
+shared solver). A minimal Picard loop (<= `LOW_FLOW_MAX_ITER` = 4,
+tolerance `LOW_FLOW_TOL` = 1e-6 relative on m) iterates the conduction term
+in `gamma_T_low`; on NaN the forced branch is used as a deterministic
+fallback.
+
+Characteristic values (T=2 C, S=35 PSU, L=100 m, D=50 m): U=0 -> m = 0.107
+m/day (regime 3, f=2.5); U=0.1 m/s -> ON == OFF bit-identical (forced).
+Diagnostics: `low_flow_enabled/active/regime/u_rel/re_b/ri_star/r_rho/
+delta_s/delta_t/f/gamma_t/gamma_s/iter/converged` (defined at legacy values
+when OFF).
+
+Validation: Fortran `iceberg_test_10p13_low_flow` (23 checks) +
+Python/Fortran comparison `python/validation/low_flow_fortran_comparison.py`
+(56 checks) + Python prototype `test_low_flow.py` (167 checks). Systematic
+differences vs the Python reference (documented, within tolerance): kappa_S
+convention (Le=100), interface freshening of the 3eq solve, gamma-blending
+before the solve (vs m-blending in the Python hybrid). Known limitations:
+t_scale dominant sensitivity, f_dc not calibrated, research parameterization
+(not universal validation).
+See `docs/validation/stage10.13_phase_c_results.md`,
+`docs/validation/stage10.13_phase_b_results.md`,
+`docs/validation/stage10.13_diffusion_limited_low_flow_design_note.md`.
 
 ## 11. Lateral melt
 

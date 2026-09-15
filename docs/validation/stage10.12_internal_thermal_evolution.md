@@ -13,15 +13,15 @@ Prognostic interior temperature `state%T_ice` (°C) replaces the constant
 `T_i = T_ICE_INIT = -10` inside the three-equation basal closure. Two-node
 lumped model (design note §4, Variant C):
 
-| Element | Formula | Units |
-|---|---|---|
-| Surface skin | `T_surface`, thickness `H_EFF = 0.5 m` (existing, Stage 10.2) | °C, m |
-| Interior layer | `H_int = max(H − H_EFF, H_MIN_INT)`, `H_MIN_INT = 0.5 m` | m |
-| Interior capacity | `C_int = ρ_i · C_ICE · H_int` | J/(m²·K) |
-| Skin→interior conduction | `q_cond = 2·K_ICE·(T_surface − T_ice)/H`, `K_ICE = 2.2` | W/m² |
-| Basal sensible sink | `q_bot = m_basal·ρ_i·CP_ICE_3EQ·max(T_B − T_ice, 0)` | W/m² |
-| Interior ODE | `C_int·dT_ice/dt = q_cond − q_bot` | — |
-| Update | explicit Euler + clamp `[T_ICE_MIN, T_ICE_MAX] = [−100, 0]` | °C |
+| Element                  | Formula                                                       | Units    |
+| ------------------------ | ------------------------------------------------------------- | -------- |
+| Surface skin             | `T_surface`, thickness `H_EFF = 0.5 m` (existing, Stage 10.2) | °C, m    |
+| Interior layer           | `H_int = max(H − H_EFF, H_MIN_INT)`, `H_MIN_INT = 0.5 m`      | m        |
+| Interior capacity        | `C_int = ρ_i · C_ICE · H_int`                                 | J/(m²·K) |
+| Skin→interior conduction | `q_cond = 2·K_ICE·(T_surface − T_ice)/H`, `K_ICE = 2.2`       | W/m²     |
+| Basal sensible sink      | `q_bot = m_basal·ρ_i·CP_ICE_3EQ·max(T_B − T_ice, 0)`          | W/m²     |
+| Interior ODE             | `C_int·dT_ice/dt = q_cond − q_bot`                            | —        |
+| Update                   | explicit Euler + clamp `[T_ICE_MIN, T_ICE_MAX] = [−100, 0]`   | °C       |
 
 Energy path per step (`iceberg_thermodynamics_step`): basal melt with
 `T_ice` → lateral melt → `q_cond` computed → `compute_surface_melt` receives
@@ -32,6 +32,7 @@ interface temperature → `update_iceberg_internal_temperature`.
 
 `thermal_evolution_enabled` (default `.true.`, `set_thermal_evolution`).
 **Fully gates Stage 10.12** in `iceberg_thermodynamics_step` (audit-round fix):
+
 - ON: `q_cond` computed and subtracted from the surface budget
   (`q_internal_exchange` passed), `q_bot` from the interface temperature,
   interior updated by explicit Euler;
@@ -59,31 +60,31 @@ public export).
 
 ### Production (src/)
 
-| File | Change |
-|---|---|
-| `iceberg_types.f90` | constants `K_ICE`, `H_MIN_INT`, `T_ICE_INIT/MIN/MAX`; `T_ICE → T_ICE_INIT` rename; `T_ice` state field; 4 diagnostics fields; `thermal_evolution_enabled` + setter; `compute_iceberg_thermal_capacity`, `compute_iceberg_conductive_coupling`, `update_iceberg_internal_temperature` |
-| `iceberg_thermodynamics.f90` | `compute_basal_melt(state, ...)` signature (reads `state%T_ice`, gated by the switch); Stage 10.12 block in `iceberg_thermodynamics_step` (q_cond → surface melt `q_internal_exchange`, q_bot, interior update); `compute_surface_melt` optional `q_internal_exchange` |
-| `iceberg.f90` | `iceberg_init` initializes `T_ice` |
+| File                         | Change                                                                                                                                                                                                                                                                               |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `iceberg_types.f90`          | constants `K_ICE`, `H_MIN_INT`, `T_ICE_INIT/MIN/MAX`; `T_ICE → T_ICE_INIT` rename; `T_ice` state field; 4 diagnostics fields; `thermal_evolution_enabled` + setter; `compute_iceberg_thermal_capacity`, `compute_iceberg_conductive_coupling`, `update_iceberg_internal_temperature` |
+| `iceberg_thermodynamics.f90` | `compute_basal_melt(state, ...)` signature (reads `state%T_ice`, gated by the switch); Stage 10.12 block in `iceberg_thermodynamics_step` (q_cond → surface melt `q_internal_exchange`, q_bot, interior update); `compute_surface_melt` optional `q_internal_exchange`               |
+| `iceberg.f90`                | `iceberg_init` initializes `T_ice`                                                                                                                                                                                                                                                   |
 
 ### Tests
 
-| File | Status |
-|---|---|
-| `test/iceberg_test_10p12_thermal_evolution.f90` | NEW — 17 checks, 17/17 PASS |
-| `python/validation/internal_thermal.py` | NEW — independent float64 replica |
-| `python/tests/test_internal_thermal_evolution.py` | NEW — 35 checks, 35/35 PASS |
+| File                                                                                                                                                                                                                                                                                                                              | Status                               |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
+| `test/iceberg_test_10p12_thermal_evolution.f90`                                                                                                                                                                                                                                                                                   | NEW — 17 checks, 17/17 PASS          |
+| `python/validation/internal_thermal.py`                                                                                                                                                                                                                                                                                           | NEW — independent float64 replica    |
+| `python/tests/test_internal_thermal_evolution.py`                                                                                                                                                                                                                                                                                 | NEW — 35 checks, 35/35 PASS          |
 | Signature adaptation (mechanical `state` argument only): `iceberg_test_10p10_three_equation.f90`, `iceberg_test_10p11_natural_convection.f90`, `iceberg_test_10p7_basal_melt_validation.f90`, `iceberg_test_10p6_ocean_heat_transfer.f90`, `iceberg_test_7_vertical_temp_gradient.f90`, `iceberg_test_surface_energy_balance.f90` | UPDATED — no expected values changed |
 
 ### Build
 
-| File | Change |
-|---|---|
+| File       | Change                                                                                                                                                    |
+| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `fpm.toml` | unused `stdlib` git dependency REMOVED (zero `use stdlib*` in the repo; eliminates network fetch + broken-partial-clone failure mode in fpm 0.13.0-alpha) |
 
 ### CI
 
-| File | Change |
-|---|---|
+| File                       | Change                                                                                                                                                                                                                                                               |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `.github/workflows/ci.yml` | Python suites `test_three_equation.py` (10.10/10.10.1 — pre-existing gap) and `test_internal_thermal_evolution.py` (10.12) registered; header target count 51 → 54 (fpm auto-discovery covers the new Fortran test). 6 Python suites + full fpm battery now under CI |
 
 ---
@@ -131,11 +132,11 @@ Stage 10.10 end-to-end melt anchor), realistic per-hour dT ≈ 0.04 K
 
 ### 3.3 Cross-language contracts
 
-| Quantity | Fortran (float32) | Python (float64) | Agreement |
-|---|---|---|---|
-| `C_int(50 m)` | 94594496.0 | 94594500.0 | 4.2e-8 rel (1 float32 ulp) |
-| `q_cond` anchor | 0.44 | 0.44 | exact |
-| lower clamp | −100.0 + bound | −100.0 + bound | exact |
+| Quantity        | Fortran (float32) | Python (float64) | Agreement                  |
+| --------------- | ----------------- | ---------------- | -------------------------- |
+| `C_int(50 m)`   | 94594496.0        | 94594500.0       | 4.2e-8 rel (1 float32 ulp) |
+| `q_cond` anchor | 0.44              | 0.44             | exact                      |
+| lower clamp     | −100.0 + bound    | −100.0 + bound   | exact                      |
 
 ---
 
@@ -173,12 +174,12 @@ Stage 10.10 end-to-end melt anchor), realistic per-hour dT ≈ 0.04 K
 
 ## 5. Verification summary
 
-| Suite | Result |
-|---|---|
-| Fortran `iceberg_test_10p12_thermal_evolution` | **21/21 OK, exit 0** (17 + F.1–F.4 OFF-switch; incl. post-whitespace-fix re-run) |
-| **OFF-switch legacy-invariance test** | **PASS** (F.1–F.4: interior frozen, diag defined, surface budget bitwise == legacy, ON toggles) |
-| Python `test_internal_thermal_evolution.py` | 35/35 OK, exit 0 |
-| Full fpm battery (`fpm test --flag "-I/usr/include"`, clean build) | exit 0; no FAILURE/STOP 1/segfault; 10.12 (21/0), 10p10 (25/0), 10p11 (23/0), test_7, 10p6, 10p7, surface suites all pass; `ice_init_test` gracefully skips without KOORD.DAT |
-| Python regression suites | 65 (10.10.1) + 70 (10.11) + 44 (10.8.1) + 229 (10.8.2) + 212 (10.9) = 620 checks, 0 errors |
-| Strict build `fpm build --flag "-I/usr/include -Wall -Wextra -fcheck=all -ffpe-trap=invalid,zero,overflow"` | exit 0, 0 warnings |
-| `git diff --check` | clean (one trailing-whitespace line in 10p10 test fixed) |
+| Suite                                                                                                       | Result                                                                                                                                                                        |
+| ----------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Fortran `iceberg_test_10p12_thermal_evolution`                                                              | **21/21 OK, exit 0** (17 + F.1–F.4 OFF-switch; incl. post-whitespace-fix re-run)                                                                                              |
+| **OFF-switch legacy-invariance test**                                                                       | **PASS** (F.1–F.4: interior frozen, diag defined, surface budget bitwise == legacy, ON toggles)                                                                               |
+| Python `test_internal_thermal_evolution.py`                                                                 | 35/35 OK, exit 0                                                                                                                                                              |
+| Full fpm battery (`fpm test --flag "-I/usr/include"`, clean build)                                          | exit 0; no FAILURE/STOP 1/segfault; 10.12 (21/0), 10p10 (25/0), 10p11 (23/0), test_7, 10p6, 10p7, surface suites all pass; `ice_init_test` gracefully skips without KOORD.DAT |
+| Python regression suites                                                                                    | 65 (10.10.1) + 70 (10.11) + 44 (10.8.1) + 229 (10.8.2) + 212 (10.9) = 620 checks, 0 errors                                                                                    |
+| Strict build `fpm build --flag "-I/usr/include -Wall -Wextra -fcheck=all -ffpe-trap=invalid,zero,overflow"` | exit 0, 0 warnings                                                                                                                                                            |
+| `git diff --check`                                                                                          | clean (one trailing-whitespace line in 10p10 test fixed)                                                                                                                      |

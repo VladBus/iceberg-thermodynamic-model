@@ -26,18 +26,18 @@ returns `m = 1.638 × 10⁻⁸ m/s = 1.42 × 10⁻³ m/day`.
 The sensitivity study shows that in this capped regime:
 
 - the haline term `β_S·(S_w − S_B)·Le` is **numerically inert** — removing it
-  entirely (or setting `Le = 0`) reproduces `m = 1.638 × 10⁻⁸ m/s` *exactly*
+  entirely (or setting `Le = 0`) reproduces `m = 1.638 × 10⁻⁸ m/s` _exactly_
   (Table G);
 - `β_T` and `β_S` can each be varied by ±1 order of magnitude with **zero change**
   to `m` (Table H);
-- `γ_T_nat ∝ 1/L` because the cap fixes `Nu` (Table C), whereas the *uncapped*
+- `γ_T_nat ∝ 1/L` because the cap fixes `Nu` (Table C), whereas the _uncapped_
   turbulent `Ra^(1/3)` law is `L`-independent;
 - the laminar branch and the `Ra = 1e7` transition are **numerically latent** for
   any realistic iceberg (cap always active; `L` for cap = 0.056 m haline-only /
   1.43 m thermal-only) — confirming and quantifying the 10.11.2 finding.
 
 **Physical finding — the haline sign does not describe the real mechanism.**
-At a melting ice base the meltwater is cold *and* fresh. The salinity
+At a melting ice base the meltwater is cold _and_ fresh. The salinity
 stratification is **stabilizing** (light fresh water on top of dense saline water),
 not destabilizing as the production's `+β_S·ΔS·Le` term implies. Giving the
 haline term its physical sign drives `Ra < 0 → Nu = 0 → m = 0`, i.e. the closure
@@ -49,7 +49,7 @@ not reproduce that mechanism.
 
 **Citation finding.** The `0.15·Ra^(1/3)` turbulent coefficient is genuinely from
 Lloyd & Moran (1974), **not** Fujii et al. (1973). The cited Fujii et al. (1973)
-paper is a *theoretical, laminar, uniform-heat-flux* study whose reported
+paper is a _theoretical, laminar, uniform-heat-flux_ study whose reported
 dependence is `Nu ∝ Ra^(1/5)` — it does not contain either `0.27·Ra^(1/4)` or
 `0.15·Ra^(1/3)`. The `0.27·Ra^(1/4)` laminar coefficient is the standard
 stable-orientation horizontal-plate value. Churchill's (1977) `n = 3` mixing rule
@@ -102,14 +102,14 @@ documentation correction plus a future-physics note.
 
 ## 3. Repository State and Provenance
 
-| Item | Value |
-|---|---|
-| Branch | `main` (`main...origin/main`, no divergence at audit start) |
-| Audit-start HEAD | `a5fc4c5` (`chore: rename t_ice to t_ice_in, localize comments, verify citations, ignore .omo/`) |
-| Preceding stages | `6a0014e` (10.11), `dda51b5` (10.11.1), `dcb9f3c` (10.11.2) |
-| Working tree | clean except new `python/analysis/stage10_11_3_natural_convection_sensitivity.py` |
-| Production source diff | **empty** (no `src/` edits in this stage) |
-| Test baseline | all Fortran and Python suites pass (Section 26) |
+| Item                   | Value                                                                                            |
+| ---------------------- | ------------------------------------------------------------------------------------------------ |
+| Branch                 | `main` (`main...origin/main`, no divergence at audit start)                                      |
+| Audit-start HEAD       | `a5fc4c5` (`chore: rename t_ice to t_ice_in, localize comments, verify citations, ignore .omo/`) |
+| Preceding stages       | `6a0014e` (10.11), `dda51b5` (10.11.1), `dcb9f3c` (10.11.2)                                      |
+| Working tree           | clean except new `python/analysis/stage10_11_3_natural_convection_sensitivity.py`                |
+| Production source diff | **empty** (no `src/` edits in this stage)                                                        |
+| Test baseline          | all Fortran and Python suites pass (Section 26)                                                  |
 
 The audit follows the repo workflow in `AGENTS.md`: read the sources, the wiki,
 git status/log, and all related documents before acting; use the existing TODO
@@ -191,20 +191,20 @@ The effective coefficients replace the forced ones in the three-equation system
 
 ## 6. Dimensional Analysis
 
-| Quantity | Expression | Dimension | Verdict |
-|---|---|---|---|
-| `β_T·ΔT` | `1/K · K` | dimensionless | ✓ |
-| `β_S·ΔS·Le` | `1/PSU · PSU` | dimensionless | ✓ |
-| bracket | `[β_TΔT + β_SΔS·Le]` | dimensionless | ✓ |
-| `Ra_eff` | `m/s² · m³ / (m²/s · m²/s)` | dimensionless | ✓ |
-| `Nu` | `C·Ra^p` | dimensionless | ✓ |
-| `γ_T_nat` | `W/(m·K) / (m · kg/m³ · J/(kg·K))` | m/s | ✓ |
-| `γ_S_nat` | `γ_T_nat·(K_S/K_T)` | m/s | ✓ |
-| Churchill root | sum of like dimensions | m/s | ✓ |
+| Quantity       | Expression                         | Dimension     | Verdict |
+| -------------- | ---------------------------------- | ------------- | ------- |
+| `β_T·ΔT`       | `1/K · K`                          | dimensionless | ✓       |
+| `β_S·ΔS·Le`    | `1/PSU · PSU`                      | dimensionless | ✓       |
+| bracket        | `[β_TΔT + β_SΔS·Le]`               | dimensionless | ✓       |
+| `Ra_eff`       | `m/s² · m³ / (m²/s · m²/s)`        | dimensionless | ✓       |
+| `Nu`           | `C·Ra^p`                           | dimensionless | ✓       |
+| `γ_T_nat`      | `W/(m·K) / (m · kg/m³ · J/(kg·K))` | m/s           | ✓       |
+| `γ_S_nat`      | `γ_T_nat·(K_S/K_T)`                | m/s           | ✓       |
+| Churchill root | sum of like dimensions             | m/s           | ✓       |
 
 All algebraic combinations are dimensionally consistent. Note that combining a
 `U`-based coefficient (`γ_forced`, no `L`) with an `L`-based coefficient
-(`γ_nat ∝ 1/L`) via `n = 3` is dimensionally *homogeneous* (both are m/s) but
+(`γ_nat ∝ 1/L`) via `n = 3` is dimensionally _homogeneous_ (both are m/s) but
 not a Churchill derivation for this geometry (Section 14).
 
 ---
@@ -213,18 +213,18 @@ not a Churchill derivation for this geometry (Section 14).
 
 Measured components at the anchor (Python replica, float64):
 
-| Component | Value |
-|---|---|
-| `α = k/(ρ_w c_w)` | `1.3708 × 10⁻⁷ m²/s` |
-| `g/(ν·α)` | `3.9308 × 10¹³ 1/(m³·K)` |
-| `ΔT = T_w − T_B` | `2.9016 K` |
-| `ΔS = S_w − S_B` | `18.5386 PSU` |
-| `β_T·ΔT` | `8.7047 × 10⁻⁵` |
-| `β_S·ΔS·Le` | `1.4460` |
-| haline / thermal | `1.66 × 10⁴` |
-| `Ra` uncapped | `5.6843 × 10¹⁹` |
-| `Ra` capped | `1.0 × 10¹⁰` |
-| `Nu` | `323.1652` |
+| Component         | Value                    |
+| ----------------- | ------------------------ |
+| `α = k/(ρ_w c_w)` | `1.3708 × 10⁻⁷ m²/s`     |
+| `g/(ν·α)`         | `3.9308 × 10¹³ 1/(m³·K)` |
+| `ΔT = T_w − T_B`  | `2.9016 K`               |
+| `ΔS = S_w − S_B`  | `18.5386 PSU`            |
+| `β_T·ΔT`          | `8.7047 × 10⁻⁵`          |
+| `β_S·ΔS·Le`       | `1.4460`                 |
+| haline / thermal  | `1.66 × 10⁴`             |
+| `Ra` uncapped     | `5.6843 × 10¹⁹`          |
+| `Ra` capped       | `1.0 × 10¹⁰`             |
+| `Nu`              | `323.1652`               |
 
 `Ra_eff` is a linear superposition of a thermal and a haline contribution
 (verified by Python check B.9). Because the haline term carries `Le = 100` and
@@ -241,7 +241,7 @@ Meltwater at the interface is **cold and fresh**: `T_B = −0.90 °C`,
 - thermal: cold water above warm water → gravitationally **destabilizing**
   (`β_T·ΔT > 0` contributes to unstable stratification);
 - haline: fresh (light) water above saline (dense) water → gravitationally
-  **stabilizing** (`β_S·ΔS > 0` should *oppose* convection).
+  **stabilizing** (`β_S·ΔS > 0` should _oppose_ convection).
 
 The net density anomaly of the meltwater layer is dominated by salinity:
 `β_S·ΔS = 1.446 × 10⁻²` vs `β_T·ΔT = 8.7 × 10⁻⁵`, i.e. the layer is ~1.4 %
@@ -273,7 +273,7 @@ represents the real double-diffusive mechanism.
 `Le = 100` is the ratio of thermal to haline molecular diffusivity. For seawater
 `κ_T ≈ 1.4 × 10⁻⁷ m²/s` and `D_S ≈ 1.1 × 10⁻⁹ m²/s`, giving `Le ≈ 100–130`, so
 the **value** is defensible. The defect is not the magnitude of `Le` but its
-role: it is used to *amplify a stabilizing contribution as if destabilizing*.
+role: it is used to _amplify a stabilizing contribution as if destabilizing_.
 In a double-diffusive parameterization, the diffusivity ratio enters through the
 density ratio `R_ρ` and the flux laws, not as a multiplier on a summed `Ra`.
 
@@ -299,11 +299,11 @@ description but differs from the correlation's own scale definition.
 
 ## 11. Nusselt Correlation Provenance
 
-| Coefficient | Attributed in code/docs to | Actual source (verified) | Notes |
-|---|---|---|---|
-| `0.15·Ra^(1/3)` (turbulent) | Fujii et al. 1973 | **Lloyd & Moran 1974**, JHT 96(4):443–447, DOI 10.1115/1.3450224 | Electrochemical, Sc≈2200, `RaL*` 8e6–1.6e9, transition ≈8e6 |
-| `0.27·Ra^(1/4)` (laminar) | Fujii et al. 1973 | Standard stable-orientation horizontal-plate value (Incropera-style tables) | Applies to heated-plate-down / cooled-plate-up |
-| `Nu ∝ Ra^(1/5)` | — | **Fujii, Honda & Morioka 1973**, IJHMT 16(3):611–627 | Theoretical, uniform **heat flux**, laminar, downward-facing |
+| Coefficient                 | Attributed in code/docs to | Actual source (verified)                                                    | Notes                                                        |
+| --------------------------- | -------------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| `0.15·Ra^(1/3)` (turbulent) | Fujii et al. 1973          | **Lloyd & Moran 1974**, JHT 96(4):443–447, DOI 10.1115/1.3450224            | Electrochemical, Sc≈2200, `RaL*` 8e6–1.6e9, transition ≈8e6  |
+| `0.27·Ra^(1/4)` (laminar)   | Fujii et al. 1973          | Standard stable-orientation horizontal-plate value (Incropera-style tables) | Applies to heated-plate-down / cooled-plate-up               |
+| `Nu ∝ Ra^(1/5)`             | —                          | **Fujii, Honda & Morioka 1973**, IJHMT 16(3):611–627                        | Theoretical, uniform **heat flux**, laminar, downward-facing |
 
 Fujii et al. (1973) does **not** contain either constant used in production. The
 citation is therefore a mis-attribution for the specific pair
@@ -340,7 +340,7 @@ cap is ever removed or applied to small/weakly-stratified cases.
 ## 13. Rayleigh Cap
 
 `Ra_max = 1e10` is the single most consequential constant. The uncapped anchor
-`Ra = 5.68 × 10¹⁹` exceeds it by 9.8 decades. The cap therefore *defines* the
+`Ra = 5.68 × 10¹⁹` exceeds it by 9.8 decades. The cap therefore _defines_ the
 result: `Nu = 0.15·(1e10)^(1/3) = 323.165`, `γ_T_nat = 4.4299 × 10⁻⁷ m/s`,
 `m = 1.638 × 10⁻⁸ m/s`. Varying the cap over `1e7…∞` moves `m` over
 `1.4 × 10⁻⁴ … 2.53 m/day` (Section 16) — a range of four orders of magnitude,
@@ -378,8 +378,8 @@ At `U_rel = 0`, `γ_forced = 0` and `γ_eff = γ_nat`. The closure returns:
 This is finite and stable (no NaN/zero), which was the stated goal of Stage
 10.11. However, it is ~7–700× below the observed quiescent band
 `0.01–1 m/day` (Stage 10.8.2), and it is the same value whether or not the
-haline term is present (Table G). It is best described as a *cap-determined
-floor*, not a physical prediction.
+haline term is present (Table G). It is best described as a _cap-determined
+floor_, not a physical prediction.
 
 ---
 
@@ -387,17 +387,17 @@ floor*, not a physical prediction.
 
 Anchor `T_w=2 °C`, `S_w=34.5 PSU`, `L=100 m`, `D=50 m`, `U_rel=0`:
 
-| `Ra_max` | capped | `Nu` | `γ_T_nat` [m/s] | `m` [m/s] | `m` [m/day] |
-|---|---|---|---|---|---|
-| 1e7 | Y | 32.32 | 4.430e-8 | 1.638e-9 | 0.000142 |
-| 1e8 | Y | 69.62 | 9.544e-8 | 3.529e-9 | 0.000305 |
-| 5e8 | Y | 119.06 | 1.632e-7 | 6.034e-9 | 0.000521 |
-| 1e9 | Y | 150.00 | 2.056e-7 | 7.603e-9 | 0.000657 |
-| **1e10 (prod)** | **Y** | **323.17** | **4.430e-7** | **1.638e-8** | **0.001415** |
-| 1e11 | Y | 696.24 | 9.544e-7 | 3.529e-8 | 0.003049 |
-| 1e12 | Y | 1500.00 | 2.056e-6 | 7.603e-8 | 0.006569 |
-| 1e13 | Y | 3231.65 | 4.430e-6 | 1.638e-7 | 0.014151 |
-| ∞ (no cap) | N | 576745.63 | 7.906e-4 | 2.923e-5 | 2.525749 |
+| `Ra_max`        | capped | `Nu`       | `γ_T_nat` [m/s] | `m` [m/s]    | `m` [m/day]  |
+| --------------- | ------ | ---------- | --------------- | ------------ | ------------ |
+| 1e7             | Y      | 32.32      | 4.430e-8        | 1.638e-9     | 0.000142     |
+| 1e8             | Y      | 69.62      | 9.544e-8        | 3.529e-9     | 0.000305     |
+| 5e8             | Y      | 119.06     | 1.632e-7        | 6.034e-9     | 0.000521     |
+| 1e9             | Y      | 150.00     | 2.056e-7        | 7.603e-9     | 0.000657     |
+| **1e10 (prod)** | **Y**  | **323.17** | **4.430e-7**    | **1.638e-8** | **0.001415** |
+| 1e11            | Y      | 696.24     | 9.544e-7        | 3.529e-8     | 0.003049     |
+| 1e12            | Y      | 1500.00    | 2.056e-6        | 7.603e-8     | 0.006569     |
+| 1e13            | Y      | 3231.65    | 4.430e-6        | 1.638e-7     | 0.014151     |
+| ∞ (no cap)      | N      | 576745.63  | 7.906e-4        | 2.923e-5     | 2.525749     |
 
 The cap multiplier on `γ` is **1784.7×**. The observed quiescent band is only
 reached at `Ra_max ≳ 1e13` or uncapped; the production cap sits far below it.
@@ -408,17 +408,17 @@ reached at `Ra_max ≳ 1e13` or uncapped; the production cap sits far below it.
 
 Cap active throughout; `γ_T_nat·L = 4.430 × 10⁻⁵` is constant, i.e. `γ ∝ 1/L`:
 
-| `L` [m] | `Ra` uncapped | `Nu` | `γ_T_nat` [m/s] | `m` [m/s] | `m` [m/day] |
-|---|---|---|---|---|---|
-| 10 | 5.684e16 | 323.17 | 4.430e-6 | 1.638e-7 | 0.014151 |
-| 20 | 4.547e17 | 323.17 | 2.215e-6 | 8.190e-8 | 0.007077 |
-| 40 | 3.638e18 | 323.17 | 1.107e-6 | 4.095e-8 | 0.003538 |
-| 50 | 7.105e18 | 323.17 | 8.860e-7 | 3.276e-8 | 0.002830 |
-| 100 | 5.684e19 | 323.17 | 4.430e-7 | 1.638e-8 | 0.001415 |
-| 200 | 4.547e20 | 323.17 | 2.215e-7 | 8.190e-9 | 0.000708 |
-| 400 | 3.638e21 | 323.17 | 1.107e-7 | 4.095e-9 | 0.000354 |
+| `L` [m] | `Ra` uncapped | `Nu`   | `γ_T_nat` [m/s] | `m` [m/s] | `m` [m/day] |
+| ------- | ------------- | ------ | --------------- | --------- | ----------- |
+| 10      | 5.684e16      | 323.17 | 4.430e-6        | 1.638e-7  | 0.014151    |
+| 20      | 4.547e17      | 323.17 | 2.215e-6        | 8.190e-8  | 0.007077    |
+| 40      | 3.638e18      | 323.17 | 1.107e-6        | 4.095e-8  | 0.003538    |
+| 50      | 7.105e18      | 323.17 | 8.860e-7        | 3.276e-8  | 0.002830    |
+| 100     | 5.684e19      | 323.17 | 4.430e-7        | 1.638e-8  | 0.001415    |
+| 200     | 4.547e20      | 323.17 | 2.215e-7        | 8.190e-9  | 0.000708    |
+| 400     | 3.638e21      | 323.17 | 1.107e-7        | 4.095e-9  | 0.000354    |
 
-Under the *uncapped* turbulent law, `Nu ∝ L` and `γ ∝ 1/L` would cancel,
+Under the _uncapped_ turbulent law, `Nu ∝ L` and `γ ∝ 1/L` would cancel,
 making `γ` length-independent; the explicit `1/L` scaling here is entirely a cap
 artifact. This is a physically important caveat: production's "small bergs melt
 faster at rest" behaviour is not a correlation property.
@@ -430,15 +430,15 @@ faster at rest" behaviour is not a correlation property.
 Natural contributes a relative enhancement
 `γ_eff/γ_forced − 1`:
 
-| `U_rel` [m/s] | `γ_forced` | `γ_nat` | `γ_eff` | rel. excess | `m` [m/day] |
-|---|---|---|---|---|---|
-| 0 | 0 | 4.430e-7 | 4.430e-7 | — | 0.001415 |
-| 1e-4 | 1.100e-7 | 4.430e-7 | 4.452e-7 | 3.05 | 0.001423 |
-| 4e-4 | 4.400e-7 | 4.430e-7 | 5.563e-7 | 0.264 | 0.001778 |
-| 1e-3 | 1.100e-6 | 4.430e-7 | 1.123e-6 | 0.0213 | 0.003591 |
-| 1e-2 | 1.100e-5 | 4.430e-7 | 1.100e-5 | 2.18e-5 | 0.035143 |
-| 1e-1 | 1.100e-4 | 4.430e-7 | 1.100e-4 | 2.18e-8 | 0.351420 |
-| 1 | 1.100e-3 | 4.430e-7 | 1.100e-3 | 2.18e-11 | 3.51424 |
+| `U_rel` [m/s] | `γ_forced` | `γ_nat`  | `γ_eff`  | rel. excess | `m` [m/day] |
+| ------------- | ---------- | -------- | -------- | ----------- | ----------- |
+| 0             | 0          | 4.430e-7 | 4.430e-7 | —           | 0.001415    |
+| 1e-4          | 1.100e-7   | 4.430e-7 | 4.452e-7 | 3.05        | 0.001423    |
+| 4e-4          | 4.400e-7   | 4.430e-7 | 5.563e-7 | 0.264       | 0.001778    |
+| 1e-3          | 1.100e-6   | 4.430e-7 | 1.123e-6 | 0.0213      | 0.003591    |
+| 1e-2          | 1.100e-5   | 4.430e-7 | 1.100e-5 | 2.18e-5     | 0.035143    |
+| 1e-1          | 1.100e-4   | 4.430e-7 | 1.100e-4 | 2.18e-8     | 0.351420    |
+| 1             | 1.100e-3   | 4.430e-7 | 1.100e-3 | 2.18e-11    | 3.51424     |
 
 The natural branch matters only for `U_rel ≲ 1e-3 m/s`; above that, forced
 convection dominates geometrically. This is consistent with Stage 10.11.2's
@@ -451,12 +451,12 @@ correction of the erroneous "~0.1 % at `U_rel = 0.1`" claim.
 Fixed `S_w=34.5 PSU`, `L=100 m`, `D=50 m`, `U_rel=0`:
 
 | `T_w` [°C] | `ΔT` [K] | `γ_T_nat` [m/s] | `m` [m/s] | `m` [m/day] | `m/ΔT` [m/s/K] |
-|---|---|---|---|---|---|
-| −1.432 | 0.5 | 4.430e-7 | 1.662e-9 | 0.000144 | 3.324e-9 |
-| −0.932 | 1.0 | 4.430e-7 | 3.478e-9 | 0.000300 | 3.478e-9 |
-| 0.068 | 2.0 | 4.430e-7 | 7.509e-9 | 0.000649 | 3.754e-9 |
-| 1.068 | 3.0 | 4.430e-7 | 1.196e-8 | 0.001033 | 3.987e-9 |
-| 2.068 | 4.0 | 4.430e-7 | 1.671e-8 | 0.001444 | 4.178e-9 |
+| ---------- | -------- | --------------- | --------- | ----------- | -------------- |
+| −1.432     | 0.5      | 4.430e-7        | 1.662e-9  | 0.000144    | 3.324e-9       |
+| −0.932     | 1.0      | 4.430e-7        | 3.478e-9  | 0.000300    | 3.478e-9       |
+| 0.068      | 2.0      | 4.430e-7        | 7.509e-9  | 0.000649    | 3.754e-9       |
+| 1.068      | 3.0      | 4.430e-7        | 1.196e-8  | 0.001033    | 3.987e-9       |
+| 2.068      | 4.0      | 4.430e-7        | 1.671e-8  | 0.001444    | 4.178e-9       |
 
 `γ_T_nat` is **constant** across `ΔT` (cap pins `Nu`); `m` responds through the
 three-equation balance, nearly linearly in `ΔT` with a weak curvature from the
@@ -469,13 +469,13 @@ three-equation balance, nearly linearly in `ΔT` with a weak curvature from the
 Fixed `T_w=2 °C`, `L=100 m`, `D=50 m`, `U_rel=0`:
 
 | `S_w` [PSU] | `Tf` [°C] | `S_B` [PSU] | `γ_T_nat` [m/s] | `m` [m/s] | `m` [m/day] |
-|---|---|---|---|---|---|
-| 30.0 | −1.676 | 14.141 | 4.430e-7 | 1.582e-8 | 0.001367 |
-| 32.0 | −1.789 | 14.958 | 4.430e-7 | 1.607e-8 | 0.001388 |
-| 33.0 | −1.846 | 15.361 | 4.430e-7 | 1.619e-8 | 0.001399 |
-| 34.0 | −1.903 | 15.762 | 4.430e-7 | 1.632e-8 | 0.001410 |
-| 34.5 | −1.932 | 15.961 | 4.430e-7 | 1.638e-8 | 0.001415 |
-| 35.0 | −1.960 | 16.160 | 4.430e-7 | 1.644e-8 | 0.001420 |
+| ----------- | --------- | ----------- | --------------- | --------- | ----------- |
+| 30.0        | −1.676    | 14.141      | 4.430e-7        | 1.582e-8  | 0.001367    |
+| 32.0        | −1.789    | 14.958      | 4.430e-7        | 1.607e-8  | 0.001388    |
+| 33.0        | −1.846    | 15.361      | 4.430e-7        | 1.619e-8  | 0.001399    |
+| 34.0        | −1.903    | 15.762      | 4.430e-7        | 1.632e-8  | 0.001410    |
+| 34.5        | −1.932    | 15.961      | 4.430e-7        | 1.638e-8  | 0.001415    |
+| 35.0        | −1.960    | 16.160      | 4.430e-7        | 1.644e-8  | 0.001420    |
 
 `m` varies by only ~4 % across `S_w = 30…35 PSU`, again because `γ` is pinned by
 the cap and only the interface state shifts. This is strong evidence that the
@@ -485,12 +485,12 @@ closure does not encode a salinity-dependent convective response.
 
 ## 21. Sensitivity — Haline/Lewis Construction (decisive)
 
-| Variant | `Ra` uncapped | `Nu` | `γ_T_nat` [m/s] | `m` [m/s] | `m` [m/day] |
-|---|---|---|---|---|---|
-| production `+β_SΔS·Le`, `Le=100` | 5.684e19 | 323.17 | 4.430e-7 | 1.638e-8 | 0.001415 |
-| thermal only, `Le=0` | 3.422e15 | 323.17 | 4.430e-7 | 1.638e-8 | 0.001415 |
-| haline no-`Le`, `Le=1` | 5.718e17 | 323.17 | 4.430e-7 | 1.638e-8 | 0.001415 |
-| **physical (stabilizing)** `−β_SΔS·Le` | −1.058e20 | 0.0 | 0.0 | ≈0 (1.0e-26) | 0.0 |
+| Variant                                | `Ra` uncapped | `Nu`   | `γ_T_nat` [m/s] | `m` [m/s]    | `m` [m/day] |
+| -------------------------------------- | ------------- | ------ | --------------- | ------------ | ----------- |
+| production `+β_SΔS·Le`, `Le=100`       | 5.684e19      | 323.17 | 4.430e-7        | 1.638e-8     | 0.001415    |
+| thermal only, `Le=0`                   | 3.422e15      | 323.17 | 4.430e-7        | 1.638e-8     | 0.001415    |
+| haline no-`Le`, `Le=1`                 | 5.718e17      | 323.17 | 4.430e-7        | 1.638e-8     | 0.001415    |
+| **physical (stabilizing)** `−β_SΔS·Le` | −1.058e20     | 0.0    | 0.0             | ≈0 (1.0e-26) | 0.0         |
 
 The first three rows are **identical**: under the cap the haline term — including
 its `Le` amplification — contributes nothing. The fourth row shows that the
@@ -509,13 +509,13 @@ the capped regime.
 
 Churchill exponent at `U_rel = 0.1 m/s`:
 
-| `n` | `γ_eff` [m/s] | rel. excess | `m` [m/day] |
-|---|---|---|---|
-| 1 | 1.104e-4 | 4.03e-3 | 0.35284 |
-| 2 | 1.100e-4 | 8.11e-6 | 0.35143 |
-| 3 (prod) | 1.100e-4 | 2.18e-8 | 0.35142 |
-| 4 | 1.100e-4 | 6.58e-11 | 0.35142 |
-| 5 | 1.100e-4 | 2.11e-13 | 0.35142 |
+| `n`      | `γ_eff` [m/s] | rel. excess | `m` [m/day] |
+| -------- | ------------- | ----------- | ----------- |
+| 1        | 1.104e-4      | 4.03e-3     | 0.35284     |
+| 2        | 1.100e-4      | 8.11e-6     | 0.35143     |
+| 3 (prod) | 1.100e-4      | 2.18e-8     | 0.35142     |
+| 4        | 1.100e-4      | 6.58e-11    | 0.35142     |
+| 5        | 1.100e-4      | 2.11e-13    | 0.35142     |
 
 For `n ≥ 2` the natural contribution is negligible at this speed.
 
@@ -526,13 +526,13 @@ For `n ≥ 2` the natural contribution is negligible at this speed.
 `U* = γ_T_nat / K_T` — below `U*` the natural branch exceeds the forced branch:
 
 | `L` [m] | `γ_T_nat` [m/s] | `U*` [m/s] |
-|---|---|---|
-| 10 | 4.430e-6 | 4.03e-3 |
-| 20 | 2.215e-6 | 2.01e-3 |
-| 40 | 1.107e-6 | 1.01e-3 |
-| 100 | 4.430e-7 | 4.03e-4 |
-| 200 | 2.215e-7 | 2.01e-4 |
-| 400 | 1.107e-7 | 1.01e-4 |
+| ------- | --------------- | ---------- |
+| 10      | 4.430e-6        | 4.03e-3    |
+| 20      | 2.215e-6        | 2.01e-3    |
+| 40      | 1.107e-6        | 1.01e-3    |
+| 100     | 4.430e-7        | 4.03e-4    |
+| 200     | 2.215e-7        | 2.01e-4    |
+| 400     | 1.107e-7        | 1.01e-4    |
 
 `U* ∝ 1/L` (cap artifact). Natural convection is numerically relevant only in
 the top decade of this range; typical ocean `U_rel ≳ 0.01 m/s` leaves the forced
@@ -554,37 +554,37 @@ then-current closure). Against that band:
 So Stage 10.11 did **not** close the zero-flow gap. The Stage 10.11 statement
 that the closure "provides finite melt rates consistent with quiescent
 laboratory observations (0.01–1 m/day range)" is **false** and must be corrected.
-The correct statement is: it provides a *finite, cap-determined low-flow floor
-that remains 7–700× below the observed quiescent band*.
+The correct statement is: it provides a _finite, cap-determined low-flow floor
+that remains 7–700× below the observed quiescent band_.
 
 ---
 
 ## 25. Literature Evidence on the Real Mechanism
 
-- **Martin & Kauffman (1977)** — *An Experimental and Theoretical Study of the
+- **Martin & Kauffman (1977)** — _An Experimental and Theoretical Study of the
   Turbulent and Laminar Convection Generated under a Horizontal Ice Sheet
-  Floating on Warm Salty Water*, J. Phys. Oceanogr. **7**(2), 272–283,
+  Floating on Warm Salty Water_, J. Phys. Oceanogr. **7**(2), 272–283,
   DOI `10.1175/1520-0485(1977)007<0272:AEATSO>2.0.CO;2` (verified). This is the
   closest primary analogue to the iceberg-base geometry: a horizontal ice sheet
   melting into warm salty water develops a conductive sublayer, an unstable
   convective layer (part double-diffusive, part pure thermal), and a deep
   thermal-convection region; melt runs ~2× the purely diffusive prediction.
-- **Keitzl, Mellado & Notz (2016)** — *Impact of Thermally Driven Turbulence on
-  the Bottom Melting of Ice*, J. Phys. Oceanogr. **46**(4), 1171–1187,
+- **Keitzl, Mellado & Notz (2016)** — _Impact of Thermally Driven Turbulence on
+  the Bottom Melting of Ice_, J. Phys. Oceanogr. **46**(4), 1171–1187,
   DOI `10.1175/JPO-D-15-0126.1` (verified). DNS/lab: for warm-water
   temperatures below ~4–8 °C the melt is **diffusion-limited**, with a stable
   meltwater layer shielding the interface; turbulent enhancement is only
   ~2.5–3.1× over conduction, and the melt law passes through regimes
   `m ∝ ΔT` (diffusive), `m ∝ ΔT^(4/3)`, then `m ∝ ΔT^(5/3)`.
-- **Middleton, Vreugdenhil, Holland & Taylor (2021)** — *Numerical Simulations
+- **Middleton, Vreugdenhil, Holland & Taylor (2021)** — _Numerical Simulations
   of Melt-Driven Double-Diffusive Fluxes in a Turbulent Boundary Layer beneath
-  an Ice Shelf*, J. Phys. Oceanogr. **51**, 403–418,
+  an Ice Shelf_, J. Phys. Oceanogr. **51**, 403–418,
   DOI `10.1175/JPO-D-20-0114.1` (verified). Confirms that melting supplies a
   **stabilizing salinity profile and a destabilizing temperature profile** —
   the diffusive-convection regime — so the salt field damps rather than drives
   the flux in a naive summed-`Ra` sense.
-- **Lloyd & Moran (1974)** — *Natural Convection Adjacent to Horizontal Surface
-  of Various Planforms*, J. Heat Transfer **96**(4), 443–447,
+- **Lloyd & Moran (1974)** — _Natural Convection Adjacent to Horizontal Surface
+  of Various Planforms_, J. Heat Transfer **96**(4), 443–447,
   DOI `10.1115/1.3450224` (verified). Origin of `Sh = 0.15·Ra^(1/3)`
   (`8e6–1.6e9`, `L* = A/p`); the source production's citation should point to.
 - **Fujii, Honda & Morioka (1973)** — IJHMT **16**(3), 611–627,
@@ -600,25 +600,25 @@ turbulent Rayleigh–Bénard state at `Ra = 10¹⁹` and not a summed-`Ra` law.
 
 ## 26. Component Confidence Table
 
-| Component | Confidence | Basis |
-|---|---|---|
-| Dimensional consistency of `Ra_eff`, `Nu`, `γ` | **High** | algebraic audit, Python replication |
-| Numerical stability / no NaN near `U=0` | **High** | Fortran + Python edge tests |
-| Determinism | **High** | repeated-run checks |
-| Three-equation coupling (Eqs. I–III, density-weighted salt) | **High** | Stage 10.10.1 independent validation |
-| Forced-convection coefficients `K_T`, `K_S` | **Medium** | J2010 U-based convention; Stanton convention open (10.9) |
-| `Ra` construction (linear superposition) | **Medium** | structurally correct but physically oversimplified for double diffusion |
-| Haline sign in `Ra_eff` | **Low** | opposite to the physical stabilizing role; acknowledged as artifact-avoiding |
-| `Le = 100` magnitude | **Medium** | correct order for seawater; wrong role in the formula |
-| Characteristic length `L = state%L` | **Low** | differs from correlation scale `L* = A/p` |
-| `0.15·Ra^(1/3)` turbulent coefficient | **Medium** | real (Lloyd & Moran 1974) but applied outside its range with wrong attribution |
-| `0.27·Ra^(1/4)` laminar coefficient | **Low** | stable-orientation value; latent in production; wrong orientation if activated |
-| Transition `Ra = 1e7` | **Low** | 113 % discontinuity; latent |
-| Rayleigh cap `Ra_max = 1e10` | **Low (as physics)** | arbitrary; defines the production result |
-| Churchill `n = 3` | **Low–Medium** | literature-based but for vertical laminar assisting flow |
-| Zero-flow melt magnitude | **Low** | cap artifact; 7–700× below observed band |
-| Physical mechanism (double-diffusive) | **Low (not implemented)** | production does not represent it |
-| Documentation claims | **Low** | "0.01–1 m/day" claim false; attribution wrong |
+| Component                                                   | Confidence                | Basis                                                                          |
+| ----------------------------------------------------------- | ------------------------- | ------------------------------------------------------------------------------ |
+| Dimensional consistency of `Ra_eff`, `Nu`, `γ`              | **High**                  | algebraic audit, Python replication                                            |
+| Numerical stability / no NaN near `U=0`                     | **High**                  | Fortran + Python edge tests                                                    |
+| Determinism                                                 | **High**                  | repeated-run checks                                                            |
+| Three-equation coupling (Eqs. I–III, density-weighted salt) | **High**                  | Stage 10.10.1 independent validation                                           |
+| Forced-convection coefficients `K_T`, `K_S`                 | **Medium**                | J2010 U-based convention; Stanton convention open (10.9)                       |
+| `Ra` construction (linear superposition)                    | **Medium**                | structurally correct but physically oversimplified for double diffusion        |
+| Haline sign in `Ra_eff`                                     | **Low**                   | opposite to the physical stabilizing role; acknowledged as artifact-avoiding   |
+| `Le = 100` magnitude                                        | **Medium**                | correct order for seawater; wrong role in the formula                          |
+| Characteristic length `L = state%L`                         | **Low**                   | differs from correlation scale `L* = A/p`                                      |
+| `0.15·Ra^(1/3)` turbulent coefficient                       | **Medium**                | real (Lloyd & Moran 1974) but applied outside its range with wrong attribution |
+| `0.27·Ra^(1/4)` laminar coefficient                         | **Low**                   | stable-orientation value; latent in production; wrong orientation if activated |
+| Transition `Ra = 1e7`                                       | **Low**                   | 113 % discontinuity; latent                                                    |
+| Rayleigh cap `Ra_max = 1e10`                                | **Low (as physics)**      | arbitrary; defines the production result                                       |
+| Churchill `n = 3`                                           | **Low–Medium**            | literature-based but for vertical laminar assisting flow                       |
+| Zero-flow melt magnitude                                    | **Low**                   | cap artifact; 7–700× below observed band                                       |
+| Physical mechanism (double-diffusive)                       | **Low (not implemented)** | production does not represent it                                               |
+| Documentation claims                                        | **Low**                   | "0.01–1 m/day" claim false; attribution wrong                                  |
 
 ---
 
@@ -655,7 +655,7 @@ derived for vertical, laminar, assisting flow. It is numerically irrelevant for
 `U_rel ≳ 1e-3 m/s` and only matters in a narrow near-crossover window.
 
 **Q6 — What does the Rayleigh cap actually do?**
-It *defines* the result. Because `Ra_uncapped = 5.68 × 10¹⁹ ≫ 1e10`, `Nu` is
+It _defines_ the result. Because `Ra_uncapped = 5.68 × 10¹⁹ ≫ 1e10`, `Nu` is
 pinned at 323.17, the closure becomes insensitive to `β_T`, `β_S`, `ΔT`, `ΔS`,
 and `Le`, and the laminar branch/transition are latent. The cap is an arbitrary
 empirical value that sits above the correlation's own validity range.
@@ -705,8 +705,8 @@ Justification:
   (d) outside the source correlation's validity range, and (e) 7–700× below the
   observed quiescent band, so it does not close the gap it was meant to close.
 
-This is *not* Classification A (the closure is not physically verified against
-iceberg observations) and *not* C (there is no mechanism-level failure
+This is _not_ Classification A (the closure is not physically verified against
+iceberg observations) and _not_ C (there is no mechanism-level failure
 requiring a production fix; the shortcomings are documented design limits).
 
 ---
@@ -769,23 +769,23 @@ requiring a production fix; the shortcomings are documented design limits).
 ## 32. References (added/verified in this stage)
 
 1. Lloyd, J. R., & Moran, W. R. (1974). Natural convection adjacent to
-   horizontal surface of various planforms. *Journal of Heat Transfer*, 96(4),
+   horizontal surface of various planforms. _Journal of Heat Transfer_, 96(4),
    443–447. https://doi.org/10.1115/1.3450224
 2. Martin, S., & Kauffman, P. (1977). An experimental and theoretical study of
    the turbulent and laminar convection generated under a horizontal ice sheet
-   floating on warm salty water. *Journal of Physical Oceanography*, 7(2),
+   floating on warm salty water. _Journal of Physical Oceanography_, 7(2),
    272–283. https://doi.org/10.1175/1520-0485(1977)007<0272:AEATSO>2.0.CO;2
 3. Keitzl, T., Mellado, J.-P., & Notz, D. (2016). Impact of thermally driven
-   turbulence on the bottom melting of ice. *Journal of Physical Oceanography*,
+   turbulence on the bottom melting of ice. _Journal of Physical Oceanography_,
    46(4), 1171–1187. https://doi.org/10.1175/JPO-D-15-0126.1
 4. Middleton, L., Vreugdenhil, C. A., Holland, P. R., & Taylor, J. R. (2021).
    Numerical simulations of melt-driven double-diffusive fluxes in a turbulent
-   boundary layer beneath an ice shelf. *Journal of Physical Oceanography*, 51,
+   boundary layer beneath an ice shelf. _Journal of Physical Oceanography_, 51,
    403–418. https://doi.org/10.1175/JPO-D-20-0114.1
 5. Fujii, T., Honda, H., & Morioka, I. (1973). A theoretical study of natural
    convection heat transfer from downward-facing horizontal surfaces with
-   uniform heat flux. *International Journal of Heat and Mass Transfer*, 16(3),
+   uniform heat flux. _International Journal of Heat and Mass Transfer_, 16(3),
    611–627. https://doi.org/10.1016/0017-9310(73)90227-5
 6. Churchill, S. W. (1977). A comprehensive correlating equation for forced,
-   natural and mixed convection. *AIChE Journal*, 23(1), 10–16.
+   natural and mixed convection. _AIChE Journal_, 23(1), 10–16.
    https://doi.org/10.1002/aic.690230103

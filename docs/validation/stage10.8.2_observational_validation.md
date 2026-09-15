@@ -36,18 +36,18 @@ before any analysis:
   decay statistics and life-expectancy, not clean basal melt; the figure-only
   numeric melt bounds of the former are not OCR-recoverable, so no numeric row
   is taken from it (text anchors to Morgan & Budd 1978 are used in prose only).
-- Tournadre/Bouhier-style remote-sensing *iceberg areal* estimates via physical
+- Tournadre/Bouhier-style remote-sensing _iceberg areal_ estimates via physical
   resemblance: folded into the Enderlin et al. 2023 review upper bound, one
   context-only row.
 
 Dataset composition (19 records):
 
-| tier | count | rows | obs range (m/day) |
-|---|---|---|---|
-| lab-primary | 5 | Russell & Head 1980 (quiescent tank, S=35) | 0.0435 - 1.586 |
-| synthesis-derived | 3 | Neshyba & Josberger 1980 (Antarctic best estimates) | 0.0137 - 0.1507 |
-| field-primary | 1 | Keys & Williams 1984 (D'Urville Sea) | 0.06 +/- 0.01 |
-| rs-derived | 10 | Enderlin & Hamilton 2014; Enderlin et al. 2016; Enderlin et al. 2023 (+ 1 context row) | 0.0137 - 0.50 |
+| tier              | count | rows                                                                                   | obs range (m/day) |
+| ----------------- | ----- | -------------------------------------------------------------------------------------- | ----------------- |
+| lab-primary       | 5     | Russell & Head 1980 (quiescent tank, S=35)                                             | 0.0435 - 1.586    |
+| synthesis-derived | 3     | Neshyba & Josberger 1980 (Antarctic best estimates)                                    | 0.0137 - 0.1507   |
+| field-primary     | 1     | Keys & Williams 1984 (D'Urville Sea)                                                   | 0.06 +/- 0.01     |
+| rs-derived        | 10    | Enderlin & Hamilton 2014; Enderlin et al. 2016; Enderlin et al. 2023 (+ 1 context row) | 0.0137 - 0.50     |
 
 All DOIs verified via the Crossref REST API; the 1980 Cambridge texts were
 extracted from open-access PDFs. Uncertainties are transcribed only where the
@@ -69,24 +69,24 @@ KW84 from the 40-100 m berg length).
 
 ## 3. Result: point metrics on the four comparable rows
 
-| metric | value |
-|---|---|
-| n | 4 |
-| RMSE | 0.108 m/day |
-| MAE | 0.092 m/day |
-| bias (model - obs) | +0.083 m/day (model high) |
-| mean obs / mean model | 0.0677 / 0.1506 m/day |
-| mean abs rel err | 2.17 (217 %) |
+| metric                | value                      |
+| --------------------- | -------------------------- |
+| n                     | 4                          |
+| RMSE                  | 0.108 m/day                |
+| MAE                   | 0.092 m/day                |
+| bias (model - obs)    | +0.083 m/day (model high)  |
+| mean obs / mean model | 0.0677 / 0.1506 m/day      |
+| mean abs rel err      | 2.17 (217 %)               |
 | mean log10(model/obs) | +0.370 (= factor 2.3 high) |
 
 Per row:
 
-| row | obs (m/day) | model (m/day) | ratio | dT (°C) | Re | regime |
-|---|---|---|---|---|---|---|
-| KW84_DUrville | 0.060 +/- 0.01 | 0.0423 | 0.70 | 0.88 | 1.10e6 | turbulent |
-| NJ80_dT2 | 0.0137 | 0.0800 | 5.84 | 2.0 | 2.75e6 | turbulent |
-| NJ80_dT4 | 0.0466 | 0.1601 | 3.44 | 4.0 | 2.75e6 | turbulent |
-| NJ80_dT8 | 0.1507 | 0.3201 | 2.12 | 8.0 | 2.75e6 | turbulent |
+| row           | obs (m/day)    | model (m/day) | ratio | dT (°C) | Re     | regime    |
+| ------------- | -------------- | ------------- | ----- | ------- | ------ | --------- |
+| KW84_DUrville | 0.060 +/- 0.01 | 0.0423        | 0.70  | 0.88    | 1.10e6 | turbulent |
+| NJ80_dT2      | 0.0137         | 0.0800        | 5.84  | 2.0     | 2.75e6 | turbulent |
+| NJ80_dT4      | 0.0466         | 0.1601        | 3.44  | 4.0     | 2.75e6 | turbulent |
+| NJ80_dT8      | 0.1507         | 0.3201        | 2.12  | 8.0     | 2.75e6 | turbulent |
 
 The single field observation (KW84) is reproduced at the lower edge of the
 reported range (model 0.705x at L_char = draft = 20 m). With the production
@@ -104,13 +104,13 @@ Russell & Head 1980 report `R = 1.8e-2 (T+1.8)^1.5` m/day in a **quiescent**
 tank (S=35), basal~(side). The forced-convection closure returns 0 (below the
 1e-12 m/s noise guard):
 
-| row | obs m/day | model m/day | orders above model floor |
-|---|---|---|---|
-| RH_0C | 0.0435 | 0 | 5.7 |
-| RH_2C | 0.1333 | 0 | 6.2 |
-| RH_5C | 0.3192 | 0 | 6.6 |
-| RH_10C | 0.7296 | 0 | 6.9 |
-| RH_18C | 1.5859 | 0 | 7.3 |
+| row    | obs m/day | model m/day | orders above model floor |
+| ------ | --------- | ----------- | ------------------------ |
+| RH_0C  | 0.0435    | 0           | 5.7                      |
+| RH_2C  | 0.1333    | 0           | 6.2                      |
+| RH_5C  | 0.3192    | 0           | 6.6                      |
+| RH_10C | 0.7296    | 0           | 6.9                      |
+| RH_18C | 1.5859    | 0           | 7.3                      |
 
 This quantifies a known production limitation: no natural-convection branch.
 At `u_rel -> 0` the real melt is dominated by free convection driven by the
@@ -122,17 +122,17 @@ would require a new production parameter).
 
 Required `U_rel` (m/s) to reproduce each observed melt with `L=50 m, S=35`:
 
-| row | obs m/day | U(dT=1) | U(dT=2) | U(dT=4) |
-|---|---|---|---|---|
-| END14_Sermilik | 0.39 | 1.72 | 0.72 | 0.30 |
-| END16_Ilulissat_shallow | 0.16 | 0.57 | 0.24 | 0.10 |
-| END16_Ilulissat_deep | 0.50 | 2.35 | 0.99 | 0.42 |
-| END16_Sermilik_shallow | 0.17 | 0.61 | 0.26 | 0.11 |
-| END16_Sermilik_deep | 0.49 | 2.29 | 0.96 | 0.41 |
-| END23_WAP | 0.137 | 0.47 | 0.20 | 0.082 |
-| END23_WAIS | 0.110 | 0.35 | 0.15 | 0.062 |
-| END23_EAIS | 0.0137 | 0.026 | 0.018 | 0.017 |
-| END23_EAP | 0.0137 | 0.026 | 0.018 | 0.017 |
+| row                     | obs m/day | U(dT=1) | U(dT=2) | U(dT=4) |
+| ----------------------- | --------- | ------- | ------- | ------- |
+| END14_Sermilik          | 0.39      | 1.72    | 0.72    | 0.30    |
+| END16_Ilulissat_shallow | 0.16      | 0.57    | 0.24    | 0.10    |
+| END16_Ilulissat_deep    | 0.50      | 2.35    | 0.99    | 0.42    |
+| END16_Sermilik_shallow  | 0.17      | 0.61    | 0.26    | 0.11    |
+| END16_Sermilik_deep     | 0.49      | 2.29    | 0.96    | 0.41    |
+| END23_WAP               | 0.137     | 0.47    | 0.20    | 0.082   |
+| END23_WAIS              | 0.110     | 0.35    | 0.15    | 0.062   |
+| END23_EAIS              | 0.0137    | 0.026   | 0.018   | 0.017   |
+| END23_EAP               | 0.0137    | 0.026   | 0.018   | 0.017   |
 
 The Greenland fjord rates (0.16-0.5 m/day) require plausible fjord currents of
 ~0.1-1.0 m/s at dT=2-4 °C — consistent with observed Sermilik/Disko conditions,
@@ -158,11 +158,11 @@ code, but there is no field anchor to pin the laminar form.
 
 Turbulent scaling (m ~ U^0.8 L^-0.2) at the reference S=35, dT=4:
 
-| | L=20 m | L=50 m | L=100 m |
-|---|---|---|---|
-| U=0.05 m/s | 0.102 | 0.088 | 0.077 m/day |
-| U=0.10 m/s | 0.184 | 0.160 | 0.139 m/day |
-| U=0.20 m/s | 0.331 | 0.288 | 0.251 m/day |
+|            | L=20 m | L=50 m | L=100 m     |
+| ---------- | ------ | ------ | ----------- |
+| U=0.05 m/s | 0.102  | 0.088  | 0.077 m/day |
+| U=0.10 m/s | 0.184  | 0.160  | 0.139 m/day |
+| U=0.20 m/s | 0.331  | 0.288  | 0.251 m/day |
 
 Doubling U raises m by 1.74x (U^0.8); doubling L lowers m by 0.87x (L^-0.2).
 Qualitative conclusions (order-of-magnitude agreement with the field row;
@@ -235,7 +235,7 @@ Artifacts: `data/validation/observations/iceberg_basal_melt_observations.csv`
 
 ## 12. Classification rationale
 
-**C** — the validation is complete and the checks all pass, but the 
+**C** — the validation is complete and the checks all pass, but the
 production closure shows (i) a 5.7-7.3 order-of-magnitude inability to
 represent quiescent melt (structural limitation), and (ii) a systematic
 positive bias factor 2.1-5.8 against the NJ80 synthesis at reference

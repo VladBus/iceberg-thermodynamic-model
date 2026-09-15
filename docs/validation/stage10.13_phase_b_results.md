@@ -26,14 +26,14 @@ Epistemic labels: `[source]` verified publication; `[repo]` production-consisten
 
 ## 3. Changed files (Phase B)
 
-| File | Status |
-|---|---|
-| `python/validation/low_flow.py` | NEW — prototype core (8 API functions + params + diagnostics) |
-| `python/tests/test_low_flow.py` | NEW — analytical tests A–K (167 checks) |
-| `python/validation/low_flow_sweep.py` | NEW — coarse sweep, CSV + figures |
-| `python/validation/low_flow_scoring.py` | NEW — 10.8.2 re-scoring (reuses `observational_validation`) |
-| `docs/validation/stage10.13_phase_b_results.md` | NEW — this document |
-| Generated (gitignored under `data/`): `data/output/diagnostics/stage10.13/sweep.csv`, `fig_*.png` | NOT committed |
+| File                                                                                              | Status                                                        |
+| ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| `python/validation/low_flow.py`                                                                   | NEW — prototype core (8 API functions + params + diagnostics) |
+| `python/tests/test_low_flow.py`                                                                   | NEW — analytical tests A–K (167 checks)                       |
+| `python/validation/low_flow_sweep.py`                                                             | NEW — coarse sweep, CSV + figures                             |
+| `python/validation/low_flow_scoring.py`                                                           | NEW — 10.8.2 re-scoring (reuses `observational_validation`)   |
+| `docs/validation/stage10.13_phase_b_results.md`                                                   | NEW — this document                                           |
+| Generated (gitignored under `data/`): `data/output/diagnostics/stage10.13/sweep.csv`, `fig_*.png` | NOT committed                                                 |
 
 ## 4. Prototype API
 
@@ -52,7 +52,7 @@ Epistemic labels: `[source]` verified publication; `[repo]` production-consisten
   optional `ri_star` conjecture mode (sensitivity-tested).
 - `compute_hybrid_low_flow(...) -> LowFlowResult` — full diagnostics + regime.
 - `compute_hybrid_melt_rate(t_w,s_w,u,l_char,depth,params,t_b=None,s_b=None)
-  -> (m_hybrid, low, m_forced, w, gamma_T_low, gamma_S_low)` — forced branch =
+-> (m_hybrid, low, m_forced, w, gamma_T_low, gamma_S_low)` — forced branch =
   `basal_melt.basal_melt_rate` (reference-compatible with 10.8.2 scoring);
   blending `w = cosine smoothstep over [u_trans_lo, u_trans_hi]`.
 - `compute_effective_gammas(...) -> (gamma_T_low, gamma_S_low)` — inverts 3eq Eq. II;
@@ -71,13 +71,13 @@ m_hyb   = w(U) m_forced + (1-w(U)) m_low,  w = 0.5-0.5cos(pi t)
 
 ## 6. Dimensionless numbers
 
-| Group | Formula | Value (baseline) |
-|---|---|---|
-| Le | kappa_T/kappa_S | 100 (range 93–110) `[unresolved]` |
-| R_rho | alpha_T dT/(beta_S dS) | 0.3 (dS=0.5 PSU) … 15 (dS=0.01 PSU) |
-| Ri* | g beta_S dS delta_S / w*^2 | ~2.9 |
-| Re_b | eps/(nu N^2) | 0 at U=0; >1 for U ≳ 8.5e-3 m/s |
-| w* | (g alpha_T kappa_T dT)^(1/3) | ~4.4e-4 m/s |
+| Group | Formula                      | Value (baseline)                    |
+| ----- | ---------------------------- | ----------------------------------- |
+| Le    | kappa_T/kappa_S              | 100 (range 93–110) `[unresolved]`   |
+| R_rho | alpha_T dT/(beta_S dS)       | 0.3 (dS=0.5 PSU) … 15 (dS=0.01 PSU) |
+| Ri\*  | g beta_S dS delta_S / w\*^2  | ~2.9                                |
+| Re_b  | eps/(nu N^2)                 | 0 at U=0; >1 for U ≳ 8.5e-3 m/s     |
+| w\*   | (g alpha_T kappa_T dT)^(1/3) | ~4.4e-4 m/s                         |
 
 ## 7. Assumptions
 
@@ -111,12 +111,12 @@ counts; observed-band coverage; continuity on a fine U sub-grid
 
 ## 11. Main results (m/day)
 
-| Variant | min | median | max | in-band 0.01–1 |
-|---|---|---|---|---|
-| Stage 10.11 baseline | 9.5e-4 (cap floor) | 2.4e-2 | 1.02 | 135/270 |
-| pure diffusive | 1.2e-2 | 8.3e-2 | 0.70 | 270/270 |
-| DDC-enhanced | 1.2e-2 | 1.3e-1 | 1.74 | 246/270 |
-| hybrid | 1.5e-2 | 1.3e-1 | 1.74 | 246/270 |
+| Variant              | min                | median | max  | in-band 0.01–1 |
+| -------------------- | ------------------ | ------ | ---- | -------------- |
+| Stage 10.11 baseline | 9.5e-4 (cap floor) | 2.4e-2 | 1.02 | 135/270        |
+| pure diffusive       | 1.2e-2             | 8.3e-2 | 0.70 | 270/270        |
+| DDC-enhanced         | 1.2e-2             | 1.3e-1 | 1.74 | 246/270        |
+| hybrid               | 1.5e-2             | 1.3e-1 | 1.74 | 246/270        |
 
 NaN/Inf: 0; negative: 0; max log10 jump (hybrid, fine grid): 0.66 (OK < 1).
 Regime map: DC active for U ≤ 3e-3 m/s; diffusion-limited/f-forced above
@@ -142,13 +142,13 @@ their lower RMSE as an improvement.
 
 **Quiescent rows (n=5, RH80):**
 
-| id | obs | 10.11 | pure | ddc/hybrid |
-|---|---|---|---|---|
-| RH_0C | 0.043 | 0 | 0.028 | 0.069 |
-| RH_2C | 0.133 | 0 | 0.056 | 0.140 |
-| RH_5C | 0.319 | 0 | 0.099 | 0.247 |
-| RH_10C | 0.730 | 0 | 0.170 | 0.426 |
-| RH_18C | 1.586 | 0 | 0.285 | 0.711 |
+| id     | obs   | 10.11 | pure  | ddc/hybrid |
+| ------ | ----- | ----- | ----- | ---------- |
+| RH_0C  | 0.043 | 0     | 0.028 | 0.069      |
+| RH_2C  | 0.133 | 0     | 0.056 | 0.140      |
+| RH_5C  | 0.319 | 0     | 0.099 | 0.247      |
+| RH_10C | 0.730 | 0     | 0.170 | 0.426      |
+| RH_18C | 1.586 | 0     | 0.285 | 0.711      |
 
 Gap closure: baseline 0/5 in band; pure/ddc/hybrid 5/5 in band; ddc/hybrid
 within factor 1.1–2.2 of observations (t=1 d, NO calibration).
@@ -156,13 +156,13 @@ Not fitted validation: parameters are literature/repo values only.
 
 ## 14. Sensitivity
 
-| Parameter | Range | Effect on m_low (U=0, dT≈3.9) | Note |
-|---|---|---|---|
-| Le | 93–110 | +9% | kappa_S/kappa_T threshold shift |
-| K_S/K_T | 0.01–0.05 | gamma_S only | salt-flux convention `[unresolved`] |
-| t_scale | 1 h–10 d | ×15 (0.68 → 0.044) | **dominant**; time-dependence `[unresolved]` |
-| f_dc | 2.0–3.1 | ±25% | bounded, literature range `[source]` |
-| dS_floor | 0.01–0.5 PSU | R_rho 15→0.3 (both > threshold) | DC stays active `[inferred]` |
+| Parameter | Range        | Effect on m_low (U=0, dT≈3.9)   | Note                                         |
+| --------- | ------------ | ------------------------------- | -------------------------------------------- |
+| Le        | 93–110       | +9%                             | kappa_S/kappa_T threshold shift              |
+| K_S/K_T   | 0.01–0.05    | gamma_S only                    | salt-flux convention `[unresolved`]          |
+| t_scale   | 1 h–10 d     | ×15 (0.68 → 0.044)              | **dominant**; time-dependence `[unresolved]` |
+| f_dc      | 2.0–3.1      | ±25%                            | bounded, literature range `[source]`         |
+| dS_floor  | 0.01–0.5 PSU | R_rho 15→0.3 (both > threshold) | DC stays active `[inferred]`                 |
 
 ## 15. Limitations
 
@@ -176,24 +176,24 @@ Not fitted validation: parameters are literature/repo values only.
 
 ## 16. Acceptance criteria vs Phase C gate
 
-| Criterion | Status |
-|---|---|
-| deterministic prototype | PASS |
-| focused tests pass | PASS (167/167) |
-| no NaN/Inf on sweep | PASS (0) |
-| no negative melt in domain | PASS (0) |
-| m→0 as dT→0 | PASS |
-| finite at U=0 | PASS (physical, band) |
-| forced branch preserved | PASS (hybrid == forced at w=1) |
-| transition continuous | PASS (log10 jump 0.66 < 1) |
-| f bounded & justified | PASS [source] |
-| new params have units/ranges | PASS |
-| Le/K_S-K_T/delta_S/time uncertainties documented | PASS |
-| not a numerical fit | PASS (literature/repo values only) |
-| 10.11 comparison explicit | PASS (gap closed structurally) |
-| freshwater-to-seawater transfer flagged | PASS (documented) |
-| Phase C formula decision | **CONDITIONAL** (see 17) |
-| Phase C open questions list | see 18 |
+| Criterion                                        | Status                             |
+| ------------------------------------------------ | ---------------------------------- |
+| deterministic prototype                          | PASS                               |
+| focused tests pass                               | PASS (167/167)                     |
+| no NaN/Inf on sweep                              | PASS (0)                           |
+| no negative melt in domain                       | PASS (0)                           |
+| m→0 as dT→0                                      | PASS                               |
+| finite at U=0                                    | PASS (physical, band)              |
+| forced branch preserved                          | PASS (hybrid == forced at w=1)     |
+| transition continuous                            | PASS (log10 jump 0.66 < 1)         |
+| f bounded & justified                            | PASS [source]                      |
+| new params have units/ranges                     | PASS                               |
+| Le/K_S-K_T/delta_S/time uncertainties documented | PASS                               |
+| not a numerical fit                              | PASS (literature/repo values only) |
+| 10.11 comparison explicit                        | PASS (gap closed structurally)     |
+| freshwater-to-seawater transfer flagged          | PASS (documented)                  |
+| Phase C formula decision                         | **CONDITIONAL** (see 17)           |
+| Phase C open questions list                      | see 18                             |
 
 ## 17. Recommendation for Phase C
 
@@ -218,8 +218,8 @@ needs the owner.
 3. gamma_S flux-ratio (DC flux ratio vs K_S/K_T) `[unresolved]`.
 4. alpha_T/beta_S EOS-80 state-dependence in R_rho `[unresolved]`.
 5. Le baseline 100 vs Middleton 110 `[unresolved]` (sensitivity +9%).
-f. epsilon/w* closure at finite U (buoyancy-driven w* `[inferred]`).
-7. 3eq iteration with gamma_low (T_B/S_B self-consistency) `[unresolved]`.
+   f. epsilon/w* closure at finite U (buoyancy-driven w* `[inferred]`).
+6. 3eq iteration with gamma_low (T_B/S_B self-consistency) `[unresolved]`.
 
 **Found documentation bug (not fixed, per policy):** `three_equation_natural.py`
 `__main__` shows the return of `three_equation_basal_melt_natural` as

@@ -6,44 +6,44 @@ The matrix is deliberately selective: a Zotero record is not automatically a mod
 
 ## Role legend
 
-| Role | Meaning |
-|---|---|
-| CORE | Direct basis for a production equation or physical parameterization |
-| VALIDATION | Independent benchmark, observation, or validation methodology |
-| COMPARISON | Alternative/legacy parameterization used for scientific comparison |
-| DATA | External forcing or observational data product |
-| BACKGROUND | Scientific context; not a direct equation source |
-| FUTURE | Relevant to planned modernization, not current production physics |
-| SOFTWARE | Numerical/modeling documentation |
-| PERSONAL | User's publications or project-specific material |
-| CHECK | Metadata/reference requires later verification before being cited as a core source |
+| Role       | Meaning                                                                            |
+| ---------- | ---------------------------------------------------------------------------------- |
+| CORE       | Direct basis for a production equation or physical parameterization                |
+| VALIDATION | Independent benchmark, observation, or validation methodology                      |
+| COMPARISON | Alternative/legacy parameterization used for scientific comparison                 |
+| DATA       | External forcing or observational data product                                     |
+| BACKGROUND | Scientific context; not a direct equation source                                   |
+| FUTURE     | Relevant to planned modernization, not current production physics                  |
+| SOFTWARE   | Numerical/modeling documentation                                                   |
+| PERSONAL   | User's publications or project-specific material                                   |
+| CHECK      | Metadata/reference requires later verification before being cited as a core source |
 
 ## Direct Stage 10 references
 
-| Source | Model component | Status |
-|---|---|---|
-| Spencer 1971 | Solar declination/equation-of-time approximation | CORE |
-| Murphy & Koop 2005 | Saturation vapour pressure over ice | CORE |
-| Fofonoff & Millard 1983 | EOS-80 freezing-point equation | CORE |
-| Gill 1982 | Supporting seawater/oceanographic formulation | CORE/SUPPORT |
-| Eckert & Drake 1959 | Laminar/turbulent flat-plate heat-transfer correlations | CORE, approximation |
-| Weeks & Campbell 1973 | Empirical iceberg basal-melt context | COMPARISON |
-| FitzMaurice & Stern 2018 | Tabular iceberg basal-melt parameterization comparison | VALIDATION/COMPARISON |
-| Holland & Jenkins 1999 | Three-equation ice-ocean thermodynamics (Eqs. I-III, conduction term; Eq. 4 brine salt flux) | CORE, IMPLEMENTED (Stage 10.10/10.10.1) |
-| Jenkins, Nicholls & Corr 2010 | Ice-ocean turbulent exchange / basal ablation; Table 2 velocity-scale `K_T`/`K_S` | CORE/COMPARISON, IMPLEMENTED (Stage 10.10/10.10.1) |
-| MOM6 mom_ice_shelf (Losch et al. 2019; also published in Griffies et al.) | Three-equation salt budget `rho_w gamma_S (S_w - S_B) = rho_i m S_B` convention | VALIDATION (confirms Stage 10.10.1 correction) |
-| PISM basal-melt documentation | Salt flux `Q_S^B = rho_I S^B dh/dt`; melt `w_b = gamma_S rho_W (S^W - S^B)/(rho_I S^B)` | VALIDATION (confirms Stage 10.10.1 correction) |
-| MITgcm shelfice (Losch 2008 et seq.) | Mass-flux form `rho_c gamma_S (S - S_b) = -q (S_b - S_I)` with `S_I = 0` | VALIDATION (confirms Stage 10.10.1 correction) |
-| Lloyd & Moran 1974 | Horizontal-plate natural convection (planforms); `Sh = 0.15·Ra^(1/3)`, `L* = A/p` | CORE, IMPLEMENTED (Stage 10.11; operative turbulent coefficient — attribution corrected in Stage 10.11.3) |
-| Fujii, Honda & Morioka 1973 | Natural convection from downward-facing horizontal surfaces with **uniform heat flux** (theoretical, laminar, `Nu ~ Ra^(1/5)`) | CONTEXT/MIS-CITED — does NOT supply the production `0.27`/`0.15` constants (Stage 10.11.3) |
-| Gayen, Griffiths & Kerr 2016 | Simulation of convection at a **vertical** ice face dissolving into saline water (LES) | CONTEXT (melt-driven convection in ice-ocean systems; does NOT set a cell scale for a horizontal base — see Stage 10.11.2 audit) |
-| Churchill 1977 | Comprehensive correlating equation for forced, natural and mixed convection (vertical laminar assisting) | CORE, IMPLEMENTED (Stage 10.11 mixed convection; geometry extrapolation noted in Stage 10.11.3) |
-| Martin & Kauffman 1977 | Turbulent and laminar convection under a horizontal ice sheet on warm salty water; ~2x diffusive melt; double-diffusive | KEY PRIMARY / VALIDATION (real quiescent mechanism; Stage 10.11.3) |
-| Keitzl, Mellado & Notz 2016 | Diffusive / intermediate / high-T regimes of bottom melting; ~2.5-3.1x turbulent enhancement | VALIDATION (diffusion-limited quiescent melt; Stage 10.11.3) |
-| Middleton, Vreugdenhil, Holland & Taylor 2021 | Melt-driven double-diffusive fluxes beneath an ice shelf; stable salinity + unstable temperature | VALIDATION (physical mechanism reference; Stage 10.11.3) |
-| Andreas et al. 2010 | Air-sea/ice turbulent exchange context | SUPPORT |
-| Martin & Adcroft 2010 | Interactive iceberg freshwater flux in climate modelling | BACKGROUND/FUTURE |
-| Cenedese & Straneo 2023 | Iceberg melt review; observed submarine melt band ~0.01–1 m/day | VALIDATION |
+| Source                                                                    | Model component                                                                                                                | Status                                                                                                                           |
+| ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
+| Spencer 1971                                                              | Solar declination/equation-of-time approximation                                                                               | CORE                                                                                                                             |
+| Murphy & Koop 2005                                                        | Saturation vapour pressure over ice                                                                                            | CORE                                                                                                                             |
+| Fofonoff & Millard 1983                                                   | EOS-80 freezing-point equation                                                                                                 | CORE                                                                                                                             |
+| Gill 1982                                                                 | Supporting seawater/oceanographic formulation                                                                                  | CORE/SUPPORT                                                                                                                     |
+| Eckert & Drake 1959                                                       | Laminar/turbulent flat-plate heat-transfer correlations                                                                        | CORE, approximation                                                                                                              |
+| Weeks & Campbell 1973                                                     | Empirical iceberg basal-melt context                                                                                           | COMPARISON                                                                                                                       |
+| FitzMaurice & Stern 2018                                                  | Tabular iceberg basal-melt parameterization comparison                                                                         | VALIDATION/COMPARISON                                                                                                            |
+| Holland & Jenkins 1999                                                    | Three-equation ice-ocean thermodynamics (Eqs. I-III, conduction term; Eq. 4 brine salt flux)                                   | CORE, IMPLEMENTED (Stage 10.10/10.10.1)                                                                                          |
+| Jenkins, Nicholls & Corr 2010                                             | Ice-ocean turbulent exchange / basal ablation; Table 2 velocity-scale `K_T`/`K_S`                                              | CORE/COMPARISON, IMPLEMENTED (Stage 10.10/10.10.1)                                                                               |
+| MOM6 mom_ice_shelf (Losch et al. 2019; also published in Griffies et al.) | Three-equation salt budget `rho_w gamma_S (S_w - S_B) = rho_i m S_B` convention                                                | VALIDATION (confirms Stage 10.10.1 correction)                                                                                   |
+| PISM basal-melt documentation                                             | Salt flux `Q_S^B = rho_I S^B dh/dt`; melt `w_b = gamma_S rho_W (S^W - S^B)/(rho_I S^B)`                                        | VALIDATION (confirms Stage 10.10.1 correction)                                                                                   |
+| MITgcm shelfice (Losch 2008 et seq.)                                      | Mass-flux form `rho_c gamma_S (S - S_b) = -q (S_b - S_I)` with `S_I = 0`                                                       | VALIDATION (confirms Stage 10.10.1 correction)                                                                                   |
+| Lloyd & Moran 1974                                                        | Horizontal-plate natural convection (planforms); `Sh = 0.15·Ra^(1/3)`, `L* = A/p`                                              | CORE, IMPLEMENTED (Stage 10.11; operative turbulent coefficient — attribution corrected in Stage 10.11.3)                        |
+| Fujii, Honda & Morioka 1973                                               | Natural convection from downward-facing horizontal surfaces with **uniform heat flux** (theoretical, laminar, `Nu ~ Ra^(1/5)`) | CONTEXT/MIS-CITED — does NOT supply the production `0.27`/`0.15` constants (Stage 10.11.3)                                       |
+| Gayen, Griffiths & Kerr 2016                                              | Simulation of convection at a **vertical** ice face dissolving into saline water (LES)                                         | CONTEXT (melt-driven convection in ice-ocean systems; does NOT set a cell scale for a horizontal base — see Stage 10.11.2 audit) |
+| Churchill 1977                                                            | Comprehensive correlating equation for forced, natural and mixed convection (vertical laminar assisting)                       | CORE, IMPLEMENTED (Stage 10.11 mixed convection; geometry extrapolation noted in Stage 10.11.3)                                  |
+| Martin & Kauffman 1977                                                    | Turbulent and laminar convection under a horizontal ice sheet on warm salty water; ~2x diffusive melt; double-diffusive        | KEY PRIMARY / VALIDATION (real quiescent mechanism; Stage 10.11.3)                                                               |
+| Keitzl, Mellado & Notz 2016                                               | Diffusive / intermediate / high-T regimes of bottom melting; ~2.5-3.1x turbulent enhancement                                   | VALIDATION (diffusion-limited quiescent melt; Stage 10.11.3)                                                                     |
+| Middleton, Vreugdenhil, Holland & Taylor 2021                             | Melt-driven double-diffusive fluxes beneath an ice shelf; stable salinity + unstable temperature                               | VALIDATION (physical mechanism reference; Stage 10.11.3)                                                                         |
+| Andreas et al. 2010                                                       | Air-sea/ice turbulent exchange context                                                                                         | SUPPORT                                                                                                                          |
+| Martin & Adcroft 2010                                                     | Interactive iceberg freshwater flux in climate modelling                                                                       | BACKGROUND/FUTURE                                                                                                                |
+| Cenedese & Straneo 2023                                                   | Iceberg melt review; observed submarine melt band ~0.01–1 m/day                                                                | VALIDATION                                                                                                                       |
 
 ## Existing iceberg literature in the collection
 
@@ -51,20 +51,20 @@ The curated bibliography already contains important iceberg references including
 
 ## Current physical blocks
 
-| Block | Current implementation | Literature status | Scientific classification |
-|---|---|---|---|
-| Geometry | Rectangular prism, prognostic L/W/H | Standard geometry assumption; iceberg literature provides alternatives | A |
-| Dynamics | Wind drag, water drag, Coriolis, pressure-gradient terms | Existing iceberg-dynamics literature in collection | B |
-| Solar geometry | Spencer-type astronomical approximation | Spencer 1971 | C |
-| Shortwave attenuation | Rayleigh + water vapour + aerosol + cloud parameterization | Current constants need explicit provenance review | B |
-| Sensible/latent atmospheric fluxes | Neutral bulk transfer; Murphy & Koop saturation over ice | Murphy & Koop 2005; transfer coefficients require scope caveat | C/B |
-| Surface temperature | Prognostic mixed-layer-like surface heat capacity | Model-derived numerical closure; independent physical validation still limited | B |
-| Phase change | Melt, sublimation/deposition and latent-heat partition | Thermodynamic accounting implemented; external validation pending | B |
-| Freezing point | EOS-80/UNESCO equation with pressure term | Fofonoff & Millard 1983; Gill 1982 | C |
-| Basal ocean heat transfer | Re/Nu correlation with laminar/turbulent transition | Eckert & Drake 1959; iceberg applicability is an approximation | B (independently audited in Stage 10.7) |
-| Lateral melt | Legacy depth-averaged formulation | FitzMaurice laboratory literature provides evidence for shear/nonlinearity | B |
-| Three-equation interface physics | Basal closure, separately selectable; U-based `K_T`/`K_S` (1.1e-3/3.1e-5); Eq. III corrected: `rho_w gamma_S (S_w - S_B) = rho_i m S_B` (Stage 10.10.1) | Holland & Jenkins 1999; Jenkins et al. 2010 Table 2; MOM6/PISM/MITgcm confirm density-weighted convention | C (Stage 10.10.1; natural-convection floor and internal thermal evolution remain future) |
-| Full seawater EOS | Not implemented; freezing point only | EOS-80/TEOS-10 literature | FUTURE |
+| Block                              | Current implementation                                                                                                                                  | Literature status                                                                                         | Scientific classification                                                                |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| Geometry                           | Rectangular prism, prognostic L/W/H                                                                                                                     | Standard geometry assumption; iceberg literature provides alternatives                                    | A                                                                                        |
+| Dynamics                           | Wind drag, water drag, Coriolis, pressure-gradient terms                                                                                                | Existing iceberg-dynamics literature in collection                                                        | B                                                                                        |
+| Solar geometry                     | Spencer-type astronomical approximation                                                                                                                 | Spencer 1971                                                                                              | C                                                                                        |
+| Shortwave attenuation              | Rayleigh + water vapour + aerosol + cloud parameterization                                                                                              | Current constants need explicit provenance review                                                         | B                                                                                        |
+| Sensible/latent atmospheric fluxes | Neutral bulk transfer; Murphy & Koop saturation over ice                                                                                                | Murphy & Koop 2005; transfer coefficients require scope caveat                                            | C/B                                                                                      |
+| Surface temperature                | Prognostic mixed-layer-like surface heat capacity                                                                                                       | Model-derived numerical closure; independent physical validation still limited                            | B                                                                                        |
+| Phase change                       | Melt, sublimation/deposition and latent-heat partition                                                                                                  | Thermodynamic accounting implemented; external validation pending                                         | B                                                                                        |
+| Freezing point                     | EOS-80/UNESCO equation with pressure term                                                                                                               | Fofonoff & Millard 1983; Gill 1982                                                                        | C                                                                                        |
+| Basal ocean heat transfer          | Re/Nu correlation with laminar/turbulent transition                                                                                                     | Eckert & Drake 1959; iceberg applicability is an approximation                                            | B (independently audited in Stage 10.7)                                                  |
+| Lateral melt                       | Legacy depth-averaged formulation                                                                                                                       | FitzMaurice laboratory literature provides evidence for shear/nonlinearity                                | B                                                                                        |
+| Three-equation interface physics   | Basal closure, separately selectable; U-based `K_T`/`K_S` (1.1e-3/3.1e-5); Eq. III corrected: `rho_w gamma_S (S_w - S_B) = rho_i m S_B` (Stage 10.10.1) | Holland & Jenkins 1999; Jenkins et al. 2010 Table 2; MOM6/PISM/MITgcm confirm density-weighted convention | C (Stage 10.10.1; natural-convection floor and internal thermal evolution remain future) |
+| Full seawater EOS                  | Not implemented; freezing point only                                                                                                                    | EOS-80/TEOS-10 literature                                                                                 | FUTURE                                                                                   |
 
 ## Dataset provenance to document
 

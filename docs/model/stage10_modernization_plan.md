@@ -1,8 +1,8 @@
 # Stage 10 — Physics Modernization Plan
 
 **Updated:** 2026-09-15
-**Current stage:** 10.12 (prognostic internal thermal evolution; production updated)
-**Current classification:** C — two-node lumped interior implemented and independently validated (Fortran 17 + Python 35 checks); production updated
+**Current stage:** 10.13 (low-flow closure: Phase C production integration, selectable, OFF by default)
+**Current classification:** C — low-flow closure integrated behind `low_flow_closure_enabled` (research parameterization; OFF = legacy unchanged); Fortran 23 + comparison 56 checks
 
 ## Purpose
 
@@ -50,7 +50,7 @@ Independent scientific audit of the basal-melt chain (Re/Nu/γ_T/Tf/ΔT/m) with 
 
 - Formulation matches Weeks & Campbell (1973)/Eckert & Drake (1959) to float32 precision; `L_char = L` is supported by FitzMaurice & Stern (2018) for tabular icebergs.
 - Turbulent branch (m ∝ U^0.8·L^−0.2·ΔT) is the realistic regime for Arctic icebergs (Re ≈ 5.5e5–2.7e8); laminar only for small bergs / weak flow.
-- Order-of-magnitude agreement with in-repo three-equation estimate (St·u*, St=0.011 commented): factor ≈1.8 at U=0.1 m/s; observed submarine-melt band 0.01–1 m/day reproduced.
+- Order-of-magnitude agreement with in-repo three-equation estimate (St·u\*, St=0.011 commented): factor ≈1.8 at U=0.1 m/s; observed submarine-melt band 0.01–1 m/day reproduced.
 - Documented limitations unchanged: no natural convection (m→0 at U_rel=0), `L_char=L` orientation approximation, no three-equation closure.
 
 Validation report: `docs/validation/stage10.7_basal_melt_validation.md`. Test: `iceberg_test_10p7_basal_melt_validation` (17 checks).
@@ -174,7 +174,7 @@ implicitly set `rho_i/rho_w = 1`.
   (46+19 new Stage 10.10.1 checks including salt-flux identity, freshwater-flux
   identity, limits, monotonicity, cross-language contract). All tests PASS.
   Strict `-Wall -Wextra -fcheck=all` build clean. `git diff --check` clean.
-- **Report**: `docs/validation/stage10.10.1_three_equation_interface.md`.
+- **Report**: `docs/validation/stage10.10_three_equation_interface.md`.
 
 ## Stage 10.11 — Natural-convection basal melt / low-flow closure (DONE)
 
@@ -190,9 +190,9 @@ Corrected the fundamental limitation of zero basal melt at zero relative flow by
   Nusselt number (Fujii et al. 1973, horizontal plate facing downward):
   - Laminar (`Ra < 1e7`): `Nu = 0.27 * Ra^0.25`
   - Turbulent (`Ra >= 1e7`): `Nu = 0.15 * Ra^(1/3)`
-  Natural-convection transfer coefficients:
-  `gamma_T_nat = Nu * k / (L * rho_w * c_w)`,
-  `gamma_S_nat = gamma_T_nat * (K_S / K_T)`.
+    Natural-convection transfer coefficients:
+    `gamma_T_nat = Nu * k / (L * rho_w * c_w)`,
+    `gamma_S_nat = gamma_T_nat * (K_S / K_T)`.
 
 - **Mixed convection**: Churchill (1977) combination with exponent n=3:
   `gamma_T_eff = (gamma_T_forced^3 + gamma_T_nat^3)^(1/3)`
@@ -213,7 +213,7 @@ Corrected the fundamental limitation of zero basal melt at zero relative flow by
 
 ## Stage 10.12 — Prognostic internal thermal evolution (DONE)
 
-- **Classification**: C — production physics ADDED on a separately switchable path; two-node lumped interior implemented and independently validated (Fortran 17 + Python 35 checks).
+- **Classification**: C — production physics ADDED on a separately switchable path; two-node lumped interior implemented and independently validated (Fortran 21 + Python 35 checks).
 - **Physics**: prognostic `state%T_ice` replaces the constant `T_i = -10` (now `T_ICE_INIT`, an initial condition) inside the three-equation Eq. II conduction term:
   `H_int = max(H - H_EFF, H_MIN_INT)`; `C_int = rho_i * C_ICE * H_int`;
   `q_cond = 2 * K_ICE * (T_surface - T_ice) / H` (K_ICE = 2.2 W/(m K));
@@ -221,12 +221,22 @@ Corrected the fundamental limitation of zero basal melt at zero relative flow by
   `C_int dT_ice/dt = q_cond - q_bot` (explicit Euler, clamp [-100, 0] °C).
   Energy-conserving lagged coupling: `q_cond` subtracted from the surface net
   flux inside `compute_surface_melt` (`q_internal_exchange`).
-- **Switch**: `thermal_evolution_enabled` (default `.true.`, `set_thermal_evolution`); OFF substitutes `T_ICE_INIT` in the three-equation solvers. **Documented gap**: the interior update still runs when OFF (not bit-identical legacy for the interior path) — see validation report §4.1.
+- **Switch**: `thermal_evolution_enabled` (default `.true.`, `set_thermal_evolution`). **Fully gates Stage 10.12 in the step** (audit-round fix): OFF skips `q_cond` computation/subtraction AND the interior update — bit-identical legacy for both bulk and 3eq paths; 10.12 diagnostics defined explicitly at OFF. Verified by test block F.1–F.4.
 - **Diagnostics**: `t_ice`, `dT_ice_dt`, `c_eff_int`, `t_ice_bound`.
-- **Validation**: Fortran `iceberg_test_10p12_thermal_evolution` (17/17 PASS; C.5 lower-clamp check uses an amplified diagnostic flux q=-30000 W/m², documented in-test) + Python float64 replica `python/validation/internal_thermal.py` / `python/tests/test_internal_thermal_evolution.py` (35/35 PASS); cross-language contract `C_int(50 m) = 94594496 (float32) / 94594500 (float64)`.
+- **Validation**: Fortran `iceberg_test_10p12_thermal_evolution` (21/21 PASS — 17 original + OFF-switch legacy-invariance block F.1–F.4; C.5 lower-clamp check uses an amplified diagnostic flux q=-30000 W/m², documented in-test) + Python float64 replica `python/validation/internal_thermal.py` / `python/tests/test_internal_thermal_evolution.py` (35/35 PASS); cross-language contract `C_int(50 m) = 94594496 (float32) / 94594500 (float64)`.
 - **Known limitations**: lumped parametrization (Bi ≫ 1, τ ≫ run); no internal melt at T_ice = 0 (excess energy discarded at clamp); removed-ice enthalpy not tracked; K_ICE not calibrated.
-- **Report**: `docs/validation/stage10.12_internal_thermal_evolution.md` (design note: `stage10.12_internal_thermal_evolution_design_note.md`).
+- **Report**: `docs/validation/stage10.12_internal_thermal_evolution.md` (design note: `docs/validation/stage10.12_internal_thermal_evolution_design_note.md`).
 - **Build**: unused `stdlib` git dependency removed from `fpm.toml` (offline reproducibility).
+
+## Stage 10.13 — Diffusion-limited / double-diffusive low-flow closure (DONE, Phases A–C)
+
+- **Classification**: C — research parameterization integrated behind `low_flow_closure_enabled` (OFF by default); production physics on the three-equation path extended; forced branch bit-identical at high U; OFF = legacy.
+- **Physics**: hybrid closure for the quiescent/low-flow end of the basal melt: diffusion-limited sublayer `delta_S = clip(sqrt(kappa_S * t_scale), 1e-4, 5e-2) m` with double-diffusive enhancement `f = 2.5` (Middleton et al. 2021 criterion `R_rho > 1/Le` & `Re_b < 1`); effective transfer coefficients blended via cosine smoothstep over U in [1e-3, 1e-2] m/s; the melt rate is obtained from the **unchanged** three-equation solve (`allow_zero_flow` scoped to this path; legacy guard `U<=0 -> m=0` preserved by default).
+- **Switch**: `low_flow_closure_enabled` (default `.false.`, `set_low_flow_closure`); active only in the `THREE_EQUATION` scheme branch; OFF = legacy (verified).
+- **Diagnostics**: `low_flow_enabled/active/regime/u_rel/re_b/ri_star/r_rho/delta_s/delta_t/f/gamma_t/gamma_s/iter/converged`.
+- **Validation**: Fortran `iceberg_test_10p13_low_flow` (23/23 PASS; blocks A–I: legacy OFF, U=0 activation 0.107 m/day, transition smoothness, forced preservation bit-identical, DDC criterion, bounds, 3eq consistency, CMP output, determinism) + Python/Fortran comparison `python/validation/low_flow_fortran_comparison.py` (56/56 PASS) + Python prototype `python/tests/test_low_flow.py` (167/167 PASS); full fpm battery exit 0; strict build clean.
+- **Known limitations**: t_scale = 1 day dominates quiescent melt (order-of-magnitude sensitivity); f_dc = 2.5 not calibrated; kappa_S Le=100 convention 4.4% below the Python reference; interface freshening reduces coupled m vs far-field m_low; research parameterization, not universal validation.
+- **Reports**: `docs/validation/stage10.13_phase_c_results.md` (Phase C), `docs/validation/stage10.13_phase_b_results.md` (Phase B), `docs/validation/stage10.13_diffusion_limited_low_flow_design_note.md` (Phase A).
 
 ## Next modernization sequence
 

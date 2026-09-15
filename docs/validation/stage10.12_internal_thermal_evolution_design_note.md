@@ -318,16 +318,16 @@ Plus new controlled thermal-evolution test with fixed forcing.
 
 ### 8.4 Documentation
 
-| File                                                       | Update                               |
-| ---------------------------------------------------------- | ------------------------------------ |
-| `docs/validation/stage10.12_internal_thermal_evolution.md` | NEW (full report)                    |
-| `docs/model/model_equation_ledger.md`                      | add §10.4 internal thermal evolution |
-| `docs/model/model_physics_status.md`                       | add row, update limitations          |
-| `docs/model/stage10_modernization_plan.md`                 | mark 10.12 complete                  |
-| `docs/PROJECT_ROADMAP.md`                                  | update next stage priority           |
-| `docs/references/references.bib`                           | add k_i source if new                |
-| `docs/references/literature_matrix.md`, `citation_map.md`  | add 10.12 entries                    |
-| `AGENTS.md`                                                | add Stage 10.12 summary              |
+| File                                                                      | Update                               |
+| ------------------------------------------------------------------------- | ------------------------------------ |
+| `docs/validation/stage10.12_internal_thermal_evolution.md`                | NEW (full report)                    |
+| `docs/model/model_equation_ledger.md`                                     | add §10.4 internal thermal evolution |
+| `docs/model/model_physics_status.md`                                      | add row, update limitations          |
+| `docs/model/stage10_modernization_plan.md`                                | mark 10.12 complete                  |
+| `docs/PROJECT_ROADMAP.md`                                                 | update next stage priority           |
+| `docs/references/references.bib`                                          | add k_i source if new                |
+| `docs/references/literature_matrix.md`, `docs/references/citation_map.md` | add 10.12 entries                    |
+| `AGENTS.md`                                                               | add Stage 10.12 summary              |
 
 ---
 

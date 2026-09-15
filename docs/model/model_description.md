@@ -10,11 +10,11 @@ This document is the narrative description of the current model. The equation le
 
 The reconstructed real grid has 133 × 105 nodes, with 132 × 104 active cells. It is a B-grid with DX = DY = 13.89 km. Geographic coordinates are supplied by KOORD.DAT and bathymetry/land mask by hhh.bar. The real-grid reconstruction uses IBCAO V5.2 at 400 m resolution in EPSG:3996.
 
-Iceberg motion is prognosed in model x/y coordinates. Atmospheric and oceanic forcing is interpolated at the current x/y position. Geographic latitude/longitude are diagnostic coordinates; the current implementation does not update the stored latitude/longitude state during each time step.
+Iceberg motion is prognosed in model x/y coordinates. Atmospheric and oceanic forcing is interpolated at the current x/y position. Geographic latitude/longitude are diagnostic coordinates and are updated from x/y each time step (`model_coords_to_latlon`); they are not independent prognostic variables.
 
 ## 3. Iceberg state and geometry
 
-The prognostic mechanical state is based on `[x, y, u, v, L, W, H]`. The surface-temperature extension adds prognostic `T_surface`; phase-change diagnostics include atmospheric vapour mass flux.
+The prognostic mechanical state is based on `[x, y, u, v, L, W, H]`. The surface-temperature extension adds prognostic `T_surface`; the internal thermal extension (Stage 10.12) adds prognostic interior temperature `T_ice` (two-node lumped model, switch `thermal_evolution_enabled`); phase-change diagnostics include atmospheric vapour mass flux.
 
 For a rectangular prism:
 
@@ -24,7 +24,7 @@ For a rectangular prism:
 - `A_base = L W`;
 - `A_lat = 2 H (L + W)`.
 
-The present geometry is intentionally simple. No orientation, tilt, calving, fracturing or internal thermal structure is prognosed.
+The present geometry is intentionally simple. No orientation, tilt, calving or fracturing is prognosed.
 
 ## 4. Dynamics
 
@@ -64,7 +64,14 @@ The basal melt calculation uses the temperature excess at iceberg draft relative
 - turbulent: `Nu = 0.037 Re^0.8 Pr^(1/3)`;
 - `gamma_T = Nu k / L_char`.
 
-The production characteristic length is the iceberg `L`. This is an explicit approximation because iceberg orientation is not represented. The correlation originates from canonical flat-plate boundary-layer heat-transfer theory; its application to an iceberg is therefore a modelling approximation, not a direct geometry-specific derivation. At zero relative flow the current forced-convection formulation gives zero transfer; natural convection is not yet represented.
+The production characteristic length is the iceberg `L`. This is an explicit approximation because iceberg orientation is not represented. The correlation originates from canonical flat-plate boundary-layer heat-transfer theory; its application to an iceberg is therefore a modelling approximation, not a direct geometry-specific derivation.
+
+The basal-melt path offers selectable modern closures in addition to the bulk
+forced-convection formulation:
+
+- **three-equation ice-ocean interface** (Holland & Jenkins 1999; Jenkins et al. 2010): velocity-scale transfer coefficients `gamma_T = K_T U_rel`, `gamma_S = K_S U_rel`, interface temperature at the EOS-80 freezing point, mass-conserving salt balance;
+- **natural convection** (Stage 10.11, scheme `THREE_EQUATION_NATURAL`): horizontal-plate correlation with double-diffusive Rayleigh number and Churchill (1977) mixing, capped at `Ra = 1e10`; at zero flow this floor is cap-determined (1.4e-3 m/day) and does not reach the observed quiescent band (Stage 10.11.3 audit);
+- **low-flow closure** (Stage 10.13, switch `low_flow_closure_enabled`, OFF by default): research parameterization — diffusion-limited sublayer with double-diffusive enhancement blended into the effective transfer coefficients before the three-equation solve; gives finite quiescent melt in the observed band (0.107 m/day at U=0, T=2°C/S=35 PSU) while preserving the forced branch exactly.
 
 The empirical iceberg literature, including Weeks & Campbell (1973) and FitzMaurice & Stern (2018), is retained for comparison and future calibration/validation rather than being conflated with the flat-plate derivation.
 
@@ -86,7 +93,7 @@ For 2020-01-01, the current real sea-ice initialization reconstructs concentrati
 
 ## 10. Numerical verification
 
-The repository uses FPM/Fortran tests and targeted analytical audits. The current baseline has 50 FPM test targets passing locally, with strict Fortran compilation clean after the CI line-length corrections. Real-data tests are separated from synthetic tests where generated forcing/grid files are unavailable in a fresh CI checkout.
+The repository uses FPM/Fortran tests and targeted analytical audits. The current baseline has 54 FPM test targets passing locally, with strict Fortran compilation clean. Real-data tests are separated from synthetic tests where generated forcing/grid files are unavailable in a fresh CI checkout.
 
 Verification is not treated as validation: passing algebraic and regression tests demonstrates implementation consistency, not agreement with independent observations.
 
@@ -97,19 +104,20 @@ The main limitations relevant to the next modernization steps are:
 - rectangular geometry and absent orientation;
 - approximate characteristic length for ocean-side transfer;
 - flat-plate forced-convection correlation used as an iceberg approximation;
-- no natural convection at zero relative flow;
+- natural convection only on the selectable `THREE_EQUATION_NATURAL` path, and it is cap-determined at zero flow;
+- low-flow closure is a research parameterization behind an OFF-by-default switch (t_scale, f_dc not calibrated);
 - neutral, fixed atmospheric transfer coefficients;
 - unresolved provenance/sensitivity questions for some shortwave attenuation constants;
 - legacy lateral-melt closure;
 - freezing-point calculation without a full seawater EOS;
 - no TEOS-10 thermodynamic framework;
 - no independent observational validation of the complete coupled thermodynamic trajectory yet;
-- stored latitude/longitude are not currently prognostic during motion.
+- two-node lumped interior temperature (Bi ≫ 1; internal melt at the clamp is discarded).
 
 These limitations are part of the model definition and should not be hidden by regression-test success.
 
 ## 12. Literature strategy
 
-The repository bibliography contains 137 unique records. Direct equation sources are distinguished from comparison, background, data and future-work sources in `docs/references/literature_matrix.md`. The private `work_references.bib` may retain local PDF paths, while `docs/references/references.bib` remains machine-independent.
+The repository bibliography contains 156 unique records. Direct equation sources are distinguished from comparison, background, data and future-work sources in `docs/references/literature_matrix.md`. The private `work_references.bib` may retain local PDF paths, while `docs/references/references.bib` remains machine-independent.
 
 The next physics stages should add or revise equations only after the relevant literature basis, assumptions, parameter values and independent validation target are documented.

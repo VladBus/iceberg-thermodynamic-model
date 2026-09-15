@@ -26,11 +26,11 @@ integration.
 
 ## 3. Production implementation
 
-| File | Change |
-|---|---|
-| `src/iceberg_types.f90` | named constants + regime codes + switch `low_flow_closure_enabled` (OFF) + setter; 14 diagnostic fields; 7 pure helper functions (`low_flow_delta_s`, `low_flow_density_ratio`, `low_flow_reynolds_b`, `low_flow_richardson_star`, `low_flow_enhancement`, `low_flow_blend_weight`, `low_flow_regime_value`) |
+| File                             | Change                                                                                                                                                                                                                                                                                                                                    |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/iceberg_types.f90`          | named constants + regime codes + switch `low_flow_closure_enabled` (OFF) + setter; 14 diagnostic fields; 7 pure helper functions (`low_flow_delta_s`, `low_flow_density_ratio`, `low_flow_reynolds_b`, `low_flow_richardson_star`, `low_flow_enhancement`, `low_flow_blend_weight`, `low_flow_regime_value`)                              |
 | `src/iceberg_thermodynamics.f90` | `compute_basal_melt`: optional `diag` arg + low-flow branch in the THREE_EQUATION scheme; new `solve_three_equation_interface_low_flow` (Picard iteration over γ_low, blended γ, then existing 3eq solver); `solve_three_equation_interface`: legacy zero-flow guard preserved, new optional `allow_zero_flow` (low-flow passes `.true.`) |
-| `fpm.toml` | registered `iceberg_test_10p13_low_flow` |
+| `fpm.toml`                       | registered `iceberg_test_10p13_low_flow`                                                                                                                                                                                                                                                                                                  |
 
 Reused existing constants (NOT duplicated): `THERMAL_CONDUCTIVITY` (→κ_T),
 `LEWIS_NUMBER=100` (→κ_S), `KINEMATIC_VISCOSITY`, `THERMAL_EXPANSION_COEFF`,
@@ -53,6 +53,7 @@ gamma_S_low = gamma_T_low (K_S/K_T)
 gamma_T_eff = (1-w) gamma_T_low + w gamma_T_forced      (same for S)
 m           = solve_three_equation_interface(gamma_T_eff, gamma_S_eff)   [m/s]
 ```
+
 dS_psu uses the regularized `S_w − dS_floor_psu` (Python-reference convention);
 the 3eq solver's own interface freshening (S_B → ~16 PSU at low U) reduces the
 interfacial dT — this is the established 3eq behavior (present in the forced
@@ -60,16 +61,16 @@ branch too) and is the main systematic difference vs the Python far-field m_low.
 
 ## 5. Parameter values (all named, with units)
 
-| Constant | Value | Units |
-|---|---|---|
-| `LOW_FLOW_TIME_SCALE_S` | 86400.0 | s (research parameter; dominant sensitivity) |
-| `LOW_FLOW_DELTA_MIN_M` | 1.0e-4 | m |
-| `LOW_FLOW_DELTA_MAX_M` | 5.0e-2 | m (staircase cap) |
-| `LOW_FLOW_F_DC` | 2.5 | — (range 2.0–3.1 `[source]`) |
-| `LOW_FLOW_DS_FLOOR_PSU` | 1.0e-2 | PSU |
-| `LOW_FLOW_U_LOW / U_HIGH` | 1.0e-3 / 1.0e-2 | m/s |
-| `LOW_FLOW_MAX_ITER` / `LOW_FLOW_TOL` | 4 / 1e-6 | — |
-| κ_T / κ_S (derived) | 1.371e-7 / 1.371e-9 | m²/s (Le=100 repo convention) |
+| Constant                             | Value               | Units                                        |
+| ------------------------------------ | ------------------- | -------------------------------------------- |
+| `LOW_FLOW_TIME_SCALE_S`              | 86400.0             | s (research parameter; dominant sensitivity) |
+| `LOW_FLOW_DELTA_MIN_M`               | 1.0e-4              | m                                            |
+| `LOW_FLOW_DELTA_MAX_M`               | 5.0e-2              | m (staircase cap)                            |
+| `LOW_FLOW_F_DC`                      | 2.5                 | — (range 2.0–3.1 `[source]`)                 |
+| `LOW_FLOW_DS_FLOOR_PSU`              | 1.0e-2              | PSU                                          |
+| `LOW_FLOW_U_LOW / U_HIGH`            | 1.0e-3 / 1.0e-2     | m/s                                          |
+| `LOW_FLOW_MAX_ITER` / `LOW_FLOW_TOL` | 4 / 1e-6            | —                                            |
+| κ_T / κ_S (derived)                  | 1.371e-7 / 1.371e-9 | m²/s (Le=100 repo convention)                |
 
 ## 6. Regime logic
 
@@ -113,14 +114,14 @@ the switch is OFF.
 
 ## 10. Test results
 
-| Suite | Result |
-|---|---|
+| Suite                                         | Result                                                                                                                                                                     |
+| --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Fortran focused `iceberg_test_10p13_low_flow` | **23/23 PASS** (A legacy OFF, B U=0 activation, C transition smoothness, D forced preservation, E DDC criterion, F bounds, G 3eq consistency, H CMP output, I determinism) |
-| Python reference `test_low_flow.py` | 167/167 PASS (unchanged) |
-| Python/Fortran comparison | **56/56 PASS** (10 points; f, regime, δ_S <10%, m at low flow <0.05 m/day abs) |
-| Full Fortran battery | **exit 0** (10p10 25/0, 10p11 23/0, 10.12 21/0, 10.13 23/0, all others pass; ice_init_test graceful SKIP) |
-| Python regression suites | 7/7 PASS (65+70+44+229+212+35+167 checks) |
-| Build / strict build | PASS / PASS (0 warnings, 0 errors) |
+| Python reference `test_low_flow.py`           | 167/167 PASS (unchanged)                                                                                                                                                   |
+| Python/Fortran comparison                     | **56/56 PASS** (10 points; f, regime, δ_S <10%, m at low flow <0.05 m/day abs)                                                                                             |
+| Full Fortran battery                          | **exit 0** (10p10 25/0, 10p11 23/0, 10.12 21/0, 10.13 23/0, all others pass; ice_init_test graceful SKIP)                                                                  |
+| Python regression suites                      | 7/7 PASS (65+70+44+229+212+35+167 checks)                                                                                                                                  |
+| Build / strict build                          | PASS / PASS (0 warnings, 0 errors)                                                                                                                                         |
 
 ## 11. Python-vs-Fortran comparison
 

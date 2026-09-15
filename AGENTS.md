@@ -1,6 +1,27 @@
 # AGENTS.md — AARI Iceberg Thermodynamic & Dynamics Model
 
-Modernized Fortran 2008/2018 reimplementation of the Dmitriev-Nesterov iceberg model (AARI, 1995–2001). Master's thesis at RSHU.
+Актуальная информация для AI-агентов и разработчиков: правила поведения,
+критические ограничения, команды, единицы, маршрутизация к документации.
+Правила процесса — в `RULES.md`, стиль — в `STYLE.md`, история — в
+`CHANGELOG.md`, карта документации — в `docs/README.md`.
+
+## Documentation routing (прочитай перед работой)
+
+| Вопрос                              | Документ                                   |
+| ----------------------------------- | ------------------------------------------ |
+| Карта всей документации             | `docs/README.md`                           |
+| Правила процесса разработки         | `RULES.md`                                 |
+| Стиль кода и документов             | `STYLE.md`                                 |
+| Актуальные ограничения и долги      | `KNOWN_ISSUES.md`                          |
+| История значимых изменений          | `CHANGELOG.md`                             |
+| Описание модели                     | `docs/model/model_description.md`          |
+| Статус физики (A/B/C, switches)     | `docs/model/model_physics_status.md`       |
+| Уравнения и соглашения              | `docs/model/model_equation_ledger.md`      |
+| План модернизации Stage 10          | `docs/model/stage10_modernization_plan.md` |
+| Активные отчёты валидации           | `docs/validation/INDEX.md`                 |
+| Исторический архив стадий 3–10      | `docs/wiki/INDEX.md`                       |
+| Ключевые решения                    | `docs/DECISIONS.md`                        |
+| Библиография и литературная матрица | `docs/references/README.md`                |
 
 ## Commands
 
@@ -40,12 +61,21 @@ fpm test --flag "-I/usr/include" drift_scaling_wind              # Wind drift sc
 fpm test --flag "-I/usr/include" drift_scaling_wind_no_cor       # Wind drift no Coriolis
 fpm test --flag "-I/usr/include" drift_scaling_current           # Current drift scaling
 fpm test --flag "-I/usr/include" param_sensitivity_30day         # Parameter sensitivity framework
-fpm test --flag "-I/usr/include" iceberg_test_10p10_three_equation  # Stage 10.10 three-equation (19 checks)
-fpm test --flag "-I/usr/include" iceberg_test_10p10_three_equation  # Stage 10.10.1 three-equation correction (25 checks)
+fpm test --flag "-I/usr/include" iceberg_test_10p10_three_equation  # Stage 10.10 three-equation (25 checks)
 fpm test --flag "-I/usr/include" iceberg_test_10p11_natural_convection  # Stage 10.11.2 natural-convection audit (23 checks)
+fpm test --flag "-I/usr/include" iceberg_test_10p12_thermal_evolution   # Stage 10.12 internal thermal (21 checks)
+fpm test --flag "-I/usr/include" iceberg_test_10p13_low_flow            # Stage 10.13 low-flow closure (23 checks)
 python python/tests/test_three_equation.py                        # Stage 10.10/10.10.1 Python (65 checks)
 python python/tests/test_three_equation_natural.py                # Stage 10.11 Python (70 checks)
+python python/tests/test_internal_thermal_evolution.py            # Stage 10.12 Python (35 checks)
+python python/tests/test_low_flow.py                              # Stage 10.13 Python prototype (167 checks)
+python python/validation/low_flow_fortran_comparison.py           # Stage 10.13 Fortran/Python comparison (56 checks)
 ```
+
+fpm 0.13.0-alpha: `fpm build` компилирует только источники, достижимые из
+targets; iceberg-модули компилируются в составе `fpm test`. **Перед
+`fpm test` всегда `rm -rf build`** (чистая пересборка, защита от устаревших
+библиотек).
 
 No CI, no lint, no formatter beyond VS Code (`fprettify`/`fortls`). Python tooling uses conda env `iceberg-thermodynamic-model`.
 
@@ -71,15 +101,15 @@ Conversions only at the NetCDF output boundary (`netcdf_output.f90`). Internal C
 
 ### Iceberg Model Architecture (Stage 9.3)
 
-- **`src/iceberg_types.f90`** — types, constants (ρᵢ, ρ_w, C_Dₐ, C_D_w, C_BASAL, C_LATERAL, L_f, etc.), state vector.
-- **`src/iceberg.f90`** — main orchestrator: `iceberg_init`, `iceberg_step`, `iceberg_update_geometry`.
+- **`src/iceberg_types.f90`** — types, constants (ρᵢ, ρ_w, C_Dₐ, C_D_w, C_BASAL, C_LATERAL, L_f, etc.), state vector, switches (thermal evolution, low-flow closure, basal-melt scheme).
+- **`src/iceberg.f90`** — main orchestrator: `iceberg_init`, `iceberg_step`, `iceberg_update_geometry`, lat/lon update each step (`model_coords_to_latlon`).
 - **`src/iceberg_geometry.f90`** — volume, mass, draft, areas, buoyancy check, grounding, mass budget partitioning.
 - **`src/iceberg_forcing.f90`** — horizontal bilinear interp (model grid), vertical interp/extrapolation to draft, ERA5 atmos interp, Method A/B current integration.
-- **`src/iceberg_thermodynamics.f90`** — basal melt (C_BASAL·ΔT), lateral melt (C_LATERAL·⟨ΔT⟩\_D), surface melt (Q_net/(ρᵢ·L_f)).
+- **`src/iceberg_thermodynamics.f90`** — surface melt (atmospheric energy partition), basal melt (bulk / three-equation / three-equation+natural / low-flow paths), internal thermal evolution.
 - **`src/iceberg_dynamics.f90`** — wind/water drag (Method A: layer-integrated, Method B: depth-averaged), semi-implicit Coriolis, pressure gradient (optional).
 - **Forcing:** OFFLINE/PRESCRIBED only. ERA5 (atmos), EN4 (ocean T/S), IBCAO (bathymetry). No two-way coupling.
 - **State vector:** `[x, y, u, v, L, W, H]` (7 prognostic). Diagnostic: D, M, areas, draft, sail/wetted.
-- **Key constants (compile-time in iceberg_types.f90):** C_BASAL=1e-6, C_LATERAL=1e-6 m/(s·K), C_Dₐ=1.3e-3, C_D_w=2e-3.
+- **Melt coefficients:** compile-time constants in `iceberg_types.f90` — require rebuild to change.
 
 ## Constraints (DO NOT)
 
@@ -89,18 +119,14 @@ Conversions only at the NetCDF output boundary (`netcdf_output.f90`). Internal C
 - ❌ Do not "fix" FCT anti-diffusion (`CDY*0` in `barotropic_dynamics.f90`) — causes blowup.
 - ❌ Do not use `grid_mode=TEST` basin for production claims.
 - ❌ Do not set `kl1=1` without providing ERA5 d2m/tcc/precip fields.
-- ❌ Before committing, check `.gitignore` — it blocks: `opencode.jsonc`, `.opencode/`, `docs/wiki/`, `data/`, `*.nc`, `*.vtk`, `*.dat`, `*.bak`. **Exception:** the curated Stage 10.8.2 observational dataset is versioned (`data/validation/observations/` is un-ignored in `.gitignore`).
-- ❌ Do not delete root-level symlinks: `KOORD.DAT`, `hhh.bar`, `1_k.ice` — required by model, gitignored, point to `data/input/generated/real_grid/`.
-
-### Iceberg Model Constraints (Stage 9.3)
-
 - ❌ Do not modify canonical ocean/sea-ice physics (Block 200/210/280, barotropic solver, EOS, grid, ERA5, bathymetry, thermodynamics).
 - ❌ Iceberg forcing must remain OFFLINE/PRESCRIBED. No two-way coupling.
-- ❌ No advanced physics (internal 3D temperature, wave erosion, sea-ice capture, rollover, fracture, multi-iceberg) until minimal model verified.
-- ❌ Melt coefficients are compile-time constants in `iceberg_types.f90` — require rebuild to change.
-- ❌ Vertical interpolation: EN4→model = 18 levels 2.5–550 m (`python/ocean/build_initial_ts.py`); `interp_at_draft` = linear + surface/deep clamps; extrapolation only in shallow columns where draft below deepest defined level/ht (handled in `iceberg_forcing.f90`).
-- ❌ Position: x,y AND lat/lon updated each step (`model_coords_to_latlon` in `iceberg.f90`); forcing re-sampled at current x,y every step (`get_ocean_profile`/`era5_bilinear2d`). Forcing stays OFFLINE/PRESCRIBED — no two-way feedback.
-- ❌ Semi-implicit Coriolis solver has 8% period error at Δt=3600s — numerical damping; convergence study needed.
+- ❌ No advanced physics (internal 3D temperature, wave erosion, sea-ice capture, rollover, fracture, multi-iceberg) without a dedicated stage.
+- ❌ Melt coefficients are compile-time constants — require rebuild to change.
+- ❌ Do not reintroduce an arbitrary velocity floor to avoid numerical issues (Stage 10.13 policy).
+- ❌ Before committing, check `.gitignore` — it blocks: `opencode.jsonc`, `.opencode/`, `data/`, `*.nc`, `*.vtk`, `*.dat`, `*.bak`. **Exceptions:** the curated Stage 10.8.2 observational dataset is versioned (`data/validation/observations/` is un-ignored); `docs/wiki/` is tracked (archive) except `docs/wiki/ERA5_INTEGRATION_TODO.md` (explicitly ignored, live local TODO).
+- ❌ Do not delete root-level symlinks: `KOORD.DAT`, `hhh.bar`, `1_k.ice` — required by model, gitignored, point to `data/input/generated/real_grid/`.
+- ❌ Do not commit/push unless the user explicitly requests it.
 
 ## Calendar Semantics
 
@@ -133,60 +159,32 @@ ERA5 download: `conda run -n iceberg-thermodynamic-model python python/era5/down
 
 ## Active Constraints Worth Preserving
 
-- **Convective adjustment:** 1000-iteration guard. Root cause: EOS float32 quantization `2⁻²³ ≈ 1.19e-7` vs threshold `0.9e-7`. Monitored via `ca_reset`/`ca_stats` counters.
-- **Ice-ocean drag singularity:** `hht ∼ 0.01 m` causes positive feedback. Guard `hht<0.01 → u=v=0` interrupts it. See `docs/wiki/Stage7.3_stability_investigation.md`.
-- **ERA5 coverage gap:** 5.2% of wet cells (591/11,330) outside forcing domain. Fixable by expanding download to ≥64°N, ≥77°E.
+- **Convective adjustment:** 1000-iteration guard. Root cause: EOS float32 quantization `2⁻²³ ≈ 1.19e-7` vs threshold `0.9e-7`. Monitored via `ca_reset`/`ca_stats` counters. Details: `docs/wiki/stages/stage04/Stage4.3_convective_root_cause.md`, `docs/wiki/stages/stage04/Stage4.4_precision_study.md`.
+- **Ice-ocean drag singularity:** `hht ∼ 0.01 m` causes positive feedback. Guard `hht<0.01 → u=v=0` interrupts it. See `docs/wiki/stages/stage07/Stage7.3_stability_investigation.md`.
+- **ERA5 coverage gap:** 5.2% of wet cells (591/11,330) outside forcing domain. Fixable by expanding download to ≥64°N, ≥77°E. See `docs/wiki/stages/stage06/Stage6.5_era5_barents_data.md`.
 - **FCT anti-diffusion intentionally disabled** in `advsh` — zeroed X-block intermediates + `CDY*0`.
 - **`grid_mode=TEST`** synthetic grid is NOT a real basin.
-- **Missing input files are normal:** `GRM2`, `FI1DL1.DAT`, `DAV4_5.98`, `1_k.ice` absent; code falls back to synthetic fields.
+- **Missing input files are normal:** `GRM2`, `FI1DL1.DAT`, `DAV4_5.98`, `1_k.ice` absent; code falls back to synthetic fields. See `docs/wiki/stages/stage06/Stage6.4_missing_historical_files.md`.
 - **Thomas algorithm vertical viscosity:** Can reach 8.5×10⁵ cm²/s at k=2 with realistic EN4 init → matrix ill-conditioning → blowup. Do not "fix" without physics review.
-- **Stage 7.7B finding:** Realistic EN4 initialization is dynamically incompatible with zero-initial-velocity state. Requires 3D geostrophic initialization or controlled spin-up (Stage 7.8+).
+- **Coriolis:** semi-implicit solver has 8% period error at Δt=3600s — numerical damping; convergence study needed. See `docs/wiki/stages/stage09/Stage9.3_Scientific_Verification_and_Calibration.md`.
+- **Wind drift ratio** 0.08% (with Coriolis) vs literature 1–2% — needs C_D calibration. Same report.
 
-## Development Workflow (from promt.md)
+## Stage summary map (actuality = model docs, not here)
 
-### Before starting work, ALWAYS:
+| Стадия                | Суть                                                                                                           | Отчёт (детали)                                                |
+| --------------------- | -------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- | ------ | ------ | ------------ |
+| 3–8                   | Восстановление модели, ERA5, реальная сетка, океаническая инициализация                                        | `docs/wiki/INDEX.md` (stage03–stage08)                        |
+| 9                     | Минимальная лагранжева модель айсберга: верификация 11/11, TEST_11 (74.5% потери массы, ошибка бюджета 0.013%) | `docs/wiki/stages/stage09/`                                   |
+| 10.1–10.6             | Солнечная геометрия, поверхностная T, потоки, партиция фаз, EOS-80, теплообмен                                 | `docs/model/stage10_modernization_plan.md` (Completed stages) |
+| 10.7–10.9             | Валидация базального таяния, Python-слой, наблюдения, оценка калибровки (не калибруется)                       | `docs/validation/stage10.7                                    | 10.8.1 | 10.8.2 | 10.9\_\*.md` |
+| 10.10/10.10.1         | Трёхкомпонентный интерфейс (H&J99/J2010), массово-солевая коррекция; 25 Fortran + 65 Python checks             | `docs/validation/stage10.10_three_equation_interface.md`      |
+| 10.11/10.11.2/10.11.3 | Естественная конвекция (selectable); аудит: кап всегда активен, разрыв 10.8.2 не закрыт; 23 + 70 checks        | `docs/validation/stage10.11*.md`                              |
+| 10.12                 | Внутренняя температура (двухузловая, switch полностью гейтует); 21 + 35 checks                                 | `docs/validation/stage10.12_*.md`                             |
+| 10.13 (A–C)           | Low-flow закрытие: исследовательская параметризация за switch OFF по умолчанию; 23 + 56 + 167 checks           | `docs/validation/stage10.13_*.md`                             |
 
-1. Read: `AGENTS.md`, `docs/wiki/`, current git status, recent commits, all sources related to current stage
-2. Use existing TODO as main project plan — don't create new plan from scratch. Sync TODO with actual repo state. TODO is a living project journal.
-3. Use available tools: repo-wide search, historical sources, version comparison, git diff, diagnostics, test runs, static analysis, docs.
-4. Before changing physics: find historical algorithm, match with current arrays, check units, check dimensions, determine place in time loop, check impact on existing modules.
-5. Don't change physics equations just to pass tests.
-
-### After completing a stage:
-
-- Update `docs/wiki/`
-- Mark completed items
-- Add new tasks/risks found
-- Create brief report
-- Run mandatory build/run/test
-- Check git diff
-- Make separate commit
-- Push only if it matches current workflow
-
-### Conflict resolution (code vs historical vs docs vs previous decisions):
-
-Don't choose silently. Record conflict, source of each variant, and decision made.
-
-### Stage completion report format:
-
-```
-DONE
-CHANGED
-PHYSICS
-TESTS
-DIAGNOSTICS
-ASSUMPTIONS
-RISKS
-TODO UPDATED
-GIT
-NEXT
-```
-
-### Important notes:
-
-- Don't create local Python environments (venv/.venv/env/) inside repo. Conda env lives outside.
-- CDS credentials in `~/.cdsapirc` — MUST NOT be committed to Git.
-- Important notes that might be lost due to context limits → write to `docs/wiki/` or appropriately named .md file.
+Текущий статус физики и switches — ВСЕГДА сверяй с
+`docs/model/model_physics_status.md` и `docs/DECISIONS.md`, а не с этим
+файлом и не со старыми отчётами.
 
 ## OpenCode Environment
 
@@ -194,23 +192,20 @@ OpenCode version: **1.18.30**
 
 ### Plugins
 
-| Plugin | Purpose |
-|---|---|
-| oh-my-opencode | OpenCode agent orchestration / skill utilities |
+| Plugin                           | Purpose                                                  |
+| -------------------------------- | -------------------------------------------------------- |
+| oh-my-opencode                   | OpenCode agent orchestration / skill utilities           |
 | opencode-dynamic-context-pruning | context-window management (pruning) during long sessions |
-| opencode-git-master | git operations integration (commits, history, rebase) |
-| opencode-supermemory | persistent memory (project/user knowledge recall) |
+| opencode-git-master              | git operations integration (commits, history, rebase)    |
+| opencode-supermemory             | persistent memory (project/user knowledge recall)        |
 
 ### Roles
 
-OpenCode provides three complementary execution/planning roles. Select by task
-complexity — most tasks use one role, not all three.
-
-| Role | Kind | Use for |
-|---|---|---|
-| Prometheus | Plan Builder | decomposition of complex tasks; stage planning; dependency/risk identification; preparation before implementation |
-| Hephaestus | Deep Agent | deep implementation; complex debugging; detailed repository work; multi-step technical execution |
-| Sisyphus | Ultraworker | intensive multi-step execution; integration; persistence across a complex task; bringing implementation through verification to completion |
+| Role       | Kind         | Use for                                                                                                                                    |
+| ---------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| Prometheus | Plan Builder | decomposition of complex tasks; stage planning; dependency/risk identification; preparation before implementation                          |
+| Hephaestus | Deep Agent   | deep implementation; complex debugging; detailed repository work; multi-step technical execution                                           |
+| Sisyphus   | Ultraworker  | intensive multi-step execution; integration; persistence across a complex task; bringing implementation through verification to completion |
 
 ## Skills and MCP Tools (MANDATORY)
 
@@ -223,35 +218,35 @@ is part of normal workflow.
 
 ### Skills (load via the `skill` tool when the task matches)
 
-| Skill | Use when | Purpose |
-|---|---|---|
-| academic-paper | writing/editing an academic paper, abstracts, lit-review, citations, LaTeX/DOCX/PDF | 12-agent paperwriting pipeline (plan/outline/revision/formats) |
-| academic-paper-reviewer | reviewing a manuscript, referee report, re-review | 5-persona peer review (EIC/peers/Devil's Advocate) |
-| academic-pipeline | end-to-end research → paper → integrity → review → finalize | orchestration of deep-research + academic-paper + reviewer |
-| deep-research | literature review, fact-check, systematic review, meta-analysis, 3W scan | 13-agent research pipeline with source verification |
-| data-scientist | analytics, ML, statistical modeling, business intelligence | advanced data analysis |
-| math-modeling | math-modelling competitions (MCM/ICM/美赛/国赛), problem decomposition | modeling workflow to LaTeX paper |
-| coding-agent | programmatically running Codex/Claude Code/OpenCode/Pi agents | external coding-agent control |
-| humanizer | de-AIing prose (review/revise for "AI tells") | rewrite AI-sounding text |
-| /security-review | security review of source code, dependency/configuration risks, CI/CD security, unsafe file/process/network behavior, secrets/credential exposure | team-mode security audit of the codebase |
-| /security-research | researching security advisories, CVEs, dependency vulnerabilities, external security guidance, current security info requiring web research | web-based security threat research |
+| Skill                   | Use when                                                                                                                                          | Purpose                                                        |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| academic-paper          | writing/editing an academic paper, abstracts, lit-review, citations, LaTeX/DOCX/PDF                                                               | 12-agent paperwriting pipeline (plan/outline/revision/formats) |
+| academic-paper-reviewer | reviewing a manuscript, referee report, re-review                                                                                                 | 5-persona peer review (EIC/peers/Devil's Advocate)             |
+| academic-pipeline       | end-to-end research → paper → integrity → review → finalize                                                                                       | orchestration of deep-research + academic-paper + reviewer     |
+| deep-research           | literature review, fact-check, systematic review, meta-analysis, 3W scan                                                                          | 13-agent research pipeline with source verification            |
+| data-scientist          | analytics, ML, statistical modeling, business intelligence                                                                                        | advanced data analysis                                         |
+| math-modeling           | math-modelling competitions (MCM/ICM/美赛/国赛), problem decomposition                                                                            | modeling workflow to LaTeX paper                               |
+| coding-agent            | programmatically running Codex/Claude Code/OpenCode/Pi agents                                                                                     | external coding-agent control                                  |
+| humanizer               | de-AIing prose (review/revise for "AI tells")                                                                                                     | rewrite AI-sounding text                                       |
+| /security-review        | security review of source code, dependency/configuration risks, CI/CD security, unsafe file/process/network behavior, secrets/credential exposure | team-mode security audit of the codebase                       |
+| /security-research      | researching security advisories, CVEs, dependency vulnerabilities, external security guidance, current security info requiring web research       | web-based security threat research                             |
 
 ### MCP servers (invoke the matching tool set)
 
-| Server | Use for | Examples |
-|---|---|---|
-| websearch | real-time web search (auto/fast/deep) | current events, recent data, web facts |
-| context7 | current library/framework/API docs (resolve id → query docs) | Fortran/fpm/gfortran/netcdf, CLI tooling |
-| firecrawl | web research: search, scrape, map, crawl; `firecrawl_research_*` scan paper index | literature/DOI verification, data-source checks |
-| fetch | plain URL content retrieval (markdown/text) | single static pages |
-| grep_app | GitHub code search over public repos (grep.app index) | real-world usage examples |
-| github | GitHub API: issues, PRs, branches, commits | repo management, CI status, pull requests |
-| lsp | language server diagnostics / symbols / references / rename | editor-grade code analysis |
-| codegraph | code graph / codebase insight | **Disabled in configuration** |
-| TestSprite | UI/API test generation and execution against a running app | frontend/backend test plans and runs |
-| playwright | browser automation on live pages | download flows, web UI verification, screenshots |
-| sequential-thinking | structured multi-step reasoning / planning | decomposing complex problems |
-| filesystem | repo file access: read/write/tree/search | standard file operations inside the workspace |
+| Server              | Use for                                                                           | Examples                                         |
+| ------------------- | --------------------------------------------------------------------------------- | ------------------------------------------------ |
+| websearch           | real-time web search (auto/fast/deep)                                             | current events, recent data, web facts           |
+| context7            | current library/framework/API docs (resolve id → query docs)                      | Fortran/fpm/gfortran/netcdf, CLI tooling         |
+| firecrawl           | web research: search, scrape, map, crawl; `firecrawl_research_*` scan paper index | literature/DOI verification, data-source checks  |
+| fetch               | plain URL content retrieval (markdown/text)                                       | single static pages                              |
+| grep_app            | GitHub code search over public repos (grep.app index)                             | real-world usage examples                        |
+| github              | GitHub API: issues, PRs, branches, commits                                        | repo management, CI status, pull requests        |
+| lsp                 | language server diagnostics / symbols / references / rename                       | editor-grade code analysis                       |
+| codegraph           | code graph / codebase insight                                                     | **Disabled in configuration**                    |
+| TestSprite          | UI/API test generation and execution against a running app                        | frontend/backend test plans and runs             |
+| playwright          | browser automation on live pages                                                  | download flows, web UI verification, screenshots |
+| sequential-thinking | structured multi-step reasoning / planning                                        | decomposing complex problems                     |
+| filesystem          | repo file access: read/write/tree/search                                          | standard file operations inside the workspace    |
 
 Rules:
 
@@ -266,6 +261,7 @@ Rules:
 Project Python environment: `iceberg-thermodynamic-model`
 Expected location: `/home/vlad/miniconda3/envs/iceberg-thermodynamic-model`
 Activate: `conda activate iceberg-thermodynamic-model`
+Do NOT create venv/.venv/env inside the repo.
 
 ### LSP / Development Tools
 
@@ -282,6 +278,15 @@ All analysis scripts are in `python/analysis/`:
 - `legacy/` — generic utilities (diagnostics, statistics, report generation)
 - Stage-specific diagnostics now in `data/output/diagnostics/stage9.3/`
 
+### Python Validation Layer
+
+Independent Python reference models and cross-language comparisons live in
+`python/validation/` (three_equation.py, three_equation_natural.py,
+internal_thermal.py, low_flow.py, low_flow_fortran_comparison.py,
+basal_melt.py, observational_validation.py, calibration_assessment.py);
+tests in `python/tests/`. Tests use bootstrap imports — LSP "could not be
+resolved" for `import <module>` is a known false positive.
+
 ### Key Data Paths
 
 | Purpose            | Path                                                                              |
@@ -293,270 +298,15 @@ All analysis scripts are in `python/analysis/`:
 | Diagnostics output | `data/output/diagnostics/stage7.7A/`, `stage7.7B/`, `stage9.3/`                   |
 | Run outputs        | `data/runs/<run_id>/output/nc/`                                                   |
 
-## Stage 7.7B Summary (Stabilization Attempt)
+## Development Workflow
 
-- **Problem:** Realistic EN4 Jan 2020 T/S causes blowup Day 2 (U_max ~ 5,740 m/s → NaN Day 3)
-- **Root cause:** Barotropic adjustment to geostrophic imbalance (50–100×) → vertical viscosity solver failure at ~500m
-- **Tested:** dt1=15–120s, Ah=7.5e6–5e7, geostrophic UP2/VP2 init — all fail
-- **Classification:** C (mechanism understood; no stable config within allowed params)
-- **Report:** `docs/wiki/Stage7.7B_Realistic_Ocean_Stabilization.md`
-- **Next:** 3D geostrophic init + controlled spin-up + viscosity clipping (Stage 7.8+)
+Полный процесс (перед началом работы, после завершения стадии, разрешение
+конфликтов, формат отчёта стадии, правила коммитов) — в `RULES.md`.
+Кратко: перед работой прочитай `AGENTS.md`, `docs/README.md`, git status и
+релевантные источники; используй существующий roadmap как план; не меняй
+физику ради тестов; после стадии — отчёт, полная батарея тестов,
+`git diff --check`, отдельный коммит (только по запросу пользователя).
 
-## Stage 9.3 Summary (Iceberg Model Verification)
-
-- **Classification:** A — Minimal Lagrangian iceberg model scientifically verified and real-forcing TEST_11 completed.
-- **Tests:** 11/11 iceberg tests PASS, 14/14 canonical regression PASS (unchanged).
-- **TEST_11:** 30-day offline run with ERA5/EN4/IBCAO forcing at 75°N, 30°E — 74.5% mass loss, mass budget error 0.013%.
-- **Major fixes:**
-  1. Melt coefficient dimensional error (C_BASAL/C_LATERAL: 1e-4→1e-6 m/(s·K), removed /(ρᵢ·L_f) factor)
-  2. Vertical extrapolation below 45m model top for draft ~88m
-  3. Mass budget uses pre-melt geometry (error 56%→0.013%)
-  4. TEST_4 upgraded with 5m vertical resolution in 0-100m (Method A/B ratio = 1.28)
-  5. TEST_11 enabled with real forcing
-- **Known anomalies:**
-  - Wind drift ratio 0.08% (with Coriolis) vs literature 1–2% — needs Cd calibration
-  - Coriolis period error 8% at Δt=3600s — numerical damping
-  - Lat/lon fixed in TEST_11 — forcing at initial position
-- **Diagnostics:** `data/output/diagnostics/stage9.3/` (11 JSON + trajectory CSV)
-- **Report:** `docs/wiki/Stage9.3_Scientific_Verification_and_Calibration.md`
-- **Next (Stage 9.4):** Calibrate drag coefficients, add wave erosion, sea-ice capture, internal temperature diffusion, rollover criterion, update lat/lon from x,y, Coriolis convergence study.
-
-## Stage 10.3 Summary (Modern Turbulent Heat & Moisture Exchange)
-
-- **Classification:** C -- Modern bulk formulation implemented and independently validated (with corrective validation).
-- **Physics:** Sensible/latent heat now use neutral bulk aerodynamic formulation with C_H = C_E = 1.5e-3.
-- **Key changes:**
-  1. SH: Q_SH = rho*CP_AIR*C_H*U*dT (replaces legacy SH_COEFF = 1.7068 Stanton number)
-  2. LH: Q_LH = rho*L_S*C_E*U*dq with ice saturation (Murphy & Koop 2005), L_S = 2.835e6 J/kg
-  3. Surface humidity: q_sat_ice replaces water saturation (5-18% correction at T < 0 deg C)
-  4. Stage 10.3: Q_LH is energy flux only; mass changes from sublimation/deposition deferred to Stage 10.4
-- **Transfer coefficients:** C_H = C_E = 1.5e-3 (fixed neutral bulk coefficients — model parameters).
-  Theoretical logarithmic formulation: C = kappa^2/ln(z/z0)^2 with kappa=0.4, z=10m, z0=1e-4m gives ~1.21e-3.
-  Production uses fixed 1.5e-3 (documented parameter). Andreas et al. 2010 cited as literature context.
-- **Stability correction:** Not implemented (requires Monin-Obukhov length, deferred)
-- **Tests:** 9 new analytical tests PASS (zero wind, sign conventions, ice vs water saturation, wind scaling, coefficient scaling, dimensional validation, cold/dry, humid, nighttime regression)
-- **Energy conservation:** Independent analytical validation with Stage 10.3 formulas (tolerance 10 J/m²)
-- **All 41 fpm tests PASS** including regression of Stage 10.1/10.2.
-- **Files changed:** src/iceberg_types.f90 (constants), src/iceberg_thermodynamics.f90 (compute_surface_melt), test/iceberg_test_surface_melt_audit.f90 (Stage 10.3 tests)
-- **Documentation updated:** model_equation_ledger.md, model_physics_status.md, stage10_modernization_plan.md
-
-## Stage 10.4 Summary (Phase Change Partitioning)
-
-- **Classification:** C -- Phase change partitioning implemented and validated.
-- **Physics:** Latent heat flux Q_LH partitioned into vapor mass flux and melt energy.
-- **Key changes:**
-  1. m*vapor = rho_air * C*E * U \* (q_air - q_sat_ice) [kg/(m2 s)]
-  2. Q_LH = m_vapor \* L_S [W/m2]
-  3. Q_melt = max(Q_net_non_melt - Q_LH, 0) [W/m2]
-  4. m_melt = Q_melt / (rho_ice \* L_f) [m/s]
-  5. dH/dt = -(m_melt + m_vapor/rho_ice)
-  6. Mass budget includes vapor mass change
-- **Tests:** 8 new Stage 10.4 analytical tests PASS (sublimation, deposition, melt, energy/mass conservation, vapor latent/mass consistency)
-- **All 41 fpm tests PASS** including regression of Stage 10.1-10.3.
-- **Files changed:** src/iceberg_types.f90 (vapor diagnostics), src/iceberg_thermodynamics.f90 (phase change logic), src/iceberg.f90 (mass budget), src/iceberg_geometry.f90 (mass budget), test/iceberg_test_surface_melt_audit.f90 (8 new tests)
-- **Documentation updated:** model_equation_ledger.md, model_physics_status.md, stage10_modernization_plan.md
-
-## Stage 10.4.1 Summary (Corrective Energy Partition)
-
-- **Classification:** C -- Corrective energy partitioning of latent heat.
-- **Critical bug fixed:** Previous Stage 10.4 had `Q_net_non_melt = SW + LW + SH + LH` then `Q_melt = max(Q_net_non_melt - LH, 0)`, which cancelled LH and inverted sublimation energy sign.
-- **Correct physics (Stage 10.4.1):**
-  1. Q_nonlatent = SW_abs + LW_down + LW_up + SH (NO LH)
-  2. m*vapor = rho_air * C*E * U \* (q_air - q_sat_ice) [kg/(m2 s)]
-  3. Q_LH = m_vapor \* L_S [W/m2]
-  4. Q_surface = Q_nonlatent + Q_LH
-  5. Sign: m_vapor < 0 -> sublimation -> Q_LH < 0 -> ENERGY SINK
-     m_vapor > 0 -> deposition -> Q_LH > 0 -> ENERGY SOURCE
-  6. T*surface < T_melt: dT = Q_surface * dt / C*eff
-     If crossing T_melt: excess_energy = Q_surface - C_eff*(T_melt - T_surface)/dt
-     Q_melt = max(excess_energy, 0)
-  7. T_surface = T_melt: Q_melt = max(Q_surface, 0)
-  8. m_melt = Q_melt / (rho_ice \* L_f)
-  9. dH/dt = -(m_melt + m_vapor/rho_ice)
-  10. Mass budget includes vapor mass change
-- **Vapor mass flux and latent heat flux are TWO REPRESENTATIONS of the SAME phase-change process** (not two independent energy sources).
-- **Tests:** 10 new Stage 10.4.1 corrective validation tests PASS (zero LH, sublimation, deposition, monotonicity, latent identity, below-freezing, crossing 0°C, at 0°C, mass/energy consistency, regression).
-- **All 41 fpm tests PASS** including regression of Stage 10.1-10.4.
-- **Files changed:** src/iceberg_thermodynamics.f90 (compute_surface_melt energy partition), docs/model/model_equation_ledger.md, docs/model/model_physics_status.md, docs/model/stage10_modernization_plan.md, docs/PROJECT_ROADMAP.md, AGENTS.md
-
-## Stage 10.4.2 Summary (Independent Monotonicity Validation)
-
-- **Classification:** C -- Independent controlled validation of the Stage 10.4.1 latent-heat monotonicity. No production physics changed.
-- **Why re-validated:** old TEST 10.4.9 ran in **polar day**, where changing `d2m` also changed `SW_down` (precipitable-water attenuation), so Q_nonlatent was NOT controlled; observed `m_base=2.37e-7 > m_dep=6.59e-8` contradicted the claimed ordering. The old "monotonicity" claim was not demonstrated.
-- **Controlled design — polar night (SW ≡ 0):** Q_nonlatent = LW_down + LW_up + SH is analytically d2m-invariant. Only Q_LH responds to d2m via q_air (Tetens monotonic).
-- **Controlled run** (lat 90, t2m=283.15 K, tcc=0, msl=101325 Pa, U=10 m/s, T=0°C; only d2m varies):
-  - SUB d2m=263.15 K: m_vapor=−3.72e−5 kg/m²s, Q_surface=44.4 W/m², m=1.46e−7 m/s
-  - ZERO d2m=273.158 K (e_sat_dew=e_sat_ice): m_vapor≈0, Q_surface=149.7, m=4.93e−7
-  - DEP d2m=283.15 K: m_vapor=+7.11e−5, Q_surface=351.4, m=1.16e−6
-  - Q_nonlatent identical (149.743 W/m²) across all cases; m_vapor/Q_LH/Q_surface/Q_melt/m_surface strictly monotonic sub < zero < dep.
-- **Additional checks:** zero-latent ⇒ Q_surface=Q_nonlatent (within 1 W/m²); strong sublimation quenches melt (m→0, T<0); strong deposition cannot decrease melt; Q_LH=m_vapor·L_S (independent, tight); below-freezing monotonic cooling/warming with no melt; crossing 0°C excess-energy partition matches independent analytic; geometry budget dH/dt=−m_surface+m_vapor/ρ_ice.
-- **Tests:** 13 new Stage 10.4.2 checks inside `iceberg_test_surface_melt_audit` (total 59 checks, 0 errors).
-- **All fpm tests PASS** (49 auto-discovered test programs, exit 0) including regression of Stage 10.1-10.4.1.
-- **Files changed:** test/iceberg_test_surface_melt_audit.f90 (Stage 10.4.2 block), docs/model/model_physics_status.md, docs/model/model_equation_ledger.md, docs/model/stage10_modernization_plan.md, docs/wiki/Stage10.4.2_Independent_monotonicity_validation.md, AGENTS.md
-
-## Stage 10.4.2.1 Summary (Independent Q_surface Output Validation)
-
-- **Classification:** C -- Direct validation of the production Q_surface output. Production physics unchanged; one diagnostic-only API addition.
-- **Why:** Stage 10.4.2 reconstructed Q_surface from downstream m_surface (`Q_surface = m_surface·ρ·L_f` or `q_net` fallback) — it never verified the production total-surface-flux calculation. `q_surface`/`q_lh` were LOCAL in `compute_surface_melt` (line 560); `diag%q_net_surface` = residual AFTER melt (≈ 0 while melting), NOT Q_surface.
-- **Production change (diagnostic-only, no numerics change):**
-  1. `src/iceberg_types.f90` — `iceberg_diagnostics` gains `q_surface`, `q_lh`.
-  2. `src/iceberg_thermodynamics.f90` — `compute_surface_melt` assigns `diag%q_surface = q_surface`, `diag%q_lh = q_lh` (the exact values melt/mass-budget were computed with).
-- **Direct validation** (polar-night controlled exp, only d2m varies): `Q_surface_production == Q_nonlatent_independent + m_vapor_production·L_S`.
-  - SUB d2m=263.15 K: 44.368423 vs 44.368416 expected → error +7.6e−6 W/m²
-  - ZERO d2m=273.158 K: 149.742554 vs 149.742554 → 0.0
-  - DEP d2m=283.15 K: 351.388672 vs 351.388672 → 0.0
-  - Q_nonlatent independent = 149.742706 W/m² identical across cases; production Q_surface strictly monotonic sub < zero < dep; latent identity Q_LH = m_vapor·L_S confirmed (DEP 201.645966 W/m² vs independent literals 283.15/283.15 K).
-- **Tests:** 7 new Stage 10.4.2.1 checks inside `iceberg_test_surface_melt_audit` (total 66 checks, 0 errors).
-- **All fpm tests PASS** (49 auto-discovered test programs, exit 0) including regression of Stage 10.1-10.4.2.
-- **Files changed:** src/iceberg_types.f90 (q_surface/q_lh fields), src/iceberg_thermodynamics.f90 (diag assignments), test/iceberg_test_surface_melt_audit.f90 (10.4.2.1 block), docs/model/model_physics_status.md, docs/model/model_equation_ledger.md, docs/model/stage10_modernization_plan.md, docs/wiki/Stage10.4.2.1_Independent_Q_surface_output_validation.md, AGENTS.md
-
-## Stage 10.5 Summary (Ocean Thermal Forcing)
-
-- **Classification:** C -- Ocean T/S forcing chain modernized to EOS-80 freezing point and validated. Production physics changed (Tf = f(S,p) replaces Zubov linear -54·S; new diagnostic).
-- **Physics:**
-  1. `Tf(S,p) = (A0 + A1·sqrt(S) - A2·S)·S + BP·P`, A0=-0.0575, A1=1.710523e-3, A2=2.154996e-4, BP=-7.53e-4, S [PSU]=1000·S_kg, P [dbar]=ρ_w·g·z/10⁴ (Fofonoff & Millard 1983 / UNESCO TPMS 44 §5; Gill 1982 Eq. 3.5.2). **Literature checkvalue Tf(40 PSU, 500 dbar) = -2.588567 °C reproduced.**
-  2. Canonical `ocean_freezing_point` (pure) in `iceberg_types.f90`, applied at 3 sites: `compute_basal_melt` (Tf at draft D), `depth_averaged_thermal_forcing` (per-layer Tf(z_k) + deep layer), `freezing_point(S, 0)` wrapper.
-  3. New diagnostic `delta_t_ocean = T(D) - Tf(D)` (unclamped, may be ≤ 0); set in `iceberg_thermodynamics_step`.
-- **Regression consequence (EOS pressure term):** legacy "cold ocean" T=-1.9 °C was ABOVE Tf below ~8 m → spurious melt. Porthed threshold to -2.5 °C in 11 files (test_2/3/4/6/8/9, drift_scaling_wind, drift_scaling_wind_no_cor, drift_scaling_current, moving_trajectory, ibcao_interp).
-- **Tests:** test_7 rewritten with independent Stage 10.5 audit (checks 10.5.1-10.5.19, 24 total): EOS surface values/monotonicity, pressure term (−7.53e-4·P over 100 m), pure water depth, UNESCO 500 dbar checkvalue, interp node/midpoint/clamps, draft sampling (H=50/100/150), basal regimes T<Tf/T=Tf/T>Tf, lateral Method-A box-model replica, C_LATERAL·⟨ΔT⟩, delta_t_ocean wiring.
-- **All fpm tests PASS** (49 auto-discovered, exit 0), zero mismatches; `-Wall -Wextra` build clean (0 warnings), exit 0; `git diff --check` clean.
-- **Files changed:** src/iceberg*types.f90 (EOS_FP*\* constants, ocean_freezing_point, delta_t_ocean, v10.5 header), src/iceberg_thermodynamics.f90 (compute_basal_melt/basal wrapper, delta_t_ocean diag), src/iceberg_forcing.f90 (depth_averaged_thermal_forcing per-layer + deep), 12 test files, docs/model/model_equation_ledger.md (§4.5-4.7), docs/model/model_physics_status.md (row 4 → C), docs/model/stage10_modernization_plan.md (§10.5 ✅), docs/wiki/Stage10.5_Ocean_Thermal_Forcing.md, AGENTS.md.
-- **Not in scope:** depth-dependent U_rel (Stage 10.6), basal/lateral melting modernization (10.6/10.7), canonical ocean model `thermodynamics.f90` untouched (its -54·S Zubov Tf remains).
-
-## Stage 10.6.1 Summary (Ocean Heat Transfer Audit)
-
-- **Classification:** B — PASS WITH LIMITATIONS. Production physics unchanged; documentation corrected.
-- **Formulation audited:** `ocean_heat_transfer_coeff` (src/iceberg_types.f90:421-448): Re=U_rel·L_char/ν; laminar Nu=0.664·Re^0.5·Pr^(1/3); turbulent Nu=0.037·Re^0.8·Pr^(1/3); γ_T=Nu·k/L_char; transition at Re≥5e5.
-- **Precision:** 10p6 airtight audit matches canonical ±1e-7 (laminar) / −1.09e-5 (turbulent) on R4 hardcoded reference.
-- **Doc correction (commit `40d4a3b`):** exponents L_char^0.2/0.5 → L_char^(-0.2)/(-0.5) (dimensionally correct).
-
-## Stage 10.7 Summary (Independent Basal Melt Validation)
-
-- **Classification:** B — PASS WITH LIMITATIONS. Audit only; production Fortran NOT changed (no bug found).
-- **Test:** `applications/iceberg_test_10p7_basal_melt_validation` (17 checks, STOP 0): ALL expected values computed from embedded literals (Pr=13.8, ν=1.82e-6, k=0.56, ρ_ice=910, L_f=3.34e5, EOS-80 coefficients); production functions called only for actual output.
-- **Cases A–J:** cold ocean m=0 · laminar/turbulent γ_T analytic · transition just below/above 5e5 (jump ratio 2.897) · U-scaling U^0.5/U^0.8 · ΔT linearity (m/ΔT const to 1e-3) · L-scaling L^(-0.5)/L^(-0.2) · zero flow γ_T=0 (documented natural-convection limitation) · end-to-end chain I (Tf=−1.93158, ΔT=3.93158, m=1.5852e-6 m/s, float32-exact match) · literature magnitude band J (0.4963 m/day ∈ [0.01,1] m/day, Cenedese & Straneo 2023).
-- **Literature cross-check:** three-equation estimate (St·u*, St=0.011 commented) at U=0.1 m/s → factor ≈1.8 agreement with flat-plate; both closures reproduce observed band.
-- **All fpm tests PASS** (51 auto-discovered, exit 0); `-Wall -Wextra` build clean; `git diff --check` clean.
-- **Files changed:** test/iceberg_test_10p7_basal_melt_validation.f90 (new), docs/validation/stage10.7_basal_melt_validation.md (new), docs/model/model_physics_status.md, docs/model/stage10_modernization_plan.md, docs/references/literature_matrix.md, docs/references/citation_map.md, docs/PROJECT_ROADMAP.md, AGENTS.md.
-- **Network blocker documented:** external web/bib verification unavailable (search/firecrawl/fetch failures) — in-repo bibliography primary; Γ_T Stanton convention is an open risk for Stage 10.8. (Resolved in Stage 10.9: all seven named DOI anchors verified via Crossref.)
-
-## Stage 10.8.2 Summary (Observational Validation of Basal Melt)
-
-- **Classification:** C — validation pass complete with documented systematic limitations; **production physics NOT changed** (no coefficient/parameter edits).
-- **Dataset:** `data/validation/observations/iceberg_basal_melt_observations.csv` (19 records, 16 cols; **versioned** — un-ignored in `.gitignore` because the test suite and CI depend on it) + provenance md. Tiers: lab-primary (Russell & Head 1980), field-primary (Keys & Williams 1984), synthesis (Neshyba & Josberger 1980), rs-derived (Enderlin & Hamilton 2014; Enderlin et al. 2016/2023) + 1 context row. Rignot calving-face rates EXCLUDED (not submarine melt). All DOIs Crossref-verified.
-- **Code:** `python/validation/observational_validation.py` (loader, metrics, natural-convection gap test, inverse-U bisection, regimes, sensitivity sweep, 6 figures); `python/tests/test_observational_validation.py` (15 blocks, **229 checks**).
-- **Results:** 4 forcing-anchored rows — RMSE 0.108, MAE 0.092, bias +0.083 m/day; KW84 within range (ratio 0.70 at L=draft); NJ80 synthesis overestimated factor 2.1→5.8 (dT 8→2 °C) — later shown (10.9) to be a dT-power-law shape mismatch, not a scale offset. Natural-convection gap 5.7–7.3 orders (no quiescent branch). Inverse-U: fjord rates reproducible at plausible U_rel 0.1–1.0 m/s (dT 2–4 °C). All comparable obs are turbulent (Re>5e5); laminar branch has no field anchor.
-- **Metrics are computed on 4 rows only** (`include_in_metrics=True`: KW84 + NJ80×3); RH rows = gap test, RS rows = inverse-U, OPEN = context-only.
-- **Verification:** `python python/tests/test_observational_validation.py` must print `TOTAL CHECKS: 229 ERRORS: 0`; regression `test_basal_melt_validation.py` (44) still under CI.
-- **Bib:** 8 new verified entries in `docs/references/references.bib` (enderin x3, josberger, keys, neshyba, orheim, schild); legacy key `russefl-headMELTINGFREEDRIFTINGICEBERGS` KEPT (citation compatibility) but record corrected (author Russell-Head, journal Annals of Glaciology, vol 1, DOI 10.3189/S0260305500017092).
-- **Report:** `docs/validation/stage10.8.2_observational_validation.md` (12 sections; claims #7/#8 corrected and #1/#2/#4 qualified in Stage 10.9).
-- **Corrected claims (Stage 10.9):** "basal plane dominating; side melt second" is aspect-ratio-dependent (side ~ basal for D/L~0.2); "submarine ≈ basal" is not universal; the KW84 0.70x anchor only holds at L=draft (production L = berg length gives 0.55–0.62x).
-
-## Stage 10.10 Summary (Three-Equation Ice-Ocean Interface)
-
-- **Classification:** C -- modern three-equation ice-ocean interface implemented and independently validated. Production physics ADDED on a separately selectable path; bulk baseline unchanged (bulk path statements identical; re-indented into the scheme else-branch with diagnostic-only additions).
-- **Physics:** `set_basal_melt_scheme(BASAL_MELT_SCHEME_THREE_EQUATION)` + `solve_three_equation_interface` in `src/iceberg_thermodynamics.f90`. Holland & Jenkins 1999 / Jenkins et al. 2010 Table 2: gamma_T=K_T·U_rel, gamma_S=K_S·U_rel (K_T=1.1e-3, K_S=3.1e-5); Eq. I T_B=Tf(S_B,P); Eq. II rho_w·c_w·gamma_T·(T_w−T_B)=m·rho_i·(L_f+c_i·max(T_B−T_i,0)); Eq. III S_B=gamma_S·S_w/(m+gamma_S); bisection with doubling upper bound (60+60, float32). Constants rho_w=1028, c_w=3974, c_i=2009, T_i=−10 (H&J99).
-- **Real bug found & fixed during implementation:** local `latent_heat` shadowed module constant `LATENT_HEAT` (Fortran case-insensitive) -> uninitialised read -> m=Infinity in production while an isolated copy converged. Renamed local to `l_heat`. Diagnostics: `t_interface`, `s_interface` added to `iceberg_diagnostics`.
-- **Validation:** Fortran `iceberg_test_10p10_three_equation` (19 checks, 0 errors) + Python `python/validation/three_equation.py` / `python/tests/test_three_equation.py` (46 checks, 0 errors). Cross-language contracts: H&J99 anchor m=9.4457e-9 m/s and production end-to-end m=3.998e-6 m/s (rel < 1e-4 Fortran float32 vs Python float64). Warm-ocean 0.345 m/day within observed 0.01–1 m/day band. All 52 fpm tests pass; strict `-Wall -Wextra` clean; Python suites 229/212/44/46 all 0 errors.
-- **Documented limitations:** constant T_i conduction (internal thermal evolution future); natural-convection floor NOT implemented (U_rel=0 -> m=0, same as bulk); K_T/K_S are the U-based J2010 convention — melt-driven u*-Stanton St=0.011 remains an open convention question (10.9).
-- **Files changed:** src/iceberg_types.f90 (scheme constants/switch/setter, 3eq constants, diag fields), src/iceberg_thermodynamics.f90 (solver + branch + diag), test/iceberg_test_10p10_three_equation.f90 (new), python/validation/three_equation.py (new), python/tests/test_three_equation.py (new), docs/model/* (ledger §10.2, physics status row, plan §10.10), docs/PROJECT_ROADMAP.md, docs/references/*, docs/validation/stage10.10_three_equation_interface.md (new), AGENTS.md, .github/workflows/ci.yml.
-- **Next (Stage 10.11 proposed):** natural-convection floor, then internal thermal evolution, then re-scoring the 10.8.2 set against the 3eq closure.
-
-## Stage 10.10.1 Summary (Mass/Salt Convention Correction in Three-Equation Interface)
-
-- **Classification:** C -- mass/salt convention correction in the three-equation ice-ocean interface implemented and independently validated. Production physics UPDATED on the selectable three-equation path; bulk baseline unchanged.
-- **Physics:** Corrected Eq. III from equal-density reduction `gamma_S (S_w - S_B) = m S_B` to mass-conserving `rho_w gamma_S (S_w - S_B) = rho_i m S_B`, reducing to `S_B = gamma_S S_w / (gamma_S + (rho_i/rho_w) m)` with `rho_i/rho_w = 910/1028 = 0.8852...`. Matches MOM6 `mom_ice_shelf`, PISM basal-melt, MITgcm shelfice, and H&J99 Eq. 4 (brine salt flux `rho_i M wB (S_I - S_B)`). Stage 10.10 implicitly set `rho_i/rho_w = 1`.
-- **Production changes:** `src/iceberg_types.f90` (new constant `RHO_ICE_WATER_RATIO`, public); `src/iceberg_thermodynamics.f90` (three reduction expressions in `solve_three_equation_interface` + solver doc block rewritten with MOM6/PISM/MITgcm/H&J99 Eq.4 references); `python/validation/three_equation.py` (module docstring, `_s_interface` with optional `rho_ratio` defaulting to new constant).
-- **Effect:** canonical H&J99 anchor m increases from 9.4457e-9 to 1.0438e-8 m/s (+10.5%, amplified by near-zero thermal drive); production end-to-end m increases from 3.998e-6 to 4.067e-6 m/s (+1.7%); warm band 0.351 m/day (inside 0.01-1 m/day). `T_i = -10` degC attribution corrected: model-selected constant internal temperature, NOT from H&J99 (H&J99 solve conduction explicitly).
-- **Validation:** Fortran test extended to 25 checks (19+6 new density-reduction identity/limit/monotonicity checks); Python suite extended to 65 checks (46+19 new Stage 10.10.1 checks including salt-flux identity, freshwater-flux identity, limits, monotonicity, cross-language contract). All tests PASS. Strict `-Wall -Wextra -fcheck=all` build clean. `git diff --check` clean.
-- **Files changed:** src/iceberg_types.f90, src/iceberg_thermodynamics.f90, test/iceberg_test_10p10_three_equation.f90, python/validation/three_equation.py, python/tests/test_three_equation.py, docs/model/model_equation_ledger.md, docs/model/model_physics_status.md, docs/model/stage10_modernization_plan.md, docs/PROJECT_ROADMAP.md, docs/references/literature_matrix.md, docs/references/citation_map.md, AGENTS.md, .github/workflows/ci.yml.
-- **Next:** natural-convection floor, then internal thermal evolution, then re-scoring the 10.8.2 set against the corrected 3eq closure.
-
-## Stage 10.11.3 Summary (Deep Audit & Sensitivity of Natural-Convection Basal Melt)
-
-- **Classification:** B -- PASS WITH LIMITATIONS. Read-only scientific audit + independent Python sensitivity study of the Stage 10.11 natural-convection closure. **Production source diff is ZERO** (`git diff -- src/` empty); documentation corrected only.
-- **Headline finding (cap dominance):** the `Ra_max = 1e10` cap is ALWAYS active for realistic bergs (uncapped anchor `Ra = 5.68e19` at `L=100 m`), so `Nu` is pinned at `0.15*(1e10)^(1/3) = 323.165` and the zero-flow result is entirely cap-determined. In this regime the haline term (including `Le=100`) and the values of `beta_T`/`beta_S` are numerically **inert** (dropping the haline term reproduces the identical `m`; +/-1 order in `beta_T`/`beta_S` changes nothing). Laminar branch and the `Ra=1e7` transition (113% discontinuity) are numerically latent.
-- **Hal缝 sign:** the production `+beta_S*dS*Le` treats the (light, fresh) meltwater's stabilizing salinity field as the dominant destabilizing driver. The physically motivated minus sign gives `Ra<0 -> Nu=0 -> m=0`; neither branch represents the real double-diffusive mechanism.
-- **Citation correction:** the operative turbulent `0.15*Ra^(1/3)` is from **Lloyd & Moran 1974** (JHT 96(4):443-447, DOI 10.1115/1.3450224), NOT Fujii et al. 1973 (which is a theoretical laminar uniform-heat-flux study, `Nu ~ Ra^(1/5)`). `0.27*Ra^(1/4)` is the stable-orientation laminar value; Churchill n=3 is a vertical-laminar-assisting result. Characteristic length `state%L` differs from the correlation scale `L* = A/p`.
-- **Observation gap NOT closed:** zero-flow `m = 1.638e-8 m/s = 1.4e-3 m/day`, which is **7-700x BELOW** the observed quiescent band 0.01-1 m/day (Stage 10.8.2). The prior "consistent with quiescent laboratory observations (0.01-1 m/day)" claim was FALSE and is removed. Real quiescent melt is double-diffusive / diffusion-limited (Martin & Kauffman 1977; Keitzl et al. 2016; Middleton et al. 2021), with only ~2-3x convective enhancement below ~4-8 degC.
-- **Sensitivity driver:** `python/analysis/stage10_11_3_natural_convection_sensitivity.py` (tables A-J; asserts production anchors `gamma_T_nat=4.429877e-7 m/s`, `m=1.638e-8 m/s`). Cap sweep: `m` spans 1.4e-4 (cap 1e7) to 2.53 m/day (uncapped); `gamma ∝ 1/L` (cap artifact); `U*` crossover `4.0e-4 m/s` at `L=100 m`.
-- **Verified references added (Crossref):** Lloyd & Moran 1974, Martin & Kauffman 1977 (JPO 7(2):272-283), Keitzl, Mellado & Notz 2016 (JPO 46(4):1171-1187), Middleton et al. 2021 (JPO 51:403-418). 156 bib entries total.
-- **Tests:** Fortran `iceberg_test_10p11_natural_convection` 23/23, `iceberg_test_10p10_three_equation` 25/25; Python `test_three_equation` 65, `test_three_equation_natural` 70, `test_basal_melt_validation` 44, `test_observational_validation` 229, `test_calibration_assessment` 212 -- all 0 errors.
-- **Files changed:** `python/analysis/stage10_11_3_natural_convection_sensitivity.py` (new); `docs/validation/stage10.11.3_natural_convection_physics_audit.md` (new, 32 sections, component-confidence table, Q1-Q10); `docs/model/model_equation_ledger.md` (§10.3), `docs/model/model_physics_status.md`, `docs/references/references.bib` (+4), `docs/references/literature_matrix.md`, `docs/references/citation_map.md`, `docs/PROJECT_ROADMAP.md`, `AGENTS.md`.
-- **Q10 verdict:** NO production change now -- formulation remains unchanged pending future validation; recommended follow-up is a double-diffusive/diffusion-limited low-flow parameterization.
-- **Next:** internal thermal evolution; then a diffusion-limited low-flow parameterization validated against Martin & Kauffman (1977) / Keitzl et al. (2016).
-
-## Stage 10.11.2 Summary (Natural-Convection Audit + Fortran Test Delivery)
-
-- **Classification:** B -- PASS WITH LIMITATIONS. Scientific audit of the Stage 10.11 natural-convection closure; the missing Fortran unit test was delivered; three doc/verification problems fixed (comment-only src changes, zero production-numerics change).
-- **Problems found & fixed:**
-  1. Claimed Fortran test `iceberg_test_10p11_natural_convection` was NEVER delivered in 6a0014e (stage report falsely claimed "15 checks"). This stage delivers it: **23 checks, 0 errors** (embedded-literal independent replicas; blocks A-J: cold edge, zero-flow anchor, laminar/turbulent/capped scaling, Churchill mixing, monotonicity, linear-U, production end-to-end, scheme regression).
-  2. "~0.1% at U_rel = 0.1 m/s" claim was wrong by ~5 orders: float64 replica gives `gamma_eff/gamma_forced - 1 = 2.177e-8` (≈2.2e-6 %); float32 production m(0.1) NATURAL vs THREE_EQUATION agree to 2.2e-7 relative.
-  3. Gayen et al. 2016 MIS-CITED (in src comments + docs) as "Melt-driven convection under a horizontal ice face, JFM 798, 617-641". Real paper: "Simulation of convection at a **vertical** ice face dissolving into saline water", JFM **798, 284-298**, DOI 10.1017/jfm.2016.315 (Cross-ref-verified). VERTICAL face → does NOT support "L_char = D" claim. Corrected to CONTEXT-only; characteristic length is berg length L (production passes state%L; matches Fujii plate scale).
-- **Audit finding (documented limitation):** Ra cap `1e10` is ALWAYS active for realistic bergs (thermal-only crossover L≈1.3 m; with haline term L≈0.06 m; production L=40-100 m → Ra_eff≈1e19-1e20) → Nu pinned at `0.15·(1e10)^(1/3)=323.165`; laminar branch + 1e7 transition are numerically latent in production.
-- **Verified references:** Fujii et al. 1973 (IJHMT 16, 611-627, DOI 10.1016/0017-9310(73)90227-5), Churchill 1977 (AIChE J 23(1):10-16, DOI 10.1002/aic.690230103, n=3). Added 3 bib entries (148 total).
-- **Changes:** `test/iceberg_test_10p11_natural_convection.f90` (new, 23 checks); comment-only fixes in `src/iceberg_types.f90` + `src/iceberg_thermodynamics.f90` (L not D, Gayen corrected); `python/validation/three_equation_natural.py` docstring; `docs/validation/stage10.11.2_natural_convection_audit.md` (new, A-I report); `docs/references/*` (bib + literature_matrix + citation_map); `docs/model/*` (ledger §10.3, physics status, plan §10.11); `docs/validation/stage10.11_natural_convection.md` (§5.1/§6/§8 claims corrected); `docs/PROJECT_ROADMAP.md`; AGENTS.md.
-- **Not done (per rules):** no Stage 10.12, no lateral melt/stability/EOS/geometry changes, no calibration, no U_min/gamma_floor, no physics change.
-- **Next:** internal thermal evolution, then re-scoring the 10.8.2 set against the 3eq+natural convection closure.
-
-## Stage 10.11 Summary (Natural Convection Basal Melt / Low-Flow Closure)
-
-- **Classification:** C -- physically-motivated natural-convection closure for the three-equation ice-ocean interface implemented and independently validated. Production physics UPDATED on the selectable three-equation path; bulk baseline unchanged.
-- **Physics:** Natural convection from a horizontal ice base (facing downward) driven by combined thermal and haline buoyancy. Double-diffusive Rayleigh number:
-  `Ra_eff = g * L^3 / (nu * alpha) * [beta_T * (T_w - T_B) + beta_S * (S_w - S_B) * Le]`
-  with `beta_T = 3.0e-5 1/K`, `beta_S = 7.8e-4 1/PSU`, `Le = 100`.
-  Characteristic length = iceberg length L (horizontal scale of the Fujii
-  plate; production passes state%L. Gayen et al. 2016 is CONTEXT only — it
-  studies a VERTICAL ice face; the "L_char = D per Gayen" attribution was a
-  mis-citation, removed in the Stage 10.11.2 audit).
-  Nusselt number (Fujii et al. 1973, horizontal plate facing downward):
-  - Laminar (`Ra < 1e7`): `Nu = 0.27 * Ra^0.25`
-  - Turbulent (`Ra >= 1e7`): `Nu = 0.15 * Ra^(1/3)`
-  Natural-convection transfer coefficients:
-  `gamma_T_nat = Nu * k / (L * rho_w * c_w)`,
-  `gamma_S_nat = gamma_T_nat * (K_S / K_T)`.
-
-- **Mixed convection:** Churchill (1977) combination with exponent n=3:
-  `gamma_T_eff = (gamma_T_forced^3 + gamma_T_nat^3)^(1/3)`
-  `gamma_S_eff = (gamma_S_forced^3 + gamma_S_nat^3)^(1/3)`
-  where `gamma_T_forced = K_T * U_rel`, `gamma_S_forced = K_S * U_rel`.
-
-- **Rayleigh number cap:** `Ra_max = 1e10` to avoid unphysical extrapolation beyond the Fujii correlation validity range.
-
-- **Selectable scheme:** `BASAL_MELT_SCHEME_THREE_EQUATION_NATURAL` (runtime switch). The three-equation salt balance retains the Stage 10.10.1 density-weighted correction.
-
-- **Effect:** At `U_rel = 0`, finite melt rate `~1.6e-8 m/s` (0.001 m/day) for typical Arctic conditions (`T_w=2°C`, `S_w=34.5 PSU`, `L=100m`, `D=50m`). At `U_rel = 0.1 m/s`, natural convection contributes only `gamma_eff/gamma_forced - 1 = 2.18e-8` (≈2.2e-6 %, NOT ~0.1% as originally claimed — corrected in the Stage 10.11.2 audit). At `U_rel = 1 m/s`, forced convection dominates (>99.9999999%).
-
-- **Validation:** Python `test_three_equation_natural.py` (70 checks) including zero-flow, low-flow continuity, mixed-convection regime, Ra/Nu scaling, salt/heat balance identities, and cross-language contract (`m = 1.638e-8 m/s` at `U_rel=0`, `T_w=2°C`, `S_w=34.5 PSU`, `L=100m`, `D=50m`). **Fortran unit test `iceberg_test_10p11_natural_convection` DELIVERED in the Stage 10.11.2 audit** (23 checks, 0 errors; the Stage 10.11 commit 6a0014e claimed but did not deliver it). Strict `-Wall -Wextra -fcheck=all` build clean.
-
-- **Files changed:** src/iceberg_types.f90 (new constants, natural convection function), src/iceberg_thermodynamics.f90 (new solver `solve_three_equation_interface_natural` with explicit coupling); python/validation/three_equation_natural.py (new), python/tests/test_three_equation_natural.py (new); docs/model/* (ledger §10.3, physics status row, plan §10.11), docs/PROJECT_ROADMAP.md, docs/references/*, docs/validation/stage10.11_natural_convection.md (new), AGENTS.md, .github/workflows/ci.yml.
-
-- **Next:** internal thermal evolution, then re-scoring the 10.8.2 set against the 3eq+natural convection closure.
-
-## Stage 10.12 Summary (Prognostic Internal Thermal Evolution)
-
-- **Classification:** C -- two-node lumped interior implemented and independently validated (Fortran 17 + Python 35 checks). Production physics ADDED on a separately switchable path; three-equation/natural-convection basal closure equations unchanged.
-- **Physics:** prognostic `state%T_ice` replaces the constant `T_i = -10` (now `T_ICE_INIT`, an initial condition) inside the three-equation Eq. II conduction term. `H_int = max(H - H_EFF, H_MIN_INT)`; `C_int = rho_i * C_ICE * H_int`; `q_cond = 2*K_ICE*(T_surface - T_ice)/H` (K_ICE = 2.2 W/(m K); 2 = layer-centre separation H/2); `q_bot = m_basal*rho_i*CP_ICE_3EQ*max(T_B - T_ice, 0)`; `C_int dT_ice/dt = q_cond - q_bot` (explicit Euler, clamp [-100, 0] degC, flag `diag%t_ice_bound`). Energy-conserving lagged coupling: `q_cond` subtracted from surface net flux inside `compute_surface_melt` (`q_internal_exchange`).
-- **Switch:** `thermal_evolution_enabled` (default `.true.`, `set_thermal_evolution`); fully gates Stage 10.12 in `iceberg_thermodynamics_step` — OFF skips `q_cond` computation/subtraction AND the interior update (bit-identical legacy for both bulk and 3eq paths; 10.12 diagnostics defined explicitly at OFF). Legacy invariance verified by test block F.1-F.4 (surface budget bitwise-equal to a legacy `compute_surface_melt` call).
-- **Diagnostics:** `t_ice`, `dT_ice_dt`, `c_eff_int`, `t_ice_bound`. Initial condition: `iceberg_init` sets `T_ice = T_ICE_INIT = -10 degC`.
-- **Signature change:** `compute_basal_melt(state, prof, ...)` now takes the iceberg state (reads `state%T_ice`, gated by the switch); 6 existing test files mechanically adapted (state argument only, no expected values changed).
-- **Validation:** Fortran `iceberg_test_10p12_thermal_evolution` (17/17 PASS; the C.5 lower-clamp check uses an amplified diagnostic flux q = -30000 W/m^2, documented in-test) + Python float64 replica `python/validation/internal_thermal.py` / `python/tests/test_internal_thermal_evolution.py` (35/35 PASS); cross-language contract `C_int(50 m) = 94594496 (float32) / 94594500 (float64)`.
-- **Known limitations:** lumped parametrization (Bi >> 1, diffusion time >> run length); no internal melt at `T_ice = 0` (excess energy discarded at clamp); removed-ice enthalpy not tracked; `K_ICE` a model parameter (2.0-2.3 literature range), not calibrated.
-- **Build:** unused `stdlib` git dependency removed from `fpm.toml` (zero `use stdlib*` in the repo; eliminates the network-fetch / broken-partial-clone failure mode of fpm 0.13.0-alpha).
-- **CI:** `.github/workflows/ci.yml` — registered missing Python suites `test_three_equation.py` (10.10/10.10.1, pre-existing gap) and `test_internal_thermal_evolution.py` (10.12); header target count 51 → 54 (fpm auto-discovery covers the new Fortran test).
-- **Report:** `docs/validation/stage10.12_internal_thermal_evolution.md`; design note: `docs/validation/stage10.12_internal_thermal_evolution_design_note.md`.
-- **Next:** fix the 10.12 OFF-switch gating decision; then a diffusion-limited low-flow parameterization (Martin & Kauffman 1977 / Keitzl et al. 2016); then re-scoring the 10.8.2 set against the 3eq+natural convection closure.
-
-## Stage 10.9 Summary (Calibration Assessment of the Basal-Melt Coefficient)
-
-- **Classification:** C — validation insufficient for robust calibration; **production physics NOT changed** (no coefficient fits; `git diff -- src/` EMPTY).
-- **Module:** `python/validation/calibration_assessment.py` (pure-Python; imports `basal_melt` + `observational_validation`, no Fortran); test `python/tests/test_calibration_assessment.py` (20 blocks, **212 checks**, A–T).
-- **Conclusion — NO scalar coefficient identifiable:** inferred required C_gamma spans **8.29x (0.918 decades)** between the two independent sources — NJ80 per-source geomean 0.286 (3 rows, 1 source), KW84 1.418 (1 row); pooled geomean 0.427; effective n = 2 sources. Leave-one-source-out: KW84-fit → NJ80 over 8.29/4.87/3.01; NJ80-fit → KW84 0.202.
-- **Functional-form, not scale:** NJ80 obs ~ dT^1.73 and RH80 tank law ~ (T+1.8)^1.50 vs closure exactly dT^1.0 (a scalar cannot absorb a power-law mismatch); JPL-Re set all turbulent (Re ≥ 1.1e6).
-- **Sensitivity exponents (measured):** turbulent U^+0.800·L^-0.200·dT^+1.000·C^+1.000; laminar U^+0.500·L^-0.500. L_char geometry: using production L = berg length (40–100 m) drops KW84 ratio 0.705 → 0.55–0.62; NJ80 ratios 4.10/3.44/3.02/2.68 for L=20/50/100/200 m.
-- **Stanton:** model flat-plate St 3.4–4.1e-4 vs obs-implied 5.9e-5–5.9e-4 vs melt-driven glaciological anchor St=0.011 (Jenkins et al. 2010) — convention-level disagreement, not a coefficient offset.
-- **Uncalibratable by design:** natural-convection branch is model×0 = 0 for ANY finite C_gamma (5.7–7.3 orders gap persists; a free-convection floor is new physics).
-- **Literature:** seven named sources (weeksCampbell 1973, bigg 1997, hollandJenkins 1999, jenkinsNicholls 2010, fitzmauriceStern 2018, cenedese 2023, martinAdcroft 2010) DOI-verified via Crossref (network restored); no new bib keys.
-- **Verification:** `python python/tests/test_calibration_assessment.py` must print `TOTAL CHECKS: 212 ERRORS: 0`; 10.8.2 (229) and 10.8.1 (44) regression suites still under CI.
-- **Report:** `docs/validation/stage10.9_calibration_assessment.md` (15 sections, Q1–Q10).
-- **Next (Stage 10.10):** three-equation ice-ocean interface (Holland & Jenkins 1999; melt-driven Stanton; buoyancy-informed per FitzMaurice & Stern 2018) + natural-convection floor, re-scoring the 10.8.2 set as the acceptance criterion. Scalar calibration explicitly NOT recommended.
+Важные заметки, которые могут потеряться из-за ограничений контекста,
+записывай в `docs/wiki/` (архив) или соответствующий живой документ.
+CDS-креденшелы (`~/.cdsapirc`) — никогда в Git.

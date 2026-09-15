@@ -59,21 +59,21 @@ takes `length_m` explicitly. No orientation is introduced.
 
 ## 4. Constants and provenance
 
-| Constant | Python value | Production source (`src/iceberg_types.f90`) |
-|---|---|---|
-| `RHO_ICE` | 910.0 kg/m³ | line 34 |
-| `RHO_WATER` | 1028.0 kg/m³ | line 35 |
-| `LATENT_HEAT` | 334000.0 J/kg | line 39 |
-| `GRAVITY` | 9.80665 m/s² | line 48 |
-| `EOS_FP_A0` | -0.0575 | line 55 |
-| `EOS_FP_A1` | 1.710523e-3 | line 56 |
-| `EOS_FP_A2` | 2.154996e-4 | line 57 |
-| `EOS_FP_BP` | -7.53e-4 °C/dbar | line 58 |
-| `PRANDTL_NUMBER` | 13.8 | line 102 |
-| `KINEMATIC_VISCOSITY` | 1.82e-6 m²/s | line 106 |
-| `THERMAL_CONDUCTIVITY` | 0.56 W/(m·K) | line 110 |
-| `REYNOLDS_CRITICAL` | 5.0e5 | line 119 |
-| `MELT_RATE_MIN` | 1.0e-12 m/s | line 135 |
+| Constant               | Python value     | Production source (`src/iceberg_types.f90`) |
+| ---------------------- | ---------------- | ------------------------------------------- |
+| `RHO_ICE`              | 910.0 kg/m³      | line 34                                     |
+| `RHO_WATER`            | 1028.0 kg/m³     | line 35                                     |
+| `LATENT_HEAT`          | 334000.0 J/kg    | line 39                                     |
+| `GRAVITY`              | 9.80665 m/s²     | line 48                                     |
+| `EOS_FP_A0`            | -0.0575          | line 55                                     |
+| `EOS_FP_A1`            | 1.710523e-3      | line 56                                     |
+| `EOS_FP_A2`            | 2.154996e-4      | line 57                                     |
+| `EOS_FP_BP`            | -7.53e-4 °C/dbar | line 58                                     |
+| `PRANDTL_NUMBER`       | 13.8             | line 102                                    |
+| `KINEMATIC_VISCOSITY`  | 1.82e-6 m²/s     | line 106                                    |
+| `THERMAL_CONDUCTIVITY` | 0.56 W/(m·K)     | line 110                                    |
+| `REYNOLDS_CRITICAL`    | 5.0e5            | line 119                                    |
+| `MELT_RATE_MIN`        | 1.0e-12 m/s      | line 135                                    |
 
 `SCHMIDT_NUMBER` (2400) is documented in production but **not** part of the basal
 melt calculation and is therefore **not** used in Python. Literature context:
@@ -109,6 +109,7 @@ environment `iceberg-thermodynamic-model`).
 ## 6. Independence methodology
 
 The Python layer:
+
 - does **not** invoke the Fortran executable;
 - does **not** call Fortran functions through Python or import compiled modules;
 - does **not** parse Fortran output;
@@ -126,23 +127,23 @@ existing `python/tests` convention).
 
 44 checks in 15 test groups (A–O):
 
-| Block | Checks | What is verified |
-|---|---|---|
-| A | 3 | EOS-80: `Tf(40 PSU, 500 dbar) = -2.588567 °C` checkvalue; depth-form pressure consistency; float32 storage-class agreement |
-| B | 2 | `T < Tf` → `DeltaT = 0`, `m = 0` (cold ocean, cf. Stage 10.7 case A) |
-| C | 2 | `T > Tf` → `DeltaT > 0`, `m > 0` |
-| D | 4 | relative velocity: zero if water=ice; pure-x; 3-4-5 vector; subtract-ice vector |
-| E | 2 | `Re = U*L/nu` hand value; `U=0` guard |
-| F | 3 | laminar branch: Re < 5e5, `Nu = 0.664 Re^0.5 Pr^(1/3)`, `gamma_T = Nu k/L` |
-| G | 3 | turbulent branch: Re >= 5e5, `Nu = 0.037 Re^0.8 Pr^(1/3)`, `gamma_T` |
-| H | 6 | exact transition: Re<5e5 laminar; Re==5e5 turbulent (>=); Re>5e5 turbulent |
-| I | 4 | velocity monotonicity within branch: `gamma ~ U^0.5`, `gamma ~ U^0.8` |
-| J | 2 | thermal-driving monotonicity: higher ΔT → higher m; `m/ΔT` const (linearity) |
-| K | 2 | length scaling with correct exponents: laminar `L^-0.5`, turbulent `L^-0.2` |
-| L | 4 | end-to-end chain against independent literals and the Stage 10.7 float32 value `1.5852e-6 m/s` |
-| M | 2 | zero-flow limitation: `U_rel = 0` → `gamma_T = 0`, `m = 0` (no natural convection) |
-| N | 1 | numerical-noise guard `m < MELT_RATE_MIN → 0` |
-| O | 4 | vectorized (NumPy) parity with the scalar path |
+| Block | Checks | What is verified                                                                                                           |
+| ----- | ------ | -------------------------------------------------------------------------------------------------------------------------- |
+| A     | 3      | EOS-80: `Tf(40 PSU, 500 dbar) = -2.588567 °C` checkvalue; depth-form pressure consistency; float32 storage-class agreement |
+| B     | 2      | `T < Tf` → `DeltaT = 0`, `m = 0` (cold ocean, cf. Stage 10.7 case A)                                                       |
+| C     | 2      | `T > Tf` → `DeltaT > 0`, `m > 0`                                                                                           |
+| D     | 4      | relative velocity: zero if water=ice; pure-x; 3-4-5 vector; subtract-ice vector                                            |
+| E     | 2      | `Re = U*L/nu` hand value; `U=0` guard                                                                                      |
+| F     | 3      | laminar branch: Re < 5e5, `Nu = 0.664 Re^0.5 Pr^(1/3)`, `gamma_T = Nu k/L`                                                 |
+| G     | 3      | turbulent branch: Re >= 5e5, `Nu = 0.037 Re^0.8 Pr^(1/3)`, `gamma_T`                                                       |
+| H     | 6      | exact transition: Re<5e5 laminar; Re==5e5 turbulent (>=); Re>5e5 turbulent                                                 |
+| I     | 4      | velocity monotonicity within branch: `gamma ~ U^0.5`, `gamma ~ U^0.8`                                                      |
+| J     | 2      | thermal-driving monotonicity: higher ΔT → higher m; `m/ΔT` const (linearity)                                               |
+| K     | 2      | length scaling with correct exponents: laminar `L^-0.5`, turbulent `L^-0.2`                                                |
+| L     | 4      | end-to-end chain against independent literals and the Stage 10.7 float32 value `1.5852e-6 m/s`                             |
+| M     | 2      | zero-flow limitation: `U_rel = 0` → `gamma_T = 0`, `m = 0` (no natural convection)                                         |
+| N     | 1      | numerical-noise guard `m < MELT_RATE_MIN → 0`                                                                              |
+| O     | 4      | vectorized (NumPy) parity with the scalar path                                                                             |
 
 Tolerance policy (documented): branch identities and scaling exponents are
 exact in float64 (`1e-12` relative); the end-to-end chain vs Stage 10.7 float32
@@ -173,12 +174,12 @@ Stage 10.7). Magnitude case `U=0.5`: `m = 0.496 m/day`, inside the observed band
 Fortran ↔ Python cross-check uses the established analytical references (no
 Fortran execution required, so no real-grid data dependency):
 
-| Quantity | Stage 10.7 float32 reference | Python float64 | relative diff |
-|---|---|---|---|
-| `Tf(34.5 PSU, 50 m)` | — | -1.9315811 | — |
-| `DeltaT` (T=2 °C) | 3.93158 | 3.9315811 | < 1e-6 |
-| `m_basal` (U=0.1, L=100) | 1.5852e-6 m/s | 1.58515e-6 m/s | 2.8e-5 |
-| `m` (U=0.5, L=100) | 0.4963 m/day | 0.49632 m/day | < 1e-4 |
+| Quantity                 | Stage 10.7 float32 reference | Python float64 | relative diff |
+| ------------------------ | ---------------------------- | -------------- | ------------- |
+| `Tf(34.5 PSU, 50 m)`     | —                            | -1.9315811     | —             |
+| `DeltaT` (T=2 °C)        | 3.93158                      | 3.9315811      | < 1e-6        |
+| `m_basal` (U=0.1, L=100) | 1.5852e-6 m/s                | 1.58515e-6 m/s | 2.8e-5        |
+| `m` (U=0.5, L=100)       | 0.4963 m/day                 | 0.49632 m/day  | < 1e-4        |
 
 The 4-significant-figure residual in `m` is the digit-rounding of the printed
 Stage 10.7 reference; the raw float32 chain agrees with float64 to ≈ 1.3e-7

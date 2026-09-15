@@ -122,7 +122,6 @@ Thumbs.db
 # AI
 .opencode/
 opencode.jsonc
-docs/wiki/
 .omo/
 
 # Internal live TODO (kept locally, NOT tracked in Git)

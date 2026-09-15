@@ -21,6 +21,7 @@ The implementation must NOT use arbitrary numerical floors (e.g., `U_eff = max(U
 For a horizontal ice base facing downward (melting from below), the buoyancy is driven by combined thermal and haline effects:
 
 **Buoyancy sources:**
+
 - Thermal: melted ice water is at `T_f` (cold) → denser than ambient (for `T > 4°C` seawater)
 - Haline: meltwater is fresh (`S ≈ 0`) → much less dense than ambient seawater
 
@@ -31,6 +32,7 @@ Ra_eff = g * L^3 / (nu * alpha) * [beta_T * (T_w - T_B) + beta_S * (S_w - S_B) *
 ```
 
 where:
+
 - `g = 9.80665 m/s^2`
 - `L` = iceberg length (horizontal scale of the Fujii plate; production passes `state%L`)
 - `nu = 1.82e-6 m^2/s` (kinematic viscosity)
@@ -42,14 +44,17 @@ where:
 - `T_B`, `S_B` = interface temperature [°C] and salinity [PSU]
 
 **Nusselt number correlation** (Fujii et al. 1973, horizontal plate facing downward / heated down):
-- Laminar  (`Ra < 1e7`): `Nu = 0.27 * Ra^0.25`
+
+- Laminar (`Ra < 1e7`): `Nu = 0.27 * Ra^0.25`
 - Turbulent (`Ra >= 1e7`): `Nu = 0.15 * Ra^(1/3)`
 
 **Natural-convection transfer coefficients:**
+
 ```
 gamma_T_nat = Nu * k / (L * rho_w * c_w)   [m/s]
 gamma_S_nat = gamma_T_nat * (K_S / K_T)     [m/s]
 ```
+
 where `K_T = 1.1e-3`, `K_S = 3.1e-5` (J2010 Table 2, U-based convention).
 
 ### 2.2 Mixed Convection
@@ -62,6 +67,7 @@ gamma_S_eff = (gamma_S_forced^3 + gamma_S_nat^3)^(1/3)
 ```
 
 where:
+
 - `gamma_T_forced = K_T * U_rel`
 - `gamma_S_forced = K_S * U_rel`
 
@@ -79,7 +85,7 @@ The effective transfer coefficients `gamma_T_eff`, `gamma_S_eff` are used in the
 
 (I) `T_B = Tf(S_B, P)`
 (II) `rho_w c_w gamma_T_eff (T_w - T_B) = m rho_i [L_f + c_i max(T_B - T_i, 0)]`
-(III) `rho_w gamma_S_eff (S_w - S_B) = rho_i m S_B`  (Stage 10.10.1 correction)
+(III) `rho_w gamma_S_eff (S_w - S_B) = rho_i m S_B` (Stage 10.10.1 correction)
 
 The Stage 10.10.1 salt-balance correction is preserved.
 
@@ -90,7 +96,8 @@ The Stage 10.10.1 salt-balance correction is preserved.
 The solver `solve_three_equation_interface_natural` uses the same bisection framework as the forced-convection solver, but evaluates the interface state using explicit coupling at each iteration:
 
 For a given trial melt rate `m`:
-1. `S_B = gamma_S_eff * S_w / (gamma_S_eff + r * m)`  with `r = rho_i / rho_w`
+
+1. `S_B = gamma_S_eff * S_w / (gamma_S_eff + r * m)` with `r = rho_i / rho_w`
 2. `T_B = Tf(S_B, P)`
 3. `gamma_T_eff, gamma_S_eff = natural_convection_transfer_coeff(T_B, S_B, L, U_rel)`
 4. Compute residual `F(m) = rho_w c_w gamma_T_eff (T_w - T_B) - m * rho_i [L_f + c_i max(T_B - T_i, 0)]`
@@ -101,20 +108,20 @@ The bisection proceeds on `[0, m_hi]` with `m_hi` doubled until `F(m_hi) <= 0` (
 
 ## 4. Parameter Provenance
 
-| Parameter | Value | Source |
-|-----------|-------|--------|
-| `beta_T` | 3.0e-5 1/K | Fofonoff & Millard 1983 (seawater at freezing) |
-| `beta_S` | 7.8e-4 1/PSU | Fofonoff & Millard 1983 |
-| `Le` | 100 | Standard seawater property (alpha/D_S) |
-| `Nu_lam_coeff` | 0.27 | Fujii et al. 1973, Table 1 |
-| `Nu_lam_exp` | 0.25 | Fujii et al. 1973 |
-| `Nu_turb_coeff` | 0.15 | Fujii et al. 1973 |
-| `Nu_turb_exp` | 1/3 | Fujii et al. 1973 |
-| `Ra_trans` | 1e7 | Fujii et al. 1973 |
-| `Ra_max` | 1e10 | Physical cap (correlation validity limit) |
-| `Churchill_n` | 3 | Churchill 1977 (mixed convection) |
-| `K_T` | 1.1e-3 | Jenkins et al. 2010 Table 2 |
-| `K_S` | 3.1e-5 | Jenkins et al. 2010 Table 2 |
+| Parameter       | Value        | Source                                         |
+| --------------- | ------------ | ---------------------------------------------- |
+| `beta_T`        | 3.0e-5 1/K   | Fofonoff & Millard 1983 (seawater at freezing) |
+| `beta_S`        | 7.8e-4 1/PSU | Fofonoff & Millard 1983                        |
+| `Le`            | 100          | Standard seawater property (alpha/D_S)         |
+| `Nu_lam_coeff`  | 0.27         | Fujii et al. 1973, Table 1                     |
+| `Nu_lam_exp`    | 0.25         | Fujii et al. 1973                              |
+| `Nu_turb_coeff` | 0.15         | Fujii et al. 1973                              |
+| `Nu_turb_exp`   | 1/3          | Fujii et al. 1973                              |
+| `Ra_trans`      | 1e7          | Fujii et al. 1973                              |
+| `Ra_max`        | 1e10         | Physical cap (correlation validity limit)      |
+| `Churchill_n`   | 3            | Churchill 1977 (mixed convection)              |
+| `K_T`           | 1.1e-3       | Jenkins et al. 2010 Table 2                    |
+| `K_S`           | 3.1e-5       | Jenkins et al. 2010 Table 2                    |
 
 ---
 
@@ -163,11 +170,13 @@ The bisection proceeds on `[0, m_hi]` with `m_hi` doubled until `F(m_hi) <= 0` (
 ### 5.3 Cross-Language Contract
 
 **Zero-flow anchor** (`T_w=2°C`, `S_w=34.5 PSU`, `depth=50m`, `U_rel=0`, `L=100m`):
+
 - Fortran (float32): `m = 1.638e-8 m/s`
 - Python (float64): `m = 1.638e-8 m/s`
 - Relative difference: `< 1e-6`
 
 **Production end-to-end** (`U_rel=0.1 m/s`):
+
 - Fortran: `m = 4.067e-6 m/s`
 - Python: `m = 4.067e-6 m/s`
 - Relative difference: `< 1e-6`
@@ -176,16 +185,17 @@ The bisection proceeds on `[0, m_hi]` with `m_hi` doubled until `F(m_hi) <= 0` (
 
 ## 6. Effect Magnitude
 
-| Condition | `gamma_T_forced` | `gamma_T_nat` | `gamma_T_eff` | Melt rate |
-|-----------|------------------|---------------|---------------|-----------|
-| `U_rel = 0` | 0 | 4.4e-7 | 4.4e-7 | 1.6e-8 m/s (0.001 m/day) |
-| `U_rel = 1e-4` | 1.1e-7 | 4.4e-7 | 4.5e-7 | 1.6e-8 m/s |
-| `U_rel = 1e-3` | 1.1e-6 | 4.4e-7 | 1.2e-6 | 4.1e-8 m/s |
-| `U_rel = 0.01` | 1.1e-5 | 4.4e-7 | 1.1e-5 | 4.1e-7 m/s |
-| `U_rel = 0.1` | 1.1e-4 | 4.4e-7 | 1.1e-4 | 4.1e-6 m/s (+2.2e-6%) |
-| `U_rel = 1.0` | 1.1e-3 | 4.4e-7 | 1.1e-3 | 4.1e-5 m/s (+0.0%) |
+| Condition      | `gamma_T_forced` | `gamma_T_nat` | `gamma_T_eff` | Melt rate                |
+| -------------- | ---------------- | ------------- | ------------- | ------------------------ |
+| `U_rel = 0`    | 0                | 4.4e-7        | 4.4e-7        | 1.6e-8 m/s (0.001 m/day) |
+| `U_rel = 1e-4` | 1.1e-7           | 4.4e-7        | 4.5e-7        | 1.6e-8 m/s               |
+| `U_rel = 1e-3` | 1.1e-6           | 4.4e-7        | 1.2e-6        | 4.1e-8 m/s               |
+| `U_rel = 0.01` | 1.1e-5           | 4.4e-7        | 1.1e-5        | 4.1e-7 m/s               |
+| `U_rel = 0.1`  | 1.1e-4           | 4.4e-7        | 1.1e-4        | 4.1e-6 m/s (+2.2e-6%)    |
+| `U_rel = 1.0`  | 1.1e-3           | 4.4e-7        | 1.1e-3        | 4.1e-5 m/s (+0.0%)       |
 
 **Key findings:**
+
 - At `U_rel = 0`: finite melt rate `~1.6e-8 m/s` (0.001 m/day) — within observed quiescent range (0.01–1 m/day) but at the lower end
 - At `U_rel = 0.1 m/s`: natural convection adds ~2.2e-6% to forced convection
 - At `U_rel = 1.0 m/s`: forced convection dominates (>99.9%)
@@ -201,38 +211,39 @@ The bisection proceeds on `[0, m_hi]` with `m_hi` doubled until `F(m_hi) <= 0` (
 
 3. **Double-diffusive simplification**: The effective Rayleigh number combines thermal and haline buoyancy linearly. True double-diffusive convection has more complex regime behavior (fingering, diffusive layers) not captured.
 
-3. **Orientation**: Iceberg base is treated as horizontal. Tilted bases would modify the convection pattern (Kerr & McConnochie 2015).
+4. **Orientation**: Iceberg base is treated as horizontal. Tilted bases would modify the convection pattern (Kerr & McConnochie 2015).
 
-4. **No observational validation yet**: The closure provides melt rates in the observed quiescent range, but has not been validated against iceberg-specific natural-convection observations. Stage 10.8.2 re-scoring is deferred to a later stage.
+5. **No observational validation yet**: The closure provides melt rates in the observed quiescent range, but has not been validated against iceberg-specific natural-convection observations. Stage 10.8.2 re-scoring is deferred to a later stage.
 
-5. **No calibration**: The Ra cap and correlation coefficients are taken from literature without tuning to the 10.8.2 observational set.
+6. **No calibration**: The Ra cap and correlation coefficients are taken from literature without tuning to the 10.8.2 observational set.
 
 ---
 
 ## 8. Files Changed
 
-| File | Description |
-|------|-------------|
-| `src/iceberg_types.f90` | New constants (`THERMAL_EXPANSION_COEFF`, `HALINE_CONTRACTION_COEFF`, `LEWIS_NUMBER`, `NU_LAMINAR_COEFF`, `NU_LAMINAR_EXP`, `NU_TURBULENT_COEFF`, `NU_TURBULENT_EXP`, `RAYLEIGH_TRANSITION`, `RAYLEIGH_MAX`, `MIXED_CONVECTION_EXP`), new function `natural_convection_transfer_coeff`, new scheme constant `BASAL_MELT_SCHEME_THREE_EQUATION_NATURAL` |
-| `src/iceberg_thermodynamics.f90` | New solver `solve_three_equation_interface_natural`, updated `compute_basal_melt` branch |
-| `test/iceberg_test_10p11_natural_convection.f90` | Fortran test (23 checks, delivered in Stage 10.11.2 audit) |
-| `python/validation/three_equation_natural.py` | New Python validation module |
-| `python/tests/test_three_equation_natural.py` | New Python test suite (70 checks) |
-| `docs/model/model_equation_ledger.md` | Added §10.3 |
-| `docs/model/model_physics_status.md` | Updated status table and limitations |
-| `docs/model/stage10_modernization_plan.md` | Added Stage 10.11 section |
-| `docs/PROJECT_ROADMAP.md` | Updated current stage and next steps |
-| `docs/references/literature_matrix.md` | Added natural convection references |
-| `docs/references/citation_map.md` | Added natural convection citations |
-| `AGENTS.md` | Updated commands and Stage 10.11 summary |
-| `.github/workflows/ci.yml` | Added Stage 10.11 Python test step |
-| `docs/validation/stage10.11_natural_convection.md` | This report |
+| File                                               | Description                                                                                                                                                                                                                                                                                                                                            |
+| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `src/iceberg_types.f90`                            | New constants (`THERMAL_EXPANSION_COEFF`, `HALINE_CONTRACTION_COEFF`, `LEWIS_NUMBER`, `NU_LAMINAR_COEFF`, `NU_LAMINAR_EXP`, `NU_TURBULENT_COEFF`, `NU_TURBULENT_EXP`, `RAYLEIGH_TRANSITION`, `RAYLEIGH_MAX`, `MIXED_CONVECTION_EXP`), new function `natural_convection_transfer_coeff`, new scheme constant `BASAL_MELT_SCHEME_THREE_EQUATION_NATURAL` |
+| `src/iceberg_thermodynamics.f90`                   | New solver `solve_three_equation_interface_natural`, updated `compute_basal_melt` branch                                                                                                                                                                                                                                                               |
+| `test/iceberg_test_10p11_natural_convection.f90`   | Fortran test (23 checks, delivered in Stage 10.11.2 audit)                                                                                                                                                                                                                                                                                             |
+| `python/validation/three_equation_natural.py`      | New Python validation module                                                                                                                                                                                                                                                                                                                           |
+| `python/tests/test_three_equation_natural.py`      | New Python test suite (70 checks)                                                                                                                                                                                                                                                                                                                      |
+| `docs/model/model_equation_ledger.md`              | Added §10.3                                                                                                                                                                                                                                                                                                                                            |
+| `docs/model/model_physics_status.md`               | Updated status table and limitations                                                                                                                                                                                                                                                                                                                   |
+| `docs/model/stage10_modernization_plan.md`         | Added Stage 10.11 section                                                                                                                                                                                                                                                                                                                              |
+| `docs/PROJECT_ROADMAP.md`                          | Updated current stage and next steps                                                                                                                                                                                                                                                                                                                   |
+| `docs/references/literature_matrix.md`             | Added natural convection references                                                                                                                                                                                                                                                                                                                    |
+| `docs/references/citation_map.md`                  | Added natural convection citations                                                                                                                                                                                                                                                                                                                     |
+| `AGENTS.md`                                        | Updated commands and Stage 10.11 summary                                                                                                                                                                                                                                                                                                               |
+| `.github/workflows/ci.yml`                         | Added Stage 10.11 Python test step                                                                                                                                                                                                                                                                                                                     |
+| `docs/validation/stage10.11_natural_convection.md` | This report                                                                                                                                                                                                                                                                                                                                            |
 
 ---
 
 ## 9. Regression
 
 All existing tests pass:
+
 - Fortran: 53 test targets (52 previous + 1 new), all PASS
 - Python Stage 10.10/10.10.1: 65 checks, PASS
 - Python Stage 10.11: 70 checks, PASS
@@ -244,18 +255,18 @@ All existing tests pass:
 
 ## 10. Acceptance Criteria
 
-| Criterion | Result |
-|-----------|--------|
+| Criterion                                       | Result                                |
+| ----------------------------------------------- | ------------------------------------- |
 | Physically-motivated natural convection closure | ✅ Fujii et al. 1973 + Churchill 1977 |
-| No arbitrary velocity/transfer floors | ✅ No `U_min` or `gamma_floor` |
-| Finite melt at `U_rel = 0` | ✅ `m = 1.638e-8 m/s` (0.001 m/day) |
-| Continuous transition `U_rel → 0` | ✅ Verified via velocity sweep |
-| Three-equation salt balance preserved | ✅ Stage 10.10.1 correction retained |
-| Rayleigh number cap documented | ✅ `Ra_max = 1e10` |
-| Independent Python validation | ✅ 70 checks, all PASS |
-| Fortran regression suite | ✅ 53 targets, all PASS |
-| Cross-language contract | ✅ Zero-flow anchor `rel < 1e-6` |
-| Strict build clean | ✅ `-Wall -Wextra -fcheck=all` |
+| No arbitrary velocity/transfer floors           | ✅ No `U_min` or `gamma_floor`        |
+| Finite melt at `U_rel = 0`                      | ✅ `m = 1.638e-8 m/s` (0.001 m/day)   |
+| Continuous transition `U_rel → 0`               | ✅ Verified via velocity sweep        |
+| Three-equation salt balance preserved           | ✅ Stage 10.10.1 correction retained  |
+| Rayleigh number cap documented                  | ✅ `Ra_max = 1e10`                    |
+| Independent Python validation                   | ✅ 70 checks, all PASS                |
+| Fortran regression suite                        | ✅ 53 targets, all PASS               |
+| Cross-language contract                         | ✅ Zero-flow anchor `rel < 1e-6`      |
+| Strict build clean                              | ✅ `-Wall -Wextra -fcheck=all`        |
 
 ---
 
@@ -273,5 +284,5 @@ All existing tests pass:
 
 ---
 
-*Report generated: 2026-09-11*
-*Commit: `stage10.11: implement natural-convection basal melt closure`*
+_Report generated: 2026-09-11_
+_Commit: `stage10.11: implement natural-convection basal melt closure`_

@@ -33,11 +33,12 @@ Stage 10.9 concluded that no scalar heat-transfer coefficient is identifiable
 from the 10.8.2 observational set (required coefficient spans ~8.3x across the
 two independent sources; mismatch is a functional form dT^0.73 vs dT^1.0, not
 a scale error). The recommended structural upgrade — a three-equation
-ice-ocean interface accounting for the interface freshening and the 
+ice-ocean interface accounting for the interface freshening and the
 latent-plus-conduction heat balance — is implemented here as a selectable
 basal closure.
 
 Objective criteria for this stage:
+
 - correct three-equation algebra (Eqs. I-III) with provenance;
 - independently verifiable semantics: every expected value derived from
   embedded literals, not from production diagnostics;
@@ -91,24 +92,24 @@ the freezing edge.
 
 Edge cases (mirror the bulk closure's documented behaviour):
 
-| Condition | Result |
-|---|---|
-| `U_rel <= 0` or `gamma_T <= 0` or `T_w <= Tf(S_w,P)` | `m = 0`, `S_B = S_w`, `T_B = Tf` |
-| `S_w <= 0` (fresh water) | heat-only balance, `S_B = 0` |
-| `gamma_S <= 0` | heat-only balance, `S_B = S_w` |
-| post-solution `m < MELT_RATE_MIN` | guard zeroing as for the bulk path |
+| Condition                                            | Result                             |
+| ---------------------------------------------------- | ---------------------------------- |
+| `U_rel <= 0` or `gamma_T <= 0` or `T_w <= Tf(S_w,P)` | `m = 0`, `S_B = S_w`, `T_B = Tf`   |
+| `S_w <= 0` (fresh water)                             | heat-only balance, `S_B = 0`       |
+| `gamma_S <= 0`                                       | heat-only balance, `S_B = S_w`     |
+| post-solution `m < MELT_RATE_MIN`                    | guard zeroing as for the bulk path |
 
 ## 4. Parameter provenance
 
-| Constant | Value | Source |
-|---|---|---|
-| `rho_w` | 1028 kg/m^3 | H&J99 (also model reference density) |
-| `c_w` | 3974 J/(kg K) | H&J99 (seawater heat capacity) |
-| `rho_i` | 910 kg/m^3 | production `RHO_ICE` |
-| `L_f` | 3.34e5 J/kg | production `LATENT_HEAT` |
-| `c_i` | 2009 J/(kg K) | H&J99 (ice heat capacity) |
-| `T_i` | -10 degC | H&J99 (internal ice temperature, constant) |
-| `K_T`, `K_S` | 1.1e-3, 3.1e-5 | J2010 Table 2 (U-based) |
+| Constant     | Value          | Source                                     |
+| ------------ | -------------- | ------------------------------------------ |
+| `rho_w`      | 1028 kg/m^3    | H&J99 (also model reference density)       |
+| `c_w`        | 3974 J/(kg K)  | H&J99 (seawater heat capacity)             |
+| `rho_i`      | 910 kg/m^3     | production `RHO_ICE`                       |
+| `L_f`        | 3.34e5 J/kg    | production `LATENT_HEAT`                   |
+| `c_i`        | 2009 J/(kg K)  | H&J99 (ice heat capacity)                  |
+| `T_i`        | -10 degC       | H&J99 (internal ice temperature, constant) |
+| `K_T`, `K_S` | 1.1e-3, 3.1e-5 | J2010 Table 2 (U-based)                    |
 
 Convention note (open risk from Stage 10.7/10.9): `K_T = sqrt(C_d) Gamma_T`
 is the **U-based** velocity-scale convention. The glaciological melt-driven
@@ -120,9 +121,10 @@ question for a future calibration stage (§11).
 
 Neither test layer calls the other's implementation, and neither derives its
 expected values from production state:
+
 - The **Fortran** test embeds its own literals (1028, 3974, 910, 3.34e5, 2009,
   -10.0, EOS-80 coefficients) and re-implements the reduction
-  `S_B = gamma_S S_w/(m+gamma_S)` + bisection *inside* the test; production
+  `S_B = gamma_S S_w/(m+gamma_S)` + bisection _inside_ the test; production
   subroutines are called only to obtain the actual output.
 - The **Python** layer (`python/validation/three_equation.py`) reproduces the
   formulation independently in float64 from embedded constants and only passes
@@ -184,13 +186,13 @@ matrix; O determinism; T documented natural-convection limitation.
 
 ## 8. Cross-language contract
 
-| Anchor | Fortran (float32) | Python (float64) | rel |
-|---|---|---|---|
-| H&J99 canonical m | 9.44566203e-9 m/s | 9.445700e-9 m/s | 3.4e-6 |
-| H&J99 S_B | 3.38665470e-2 | 33.866547 PSU | 1.0e-3 (PSU scale) |
-| production end-to-end m | 3.99846886e-6 m/s | 3.9984685e-6 m/s | 8.9e-8 |
-| production S_B | 1.50666293e-2 | 15.0666293 PSU | 1.0e-3 |
-| production T_B | -0.85317093 | -0.853171 | 1.0e-3 |
+| Anchor                  | Fortran (float32) | Python (float64) | rel                |
+| ----------------------- | ----------------- | ---------------- | ------------------ |
+| H&J99 canonical m       | 9.44566203e-9 m/s | 9.445700e-9 m/s  | 3.4e-6             |
+| H&J99 S_B               | 3.38665470e-2     | 33.866547 PSU    | 1.0e-3 (PSU scale) |
+| production end-to-end m | 3.99846886e-6 m/s | 3.9984685e-6 m/s | 8.9e-8             |
+| production S_B          | 1.50666293e-2     | 15.0666293 PSU   | 1.0e-3             |
+| production T_B          | -0.85317093       | -0.853171        | 1.0e-3             |
 
 Both layers agree to float32 precision; the bisection (60+60) reproduces the
 root in float64 with no tolerance relaxation.
@@ -248,14 +250,14 @@ conflict.
 
 ## 12. Acceptance criteria
 
-| Criterion | Result |
-|---|---|
-| Correct three-equation algebra with provenance | Passed (§2, §4) |
-| Independent expected values from embedded literals | Passed (§5-§7) |
-| Baseline bulk closure unchanged | Passed (bulk statements identical; re-indentation + diagnostics only, §10) |
-| Cross-language consistency < 1e-4 rel | Passed (§8) |
-| Warm-ocean melt inside observed band | Passed (0.345 m/day in [0.01, 1]) |
-| No calibration / no canonical-physics change | Passed (selectable path only) |
+| Criterion                                          | Result                                                                     |
+| -------------------------------------------------- | -------------------------------------------------------------------------- |
+| Correct three-equation algebra with provenance     | Passed (§2, §4)                                                            |
+| Independent expected values from embedded literals | Passed (§5-§7)                                                             |
+| Baseline bulk closure unchanged                    | Passed (bulk statements identical; re-indentation + diagnostics only, §10) |
+| Cross-language consistency < 1e-4 rel              | Passed (§8)                                                                |
+| Warm-ocean melt inside observed band               | Passed (0.345 m/day in [0.01, 1])                                          |
+| No calibration / no canonical-physics change       | Passed (selectable path only)                                              |
 
 ## 13. Files changed
 
@@ -275,29 +277,29 @@ conflict.
 ## 14. Sources
 
 - Holland, D. M., & Jenkins, A. (1999). Modeling thermodynamic ice-ocean
-  interactions at the base of an ice shelf. *Journal of Physical Oceanography*, 29, 1787-1800.
+  interactions at the base of an ice shelf. _Journal of Physical Oceanography_, 29, 1787-1800.
 - Jenkins, A., Nicholls, K. W., & Corr, H. F. J. (2010). Observation and
-  parameterization of ablation at the base of Ronne Ice Shelf. *JPO* / *J. Glaciol.* (Table 2).
+  parameterization of ablation at the base of Ronne Ice Shelf. _JPO_ / _J. Glaciol._ (Table 2).
 - Fofonoff, P., & Millard, R. C. (1983). UNESCO Technical Papers in Marine Science 44.
-- Gill, A. E. (1982). *Atmosphere-Ocean Dynamics* (§3.5 freezing point).
-- Cenedese, C., & Straneo, F. (2023). Icebergs melting. *Annual Review of Fluid Mechanics* (observed band).
+- Gill, A. E. (1982). _Atmosphere-Ocean Dynamics_ (§3.5 freezing point).
+- Cenedese, C., & Straneo, F. (2023). Icebergs melting. _Annual Review of Fluid Mechanics_ (observed band).
 - FitzMaurice, A., & Stern, A. (2018). Tabular iceberg basal melt (context/comparison).
 
 Full keys in `docs/references/references.bib`; roles in `docs/references/literature_matrix.md`.
 
 ## 15. Q&A
 
-- *Why is m in the ice frame?* Eq. II multiplies latent and conduction terms by
+- _Why is m in the ice frame?_ Eq. II multiplies latent and conduction terms by
   rho_i because m is a volume loss of ice; this is the H&J99 convention and
   the reason the bulk path's `/rho_i L_f` form is not reused verbatim.
-- *Why did S_B -> 0 look physical before the fix?* At a divergent root m ->
+- _Why did S_B -> 0 look physical before the fix?_ At a divergent root m ->
   Infinity, Eq. III forces S_B = 0, i.e. the freshening asymptote of a
   physically large melt rate; the freshening constraint holds regardless of
   root quality, so the state was internally consistent but wrong.
-- *Is the Python layer a clone?* It re-implements the reduction and bisection
+- _Is the Python layer a clone?_ It re-implements the reduction and bisection
   independently in float64 from the published equations; only the two contract
   anchors above reference Fortran output.
-- *Why not re-score the 10.8.2 set now?* 10.9 demonstrated that the mismatch
+- _Why not re-score the 10.8.2 set now?_ 10.9 demonstrated that the mismatch
   is functional-form, not a scalar offset, and closure re-scoring belongs to a
   calibration stage after the natural-convection and internal-thermal gaps are
   closed (Stage 10.11+), not to an implementation stage.

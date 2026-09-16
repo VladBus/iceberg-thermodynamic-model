@@ -1,19 +1,19 @@
-# Stage 10 — ранние отчёты модернизации термодинамики
+# Stage 10 — early thermodynamics modernization reports
 
-Отчёты Stage 10, завершённые до перехода активной документации в docs/validation/: 10.4.2 (монотонность), 10.4.2.1 (Q_surface), 10.5 (океанический тепловой форсинг).
+Stage 10 reports completed before active documentation moved to docs/validation/: 10.4.2 (monotonicity), 10.4.2.1 (Q_surface), 10.5 (ocean thermal forcing).
 
-## Отчёты (3)
+## Reports (3)
 
-10.4.2 — независимая валидация монотонности; 10.4.2.1 — валидация выхода Q_surface; 10.5 — океанический тепловой форсинг (EOS-80 точка замерзания).
+10.4.2 — independent monotonicity validation; 10.4.2.1 — Q_surface output validation; 10.5 — ocean thermal forcing (EOS-80 freezing point).
 
-| Файл                                                       | Отчёт                                                              |
-| ---------------------------------------------------------- | ------------------------------------------------------------------ |
-| `Stage10.4.2.1_Independent_Q_surface_output_validation.md` | Stage 10.4.2.1 — Independent Q_surface Output Validation           |
-| `Stage10.4.2_Independent_monotonicity_validation.md`       | Stage 10.4.2 — Independent Monotonicity Validation                 |
-| `Stage10.5_Ocean_Thermal_Forcing.md`                       | Stage 10.5 — Ocean Thermal Forcing (Океанический тепловый форсинг) |
+| File                                                       | Report                                                   |
+| ---------------------------------------------------------- | -------------------------------------------------------- |
+| `Stage10.4.2.1_Independent_Q_surface_output_validation.md` | Stage 10.4.2.1 — Independent Q_surface Output Validation |
+| `Stage10.4.2_Independent_monotonicity_validation.md`       | Stage 10.4.2 — Independent Monotonicity Validation       |
+| `Stage10.5_Ocean_Thermal_Forcing.md`                       | Stage 10.5 — Ocean Thermal Forcing                       |
 
-## Статус
+## Status
 
-- **ARCHIVED** — материалы стадии завершены и не редактируются задним числом.
-- Актуальное состояние модели см. в `../../../model/`; решения — в `../../../DECISIONS.md`.
-- Общая навигация: `../../README.md` → `../../INDEX.md`.
+- **ARCHIVED** — stage materials are complete and not edited retroactively.
+- Current model state: `../../../model/`; decisions: `../../../DECISIONS.md`.
+- General navigation: `../../README.md` → `../../INDEX.md`.

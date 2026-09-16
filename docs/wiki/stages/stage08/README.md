@@ -1,12 +1,12 @@
-# Stage 8 — инициализация океана EN4, спин-ап, legacy-модуль айсберга
+# Stage 8 — EN4 ocean initialization, spin-up, legacy iceberg module
 
-Препроцессинг EN4, энергетическая нестабильность, thermal-wind коррекция, спин-ап, операторное расщепление, форензика legacy-модуля айсберга.
+EN4 preprocessing, energy instability, thermal-wind correction, spin-up, operator splitting, legacy iceberg module forensics.
 
-## Отчёты (8)
+## Reports (8)
 
-EN4-препроцессинг (8.0), энергетическая нестабильность (8.1), thermal-wind коррекция (8.2), спин-ап (8.3), операторное расщепление (8.4–8.6), реконструкция legacy-модуля айсберга (8.7).
+EN4 preprocessing (8.0), energy instability (8.1), thermal-wind correction (8.2), spin-up (8.3), operator splitting (8.4–8.6), legacy iceberg module reconstruction (8.7).
 
-| Файл                                                                | Отчёт                                                                                                          |
+| File                                                                | Report                                                                                                         |
 | ------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
 | `Stage8.0_EN4_Preprocessing_and_Stability.md`                       | Stage 8.0 — EN4 Preprocessing Correction, Physically Consistent Ocean Initialization, and Stability Validation |
 | `Stage8.1_Post_Initialization_Energy_Instability_Forensic_Audit.md` | Stage 8.1 — Post-Initialization Energy/Instability Forensic Audit                                              |
@@ -17,8 +17,8 @@ EN4-препроцессинг (8.0), энергетическая нестаб�
 | `Stage8.6_Predictor_Corrector_Thermodynamics_Dynamics.md`           | Stage 8.6 — Predictor–Corrector Thermodynamics–Dynamics Coupling and Post-Heat Balance Validation              |
 | `Stage8.7_Legacy_Iceberg_Module_Forensic_Reconstruction.md`         | Stage 8.7 — Legacy Iceberg Module Forensic Reconstruction and Ocean–Iceberg Interface Audit                    |
 
-## Статус
+## Status
 
-- **ARCHIVED** — материалы стадии завершены и не редактируются задним числом.
-- Актуальное состояние модели см. в `../../../model/`; решения — в `../../../DECISIONS.md`.
-- Общая навигация: `../../README.md` → `../../INDEX.md`.
+- **ARCHIVED** — stage materials are complete and not edited retroactively.
+- Current model state: `../../../model/`; decisions: `../../../DECISIONS.md`.
+- General navigation: `../../README.md` → `../../INDEX.md`.

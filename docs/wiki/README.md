@@ -1,69 +1,83 @@
-# Wiki — Исторический архив проекта
+# Wiki — Historical Project Archive
 
-## Что это такое
+## What this is
 
-`docs/wiki/` — исторический архив отчётов, журналов решений и результатов
-конкретных стадий разработки модели. Это **память проекта**: документы здесь
-не редактируются задним числом и не переписываются под текущее состояние
-модели.
+`docs/wiki/` is the historical archive of reports, decision records, and
+results of specific development stages. It is the **memory of the project**:
+documents here are not edited retroactively and are not rewritten to match the
+current model state.
 
-## Чем Wiki отличается от других слоёв документации
+## How Wiki differs from other documentation layers
 
-| Каталог             | Роль                        | Что здесь находится                                                                                        |
-| ------------------- | --------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `docs/model/`       | **Актуальная спецификация** | как модель устроена сейчас; уравнения, статус физики, ограничения; обновляется при каждом изменении модели |
-| `docs/validation/`  | **Активная валидация**      | отчёты текущих стадий, над которыми идёт работа (сейчас — Stage 10); design notes; результаты тестов       |
-| `docs/wiki/`        | **Исторический архив**      | завершённые стадии, forensic-аудиты, старые отчёты, материалы конкретных коммитов, справки по инструментам |
-| `docs/DECISIONS.md` | **Журнал решений**          | краткие записи «почему модель устроена так», связывающие историю и текущую модель                          |
+| Directory           | Role                      | What is stored here                                                                               |
+| ------------------- | ------------------------- | ------------------------------------------------------------------------------------------------- |
+| `docs/model/`       | **Current specification** | how the model works now; equations, physics status, limitations; updated on every model change    |
+| `docs/validation/`  | **Active validation**     | reports of the stages currently in progress (currently Stage 10); design notes; test results      |
+| `docs/wiki/`        | **Historical archive**    | completed stages, forensic audits, old reports, commit-specific materials, tooling references     |
+| `docs/DECISIONS.md` | **Decisions journal**     | short records of "why the model is structured this way", connecting history and the current model |
 
-## Почему архивные документы не переписываются
+## Why archived documents are not rewritten
 
-Если более поздняя стадия опровергла или уточнила вывод старого отчёта:
+If a later stage overturns or refines a conclusion of an old report:
 
-1. старый отчёт остаётся неизменным (историческое свидетельство);
-2. в актуальной документации (`docs/model/`, `KNOWN_ISSUES.md`) фиксируется
-   текущее состояние;
-3. при необходимости добавляется запись в `docs/DECISIONS.md`.
+1. the old report stays unchanged (historical evidence);
+2. the current state is recorded in the living documentation (`docs/model/`, `KNOWN_ISSUES.md`);
+3. when needed, a record is added to `docs/DECISIONS.md`.
 
-Исправлять в архивных файлах можно только очевидные технические ошибки
-навигации (битые пути, ссылки), не меняющие научное содержание.
+Only obvious technical navigation fixes (broken paths, links) may be corrected
+in archived files, provided they do not change the scientific content.
 
-## Как искать материалы
+## Historical reference notes
 
-### По стадиям
+Some archived reports contain references to files that are no longer present
+in the repository:
 
-Отчёты организованы по каталогам стадий в `docs/wiki/stages/`:
+- `promt.md` — the original process-rules file (removed; its content now
+  lives in `RULES.md`);
+- `experiment_design.md` — referenced by Stage 8.7, never present in the
+  repository.
 
-- `stage03/` — восстановление трёхмерного импульса, конвективная сходимость, реальная сетка
-- `stage04/` — ERA5 интеграция, точность EOS, корневая причина конвективного цикла
-- `stage05/` — тепловой ввод, снегопад, мультимесячная интеграция, единицы
-- `stage06/` — реальная сетка и домен Баренцева моря, семантика календаря, данные ERA5
-- `stage07/` — снег/лёд, устойчивость динамики, реконструкция реальной сетки IBCAO, инициализация реального льда и океана
-- `stage08/` — инициализация океана EN4, термодинамическая коррекция, спин-ап, legacy-модуль айсберга
-- `stage09/` — минимальная лагранжева модель айсберга: реконструкция, верификация, калибровка
-- `stage10/` — ранние отчёты Stage 10 (10.4.2, 10.4.2.1, 10.5); остальные отчёты Stage 10 активны и лежат в `docs/validation/`
+These references are preserved because the reports are immutable historical
+records. They should not be interpreted as links to currently available
+project documentation. Where a historical link can be repaired without
+changing the meaning of the report, this is optional and has not been applied.
 
-Внутри каждого каталога — `README.md` с индексом и сводкой.
+## How to search materials
 
-### По темам
+### By stage
 
-`docs/wiki/topics/` — сквозные темы, не привязанные к одной стадии:
+Reports are organized by stage directories in `docs/wiki/stages/`:
 
-- `topics/ERA5_download.md` — загрузка ERA5;
-- `topics/Fortran_dependencies.md` — зависимости Fortran;
-- `topics/Python_environment.md` — conda-окружение и инструменты.
+- `stage03/` — 3D-momentum restoration, convective convergence, real grid
+- `stage04/` — ERA5 integration, EOS precision, convective-cycle root cause
+- `stage05/` — heat input, snowfall, multi-month integration, units
+- `stage06/` — real grid and Barents domain, calendar semantics, ERA5 data
+- `stage07/` — snow/ice, dynamics stability, IBCAO real-grid reconstruction, real ice and ocean initialization
+- `stage08/` — EN4 ocean initialization, thermodynamic correction, spin-up, legacy iceberg module
+- `stage09/` — minimal Lagrangian iceberg model: reconstruction, verification, calibration
+- `stage10/` — early Stage 10 reports (10.4.2, 10.4.2.1, 10.5); the remaining Stage 10 reports are active and live in `docs/validation/`
 
-### Живой TODO
+Each stage directory has a `README.md` with an index and summary.
 
-`docs/wiki/ERA5_INTEGRATION_TODO.md` — локальный рабочий журнал (намеренно
-не отслеживается Git), ссылается на архивные отчёты стадий 4–6.
+### By topic
 
-## Как архивные отчёты связаны с текущей моделью
+`docs/wiki/topics/` — cross-cutting topics not tied to a single stage:
 
-- Актуальные уравнения и статус физики: `docs/model/model_equation_ledger.md`,
+- `topics/ERA5_download.md` — ERA5 download;
+- `topics/Fortran_dependencies.md` — Fortran dependencies;
+- `topics/Python_environment.md` — conda environment and tools.
+
+### Live TODO
+
+`docs/wiki/ERA5_INTEGRATION_TODO.md` — local working journal (intentionally
+not tracked by Git), referencing archived stage reports 4–6.
+
+## How archived reports relate to the current model
+
+- Current equations and physics status: `docs/model/model_equation_ledger.md`,
   `docs/model/model_physics_status.md`.
-- Активные validation-отчёты: `docs/validation/INDEX.md`.
-- Решения, объясняющие текущую архитектуру: `docs/DECISIONS.md`.
-- Известные ограничения: `KNOWN_ISSUES.md` (корень репозитория).
+- Active validation reports: `docs/validation/INDEX.md`.
+- Decisions explaining the current architecture: `docs/DECISIONS.md`.
+- Known issues: `KNOWN_ISSUES.md` (repository root).
 
-Полная навигация: `README.md` → `docs/README.md`.
+Full navigation: `README.md` → `docs/README.md`.

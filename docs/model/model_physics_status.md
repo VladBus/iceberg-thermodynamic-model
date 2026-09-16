@@ -1,6 +1,6 @@
-# Статус физических блоков модели
+# Model Physics Block Status
 
-**Дата:** 2026-09-15
+**Date:** 2026-09-15
 **Current repository stage:** Stage 10.13 — Diffusion-limited / double-diffusive low-flow closure (Phase C: production integration, selectable, OFF by default)
 **Production baseline:** Stage 10.13 (low-flow closure behind `low_flow_closure_enabled`; OFF = Stage 10.12/10.10 legacy unchanged)
 **FPM test targets:** 54
@@ -16,19 +16,19 @@
 **Stage 10.12 report:** `docs/validation/stage10.12_internal_thermal_evolution.md`
 **Stage 10.13 reports:** `docs/validation/stage10.13_diffusion_limited_low_flow_design_note.md` (Phase A), `docs/validation/stage10.13_phase_b_results.md` (Phase B), `docs/validation/stage10.13_phase_c_results.md` (Phase C)
 
-## Классификация
+## Classification
 
-| Код   | Значение                                                                                      |
+| Code  | Meaning                                                                                       |
 | ----- | --------------------------------------------------------------------------------------------- |
-| **A** | Физика/реализация подтверждена для текущего scope; изменений не требуется                     |
-| **B** | Рабочее приближение с научными ограничениями; требуется дальнейшая валидация или модернизация |
-| **C** | Современная физическая формулировка уже реализована и прошла текущий аудит                    |
-| **D** | Устаревшая/ошибочная формулировка, подлежащая удалению                                        |
-| **E** | Запланированная новая физика                                                                  |
+| **A** | Physics/implementation confirmed for the current scope; no changes required                   |
+| **B** | Working approximation with scientific limitations; further validation or modernization needed |
+| **C** | Modern physical formulation implemented and audited                                           |
+| **D** | Outdated/erroneous formulation to be removed                                                  |
+| **E** | Planned new physics                                                                           |
 
-## Текущий статус
+## Current status
 
-| Блок                                 | Current formulation                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |                        Status |
+| Block                                | Current formulation                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |                        Status |
 | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------: |
 | Geometry                             | Rectangular prism; prognostic L/W/H                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |                             A |
 | Position                             | Prognostic x/y; diagnostic lat/lon; moving forcing by x/y                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |                           A/B |

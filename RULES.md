@@ -1,67 +1,67 @@
-# RULES.md — Правила процесса разработки
+# RULES.md — Development Process Rules
 
-Основной документ о том, **как** изменяется проект (что делать — в
-`AGENTS.md`; стиль — в `STYLE.md`; текущие ограничения — в `KNOWN_ISSUES.md`).
+The main document on **how** the project is changed (what to do — in
+`AGENTS.md`; style — in `STYLE.md`; current constraints — in `KNOWN_ISSUES.md`).
 
-## Общий workflow изменения проекта
+## General change workflow
 
-1. **Перед началом работы всегда:**
-   - прочитай `AGENTS.md`, `docs/README.md`, текущий `git status`, последние коммиты, все исходники, относящиеся к текущей стадии;
-   - используй существующий TODO/roadmap как основной план проекта — не создавай новый план с нуля; синхронизируй TODO с фактическим состоянием репозитория (TODO — живой журнал);
-   - используй доступные инструменты: поиск по репозиторию, исторические источники, сравнение версий, `git diff`, диагностику, прогоны тестов, статический анализ, документацию.
-2. **Перед изменением физики:** найди исторический алгоритм, сопоставь с текущими массивами, проверь единицы и размерности, определи место в цикле по времени, проверь влияние на существующие модули.
-3. **Не изменяй уравнения физики только для того, чтобы пройти тесты.**
+1. **Before starting work, ALWAYS:**
+   - read `AGENTS.md`, `docs/README.md`, current `git status`, recent commits, and all sources relevant to the current stage;
+   - use the existing TODO/roadmap as the main project plan — do not create a new plan from scratch; sync the TODO with the actual repository state (the TODO is a living project journal);
+   - use the available tools: repository-wide search, historical sources, version comparison, `git diff`, diagnostics, test runs, static analysis, documentation.
+2. **Before changing physics:** find the historical algorithm, match it with the current arrays, check units and dimensions, determine the place in the time loop, and check the impact on existing modules.
+3. **Do not change physical equations merely to pass tests.**
 
-## Правила изменения физики
+## Physics-change rules
 
-- Каждое физическое изменение должно иметь: литературную основу, явные уравнения, происхождение параметров, независимые тесты и задокументированное ограничение.
-- Новая физика входит за runtime-переключателем (feature switch); при OFF поведение обязано быть бит-в-бит прежним (проверяется тестами legacy-инвариантности).
-- Разделяй production-физику и экспериментальные параметризации; не выдавай экспериментальную схему за производственную.
-- Не «исправляй» известные ограничения без научного обоснования: конвективный порог 0.9e-7 и float32-EOS, FCT-антидиффузию (`CDY*0`), вертикальную вязкость Томаса, порог `hht<0.01` — см. `KNOWN_ISSUES.md`.
-- Не изменяй каноническую физику океана/морского льда (Block 200/210/280, баротропный солвер, EOS, сетку, ERA5, батиметрию, термодинамику) — см. `AGENTS.md` (Constraints).
+- Every physical change MUST have: a literature basis, explicit equations, parameter provenance, independent tests, and a documented limitation statement.
+- New physics enters behind a runtime feature switch; with the switch OFF the behavior MUST be bit-identical to the legacy path (verified by legacy-invariance tests).
+- Separate production physics from experimental parameterizations; never present an experimental scheme as production.
+- Do not "fix" known constraints without scientific justification: the convective threshold `0.9e-7` and float32 EOS, FCT anti-diffusion (`CDY*0`), Thomas-algorithm vertical viscosity, the `hht<0.01` guard — see `KNOWN_ISSUES.md`.
+- Do not modify canonical ocean/sea-ice physics (Block 200/210/280, barotropic solver, EOS, grid, ERA5, bathymetry, thermodynamics) — see `AGENTS.md` (Constraints).
 
-## Требования к обратной совместимости
+## Backward-compatibility requirements
 
-- Сохраняй legacy-интерфейсы, если изменение интерфейса явно не обосновано.
-- Каждый switch: default OFF или явно задокументированное значение; OFF = legacy (бит-в-бит).
-- После любой стадии полная батарея тестов обязана проходить (exit 0).
+- Preserve legacy interfaces unless an interface change is explicitly justified.
+- Every switch: default OFF or an explicitly documented value; OFF = legacy (bit-identical).
+- After any stage the full test battery MUST pass (exit 0).
 
-## Правила изменения Fortran
+## Fortran-change rules
 
-- Сборка всегда с `-I/usr/include` (netcdf.mod живёт в /usr/include, не в дереве fpm): `fpm build/test/run --flag "-I/usr/include"`.
-- fpm 0.13.0-alpha: перед `fpm test` делай `rm -rf build` (чистая пересборка).
-- Строгая сборка: `-Wall -Wextra -fcheck=all -ffpe-trap=invalid,zero,overflow` — 0 предупреждений.
-- Не подавляй ошибки типов (`as any`, `@ts-ignore` — неприменимо к Fortran; в Python — см. STYLE).
-- Сравнение вещественных чисел — только через эпсилон (`abs(x-y) < 1e-8`), никогда `==`.
+- Always build with `-I/usr/include` (netcdf.mod lives in /usr/include, not in the fpm tree): `fpm build/test/run --flag "-I/usr/include"`.
+- fpm 0.13.0-alpha: run `rm -rf build` before `fpm test` (clean rebuild).
+- Strict build: `-Wall -Wextra -fcheck=all -ffpe-trap=invalid,zero,overflow` — 0 warnings.
+- Never suppress type errors (in Python: no `as any`/`# type: ignore` equivalents without justification — see STYLE).
+- Compare reals only via epsilon (`abs(x-y) < 1e-8`), never `==`.
 
-## Правила изменения Python reference-моделей
+## Python reference-model rules
 
-- Python-модели в `python/validation/` — независимые эталонные реализации для кросс-языковой проверки; не «подгоняй» их под Fortran молча — расхождения документируй.
-- Тесты: `python python/tests/test_<name>.py` обязаны печатать `TOTAL CHECKS: N ERRORS: 0`.
+- Python models in `python/validation/` are independent reference implementations for cross-language checks; do not silently tune them to match Fortran — document discrepancies.
+- Tests: `python python/tests/test_<name>.py` MUST print `TOTAL CHECKS: N ERRORS: 0`.
 
-## Требования к тестам
+## Test requirements
 
-- Каждый физический блок: независимые аналитические тесты (не выводящие обе стороны из одной production-диагностики), регрессионные тесты, где применимо — кросс-языковой контракт (Fortran/Python).
-- Тесты и научная валидация отчитываются раздельно.
-- Не удаляй «падающие» тесты для прохождения; фиксируй корневую причину.
-- Не утверждай, что стадия завершена, если это не подтверждается материалами.
+- Every physical block: independent analytical tests (not deriving both sides from the same production diagnostic), regression tests, and where applicable a cross-language contract (Fortran/Python).
+- Report tests and scientific validation separately.
+- Do not delete failing tests to pass; fix the root cause.
+- Do not claim a stage is complete unless the materials confirm it.
 
-## Требования к валидации
+## Validation requirements
 
-- Внутренние тесты устанавливают согласованность реализации и законы сохранения; они не устанавливают наблюдательную валидность.
-- Каждая будущая физическая модернизация должна давать: литературную основу, происхождение уравнений/параметров, независимые аналитические тесты, регрессионные тесты и, где применимо, внешнюю цель валидации.
-- Наблюдательная валидация — только с точными метаданными продуктов (ERA5, EN4, IBCAO V5.2, OSI-SAF SIC CDR v3.1, C3S CS2SMOS SIT L4).
+- Internal tests establish implementation consistency and conservation identities; they do not establish observational validity.
+- Each future physical modernization MUST provide: a literature basis, equation/parameter provenance, independent analytical tests, regression tests, and an external validation target where applicable.
+- Observational validation MUST use exact product metadata (ERA5, EN4, IBCAO V5.2, OSI-SAF SIC CDR v3.1, C3S CS2SMOS SIT L4).
 
-## Требования к документации
+## Documentation requirements
 
-- Один факт — один авторитетный источник (см. `docs/README.md`): статус физики → `docs/model/model_physics_status.md`; уравнения → `docs/model/model_equation_ledger.md`; решения → `docs/DECISIONS.md`; ограничения → `KNOWN_ISSUES.md`.
-- Живые документы (`docs/model/`, `README.md`, `AGENTS.md`, `KNOWN_ISSUES.md`) обновляются при изменении модели.
-- История не переписывается: архивные отчёты `docs/wiki/` остаются неизменными; при опровержении — ссылка в актуальном документе и запись в `docs/DECISIONS.md`.
-- Важные заметки, которые могут потеряться из-за ограничений контекста, записывай в `docs/wiki/` или соответствующий .md-файл.
+- One fact — one authoritative source (see `docs/README.md`): physics status → `docs/model/model_physics_status.md`; equations → `docs/model/model_equation_ledger.md`; decisions → `docs/DECISIONS.md`; constraints → `KNOWN_ISSUES.md`.
+- Living documents (`docs/model/`, `README.md`, `AGENTS.md`, `KNOWN_ISSUES.md`) are updated when the model changes.
+- History is not rewritten: archived reports in `docs/wiki/` remain unchanged; when a later stage overturns a conclusion, add a link in the current document and a record in `docs/DECISIONS.md`.
+- Important notes that might be lost due to context limits MUST be written to `docs/wiki/` or an appropriately named .md file.
 
-## Правила формирования отчётов
+## Stage-report format
 
-Формат отчёта о завершении стадии:
+Stage completion report template:
 
 ```
 DONE
@@ -76,32 +76,35 @@ GIT
 NEXT
 ```
 
-Отчёты стадий: в `docs/validation/` для активных, в `docs/wiki/stages/stageXX/` для завершённых.
+Stage reports: in `docs/validation/` for active stages, in
+`docs/wiki/stages/stageXX/` for completed stages.
 
-## Разрешение конфликтов
+## Conflict resolution
 
-Конфликты (код vs история vs документация vs прошлые решения) не решаются молча: зафиксируй конфликт, источник каждого варианта и принятое решение (в отчёте стадии и при необходимости в `docs/DECISIONS.md`).
+Conflicts (code vs history vs documentation vs previous decisions) are never
+resolved silently: record the conflict, the source of each variant, and the
+decision made (in the stage report and, when needed, in `docs/DECISIONS.md`).
 
-## Правила коммитов
+## Commit rules
 
-- Проверь `.gitignore` перед коммитом (блокирует `opencode.jsonc`, `.opencode/`, `data/`, `*.nc`, `*.vtk`, `*.dat`, `*.bak`; исключение — `data/validation/observations/`; `docs/wiki/ERA5_INTEGRATION_TODO.md` намеренно вне git).
-- Не коммить секреты: `~/.cdsapirc` (CDS-креденшелы) — никогда в Git.
-- Не удаляй корневые симлинки `KOORD.DAT`, `hhh.bar`, `1_k.ice` (требуются модели, gitignored).
-- Каждая стадия — отдельный коммит; перед коммитом проверь `git diff` и `git diff --check`.
-- Push — только если это соответствует текущему workflow.
-- Не выполняй коммит/push, если пользователь явно не запросил.
+- Check `.gitignore` before committing (it blocks `opencode.jsonc`, `.opencode/`, `data/`, `*.nc`, `*.vtk`, `*.dat`, `*.bak`; exception — `data/validation/observations/`; `docs/wiki/ERA5_INTEGRATION_TODO.md` is intentionally outside Git).
+- Never commit secrets: `~/.cdsapirc` (CDS credentials) — never in Git.
+- Do not delete root-level symlinks `KOORD.DAT`, `hhh.bar` (required by the model, gitignored, point to `data/input/generated/real_grid/`).
+- One commit per stage; check `git diff` and `git diff --check` before committing.
+- Push only if it matches the current workflow.
+- Do not commit/push unless the user explicitly requests it.
 
-## Критерии завершения стадии
+## Stage-completion criteria
 
-1. Все planned-элементы выполнены; TODO синхронизирован.
-2. Полная батарея тестов exit 0; строгая сборка чистая.
-3. Диагностика чистая на изменённых файлах.
-4. Отчёт стадии создан; живая документация обновлена.
-5. `git diff --check` чист; отдельный коммит готов (по запросу).
+1. All planned items done; TODO synced.
+2. Full test battery exit 0; strict build clean.
+3. Diagnostics clean on changed files.
+4. Stage report created; living documentation updated.
+5. `git diff --check` clean; separate commit ready (on request).
 
-## Правила работы с историческими документами
+## Historical-document rules
 
-- Не удаляй исторические материалы из Git.
-- Не объединяй отчёты, если теряется связь со стадией/коммитом.
-- Не исправляй задним числом научные выводы в архивных отчётах (допустимы только технические навигационные правки).
-- При архивировании: проверь ссылки, выбери каталог, обнови навигацию и ссылки, сохрани содержание.
+- Do not delete historical materials from Git.
+- Do not merge reports if the link to a stage/commit would be lost.
+- Do not rewrite scientific conclusions in archived reports (only obvious navigational fixes are allowed).
+- When archiving: check links, choose the target directory, update navigation and links, preserve the content.

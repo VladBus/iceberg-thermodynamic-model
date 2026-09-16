@@ -1,6 +1,6 @@
-# Model Equation Ledger — Математическая спецификация текущей модели
+# Model Equation Ledger — Mathematical Specification of the Current Model
 
-**Дата:** 2026-09-15
+**Date:** 2026-09-15
 **Current repository stage:** Stage 10.13 — low-flow closure (Phase C: production integration, OFF by default)
 **Production baseline:** Stage 10.13 (low-flow closure behind `low_flow_closure_enabled`; OFF = Stage 10.12/10.10 behavior unchanged)
 **Units:** SI in the iceberg module unless explicitly noted.

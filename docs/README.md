@@ -1,52 +1,51 @@
-# Документация проекта — карта
+# Project Documentation — Map
 
-Эта страница — точка входа во всю документацию. Отсюда можно спуститься от
-общего к частному: правила → модель → валидация → история.
+This page is the entry point to all documentation. From here you can descend
+from general to specific: rules → model → validation → history.
 
-## Навигационная цепочка
+## Navigation chain
 
 ```
-README.md (корень)
- └─ docs/README.md                    ← вы здесь
-     ├─ ../RULES.md                   правила разработки
-     ├─ ../KNOWN_ISSUES.md            известные ограничения (актуальные)
-     ├─ ../CHANGELOG.md               история значимых изменений
+README.md (root)
+ └─ docs/README.md                    ← you are here
+     ├─ ../RULES.md                   development process
+     ├─ ../KNOWN_ISSUES.md            current known issues
+     ├─ ../CHANGELOG.md               history of significant changes
      │
-     ├─ model/README.md               актуальная спецификация модели
-     │   ├─ model_description.md      нарративное описание
-     │   ├─ model_physics_status.md   статус физических блоков
-     │   ├─ model_equation_ledger.md  уравнения и соглашения
-     │   └─ stage10_modernization_plan.md — план модернизации Stage 10
+     ├─ model/README.md               current model specification
+     │   ├─ model_description.md      narrative description
+     │   ├─ model_physics_status.md   physics block status
+     │   ├─ model_equation_ledger.md  equations and conventions
+     │   └─ stage10_modernization_plan.md — Stage 10 modernization plan
      │
-     ├─ validation/INDEX.md           активная валидация (Stage 10)
+     ├─ validation/INDEX.md           active validation (Stage 10)
      │
-     ├─ wiki/README.md                исторический архив
-     │   └─ wiki/INDEX.md             индекс стадий 3–10
+     ├─ wiki/README.md                historical archive
+     │   └─ wiki/INDEX.md             index of stages 3–10
      │
-     ├─ DECISIONS.md                  журнал ключевых решений
-     ├─ PROJECT_ROADMAP.md            план проекта и статус стадий
-     └─ references/                   библиография, литературная матрица
+     ├─ DECISIONS.md                  key decisions journal
+     ├─ PROJECT_ROADMAP.md            project plan and stage status
+     └─ references/                   bibliography, literature matrix
 ```
 
-## Слои документации
+## Documentation layers
 
-| Слой               | Где                                          | Что искать                                                         |
-| ------------------ | -------------------------------------------- | ------------------------------------------------------------------ |
-| Правила работы     | `AGENTS.md`, `RULES.md`, `STYLE.md` (корень) | как изменять проект, стиль, ограничения                            |
-| Актуальная модель  | `docs/model/`                                | как модель устроена сейчас: физика, уравнения, статус, ограничения |
-| Активная валидация | `docs/validation/`                           | отчёты текущей стадии (Stage 10), design notes, результаты тестов  |
-| История            | `docs/wiki/`                                 | архив завершённых стадий 3–10, forensic-аудиты, справки            |
-| Решения            | `docs/DECISIONS.md`                          | почему модель устроена именно так                                  |
-| Навигация          | `docs/README.md`, индексы каталогов          | как пройти от общего к частному                                    |
+| Layer             | Where                                      | What to look for                                                 |
+| ----------------- | ------------------------------------------ | ---------------------------------------------------------------- |
+| Working rules     | `AGENTS.md`, `RULES.md`, `STYLE.md` (root) | how to change the project, style, constraints                    |
+| Current model     | `docs/model/`                              | how the model works now: physics, equations, status, limitations |
+| Active validation | `docs/validation/`                         | current-stage reports (Stage 10), design notes, test results     |
+| History           | `docs/wiki/`                               | archive of completed stages 3–10, forensic audits, references    |
+| Decisions         | `docs/DECISIONS.md`                        | why the model is structured the way it is                        |
+| Navigation        | `docs/README.md`, directory indexes        | how to move from general to specific                             |
 
-## Принципы
+## Principles
 
-1. **Один факт — один авторитетный источник.** Текущий статус физики —
-   `model/model_physics_status.md`; уравнения — `model/model_equation_ledger.md`; правила —
-   `RULES.md`; решения — `DECISIONS.md`; известные ограничения —
-   `KNOWN_ISSUES.md`. Остальные документы ссылаются, а не копируют.
-2. **Живые документы актуальны.** `docs/model/`, `README.md`, `AGENTS.md`,
-   `KNOWN_ISSUES.md` обновляются при изменении модели.
-3. **История не переписывается.** `docs/wiki/` — неизменяемый архив; более
-   поздние стадии добавляют ссылки и записи в `DECISIONS.md`, но не правят
-   старые отчёты.
+1. **One fact — one authoritative source.** Current physics status —
+   `model/model_physics_status.md`; equations — `model/model_equation_ledger.md`;
+   rules — `RULES.md`; decisions — `DECISIONS.md`; known issues —
+   `KNOWN_ISSUES.md`. Other documents link, they do not copy.
+2. **Living documents are current.** `docs/model/`, `README.md`, `AGENTS.md`,
+   `KNOWN_ISSUES.md` are updated whenever the model changes.
+3. **History is not rewritten.** `docs/wiki/` is an immutable archive; later
+   stages add links and records in `DECISIONS.md`, but do not edit old reports.

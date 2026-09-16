@@ -1,12 +1,12 @@
-# Stage 9 — минимальная лагранжева модель айсберга
+# Stage 9 — minimal Lagrangian iceberg model
 
-Форензическая реконструкция и физическая спецификация (9.1), минимальная модель (9.2), верификация и калибровка (9.3), коррекции ядра, форсинг-пайплайна и энергобаланса (9.4A–9.4C).
+Forensic reconstruction and physical specification (9.1), minimal model (9.2), verification and calibration (9.3), core, forcing-pipeline, and energy-balance corrections (9.4A–9.4C).
 
-## Отчёты (12)
+## Reports (12)
 
-Реконструкция и спецификация (9.1), минимальная модель (9.2), верификация и калибровка (9.3), коррекция лагранжева ядра (9.4A), форсинг-пайплайн и силовой бюджет (9.4B), критические исправления верификации (9.4C).
+Reconstruction and specification (9.1), minimal model (9.2), verification and calibration (9.3), Lagrangian-core correction (9.4A), forcing pipeline and force budget (9.4B), critical verification fixes (9.4C).
 
-| Файл                                                             | Отчёт                                                                                                             |
+| File                                                             | Report                                                                                                            |
 | ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
 | `Stage9.1_Forensic_Reconstruction_and_Physical_Specification.md` | Stage 9.1 — Forensic Reconstruction and Physical Specification of the Individual Iceberg Thermodynamic Model      |
 | `Stage9.2_Minimal_Lagrangian_Iceberg_Model.md`                   | Stage 9.2 — Minimal Lagrangian Iceberg Model Implementation Report                                                |
@@ -21,8 +21,10 @@
 | `Stage9.4C.2_Surface_Energy_Balance_Latent_Heat_Correction.md`   | Stage 9.4C.2 — Surface Energy Balance & Latent Heat Correction                                                    |
 | `Stage9.4C_Numerical_verification_correction.md`                 | Stage 9.4C Report: Numerical Verification Correction, Discrete Momentum Closure & Surface-Melt Root-Cause Audit   |
 
-## Статус
+Diagnostic plots: `plots_stage9.4b/` (9 PNG files).
 
-- **ARCHIVED** — материалы стадии завершены и не редактируются задним числом.
-- Актуальное состояние модели см. в `../../../model/`; решения — в `../../../DECISIONS.md`.
-- Общая навигация: `../../README.md` → `../../INDEX.md`.
+## Status
+
+- **ARCHIVED** — stage materials are complete and not edited retroactively.
+- Current model state: `../../../model/`; decisions: `../../../DECISIONS.md`.
+- General navigation: `../../README.md` → `../../INDEX.md`.

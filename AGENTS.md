@@ -1,27 +1,27 @@
 # AGENTS.md — AARI Iceberg Thermodynamic & Dynamics Model
 
-Актуальная информация для AI-агентов и разработчиков: правила поведения,
-критические ограничения, команды, единицы, маршрутизация к документации.
-Правила процесса — в `RULES.md`, стиль — в `STYLE.md`, история — в
-`CHANGELOG.md`, карта документации — в `docs/README.md`.
+Current information for AI agents and developers: behavioral rules, critical
+constraints, commands, units, and documentation routing. Process rules — in
+`RULES.md`, style — in `STYLE.md`, history — in `CHANGELOG.md`, documentation
+map — in `docs/README.md`.
 
-## Documentation routing (прочитай перед работой)
+## Documentation routing (read before working)
 
-| Вопрос                              | Документ                                   |
-| ----------------------------------- | ------------------------------------------ |
-| Карта всей документации             | `docs/README.md`                           |
-| Правила процесса разработки         | `RULES.md`                                 |
-| Стиль кода и документов             | `STYLE.md`                                 |
-| Актуальные ограничения и долги      | `KNOWN_ISSUES.md`                          |
-| История значимых изменений          | `CHANGELOG.md`                             |
-| Описание модели                     | `docs/model/model_description.md`          |
-| Статус физики (A/B/C, switches)     | `docs/model/model_physics_status.md`       |
-| Уравнения и соглашения              | `docs/model/model_equation_ledger.md`      |
-| План модернизации Stage 10          | `docs/model/stage10_modernization_plan.md` |
-| Активные отчёты валидации           | `docs/validation/INDEX.md`                 |
-| Исторический архив стадий 3–10      | `docs/wiki/INDEX.md`                       |
-| Ключевые решения                    | `docs/DECISIONS.md`                        |
-| Библиография и литературная матрица | `docs/references/README.md`                |
+| Question                           | Document                                   |
+| ---------------------------------- | ------------------------------------------ |
+| Full documentation map             | `docs/README.md`                           |
+| Development process rules          | `RULES.md`                                 |
+| Code and documentation style       | `STYLE.md`                                 |
+| Current constraints and debt       | `KNOWN_ISSUES.md`                          |
+| History of significant changes     | `CHANGELOG.md`                             |
+| Model description                  | `docs/model/model_description.md`          |
+| Physics status (A/B/C, switches)   | `docs/model/model_physics_status.md`       |
+| Equations and conventions          | `docs/model/model_equation_ledger.md`      |
+| Stage 10 modernization plan        | `docs/model/stage10_modernization_plan.md` |
+| Active validation reports          | `docs/validation/INDEX.md`                 |
+| Historical archive (stages 3–10)   | `docs/wiki/INDEX.md`                       |
+| Key decisions                      | `docs/DECISIONS.md`                        |
+| Bibliography and literature matrix | `docs/references/README.md`                |
 
 ## Commands
 
@@ -72,12 +72,14 @@ python python/tests/test_low_flow.py                              # Stage 10.13 
 python python/validation/low_flow_fortran_comparison.py           # Stage 10.13 Fortran/Python comparison (56 checks)
 ```
 
-fpm 0.13.0-alpha: `fpm build` компилирует только источники, достижимые из
-targets; iceberg-модули компилируются в составе `fpm test`. **Перед
-`fpm test` всегда `rm -rf build`** (чистая пересборка, защита от устаревших
-библиотек).
+fpm 0.13.0-alpha: `fpm build` compiles only sources reachable from targets;
+iceberg modules compile as part of `fpm test`. **Always `rm -rf build` before
+`fpm test`** (clean rebuild, protection against stale libraries).
 
-No CI, no lint, no formatter beyond VS Code (`fprettify`/`fortls`). Python tooling uses conda env `iceberg-thermodynamic-model`.
+No lint, no formatter beyond VS Code (`fprettify`/`fortls`). CI: GitHub
+Actions (`.github/workflows/ci.yml`) runs the full fpm test battery (54
+targets) and Python validation checks. Python tooling uses conda env
+`iceberg-thermodynamic-model`.
 
 ## Unit Systems (MIXED — would be missed)
 
@@ -92,10 +94,10 @@ Conversions only at the NetCDF output boundary (`netcdf_output.f90`). Internal C
 
 ## Architecture
 
-- **`app/main.f90`** — orchestrator. `forcing_mode = forcing_mode_era5` (line 111). `kl1 = 1` (line 108) enables `heat()`. Exit at `nday1 == 91` (line 320). CLI: `fpm run -- <run_id> [era5_file]`.
+- **`app/main.f90`** — orchestrator. `forcing_mode = forcing_mode_era5` (line 131). `kl1 = 1` (line 128) enables `heat()`. Exit at `nday1 == 91` (line 404). CLI: `fpm run -- <run_id> [era5_file]`.
 - **`src/param.f90`** — global state: all shared arrays, constants, grid dims (`is=132, js=104, ks=18`, `is1=133, js1=105`, `ngr=5`). Land mask = **`8888.0`** (use epsilon: `abs(x-8888.0) < 1e-8`, never `==`).
 - **ERA5 path:** `era5_input_file` defaults to `data/input/processed/era5/2020/2020_Q1/era5_2020_0103_barents_expanded_merged.nc`. Falls back to legacy if absent.
-- **Grid modes:** `grid_mode_real` (default) reads KOORD.DAT + hhh.bar, `STOP`s if missing. `grid_mode_test` generates synthetic grid TEST ONLY.
+- **Grid modes:** `grid_mode_real` (default) reads `KOORD.DAT` (FATAL STOP if missing) and `hhh.bar` (synthetic-basin fallback if missing). `grid_mode_test` generates synthetic grid TEST ONLY.
 - **Axis conventions:** X ↔ `j` ↔ `u`; Y ↔ `i` ↔ `v`; Y-axis inverted (north at `j=1`).
 - **Key modules:** `netcdf_input` (ERA5 read/bilinear interp), `netcdf_output` (CF-1.10 export), `wind_forcing` (legacy + ERA5), `advection_2d/3d_t/3d_s` (FCT), `barotropic_dynamics`, `shallow_water`, `ice_stress/deform/redis`, `thermodynamics`, `grid_coupling`, `initial_ocean_reader` (Stage 7.7 EN4 reader), `initial_conditions`.
 
@@ -115,7 +117,7 @@ Conversions only at the NetCDF output boundary (`netcdf_output.f90`). Internal C
 
 - ❌ Do not omit `-I/usr/include` — compilation fails.
 - ❌ Do not `==` on reals — always epsilon (`abs(x-y) < 1e-8`).
-- ❌ Do not raise the `0.9e-7` convective threshold or switch EOS to double — root cause is float32 `2⁻²³` quantization; needs promt.md procedure + approval.
+- ❌ Do not raise the `0.9e-7` convective threshold or switch EOS to double — root cause is float32 `2⁻²³` quantization; needs RULES.md procedure + approval.
 - ❌ Do not "fix" FCT anti-diffusion (`CDY*0` in `barotropic_dynamics.f90`) — causes blowup.
 - ❌ Do not use `grid_mode=TEST` basin for production claims.
 - ❌ Do not set `kl1=1` without providing ERA5 d2m/tcc/precip fields.
@@ -125,7 +127,7 @@ Conversions only at the NetCDF output boundary (`netcdf_output.f90`). Internal C
 - ❌ Melt coefficients are compile-time constants — require rebuild to change.
 - ❌ Do not reintroduce an arbitrary velocity floor to avoid numerical issues (Stage 10.13 policy).
 - ❌ Before committing, check `.gitignore` — it blocks: `opencode.jsonc`, `.opencode/`, `data/`, `*.nc`, `*.vtk`, `*.dat`, `*.bak`. **Exceptions:** the curated Stage 10.8.2 observational dataset is versioned (`data/validation/observations/` is un-ignored); `docs/wiki/` is tracked (archive) except `docs/wiki/ERA5_INTEGRATION_TODO.md` (explicitly ignored, live local TODO).
-- ❌ Do not delete root-level symlinks: `KOORD.DAT`, `hhh.bar`, `1_k.ice` — required by model, gitignored, point to `data/input/generated/real_grid/`.
+- ❌ Do not delete root-level input files: `KOORD.DAT`, `hhh.bar` (real grid) and `1_1.ice`..`1_5.ice` (ice initialization, read from the working directory) — required by the model, gitignored; the grid files point to `data/input/generated/real_grid/`.
 - ❌ Do not commit/push unless the user explicitly requests it.
 
 ## Calendar Semantics
@@ -151,8 +153,11 @@ Snowfall variable in merged ERA5 NetCDF: `sf` (not `era5_snowfall_rate`). Merge 
 ```bash
 # After fresh clone, regenerate grid inputs from IBCAO bathymetry:
 python python/grid/build_real_grid_inputs.py
-# Creates: KOORD.DAT, hhh.bar, 1_k.ice → data/input/generated/real_grid/
-# Symlinked to project root (gitignored)
+# Creates: KOORD.DAT, hhh.bar, reconstruction_metadata.json
+#          (+ diagnostic 1_1.ice .. 1_5.ice) → data/input/generated/real_grid/
+# NOTE: root-level KOORD.DAT / hhh.bar are NOT created automatically —
+# create symlinks (or copies) to data/input/generated/real_grid/ before
+# running in grid_mode_real (FATAL STOP without KOORD.DAT).
 ```
 
 ERA5 download: `conda run -n iceberg-thermodynamic-model python python/era5/download_era5.py --year 2020 --month 1 --include-snowfall`
@@ -161,7 +166,11 @@ ERA5 download: `conda run -n iceberg-thermodynamic-model python python/era5/down
 
 - **Convective adjustment:** 1000-iteration guard. Root cause: EOS float32 quantization `2⁻²³ ≈ 1.19e-7` vs threshold `0.9e-7`. Monitored via `ca_reset`/`ca_stats` counters. Details: `docs/wiki/stages/stage04/Stage4.3_convective_root_cause.md`, `docs/wiki/stages/stage04/Stage4.4_precision_study.md`.
 - **Ice-ocean drag singularity:** `hht ∼ 0.01 m` causes positive feedback. Guard `hht<0.01 → u=v=0` interrupts it. See `docs/wiki/stages/stage07/Stage7.3_stability_investigation.md`.
-- **ERA5 coverage gap:** 5.2% of wet cells (591/11,330) outside forcing domain. Fixable by expanding download to ≥64°N, ≥77°E. See `docs/wiki/stages/stage06/Stage6.5_era5_barents_data.md`.
+- **ERA5 coverage:** fully covered after the Stage 7.6C.2 domain expansion
+  [64.21–85.04 °N, 8.33–76.32 °E] — 100% of the 10,966 required cells, 0
+  uncovered (`era5_coverage_test`). Historical gap (5.2%, 591/11,330 cells,
+  Stage 6.5) is resolved. See
+  `docs/wiki/stages/stage07/Stage7.6C.2_ERA5_forcing_expansion_and_hot_run.md`.
 - **FCT anti-diffusion intentionally disabled** in `advsh` — zeroed X-block intermediates + `CDY*0`.
 - **`grid_mode=TEST`** synthetic grid is NOT a real basin.
 - **Missing input files are normal:** `GRM2`, `FI1DL1.DAT`, `DAV4_5.98`, `1_k.ice` absent; code falls back to synthetic fields. See `docs/wiki/stages/stage06/Stage6.4_missing_historical_files.md`.
@@ -171,20 +180,20 @@ ERA5 download: `conda run -n iceberg-thermodynamic-model python python/era5/down
 
 ## Stage summary map (actuality = model docs, not here)
 
-| Стадия                | Суть                                                                                                           | Отчёт (детали)                                                |
-| --------------------- | -------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- | ------ | ------ | ------------ |
-| 3–8                   | Восстановление модели, ERA5, реальная сетка, океаническая инициализация                                        | `docs/wiki/INDEX.md` (stage03–stage08)                        |
-| 9                     | Минимальная лагранжева модель айсберга: верификация 11/11, TEST_11 (74.5% потери массы, ошибка бюджета 0.013%) | `docs/wiki/stages/stage09/`                                   |
-| 10.1–10.6             | Солнечная геометрия, поверхностная T, потоки, партиция фаз, EOS-80, теплообмен                                 | `docs/model/stage10_modernization_plan.md` (Completed stages) |
-| 10.7–10.9             | Валидация базального таяния, Python-слой, наблюдения, оценка калибровки (не калибруется)                       | `docs/validation/stage10.7                                    | 10.8.1 | 10.8.2 | 10.9\_\*.md` |
-| 10.10/10.10.1         | Трёхкомпонентный интерфейс (H&J99/J2010), массово-солевая коррекция; 25 Fortran + 65 Python checks             | `docs/validation/stage10.10_three_equation_interface.md`      |
-| 10.11/10.11.2/10.11.3 | Естественная конвекция (selectable); аудит: кап всегда активен, разрыв 10.8.2 не закрыт; 23 + 70 checks        | `docs/validation/stage10.11*.md`                              |
-| 10.12                 | Внутренняя температура (двухузловая, switch полностью гейтует); 21 + 35 checks                                 | `docs/validation/stage10.12_*.md`                             |
-| 10.13 (A–C)           | Low-flow закрытие: исследовательская параметризация за switch OFF по умолчанию; 23 + 56 + 167 checks           | `docs/validation/stage10.13_*.md`                             |
+| Stage                 | Summary                                                                                              | Report (details)                                                                                                                                                                                                           |
+| --------------------- | ---------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 3–8                   | Model restoration, ERA5, real grid, ocean initialization                                             | `docs/wiki/INDEX.md` (stage03–stage08)                                                                                                                                                                                     |
+| 9                     | Minimal Lagrangian iceberg model: verification 11/11, TEST_11 (74.5% mass loss, 0.013% budget error) | `docs/wiki/stages/stage09/`                                                                                                                                                                                                |
+| 10.1–10.6             | Solar geometry, surface T, fluxes, phase partition, EOS-80, heat transfer                            | `docs/model/stage10_modernization_plan.md` (Completed stages)                                                                                                                                                              |
+| 10.7–10.9             | Basal-melt validation, Python layer, observations, calibration assessment (not calibrated)           | `docs/validation/stage10.7_basal_melt_validation.md`, `docs/validation/stage10.8.1_python_validation.md`, `docs/validation/stage10.8.2_observational_validation.md`, `docs/validation/stage10.9_calibration_assessment.md` |
+| 10.10/10.10.1         | Three-equation interface (H&J99/J2010), mass/salt correction; 25 Fortran + 65 Python checks          | `docs/validation/stage10.10_three_equation_interface.md`                                                                                                                                                                   |
+| 10.11/10.11.2/10.11.3 | Natural convection (selectable); audit: cap always active, 10.8.2 gap not closed; 23 + 70 checks     | `docs/validation/stage10.11_natural_convection.md`, `docs/validation/stage10.11.2_natural_convection_audit.md`, `docs/validation/stage10.11.3_natural_convection_physics_audit.md`                                         |
+| 10.12                 | Internal temperature (two-node lumped, switch fully gates); 21 + 35 checks                           | `docs/validation/stage10.12_internal_thermal_evolution.md`                                                                                                                                                                 |
+| 10.13 (A–C)           | Low-flow closure: research parameterization behind an OFF-by-default switch; 23 + 56 + 167 checks    | `docs/validation/stage10.13_diffusion_limited_low_flow_design_note.md`, `docs/validation/stage10.13_phase_b_results.md`, `docs/validation/stage10.13_phase_c_results.md`                                                   |
 
-Текущий статус физики и switches — ВСЕГДА сверяй с
-`docs/model/model_physics_status.md` и `docs/DECISIONS.md`, а не с этим
-файлом и не со старыми отчётами.
+Current physics status and switches — ALWAYS check
+`docs/model/model_physics_status.md` and `docs/DECISIONS.md`, not this file
+and not old reports.
 
 ## OpenCode Environment
 
@@ -289,24 +298,24 @@ resolved" for `import <module>` is a known false positive.
 
 ### Key Data Paths
 
-| Purpose            | Path                                                                              |
-| ------------------ | --------------------------------------------------------------------------------- |
-| EN4 initial T/S    | `data/input/processed/ocean/initial_ts_2020-01-01.nc`                             |
-| ERA5 forcing       | `data/input/processed/era5/2020/2020_01/era5_2020_01_fullcoverage_d1_4_merged.nc` |
-| Real grid inputs   | `data/input/generated/real_grid/` (symlinked to root)                             |
-| Ice data           | `data/input/generated/real_grid/ice_2020-01-01/`                                  |
-| Diagnostics output | `data/output/diagnostics/stage7.7A/`, `stage7.7B/`, `stage9.3/`                   |
-| Run outputs        | `data/runs/<run_id>/output/nc/`                                                   |
+| Purpose            | Path                                                                                                                            |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
+| EN4 initial T/S    | `data/input/processed/ocean/initial_ts_2020-01-01.nc`                                                                           |
+| ERA5 forcing       | `data/input/processed/era5/2020/2020_01/era5_2020_01_fullcoverage_d1_4_merged.nc`                                               |
+| Real grid inputs   | `data/input/generated/real_grid/` (KOORD.DAT, hhh.bar; root-level copies/symlinks NOT created automatically — see Regeneration) |
+| Ice data           | `data/input/generated/real_grid/ice_2020-01-01/`                                                                                |
+| Diagnostics output | `data/output/diagnostics/stage7.7A/`, `stage7.7B/`, `stage9.3/`                                                                 |
+| Run outputs        | `data/runs/<run_id>/output/nc/`                                                                                                 |
 
 ## Development Workflow
 
-Полный процесс (перед началом работы, после завершения стадии, разрешение
-конфликтов, формат отчёта стадии, правила коммитов) — в `RULES.md`.
-Кратко: перед работой прочитай `AGENTS.md`, `docs/README.md`, git status и
-релевантные источники; используй существующий roadmap как план; не меняй
-физику ради тестов; после стадии — отчёт, полная батарея тестов,
-`git diff --check`, отдельный коммит (только по запросу пользователя).
+Full process (before starting work, after completing a stage, conflict
+resolution, stage-report format, commit rules) — in `RULES.md`.
+Briefly: before work read `AGENTS.md`, `docs/README.md`, git status and
+relevant sources; use the existing roadmap as the plan; do not change
+physics to pass tests; after a stage — report, full test battery,
+`git diff --check`, separate commit (only on user request).
 
-Важные заметки, которые могут потеряться из-за ограничений контекста,
-записывай в `docs/wiki/` (архив) или соответствующий живой документ.
-CDS-креденшелы (`~/.cdsapirc`) — никогда в Git.
+Important notes that might be lost due to context limits — write them to
+`docs/wiki/` (archive) or the appropriate living document. CDS credentials
+(`~/.cdsapirc`) — never in Git.

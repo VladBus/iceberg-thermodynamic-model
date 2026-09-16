@@ -1,46 +1,52 @@
-# Wiki Index — исторические материалы по стадиям
+# Wiki Index — Historical Materials by Stage
 
-Статусы: **ARCHIVED** (материалы стадии завершены и не редактируются).
+Statuses: **ARCHIVED** (stage materials completed and not edited).
 
-Общие правила: отчёты не переписываются задним числом; актуальное состояние
-модели — в `docs/model/`; решения — в `docs/DECISIONS.md`; активные отчёты
-Stage 10 — в `docs/validation/INDEX.md`.
+General rules: reports are not rewritten retroactively; the current model
+state is in `docs/model/`; decisions — in `docs/DECISIONS.md`; active Stage 10
+reports — in `docs/validation/INDEX.md`.
 
-## Стадии
+## Stages
 
-| Стадия | Каталог           | Файлов     | Содержание                                                                                                                                                                                |
-| ------ | ----------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 3      | `stages/stage03/` | 5          | Восстановление 3D-импульса (Stage 3.3), бароклинно-баротропная связка (3.4), реальная модель сетки (3.5)                                                                                  |
-| 4      | `stages/stage04/` | 5          | ERA5 на TEST-сетке (4.1), январь 2020 (4.2), корневая причина конвективного цикла (4.3), точность EOS float32 (4.3b), прецизионное исследование (4.4)                                     |
-| 5      | `stages/stage05/` | 7          | Аудит теплового ввода (5.1), включение HEAT (5.2), месячная валидация (5.3), снегопад (5.4), мультимесячная интеграция (5.5), аудит Q1/единиц (5.5b)                                      |
-| 6      | `stages/stage06/` | 12         | Восстановление реальной сетки (6.1), домен Баренцева моря (6.2), чистка данных (6.2–6.3), семантика календаря (6.3b), единицы (6.4), данные ERA5 (6.5–6.7)                                |
-| 7      | `stages/stage07/` | 18         | Снег/лёд и устойчивость динамики (7.1–7.4), реальная сетка и инициализация льда (7.5–7.6C), форензика океана и стабилизация (7.7–7.7C), спин-ап и геострофическая инициализация (7.8–7.9) |
-| 8      | `stages/stage08/` | 8          | EN4-препроцессинг (8.0), энергетическая нестабильность (8.1), thermal-wind коррекция (8.2), спин-ап (8.3), операторное расщепление (8.4–8.6), реконструкция legacy-модуля айсберга (8.7)  |
-| 9      | `stages/stage09/` | 12 + plots | Лагранжева модель айсберга: реконструкция (9.1–9.2), верификация и калибровка (9.3), коррекции ядра и форсинг-пайплайна (9.4A–9.4C.2); диагностические графики `plots_stage9.4b/`         |
-| 10     | `stages/stage10/` | 3          | Ранние отчёты Stage 10, завершённые до перехода активной документации в `docs/validation/`: 10.4.2, 10.4.2.1, 10.5                                                                        |
+| Stage | Directory         | Files      | Content                                                                                                                                                                                |
+| ----- | ----------------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 3     | `stages/stage03/` | 5          | 3D-momentum restoration (Stage 3.3), baroclinic–barotropic coupling (3.4), real model grid (3.5)                                                                                       |
+| 4     | `stages/stage04/` | 5          | ERA5 on the TEST grid (4.1), January 2020 (4.2), convective-cycle root cause (4.3), EOS float32 precision (4.3b), precision study (4.4)                                                |
+| 5     | `stages/stage05/` | 7          | Heat-input audit (5.1), HEAT enablement (5.2), monthly validation (5.3), snowfall (5.4), multi-month integration (5.5), Q1/units audit (5.5b)                                          |
+| 6     | `stages/stage06/` | 12         | Real-grid recovery (6.1), Barents domain (6.2), data cleanup (6.2–6.3), calendar semantics (6.3b), units (6.4), ERA5 data (6.5–6.7)                                                    |
+| 7     | `stages/stage07/` | 18         | Snow/ice and dynamics stability (7.1–7.4), real grid and ice initialization (7.5–7.6C), ocean forensics and stabilization (7.7–7.7C), spin-up and geostrophic initialization (7.8–7.9) |
+| 8     | `stages/stage08/` | 8          | EN4 preprocessing (8.0), energy instability (8.1), thermal-wind correction (8.2), spin-up (8.3), operator splitting (8.4–8.6), legacy iceberg module reconstruction (8.7)              |
+| 9     | `stages/stage09/` | 12 + plots | Lagrangian iceberg model: reconstruction (9.1–9.2), verification and calibration (9.3), core and forcing-pipeline corrections (9.4A–9.4C.2); diagnostic plots `plots_stage9.4b/`       |
+| 10    | `stages/stage10/` | 3          | Early Stage 10 reports completed before active documentation moved to `docs/validation/`: 10.4.2, 10.4.2.1, 10.5                                                                       |
 
-## Темы
+## Topics
 
-| Файл                             | Тема                              |
-| -------------------------------- | --------------------------------- |
-| `topics/ERA5_download.md`        | Загрузка и конвертация ERA5       |
-| `topics/Fortran_dependencies.md` | Зависимости Fortran (fpm, netcdf) |
-| `topics/Python_environment.md`   | Conda-окружение, инструменты, LSP |
+| File                             | Topic                              |
+| -------------------------------- | ---------------------------------- |
+| `topics/ERA5_download.md`        | ERA5 download and conversion       |
+| `topics/Fortran_dependencies.md` | Fortran dependencies (fpm, netcdf) |
+| `topics/Python_environment.md`   | Conda environment, tools, LSP      |
 
-## Живой TODO
+## Live TODO
 
-- `ERA5_INTEGRATION_TODO.md` — локальный журнал интеграции ERA5 (не в Git).
+- `ERA5_INTEGRATION_TODO.md` — local ERA5 integration journal (not in Git).
 
-## Связь с актуальной документацией
+## Links to current documentation
 
-- Текущее состояние физики: `../model/model_physics_status.md`
-- Уравнения и соглашения: `../model/model_equation_ledger.md`
-- Активная валидация: `../validation/INDEX.md`
-- Решения: `../DECISIONS.md`
-- План проекта: `../PROJECT_ROADMAP.md`
+- Current physics status: `../model/model_physics_status.md`
+- Equations and conventions: `../model/model_equation_ledger.md`
+- Active validation: `../validation/INDEX.md`
+- Decisions: `../DECISIONS.md`
+- Project plan: `../PROJECT_ROADMAP.md`
 
-## Коммиты
+## Commits
 
-Ссылки на конкретные коммиты присутствуют внутри отдельных отчётов
-(поля `Git Baseline`, `Files changed`). Общая история стадий — в
-`CHANGELOG.md` (корень репозитория).
+Links to specific commits are present inside individual reports (fields
+`Git Baseline`, `Files changed`). The overall stage history is in
+`CHANGELOG.md` (repository root).
+
+## Historical reference notes
+
+See `docs/wiki/README.md` — some archived reports reference files that are no
+longer present (`promt.md`, `experiment_design.md`); these references are
+preserved as part of the historical record.

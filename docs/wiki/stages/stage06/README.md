@@ -1,12 +1,12 @@
-# Stage 6 — реальная сетка, домен Баренцева моря, данные ERA5
+# Stage 6 — real grid, Barents domain, ERA5 data
 
-Восстановление реальной сетки и входных файлов, конфигурация домена, семантика календаря, единицы, замена данных ERA5.
+Real-grid and input-file recovery, domain configuration, calendar semantics, units, ERA5 data replacement.
 
-## Отчёты (12)
+## Reports (12)
 
-Восстановление реальных файлов (6.1), домен Баренцева моря (6.2), чистка данных (6.2–6.3), семантика календаря (6.3b), единицы (6.4), данные ERA5 (6.5–6.7).
+Real-file recovery (6.1), Barents domain (6.2), data cleanup (6.2–6.3), calendar semantics (6.3b), units (6.4), ERA5 data (6.5–6.7).
 
-| Файл                                   | Отчёт                                                                                 |
+| File                                   | Report                                                                                |
 | -------------------------------------- | ------------------------------------------------------------------------------------- |
 | `Stage6.1_real_grid_recovery.md`       | Stage 6.1 — Real Grid File Recovery and Provenance                                    |
 | `Stage6.2_barents_domain.md`           | Stage 6.2 — Barents Research-Domain Configuration                                     |
@@ -21,8 +21,8 @@
 | `Stage6.6_snowfall_forcing.md`         | Stage 6.6 — ERA5 Snowfall Forcing Integration & Thermodynamic Snow Accumulation Audit |
 | `Stage6.7_snowfall_ice_response.md`    | Stage 6.7 — Snowfall–Ice Thermodynamic Response & Spatial Forcing Validation          |
 
-## Статус
+## Status
 
-- **ARCHIVED** — материалы стадии завершены и не редактируются задним числом.
-- Актуальное состояние модели см. в `../../../model/`; решения — в `../../../DECISIONS.md`.
-- Общая навигация: `../../README.md` → `../../INDEX.md`.
+- **ARCHIVED** — stage materials are complete and not edited retroactively.
+- Current model state: `../../../model/`; decisions: `../../../DECISIONS.md`.
+- General navigation: `../../README.md` → `../../INDEX.md`.

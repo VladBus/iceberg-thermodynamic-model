@@ -1,12 +1,12 @@
-# Stage 3 — восстановление 3D-импульса, конвективная сходимость, реальная сетка
+# Stage 3 — 3D momentum restoration, convective convergence, real grid
 
-Этап восстановления модели: трёхмерный импульс, бароклинно-баротропная связка, первая реальная сетка.
+Model restoration stage: 3D momentum, baroclinic–barotropic coupling, first real grid.
 
-## Отчёты (5)
+## Reports (5)
 
-Восстановление трёхмерного импульса (3.3, 3.3a), бароклинно-баротропная связка (3.4), реальная сетка и батиметрия (3.5).
+3D-momentum restoration (3.3, 3.3a), baroclinic–barotropic coupling (3.4), real grid and bathymetry (3.5).
 
-| Файл                                 | Отчёт                                                              |
+| File                                 | Report                                                             |
 | ------------------------------------ | ------------------------------------------------------------------ |
 | `Stage3.3_convective_convergence.md` | Stage 3.3a — Root Cause Analysis: Convective Adjustment Divergence |
 | `Stage3.3_mapping.md`                | Stage 3.3 — Restore 3D Momentum: Mapping Report                    |
@@ -14,8 +14,8 @@
 | `Stage3.4_coupling_verification.md`  | Stage 3.4 — Baroclinic–Barotropic Coupling Verification            |
 | `Stage3.5_real_grid.md`              | Stage 3.5 — Real Model Grid and Bathymetry                         |
 
-## Статус
+## Status
 
-- **ARCHIVED** — материалы стадии завершены и не редактируются задним числом.
-- Актуальное состояние модели см. в `../../../model/`; решения — в `../../../DECISIONS.md`.
-- Общая навигация: `../../README.md` → `../../INDEX.md`.
+- **ARCHIVED** — stage materials are complete and not edited retroactively.
+- Current model state: `../../../model/`; decisions: `../../../DECISIONS.md`.
+- General navigation: `../../README.md` → `../../INDEX.md`.

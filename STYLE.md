@@ -1,48 +1,70 @@
-# STYLE.md — Соглашения по стилю
+# STYLE.md — Code and Documentation Conventions
 
-Правила оформления кода и документации, соответствующие фактическому
-состоянию репозитория. Инструменты: `fprettify` и `fortls` (Fortran),
-ruff-подобная аккуратность (Python), стандартный Markdown.
+Conventions matching the actual state of the repository. Tools: `fprettify`
+and `fortls` (Fortran), ruff-like care (Python), standard Markdown.
+
+## Language Policy
+
+- Root-level operational documentation (`README.md`, `AGENTS.md`, `RULES.md`,
+  `STYLE.md`, `KNOWN_ISSUES.md`, `CHANGELOG.md`) is written in English.
+- Current model specifications and navigation indexes (`docs/`, `docs/model/`,
+  `docs/validation/`, `docs/wiki/` indexes and READMEs) are written in English.
+- Historical scientific reports retain their original language (Russian,
+  English, or mixed); they MUST NOT be translated or rewritten solely for
+  language consistency.
+- New cross-project documentation SHOULD use English.
+- Code identifiers, procedure names, test names, and filenames use English.
+- Comments explaining project-specific physical assumptions, numerical
+  conventions, or domain-specific reasoning MAY use Russian when consistent
+  with the existing code; do not mechanically translate existing source-code
+  comments.
+- Do not mix language-policy changes with source-code changes.
 
 ## Fortran
 
-- Стандарт: Fortran 2008/2018 (модули, `intent`, `optional`).
-- Форматирование: фиксированный отступ — 4 пробела; fprettify-совместимый стиль (длина строки в пределах требований gfortran CI, без усечения в 132 символа сверх необходимости).
-- Именование: `snake_case` для переменных и процедур; константы — `UPPER_SNAKE` (например, `C_BASAL`, `LATENT_HEAT`, `THREE_EQ_KT`); типы — `snake_case` (например, `iceberg_state`).
-- Комментарии: объясняют физический смысл и единицы; комментарии на русском допустимы (проект использует оба языка); не оставляй закомментированный «мёртвый» код без обоснования.
-- Модули: публичные сущности — через `public`-списки; `use` — только с `only:`.
-- Сравнение вещественных: эпсилон (`abs(x - y) < 1e-8`), никогда `==`; проверка land mask `8888.0` — через эпсилон.
-- Единицы: внутри модели — CGS для гидродинамики, SI для термодинамики (см. `AGENTS.md` §Unit Systems); конверсия только на границе NetCDF-вывода.
-- Не подавляй предупреждения; строгая сборка (`-Wall -Wextra -fcheck=all -ffpe-trap`) обязана быть чистой.
+- Standard: Fortran 2008/2018 (modules, `intent`, `optional`).
+- Formatting: 4-space indentation; fprettify-compatible style (line length within gfortran CI requirements; no truncation beyond necessity).
+- Naming: `snake_case` for variables and procedures; `UPPER_SNAKE` for constants (e.g., `C_BASAL`, `LATENT_HEAT`, `THREE_EQ_KT`); `snake_case` for derived types (e.g., `iceberg_state`).
+- Comments: explain physical meaning and units; Russian comments are permitted where consistent with the existing code; do not leave "dead" commented-out code without justification.
+- Modules: public entities via `public` lists; `use` only with `only:`.
+- Real comparisons: epsilon (`abs(x - y) < 1e-8`), never `==`; land-mask `8888.0` checks via epsilon.
+- Units: internal model units are CGS for hydrodynamics and SI for thermodynamics (see `AGENTS.md` §Unit Systems); conversion happens only at the NetCDF output boundary.
+- Do not suppress warnings; the strict build (`-Wall -Wextra -fcheck=all -ffpe-trap`) MUST be clean.
 
 ## Python
 
-- Python 3 (conda-окружение `iceberg-thermodynamic-model`).
-- Именование: `snake_case`; константы — `UPPER_SNAKE`.
-- Docstring: модульные docstring объясняют назначение и конвенции (см. `python/validation/three_equation.py`, `low_flow.py`).
-- Аннотации типов — где уместно; не вводи `as any`-эквиваленты и подавление ошибок без явного обоснования.
-- Тесты в `python/tests/` используют bootstrap-импорт (`sys.path.insert(0, ...)` на `python/validation/`); LSP-ошибки «could not be resolved» для таких импортов — известный false positive, не «чини» их.
-- Тесты обязаны печатать итог `TOTAL CHECKS: N ERRORS: 0`.
-- Окружение: conda-окружение вне репозитория; не создавай venv/.venv/env внутри repo.
+- Python 3 (conda environment `iceberg-thermodynamic-model`).
+- Naming: `snake_case`; constants — `UPPER_SNAKE`.
+- Docstrings: module docstrings explain purpose and conventions (see `python/validation/three_equation.py`, `low_flow.py`).
+- Type annotations where appropriate; no `as any`-style suppression or error suppression without explicit justification.
+- Tests in `python/tests/` use bootstrap imports (`sys.path.insert(0, ...)` pointing at `python/validation/`); LSP "could not be resolved" errors for such imports are a known false positive — do not "fix" them.
+- Tests MUST print `TOTAL CHECKS: N ERRORS: 0`.
+- Environment: conda environment outside the repository; do not create venv/.venv/env inside the repo.
 
 ## Markdown
 
-- Заголовки: `#` для документа, `##` для разделов, `###` для подразделов.
-- Таблицы: pipe-таблицы с выравниванием по столбцам.
-- Код/формулы: инлайн-формулы в backticks или fenced-блоках; уравнения в `docs/model/model_equation_ledger.md` — monospace-блоки с указанием единиц.
-- Ссылки: относительные пути внутри репозитория; для отчётов — полный относительный путь от корня (`docs/validation/...`).
-- Языки: отчёты могут быть на русском или английском; заголовок стадии — на языке отчёта; ключевые статусы — единообразно (ACTIVE/COMPLETED/DRAFT/ARCHIVED).
-- Не создавай пустые документы ради структуры; не дроби цельные научные отчёты.
+- Headings: `#` for the document, `##` for sections, `###` for subsections.
+- Tables: pipe tables with aligned columns; every data row MUST have the same number of columns as the header; escaped pipes inside code spans are allowed.
+- Code/formulas: inline formulas in backticks or fenced blocks; equations in `docs/model/model_equation_ledger.md` — monospace blocks with units stated.
+- Links: relative paths inside the repository; for reports — full relative path from the root (`docs/validation/...`).
+- Language: living navigation and model documents in English; reports may remain in their original language; status keywords are uniform (ACTIVE/COMPLETED/DRAFT/ARCHIVED).
+- Do not create empty documents just to match a tree; do not split integral scientific reports.
 
-## Именование отчётов
+## Report naming
 
-- Стадийные отчёты: `docs/validation/stage<NN>[_<подстадия>]_<тема>.md` (активные) и `docs/wiki/stages/stage<NN>/Stage<NN>...md` (архивные).
-- Дизайн-ноты: `stage<NN>_<тема>_design_note.md`.
-- Индексы: `docs/validation/INDEX.md`, `docs/wiki/INDEX.md`, `README.md` (каталоги).
+- Stage reports: `docs/validation/stage<NN>[_<substage>]_<topic>.md` (active) and `docs/wiki/stages/stage<NN>/Stage<NN>...md` (archived).
+- Design notes: `stage<NN>_<topic>_design_note.md`.
+- Indexes: `docs/validation/INDEX.md`, `docs/wiki/INDEX.md`, `README.md` (directories).
 
-## Оформление отчётов
+## Report conventions
 
-- Каждый отчёт: заголовок со стадией, статус/классификация, дата, Git baseline (если известен), разделы «Physics/Validation/Files changed/Known limitations».
-- Указывай классификацию A/B/C (см. `docs/model/model_physics_status.md`).
-- Ссылки на исходники: указывай файл и (где полезно) строки/символы.
-- Для каждого нового физического блока: литературная основа (ссылка на `docs/references/references.bib`), уравнения, происхождение параметров, ограничения.
+- Every report: stage title, status/classification, date, Git baseline (when known), sections "Physics/Validation/Files changed/Known limitations".
+- State the A/B/C classification (see `docs/model/model_physics_status.md`).
+- Source references: file and, where useful, lines/symbols.
+- For every new physical block: literature basis (link to `docs/references/references.bib`), equations, parameter provenance, limitations.
+
+## Conventions strength
+
+- **MUST / MUST NOT** — mandatory rules (process, safety, compatibility); violations block completion.
+- **SHOULD / MAY** — recommendations and options; deviations should be justified.
+- Rules in this document are MUST-level unless explicitly marked SHOULD/MAY.

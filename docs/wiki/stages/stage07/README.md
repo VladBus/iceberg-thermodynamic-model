@@ -1,12 +1,12 @@
-# Stage 7 — снег/лёд, устойчивость, IBCAO-сетка, инициализация льда и океана
+# Stage 7 — snow/ice, stability, IBCAO grid, ice and ocean initialization
 
-Пространственный снегопад, баланс массы, устойчивость динамики льда, реконструкция реальной сетки из IBCAO, реальная инициализация льда и океана, стабилизация (7.7A–7.9).
+Spatial snowfall, mass balance, ice-dynamics stability, real-grid reconstruction from IBCAO, real ice and ocean initialization, stabilization (7.7A–7.9).
 
-## Отчёты (18)
+## Reports (18)
 
-Снегопад и баланс массы (7.1–7.2), устойчивость динамики (7.3–7.4), реальная сетка и инициализация льда (7.5–7.6C), океан: форензика, выбор данных, стабилизация (7.7–7.7C), спин-ап и геострофия (7.8–7.9).
+Snowfall and mass balance (7.1–7.2), dynamics stability (7.3–7.4), real grid and ice initialization (7.5–7.6C), ocean: forensics, dataset selection, stabilization (7.7–7.7C), spin-up and geostrophy (7.8–7.9).
 
-| Файл                                                      | Отчёт                                                                                               |
+| File                                                      | Report                                                                                              |
 | --------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
 | `Stage7.1_spatial_snowfall_forcing.md`                    | Stage 7.1 — Spatially Distributed ERA5 Snowfall Forcing                                             |
 | `Stage7.2_mass_balance_validation.md`                     | Stage 7.2 — Snow/Ice Mass-Balance & Observational Validation Report                                 |
@@ -27,8 +27,8 @@
 | `Stage7.8_Numerical_Compatibility_and_Balanced_Spinup.md` | Stage 7.8 — Numerical Compatibility and Balanced Spin-Up for Realistic Arctic Ocean State           |
 | `Stage7.9_Reference_Level_and_Dynamic_Height.md`          | Stage 7.9 — Reference-Level Geostrophic Initialization and Dynamic-Height Consistency: Final Report |
 
-## Статус
+## Status
 
-- **ARCHIVED** — материалы стадии завершены и не редактируются задним числом.
-- Актуальное состояние модели см. в `../../../model/`; решения — в `../../../DECISIONS.md`.
-- Общая навигация: `../../README.md` → `../../INDEX.md`.
+- **ARCHIVED** — stage materials are complete and not edited retroactively.
+- Current model state: `../../../model/`; decisions: `../../../DECISIONS.md`.
+- General navigation: `../../README.md` → `../../INDEX.md`.

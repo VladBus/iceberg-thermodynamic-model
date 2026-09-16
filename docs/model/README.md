@@ -1,30 +1,30 @@
-# Актуальная документация модели
+# Current Model Documentation
 
-Каталог описывает, **как модель устроена сейчас**. Документы здесь живые:
-они обновляются при каждом изменении модели и не являются историческим
-архивом. История — в `docs/wiki/`.
+This directory describes **how the model works now**. The documents here are
+living: they are updated whenever the model changes and are not a historical
+archive. History lives in `docs/wiki/`.
 
-## Авторитетные источники (один факт — один источник)
+## Authoritative sources (one fact — one source)
 
-| Документ                        | Какой тип информации он описывает                                                                                     |
-| ------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| `model_description.md`          | цельное нарративное описание модели: постановка, компоненты, данные, процессы, численная реализация                   |
-| `model_physics_status.md`       | статус каждого физического блока: реализовано/экспериментально/ограничения; что включено по умолчанию, что selectable |
-| `model_equation_ledger.md`      | математическая спецификация: уравнения, переменные, единицы, знаковые соглашения, коэффициенты, EOS, связи с кодом    |
-| `stage10_modernization_plan.md` | план и журнал модернизации Stage 10 (активная стадия работ)                                                           |
+| Document                        | What type of information it covers                                                                             |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `model_description.md`          | integral narrative description: formulation, components, data, processes, numerical implementation             |
+| `model_physics_status.md`       | status of every physics block: implemented/experimental/limitations; what is on by default, what is selectable |
+| `model_equation_ledger.md`      | mathematical specification: equations, variables, units, sign conventions, coefficients, EOS, code links       |
+| `stage10_modernization_plan.md` | Stage 10 modernization plan and journal (active work stage)                                                    |
 
-## Связанные каталоги
+## Related directories
 
-- Активные validation-отчёты Stage 10: `../validation/INDEX.md`
-- Исторические отчёты стадий 3–10: `../wiki/INDEX.md`
-- Ключевые решения: `../DECISIONS.md`
-- Известные ограничения: `../../KNOWN_ISSUES.md`
+- Active Stage 10 validation reports: `../validation/INDEX.md`
+- Historical stage reports 3–10: `../wiki/INDEX.md`
+- Key decisions: `../DECISIONS.md`
+- Current known issues: `../../KNOWN_ISSUES.md`
 
-## Правила поддержки
+## Maintenance rules
 
-- При изменении физики/кода обновляются `model_physics_status.md` (статус,
-  switches, ограничения) и `model_equation_ledger.md` (уравнения), а при
-  существенном изменении — `model_description.md`.
-- Актуальное состояние определяется по коду и тестам, а не по старым отчётам.
-- Если более поздняя стадия опровергла вывод старого отчёта, старый отчёт
-  остаётся неизменным, а поправка вносится здесь и в `../DECISIONS.md`.
+- When physics/code changes, update `model_physics_status.md` (status,
+  switches, limitations) and `model_equation_ledger.md` (equations); update
+  `model_description.md` for substantial changes.
+- The current state is determined by code and tests, not by old reports.
+- If a later stage overturns a conclusion of an old report, the old report
+  stays unchanged; the correction goes here and in `../DECISIONS.md`.

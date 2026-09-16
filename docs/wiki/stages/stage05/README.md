@@ -1,12 +1,12 @@
-# Stage 5 — тепловой ввод, снегопад, мультимесячная интеграция
+# Stage 5 — heat input, snowfall, multi-month integration
 
-Включение и валидация термодинамики (HEAT), снегопад, мультимесячные прогоны, аудит единиц.
+Heat-block enablement and validation (HEAT), snowfall, multi-month runs, unit audit.
 
-## Отчёты (7)
+## Reports (7)
 
-Аудит теплового ввода (5.1), контролируемое включение HEAT (5.2), месячная валидация (5.3), снегопад (5.4), мультимесячная интеграция (5.5), аудит Q1 и единиц (5.5b).
+Heat-input audit (5.1), controlled HEAT enablement (5.2), monthly validation (5.3), snowfall (5.4), multi-month integration (5.5), Q1 and unit audit (5.5b).
 
-| Файл                                     | Отчёт                                                                        |
+| File                                     | Report                                                                       |
 | ---------------------------------------- | ---------------------------------------------------------------------------- |
 | `Stage5.1_heat_input_audit.md`           | Stage 5.1 — Thermodynamic / Heat Input Audit                                 |
 | `Stage5.2_heat_enablement.md`            | Stage 5.2 — Controlled HEAT Enablement (IN PROGRESS)                         |
@@ -16,8 +16,8 @@
 | `Stage5.5b_q1_output_and_units_audit.md` | Stage 5.5b — Q1 2020 Output & Unit Audit Report                              |
 | `Stage5.5b_units.md`                     | Stage 5.5b — Unit Audit: Canonical SI External Interface                     |
 
-## Статус
+## Status
 
-- **ARCHIVED** — материалы стадии завершены и не редактируются задним числом.
-- Актуальное состояние модели см. в `../../../model/`; решения — в `../../../DECISIONS.md`.
-- Общая навигация: `../../README.md` → `../../INDEX.md`.
+- **ARCHIVED** — stage materials are complete and not edited retroactively.
+- Current model state: `../../../model/`; decisions: `../../../DECISIONS.md`.
+- General navigation: `../../README.md` → `../../INDEX.md`.

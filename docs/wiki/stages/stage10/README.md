@@ -16,4 +16,5 @@ Stage 10 reports completed before active documentation moved to docs/validation/
 
 - **ARCHIVED** — stage materials are complete and not edited retroactively.
 - Current model state: `../../../model/`; decisions: `../../../DECISIONS.md`.
+- Active Stage 10 validation reports (10.10–10.13 and later): `../../../validation/INDEX.md`.
 - General navigation: `../../README.md` → `../../INDEX.md`.

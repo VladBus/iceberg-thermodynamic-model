@@ -5,19 +5,18 @@ and `fortls` (Fortran), ruff-like care (Python), standard Markdown.
 
 ## Language Policy
 
-- Root-level operational documentation (`README.md`, `AGENTS.md`, `RULES.md`,
-  `STYLE.md`, `KNOWN_ISSUES.md`, `CHANGELOG.md`) is written in English.
-- Current model specifications and navigation indexes (`docs/`, `docs/model/`,
-  `docs/validation/`, `docs/wiki/` indexes and READMEs) are written in English.
-- Historical scientific reports retain their original language (Russian,
-  English, or mixed); they MUST NOT be translated or rewritten solely for
-  language consistency.
-- New cross-project documentation SHOULD use English.
-- Code identifiers, procedure names, test names, and filenames use English.
-- Comments explaining project-specific physical assumptions, numerical
-  conventions, or domain-specific reasoning MAY use Russian when consistent
-  with the existing code; do not mechanically translate existing source-code
-  comments.
+- Root-level operational documentation is written in English.
+- Current model specifications and navigation indexes are written in English.
+- Historical scientific reports retain their original language.
+- Historical reports must not be translated or rewritten solely for language
+  consistency.
+- New cross-project documentation should use English.
+- New comments about physical assumptions, numerical limitations, and
+  domain-specific reasoning should preferably use Russian when consistent
+  with the existing source-code convention.
+- Technical comments, code identifiers, procedure names, test names, and
+  filenames use English.
+- Existing source-code comments must not be mechanically translated.
 - Do not mix language-policy changes with source-code changes.
 
 ## Fortran

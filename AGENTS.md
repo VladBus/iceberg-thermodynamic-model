@@ -173,7 +173,7 @@ ERA5 download: `conda run -n iceberg-thermodynamic-model python python/era5/down
   `docs/wiki/stages/stage07/Stage7.6C.2_ERA5_forcing_expansion_and_hot_run.md`.
 - **FCT anti-diffusion intentionally disabled** in `advsh` — zeroed X-block intermediates + `CDY*0`.
 - **`grid_mode=TEST`** synthetic grid is NOT a real basin.
-- **Missing input files are normal:** `GRM2`, `FI1DL1.DAT`, `DAV4_5.98`, `1_k.ice` absent; code falls back to synthetic fields. See `docs/wiki/stages/stage06/Stage6.4_missing_historical_files.md`.
+- **Missing input files are normal:** `GRM2`, `FI1DL1.DAT`, `DAV4_5.98` and the legacy ice files (historically referred to as `1_k.ice`, i.e. the `1_1.ice`–`1_5.ice` family) are absent; code falls back to synthetic fields. See `docs/wiki/stages/stage06/Stage6.4_missing_historical_files.md`.
 - **Thomas algorithm vertical viscosity:** Can reach 8.5×10⁵ cm²/s at k=2 with realistic EN4 init → matrix ill-conditioning → blowup. Do not "fix" without physics review.
 - **Coriolis:** semi-implicit solver has 8% period error at Δt=3600s — numerical damping; convergence study needed. See `docs/wiki/stages/stage09/Stage9.3_Scientific_Verification_and_Calibration.md`.
 - **Wind drift ratio** 0.08% (with Coriolis) vs literature 1–2% — needs C_D calibration. Same report.

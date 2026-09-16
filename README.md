@@ -11,8 +11,9 @@ under atmospheric, oceanic, bathymetric, and sea-ice forcing.
 
 ## Project status
 
-- **Current stage:** Stage 10.13 — low-flow basal-melt closure (research
-  parameterization behind a switch, OFF by default).
+- **Current stage:** Stage 10.14 — re-scoring of the 10.8.2 observational set
+  against the three-equation / 3eq+natural-convection closures (verification
+  only; no calibration, no production change).
 - **Physics status and switches:** `docs/model/model_physics_status.md`
 - **Stage plan and status:** `docs/PROJECT_ROADMAP.md`
 

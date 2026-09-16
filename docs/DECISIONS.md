@@ -113,6 +113,13 @@ Format: `ID | stage/date | status` + short description. Details — via links.
 
 ---
 
+## D-15. 10.8.2 re-scoring on the 3eq / 3eq+natural closures: verification only, no production change
+
+- **Stage:** 10.14 | **Status:** ACTIVE (verification result)
+- **Decision:** the 10.8.2 observational set is re-scored against the already-implemented three-equation (10.10/10.10.1) and three-equation + natural-convection (10.11) closures with the 10.8.2 acceptance criterion. The 3eq closure does NOT improve the u>0 point metrics (RMSE 0.108 → 0.366, bias +0.083 → +0.277; NJ80 functional-form mismatch persists); the 3eq+natural closure reproduces the RH80 quiescent lab rows at the lab scale (5/5 in band) while the iceberg-scale Ra cap keeps the 10.11.3 gap statement valid. No calibration, no production change, no switch-default change.
+- **Why:** the roadmap explicitly lists this re-scoring after 10.13; it completes the KNOWN_ISSUES N-05 dependency (calibration remains not identifiable) and qualifies the 10.11.3 gap statement as scale-specific.
+- **Sources:** `docs/validation/stage10.14_three_equation_rescoring.md`.
+
 ## How to add decisions
 
 A new decision is appended with an ID, stage, status, and links to reports.

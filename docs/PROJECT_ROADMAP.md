@@ -1,8 +1,8 @@
 # Project Roadmap
 
-**Updated:** 2026-09-15
-**Current scientific stage:** Stage 10.13 — low-flow closure (Phase C: production integration complete, selectable, OFF by default)
-**Current status:** Phase C complete (implemented + tested; not committed at time of writing). Stage 10.12 complete and pushed: two-node lumped interior (Fortran 21 + Python 35 checks; production updated)
+**Updated:** 2026-09-16
+**Current scientific stage:** Stage 10.14 — re-scoring of the 10.8.2 observational set against the 3eq / 3eq+natural closures (verification; no physics change)
+**Current status:** Stage 10.13 complete and committed (`caa7799`): low-flow closure behind `low_flow_closure_enabled`, OFF by default. Stage 10.14 complete (not committed at time of writing): 10.8.2 re-scoring, Python 177 checks, no calibration, no production change.
 
 ## Completed foundation
 
@@ -38,8 +38,33 @@
 | 10.11.3  | Deep scientific audit + sensitivity of the natural-convection closure: independent Python replica (tables A-J); cap always active (uncapped Ra=5.7e19) -> Nu pinned 323.17, haline/Le and beta_T/beta_S inert, laminar branch latent; haline sign opposite to physical (stabilizing) role; operative `0.15*Ra^(1/3)` attributed to Lloyd & Moran 1974 (not Fujii 1973); zero-flow m=1.4e-3 m/day is 7-700x below observed quiescent band (does NOT close the 10.8.2 gap); real mechanism double-diffusive (Martin & Kauffman 1977; Keitzl et al. 2016; Middleton et al. 2021); documentation corrected; production source diff ZERO | Complete; classification B; production UNCHANGED; all tests PASS                                                       |
 | 10.12    | Prognostic internal thermal evolution: two-node lumped interior, prognostic `state%T_ice` replaces constant `T_i=-10` in Eq. II; `q_cond = 2*K_ICE*(T_s-T_i)/H` (K_ICE=2.2), `q_bot = m*rho_i*CP_ICE_3EQ*max(T_B-T_i,0)`, explicit Euler, clamp [-100,0]°C, switch `thermal_evolution_enabled` — fully gates the stage in the step (OFF = bit-identical legacy, verified by F.1–F.4); energy-conserving lagged skin coupling (`q_internal_exchange`); Fortran 21 + Python 35 checks, cross-language contract C_int(50 m); unused stdlib dependency removed from fpm.toml                                                            | Complete; classification C; production updated; all tests PASS                                                         |
 | 10.13    | Diffusion-limited / double-diffusive low-flow closure: Phase A (scientific formulation + literature audit) → Phase B (research prototype, 167 checks, sweep 246/270 in band, 10.8.2 quiescent 5/5) → Phase C (production integration: selectable `low_flow_closure_enabled`, OFF default, three-equation preserved, forced branch bit-identical at high U, Fortran 23 checks + Python/Fortran comparison 56 checks; research parameterization, not universal validation)                                                                                                                                                            | **Complete** (Phases A–C); classification: research parameterization; production updated behind switch; commit pending |
+| 10.14    | Re-scoring of the 10.8.2 observational set against the 3eq (10.10/10.10.1) and 3eq+natural (10.11) closures with the 10.8.2 acceptance criterion: u>0 metrics (teq RMSE 0.366, bias +0.277 — worse than bulk 0.108/+0.083, NJ80 functional-form mismatch persists) + quiescent gap (bulk 0/5, teq 0/5, teq_nat 5/5 in band at lab scale L=1 m; Ra cap inactive → 10.11.3 gap statement is scale-specific); Python 177 checks; no calibration, no production change                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | **Complete**; classification C (verification); production UNCHANGED; commit pending |
 
 ## Immediate next step
+
+### Stage 10.14 — re-scoring of the 10.8.2 observational set against the 3eq / 3eq+natural closures (COMPLETE)
+
+Roadmap item §142–143 delivered:
+
+- New scoring layer `python/validation/three_equation_scoring.py` applies
+  the 3eq (10.10/10.10.1) and 3eq+natural (10.11) closures to the curated
+  10.8.2 19-record set with the 10.8.2 acceptance criterion.
+- **u>0 rows (n=4):** teq metrics RMSE 0.366 / bias +0.277 vs bulk
+  0.108 / +0.083 — the three-equation closure does NOT reduce the
+  systematic NJ80 bias (functional-form mismatch from Stage 10.9 persists;
+  KW84 improves 0.70x → 1.09x, NJ80 worsens 5.8x → 11.7x at dT=2).
+- **Quiescent rows (n=5, RH80 lab):** bulk 0/5, teq 0/5, teq_nat **5/5**
+  in the observed band 0.01–1 m/day at the lab scale L=1 m (ratios
+  0.56–1.39); at iceberg scale L=100 m the Ra cap pins Nu (γ_T,nat drops
+  77x) — the 10.11.3 "gap not closed" statement is **scale-specific**.
+- Validation: `python/tests/test_three_equation_scoring.py` (177/177 PASS);
+  all 7 pre-existing Python suites unchanged (822 checks, 0 errors).
+- No calibration, no production change, no switch-default change.
+- Report: `docs/validation/stage10.14_three_equation_rescoring.md`.
+
+**Known status**: re-scoring completes the KNOWN_ISSUES N-05 dependency
+(re-scoring on the 3eq closure); calibration remains not identifiable.
+Commit pending user review.
 
 ### Stage 10.13 — diffusion-limited / double-diffusive low-flow closure (COMPLETE)
 
@@ -140,7 +165,7 @@ Priority for the next stage (after 10.12):
    default); further validation of t_scale/f_dc is a follow-up research item,
    not a new production stage**;
 2. re-scoring the 10.8.2 observational set against the three-equation + natural-convection closure
-   with the 10.8.2 acceptance criterion;
+   with the 10.8.2 acceptance criterion — **Stage 10.14 complete (verification only; see report)**;
 3. improved atmospheric stability/transfer treatment if external validation demonstrates
    material bias.
 

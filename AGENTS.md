@@ -70,6 +70,8 @@ python python/tests/test_three_equation_natural.py                # Stage 10.11 
 python python/tests/test_internal_thermal_evolution.py            # Stage 10.12 Python (35 checks)
 python python/tests/test_low_flow.py                              # Stage 10.13 Python prototype (167 checks)
 python python/validation/low_flow_fortran_comparison.py           # Stage 10.13 Fortran/Python comparison (56 checks)
+python python/tests/test_three_equation_scoring.py                # Stage 10.14 10.8.2 re-scoring (177 checks)
+python python/validation/three_equation_scoring.py                # Stage 10.14 re-scoring (prints metrics + gap tables)
 ```
 
 fpm 0.13.0-alpha: `fpm build` compiles only sources reachable from targets;
@@ -190,6 +192,7 @@ ERA5 download: `conda run -n iceberg-thermodynamic-model python python/era5/down
 | 10.11/10.11.2/10.11.3 | Natural convection (selectable); audit: cap always active, 10.8.2 gap not closed; 23 + 70 checks     | `docs/validation/stage10.11_natural_convection.md`, `docs/validation/stage10.11.2_natural_convection_audit.md`, `docs/validation/stage10.11.3_natural_convection_physics_audit.md`                                         |
 | 10.12                 | Internal temperature (two-node lumped, switch fully gates); 21 + 35 checks                           | `docs/validation/stage10.12_internal_thermal_evolution.md`                                                                                                                                                                 |
 | 10.13 (A–C)           | Low-flow closure: research parameterization behind an OFF-by-default switch; 23 + 56 + 167 checks    | `docs/validation/stage10.13_diffusion_limited_low_flow_design_note.md`, `docs/validation/stage10.13_phase_b_results.md`, `docs/validation/stage10.13_phase_c_results.md`                                                   |
+| 10.14                 | 10.8.2 re-scoring on 3eq/3eq+natural closures: verification only, no calibration, no production change; 177 checks | `docs/validation/stage10.14_three_equation_rescoring.md`                                                                                                                                                                             |
 
 Current physics status and switches — ALWAYS check
 `docs/model/model_physics_status.md` and `docs/DECISIONS.md`, not this file

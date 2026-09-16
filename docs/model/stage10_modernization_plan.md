@@ -1,8 +1,8 @@
 # Stage 10 — Physics Modernization Plan
 
-**Updated:** 2026-09-15
-**Current stage:** 10.13 (low-flow closure: Phase C production integration, selectable, OFF by default)
-**Current classification:** C — low-flow closure integrated behind `low_flow_closure_enabled` (research parameterization; OFF = legacy unchanged); Fortran 23 + comparison 56 checks
+**Updated:** 2026-09-16
+**Current stage:** 10.14 (re-scoring of the 10.8.2 observational set against the 3eq / 3eq+natural closures; verification-only)
+**Current classification:** C — Stage 10.14 is a verification stage: 10.8.2 re-scoring with the 3eq and 3eq+natural closures (Python 177 checks); no calibration, production unchanged; Stage 10.13 remains a research parameterization behind `low_flow_closure_enabled` (OFF = legacy unchanged)
 
 ## Purpose
 
@@ -238,13 +238,23 @@ Corrected the fundamental limitation of zero basal melt at zero relative flow by
 - **Known limitations**: t_scale = 1 day dominates quiescent melt (order-of-magnitude sensitivity); f_dc = 2.5 not calibrated; kappa_S Le=100 convention 4.4% below the Python reference; interface freshening reduces coupled m vs far-field m_low; research parameterization, not universal validation.
 - **Reports**: `docs/validation/stage10.13_phase_c_results.md` (Phase C), `docs/validation/stage10.13_phase_b_results.md` (Phase B), `docs/validation/stage10.13_diffusion_limited_low_flow_design_note.md` (Phase A).
 
+## Stage 10.14 — Re-scoring of the 10.8.2 observational set against the 3eq / 3eq+natural closures (DONE, verification-only)
+
+- **Classification**: C — verification stage; no physics change, no calibration, no switch-default change; production UNCHANGED.
+- **Purpose**: the roadmap item after 10.13 (re-scoring the 10.8.2 set against the three-equation + natural-convection closure with the 10.8.2 acceptance criterion). Applies the already-implemented 3eq (10.10/10.10.1) and 3eq+natural (10.11) closures to the curated 19-record observational set for the first time.
+- **Results (u>0, n=4)**: teq point metrics RMSE 0.366 / MAE 0.277 / bias +0.277 vs bulk 0.108 / 0.092 / +0.083 — the 3eq closure does NOT reduce the systematic NJ80 bias (KW84 improves 0.70x → 1.09x; NJ80 worsens 5.8x → 11.7x at dT=2). Functional-form mismatch (obs ~ dT^1.73 vs dT^1.0, Stage 10.9) persists and is amplified.
+- **Results (quiescent, n=5)**: bulk 0/5, teq 0/5 (gap persists for closures without a natural branch), teq_nat 5/5 in the observed band 0.01–1 m/day at the lab-block scale L=1 m (ratios 0.56–1.39). Scale analysis: at L=1 m Ra=4.6e9 < cap 1e10 → Nu unpinned; at L=100 m Ra=4.6e15 > cap → Nu pinned at 323.17, γ_T,nat 77x smaller → the 10.11.3 "zero-flow 1.4e-3 m/day, gap not closed" statement is **scale-specific** (iceberg scale), not a statement about the lab experiments that produced the RH80 data.
+- **Validation**: `python/validation/three_equation_scoring.py` + `python/tests/test_three_equation_scoring.py` (177/177 PASS, blocks A–H); all 7 pre-existing Python suites unchanged (822 checks, 0 errors).
+- **No new physics introduced**: the closures under test are the production 3eq / 3eq+natural schemes; this stage only scores them against the observations.
+- **Report**: `docs/validation/stage10.14_three_equation_rescoring.md`.
+
 ## Next modernization sequence
 
-Priority candidates after 10.12:
+Priority candidates after 10.13/10.14:
 
 1. improved treatment of iceberg-specific ocean heat transfer, including
    re-scoring the 10.8.2 set against the three-equation + natural-convection closure with the
-   10.8.2 acceptance criterion;
+   10.8.2 acceptance criterion — **Stage 10.14 complete (verification-only, see report)**;
 2. improved atmospheric stability/transfer treatment if validation demonstrates a material need;
 3. modern seawater thermodynamics, including a full EOS-80/TEOS-10 pathway,
    only as a dedicated future stage.

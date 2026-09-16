@@ -27,6 +27,7 @@ Statuses:
 | `stage10.13_phase_b_results.md`                        | 10.13           | COMPLETED (Phase B)     | Research prototype `python/validation/low_flow.py`: 167 checks, sweep 246/270 in the observed band, 10.8.2 re-scoring                                |
 | `stage10.13_phase_c_results.md`                        | 10.13           | COMPLETED (Phase C)     | Production integration behind `low_flow_closure_enabled` (OFF by default); Fortran 23 + comparison 56 checks; full battery exit 0                    |
 | `stage10.14_three_equation_rescoring.md`               | 10.14           | COMPLETED (C)           | Re-scoring of the 10.8.2 set against the three-equation (10.10/10.10.1) and 3eq+natural-convection (10.11) closures; Python 177 checks; no calibration, no production change |
+| `stage10.15_operational_demonstration.md`              | 10.15           | COMPLETED (operational) | Operational end-to-end demonstration: real-forcing 30-day Lagrangian iceberg run (trajectory + diagnostics, 7/7 checks), full-model 1/7-day runs (ocean NaN state documented), dependency audit, reproducible commands |
 
 Note: Stage 10.13 (Phases A–C) is complete and committed (`caa7799`); its
 reports remain here because Stage 10 as a whole is still active. Stage 10.13
@@ -34,6 +35,10 @@ is a **research parameterization** (numerically tested, production-integrated
 behind a switch) — not universally validated. Stage 10.14 is a verification
 stage: it re-scores the 10.8.2 observational set against the 3eq and
 3eq+natural closures (roadmap item) — no calibration, no production change.
+Stage 10.15 is an operational demonstration: 30-day real-forcing Lagrangian
+iceberg run (trajectory + diagnostics, reproducible), full-model 1/7-day
+runs with the documented ocean NaN state, and the T-12 symlink prerequisite
+exercised. It is not a physics change and not an observational validation.
 
 ## Links to current documentation
 

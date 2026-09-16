@@ -1,8 +1,8 @@
 # Stage 10 — Physics Modernization Plan
 
-**Updated:** 2026-09-16
-**Current stage:** 10.14 (re-scoring of the 10.8.2 observational set against the 3eq / 3eq+natural closures; verification-only)
-**Current classification:** C — Stage 10.14 is a verification stage: 10.8.2 re-scoring with the 3eq and 3eq+natural closures (Python 177 checks); no calibration, production unchanged; Stage 10.13 remains a research parameterization behind `low_flow_closure_enabled` (OFF = legacy unchanged)
+**Updated:** 2026-09-17
+**Current stage:** 10.15 (operational end-to-end demonstration; no physics change)
+**Current classification:** C — Stage 10.14 is a verification stage (10.8.2 re-scoring, Python 177 checks; no calibration, production unchanged); Stage 10.15 is an operational demonstration (30-day real-forcing Lagrangian iceberg run, trajectory + diagnostics; full-model runs with the documented ocean NaN state); Stage 10.13 remains a research parameterization behind `low_flow_closure_enabled` (OFF = legacy unchanged)
 
 ## Purpose
 
@@ -247,6 +247,16 @@ Corrected the fundamental limitation of zero basal melt at zero relative flow by
 - **Validation**: `python/validation/three_equation_scoring.py` + `python/tests/test_three_equation_scoring.py` (177/177 PASS, blocks A–H); all 7 pre-existing Python suites unchanged (822 checks, 0 errors).
 - **No new physics introduced**: the closures under test are the production 3eq / 3eq+natural schemes; this stage only scores them against the observations.
 - **Report**: `docs/validation/stage10.14_three_equation_rescoring.md`.
+
+## Stage 10.15 — Operational end-to-end demonstration (DONE, no physics change)
+
+- **Classification**: operational demonstration with documented limitations; no physics change, no calibration, no switch-default change; production UNCHANGED.
+- **Purpose**: prove whether the existing model executes end-to-end with real/repository-supported inputs and produces interpretable outputs; identify the actual remaining bottleneck (not a new physical modernization).
+- **Results**: Lagrangian iceberg 30-day real-forcing run (TEST_11, 720 hourly steps): trajectory produced (74.83→75.07 °N, 30.31→29.84 °E), mass −15.4 %, melt bounded (basal 0.049 / lateral 0.260 / surface 0.022 m/day), 7/7 test checks + 7/7 diagnostics checks PASS. Full-model runs (1 day and 7 days, `fpm run`) exit 0; day_00 clean; 3D ocean fields NaN from day 1 (stable 56.5 %, T frozen at 273.15 K) — the documented Stage 8 EN4-init imbalance family, pre-existing, not introduced here.
+- **Key operational findings**: (1) the production executable `app/main.f90` does NOT run the Lagrangian iceberg module (no `use iceberg*`); the iceberg model is reachable only through test programs; (2) the Eulerian ocean state is dead from day 1 with the real EN4 initialization, so coupled ocean-forcing for the iceberg is not yet possible (offline prescribed forcing only); (3) T-12 root-symlink prerequisite exercised — with symlinks, all previously-skipped grid-dependent tests PASS.
+- **Diagnostics**: `python/analysis/stage10.15_diagnostics.py` (7 figures + summary JSON); output bundle `data/output/stage10.15/` (gitignored).
+- **No new physics introduced**: this stage only executes and diagnoses the existing model.
+- **Report**: `docs/validation/stage10.15_operational_demonstration.md`.
 
 ## Next modernization sequence
 

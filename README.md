@@ -11,9 +11,9 @@ under atmospheric, oceanic, bathymetric, and sea-ice forcing.
 
 ## Project status
 
-- **Current stage:** Stage 10.14 — re-scoring of the 10.8.2 observational set
-  against the three-equation / 3eq+natural-convection closures (verification
-  only; no calibration, no production change).
+- **Current stage:** Stage 10.15 — operational end-to-end demonstration
+  (30-day real-forcing Lagrangian iceberg run with trajectory + diagnostics;
+  no physics change, no calibration).
 - **Physics status and switches:** `docs/model/model_physics_status.md`
 - **Stage plan and status:** `docs/PROJECT_ROADMAP.md`
 

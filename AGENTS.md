@@ -72,6 +72,7 @@ python python/tests/test_low_flow.py                              # Stage 10.13 
 python python/validation/low_flow_fortran_comparison.py           # Stage 10.13 Fortran/Python comparison (56 checks)
 python python/tests/test_three_equation_scoring.py                # Stage 10.14 10.8.2 re-scoring (177 checks)
 python python/validation/three_equation_scoring.py                # Stage 10.14 re-scoring (prints metrics + gap tables)
+python python/analysis/stage10.15_diagnostics.py                  # Stage 10.15 operational diagnostics + plots (7 figures)
 ```
 
 fpm 0.13.0-alpha: `fpm build` compiles only sources reachable from targets;
@@ -193,6 +194,7 @@ ERA5 download: `conda run -n iceberg-thermodynamic-model python python/era5/down
 | 10.12                 | Internal temperature (two-node lumped, switch fully gates); 21 + 35 checks                           | `docs/validation/stage10.12_internal_thermal_evolution.md`                                                                                                                                                                 |
 | 10.13 (A–C)           | Low-flow closure: research parameterization behind an OFF-by-default switch; 23 + 56 + 167 checks    | `docs/validation/stage10.13_diffusion_limited_low_flow_design_note.md`, `docs/validation/stage10.13_phase_b_results.md`, `docs/validation/stage10.13_phase_c_results.md`                                                   |
 | 10.14                 | 10.8.2 re-scoring on 3eq/3eq+natural closures: verification only, no calibration, no production change; 177 checks | `docs/validation/stage10.14_three_equation_rescoring.md`                                                                                                                                                                             |
+| 10.15                 | Operational end-to-end demonstration: 30-day real-forcing iceberg run (trajectory + diagnostics), full-model runs with documented ocean NaN state; production executable does NOT run the iceberg module | `docs/validation/stage10.15_operational_demonstration.md`                                                                                                                                                                             |
 
 Current physics status and switches — ALWAYS check
 `docs/model/model_physics_status.md` and `docs/DECISIONS.md`, not this file

@@ -1,10 +1,10 @@
 # Model Physics Block Status
 
-**Date:** 2026-09-16
-**Current repository stage:** Stage 10.14 — re-scoring of the 10.8.2 observational set against the 3eq / 3eq+natural closures (verification; no physics change)
+**Date:** 2026-09-17
+**Current repository stage:** Stage 10.15 — operational end-to-end demonstration (Lagrangian iceberg 30-day real-forcing run + full-model runs; no physics change)
 **Production baseline:** Stage 10.13 (low-flow closure behind `low_flow_closure_enabled`; OFF = Stage 10.12/10.10 legacy unchanged)
 **FPM test targets:** 54
-**Local status:** 10.12 Fortran 21/21 + Python 35/35 PASS; 10.13 Fortran 23/23 + Python/Fortran comparison 56/56 PASS; 10.14 Python 177/177 PASS; full fpm battery PASS (exit 0); all 8 Python suites 0 errors (65+70+44+229+212+35+167+177 = 999 checks); strict `-Wall -Wextra -fcheck=all` build clean; `git diff --check` clean
+**Local status:** 10.12 Fortran 21/21 + Python 35/35 PASS; 10.13 Fortran 23/23 + Python/Fortran comparison 56/56 PASS; 10.14 Python 177/177 PASS; 10.15 TEST_11 7/7 PASS + diagnostics 7/7 checks PASS (30-day real-forcing trajectory); full fpm battery exit 0 (with T-12 symlinks, all grid-dependent tests PASS); all 8 Python suites 0 errors (999 checks); strict `-Wall -Wextra -fcheck=all` build clean; `git diff --check` clean
 **Stage 10.7 report:** `docs/validation/stage10.7_basal_melt_validation.md`
 **Stage 10.8.1 report:** `docs/validation/stage10.8.1_python_validation.md`
 **Stage 10.8.2 report:** `docs/validation/stage10.8.2_observational_validation.md`
@@ -16,6 +16,7 @@
 **Stage 10.12 report:** `docs/validation/stage10.12_internal_thermal_evolution.md`
 **Stage 10.13 reports:** `docs/validation/stage10.13_diffusion_limited_low_flow_design_note.md` (Phase A), `docs/validation/stage10.13_phase_b_results.md` (Phase B), `docs/validation/stage10.13_phase_c_results.md` (Phase C)
 **Stage 10.14 report:** `docs/validation/stage10.14_three_equation_rescoring.md`
+**Stage 10.15 report:** `docs/validation/stage10.15_operational_demonstration.md`
 
 ## Classification
 

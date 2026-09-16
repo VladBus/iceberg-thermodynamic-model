@@ -1,8 +1,8 @@
 # Project Roadmap
 
-**Updated:** 2026-09-16
-**Current scientific stage:** Stage 10.14 — re-scoring of the 10.8.2 observational set against the 3eq / 3eq+natural closures (verification; no physics change)
-**Current status:** Stage 10.13 complete and committed (`caa7799`): low-flow closure behind `low_flow_closure_enabled`, OFF by default. Stage 10.14 complete (not committed at time of writing): 10.8.2 re-scoring, Python 177 checks, no calibration, no production change.
+**Updated:** 2026-09-17
+**Current scientific stage:** Stage 10.15 — operational end-to-end demonstration (Lagrangian iceberg 30-day real-forcing run; full-model runs with documented ocean NaN state; no physics change)
+**Current status:** Stage 10.14 committed and pushed (`ca60c62`). Stage 10.15 complete (commit pending): 30-day real-forcing iceberg trajectory (TEST_11, 7/7 checks + diagnostics 7/7), full-model 1/7-day runs exit 0 with the pre-existing Stage 8 ocean NaN state documented, T-12 symlink prerequisite exercised, dependency audit + reproducible commands.
 
 ## Completed foundation
 
@@ -39,8 +39,35 @@
 | 10.12    | Prognostic internal thermal evolution: two-node lumped interior, prognostic `state%T_ice` replaces constant `T_i=-10` in Eq. II; `q_cond = 2*K_ICE*(T_s-T_i)/H` (K_ICE=2.2), `q_bot = m*rho_i*CP_ICE_3EQ*max(T_B-T_i,0)`, explicit Euler, clamp [-100,0]°C, switch `thermal_evolution_enabled` — fully gates the stage in the step (OFF = bit-identical legacy, verified by F.1–F.4); energy-conserving lagged skin coupling (`q_internal_exchange`); Fortran 21 + Python 35 checks, cross-language contract C_int(50 m); unused stdlib dependency removed from fpm.toml                                                            | Complete; classification C; production updated; all tests PASS                                                         |
 | 10.13    | Diffusion-limited / double-diffusive low-flow closure: Phase A (scientific formulation + literature audit) → Phase B (research prototype, 167 checks, sweep 246/270 in band, 10.8.2 quiescent 5/5) → Phase C (production integration: selectable `low_flow_closure_enabled`, OFF default, three-equation preserved, forced branch bit-identical at high U, Fortran 23 checks + Python/Fortran comparison 56 checks; research parameterization, not universal validation)                                                                                                                                                            | **Complete** (Phases A–C); classification: research parameterization; production updated behind switch; commit pending |
 | 10.14    | Re-scoring of the 10.8.2 observational set against the 3eq (10.10/10.10.1) and 3eq+natural (10.11) closures with the 10.8.2 acceptance criterion: u>0 metrics (teq RMSE 0.366, bias +0.277 — worse than bulk 0.108/+0.083, NJ80 functional-form mismatch persists) + quiescent gap (bulk 0/5, teq 0/5, teq_nat 5/5 in band at lab scale L=1 m; Ra cap inactive → 10.11.3 gap statement is scale-specific); Python 177 checks; no calibration, no production change                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | **Complete**; classification C (verification); production UNCHANGED; commit pending |
+| 10.15    | Operational end-to-end demonstration: real-forcing 30-day Lagrangian iceberg run (TEST_11, trajectory + diagnostics, 7/7 checks; 74.8→75.1 °N, 30.3→29.8 °E, mass −15.4 %, melt bounded) + full-model 1/7-day runs (exit 0; 3D ocean NaN from day 1 — documented Stage 8 family, stable, not introduced here); T-12 symlink prerequisite exercised; dependency audit; reproducible commands; output bundle `data/output/stage10.15/` (gitignored)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | **Complete**; classification: operational demonstration with documented limitations; production UNCHANGED; commit pending |
 
 ## Immediate next step
+
+### Stage 10.15 — operational end-to-end demonstration (COMPLETE)
+
+Delivered:
+
+- **Lagrangian iceberg 30-day real-forcing run** (`iceberg_test_11_30day_offline`,
+  720 hourly steps): trajectory produced (74.83→75.07 °N, 30.31→29.84 °E),
+  mass −15.4 %, melt bounded (basal 0.049 / lateral 0.260 / surface 0.022
+  m/day), 7/7 test checks + 7/7 diagnostics checks PASS.
+- **Full-model runs** (`fpm run`, 1 day and 7 days): exit 0; day_00 clean;
+  from day 1 the 3D ocean fields are NaN (stable 56.5 %, T frozen at 273.15 K)
+  — the documented Stage 8 EN4-init imbalance family, pre-existing, NOT
+  introduced here.
+- **T-12 prerequisite exercised**: root symlinks (`KOORD.DAT`, `hhh.bar`,
+  `1_1.ice`–`1_5.ice`) created; all previously-skipped grid-dependent tests
+  now PASS.
+- **Key operational finding**: the production executable (`app/main.f90`)
+  does NOT run the Lagrangian iceberg module (no `use iceberg*`); the iceberg
+  model is reachable only through test programs. The Eulerian ocean state is
+  dead from day 1 with real EN4 init, so coupled forcing is not yet possible.
+- Diagnostics: `python/analysis/stage10.15_diagnostics.py` (7 figures +
+  summary JSON); output bundle `data/output/stage10.15/` (gitignored).
+- Report: `docs/validation/stage10.15_operational_demonstration.md`.
+
+**Known status**: operational demonstration completed with documented
+limitations; not an observational validation. Commit pending user review.
 
 ### Stage 10.14 — re-scoring of the 10.8.2 observational set against the 3eq / 3eq+natural closures (COMPLETE)
 

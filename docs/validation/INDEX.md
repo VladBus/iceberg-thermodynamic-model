@@ -30,6 +30,7 @@ Statuses:
 | `stage10.15_operational_demonstration.md`              | 10.15           | COMPLETED (operational) | Operational end-to-end demonstration: real-forcing 30-day Lagrangian iceberg run (trajectory + diagnostics, 7/7 checks), full-model 1/7-day runs (ocean NaN state documented), dependency audit, reproducible commands |
 | `stage10.15.1_trajectory_continuity_audit.md`          | 10.15.1         | COMPLETED (audit; real discontinuity identified) | Follow-up audit of the 10.15 trajectory: model-space x/y continuous and kinematically consistent, but geographic lat/lon contains 8 real jumps (~0.17°) at cell crossings — transposed bilinear weights in `model_coords_to_latlon`/`bilinear_interp_3d` (T-13); source NOT changed (audit-only); corrected projection continuous (corr 0.988); 28 Python regression checks |
 | `stage10.15.2_coordinate_mapping_bilinear_fix.md`      | 10.15.2         | COMPLETED (fix; regression-tested, re-run)       | Fix of the transposed bilinear weights (T-13): cross terms swapped in `bilinear_interp_3d` + `model_coords_to_latlon`; new Fortran regression `iceberg_test_bilinear_axis_regression` (13 checks — FAILS pre-fix, PASSES post-fix); TEST_11 re-run: 0 jumps, corr(geo, reported)=0.988; T-07 drift anomaly unchanged (OPEN); physics unchanged |
+| `stage10.16_drift_dynamics_t07_investigation.md`       | 10.16           | COMPLETED (investigation; T-07 partially explained) | Controlled experiments A–K (wind/current/Coriolis/timestep/size/drag): the low wind-drift ratio is the physically correct **Coriolis-limited equilibrium** u = F_wind/(M·f) of a 100-m cube (analytic match 0.1 %; ratio ∝ 1/L; C_Dw-independent); 1–2 % reference assumes drag-limited regime or wind-driven (Ekman) current absent from the offline model; secondary numerical damping 1/√(1+(f·dt)²) ~11 % at dt=3600 s; NO source change; TEST_11 re-run byte-identical |
 
 Note: Stage 10.13 (Phases A–C) is complete and committed (`caa7799`); its
 reports remain here because Stage 10 as a whole is still active. Stage 10.13
@@ -52,6 +53,14 @@ pre-fix code, and verified by a repeated 30-day TEST_11 run (0 jumps,
 corr(implied geo, reported) = 0.988). It is a targeted correctness fix —
 no new physics, no calibration, no default change; T-07 drift anomaly
 remains open.
+Stage 10.16 investigates T-07 with controlled experiments (A–K): the low
+wind-drift ratio is the physically correct Coriolis-limited equilibrium
+u = F_wind/(M·f) of a 100-m cube (analytic match 0.1 %; ratio ∝ 1/L;
+C_Dw-independent; wind ≈ Coriolis ≫ water drag at equilibrium). The 1–2 %
+reference assumes a drag-limited regime or a wind-driven surface current
+absent from this offline model; a secondary numerical damping
+1/√(1+(f·dt)²) ≈ 0.89 at dt = 3600 s contributes ~11 %. No source
+correction was made; the repeated TEST_11 run is byte-identical to 10.15.2.
 
 ## Links to current documentation
 

@@ -11,10 +11,10 @@ under atmospheric, oceanic, bathymetric, and sea-ice forcing.
 
 ## Project status
 
-- **Current stage:** Stage 10.15.2 — coordinate mapping and bilinear
-  interpolation fix (T-13 resolved: transposed weights in
-  `model_coords_to_latlon`/`bilinear_interp_3d` corrected; regression-tested,
-  30-day run repeated; no physics change; T-07 drift anomaly remains open).
+- **Current stage:** Stage 10.16 — drift dynamics and T-07 investigation
+  (T-07 partially explained: the low wind-drift ratio is the physically
+  correct Coriolis-limited equilibrium of a 100-m cube, not a drag bug; no
+  source change; next: Stage 10.17 melt budget audit).
 - **Physics status and switches:** `docs/model/model_physics_status.md`
 - **Stage plan and status:** `docs/PROJECT_ROADMAP.md`
 

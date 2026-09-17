@@ -76,7 +76,9 @@ python python/analysis/stage10.15_diagnostics.py                  # Stage 10.15 
 python python/analysis/stage10.15_1_trajectory_audit.py           # Stage 10.15.1/10.15.2 trajectory continuity audit (29 checks, 9 figures)
 python python/tests/test_stage10_15_1_trajectory_audit.py         # Stage 10.15.1/10.15.2 regression tests (29 checks)
 python python/analysis/stage10.15_2_compare.py                    # Stage 10.15.2 pre-fix vs post-fix comparison (5 figures + summary)
-fpm test --flag "-I/usr/include" iceberg_test_bilinear_axis_regression   # Stage 10.15.2 bilinear axis regression (13 checks)
+python python/analysis/stage10.16_drift_analysis.py                   # Stage 10.16 drift dynamics analysis (10 figures + summary)
+python python/tests/test_stage10_16_drift_scaling.py                  # Stage 10.16 drift scaling analytic regression (13 checks)
+fpm test --flag "-I/usr/include" iceberg_test_drift_dynamics          # Stage 10.16 controlled drift experiments (16 checks)
 ```
 
 fpm 0.13.0-alpha: `fpm build` compiles only sources reachable from targets;
@@ -201,6 +203,7 @@ ERA5 download: `conda run -n iceberg-thermodynamic-model python python/era5/down
 | 10.15                 | Operational end-to-end demonstration: 30-day real-forcing iceberg run (trajectory + diagnostics), full-model runs with documented ocean NaN state; production executable does NOT run the iceberg module | `docs/validation/stage10.15_operational_demonstration.md`                                                                                                                                                                             |
 | 10.15.1               | Trajectory continuity audit: 8 real geographic-coordinate jumps (~0.17°) from transposed bilinear weights in `model_coords_to_latlon`/`bilinear_interp_3d` (T-13); audit-only, source unchanged; 28 Python checks | `docs/validation/stage10.15.1_trajectory_continuity_audit.md`                                                                                                                                                                           |
 | 10.15.2               | Coordinate mapping and bilinear interpolation fix (T-13 RESOLVED): cross terms swapped (wx along j/X, wy along i/Y); `iceberg_test_bilinear_axis_regression` 13 checks (FAILS pre-fix, PASSES post-fix); TEST_11 re-run: 0 jumps, corr 0.988; T-07 drift anomaly unchanged (OPEN); no physics change | `docs/validation/stage10.15.2_coordinate_mapping_bilinear_fix.md`                                                                                                                                                                           |
+| 10.16                 | Drift dynamics and T-07 investigation: T-07 PARTIALLY EXPLAINED — low wind ratio (0.04–0.13 %) is the Coriolis-limited equilibrium u = F_wind/(M·f) of a 100-m cube (analytic match 0.1 %; ratio ∝ 1/L; C_Dw-independent); 1–2 % reference implies drag-limited regime or wind-driven (Ekman) current absent from the offline model; secondary numerical damping 1/√(1+(f·dt)²) ~11 % at dt=3600 s; NO source change; `iceberg_test_drift_dynamics` 16 checks + `test_stage10_16_drift_scaling.py` 13 checks | `docs/validation/stage10.16_drift_dynamics_t07_investigation.md`                                                                                                                                                                           |
 
 Current physics status and switches — ALWAYS check
 `docs/model/model_physics_status.md` and `docs/DECISIONS.md`, not this file

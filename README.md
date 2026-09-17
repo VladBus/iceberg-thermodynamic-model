@@ -11,8 +11,9 @@ under atmospheric, oceanic, bathymetric, and sea-ice forcing.
 
 ## Project status
 
-- **Current stage:** Stage 10.15 — operational end-to-end demonstration
-  (30-day real-forcing Lagrangian iceberg run with trajectory + diagnostics;
+- **Current stage:** Stage 10.15.1 — trajectory continuity and output
+  integrity audit (follow-up to 10.15: real geographic-coordinate
+  discontinuity identified — transposed bilinear weights, T-13; audit-only,
   no physics change, no calibration).
 - **Physics status and switches:** `docs/model/model_physics_status.md`
 - **Stage plan and status:** `docs/PROJECT_ROADMAP.md`

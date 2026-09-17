@@ -28,6 +28,7 @@ Statuses:
 | `stage10.13_phase_c_results.md`                        | 10.13           | COMPLETED (Phase C)     | Production integration behind `low_flow_closure_enabled` (OFF by default); Fortran 23 + comparison 56 checks; full battery exit 0                    |
 | `stage10.14_three_equation_rescoring.md`               | 10.14           | COMPLETED (C)           | Re-scoring of the 10.8.2 set against the three-equation (10.10/10.10.1) and 3eq+natural-convection (10.11) closures; Python 177 checks; no calibration, no production change |
 | `stage10.15_operational_demonstration.md`              | 10.15           | COMPLETED (operational) | Operational end-to-end demonstration: real-forcing 30-day Lagrangian iceberg run (trajectory + diagnostics, 7/7 checks), full-model 1/7-day runs (ocean NaN state documented), dependency audit, reproducible commands |
+| `stage10.15.1_trajectory_continuity_audit.md`          | 10.15.1         | COMPLETED (audit; real discontinuity identified) | Follow-up audit of the 10.15 trajectory: model-space x/y continuous and kinematically consistent, but geographic lat/lon contains 8 real jumps (~0.17°) at cell crossings — transposed bilinear weights in `model_coords_to_latlon`/`bilinear_interp_3d` (T-13); source NOT changed (audit-only); corrected projection continuous (corr 0.988); 28 Python regression checks |
 
 Note: Stage 10.13 (Phases A–C) is complete and committed (`caa7799`); its
 reports remain here because Stage 10 as a whole is still active. Stage 10.13
@@ -39,6 +40,10 @@ Stage 10.15 is an operational demonstration: 30-day real-forcing Lagrangian
 iceberg run (trajectory + diagnostics, reproducible), full-model 1/7-day
 runs with the documented ocean NaN state, and the T-12 symlink prerequisite
 exercised. It is not a physics change and not an observational validation.
+Stage 10.15.1 is a narrow audit of the 10.15 trajectory output: it identifies
+a real geographic-coordinate discontinuity (transposed bilinear weights,
+T-13) and documents the correction path; the original 10.15 report is kept
+unchanged and the corrected figure is linked from the 10.15.1 report.
 
 ## Links to current documentation
 

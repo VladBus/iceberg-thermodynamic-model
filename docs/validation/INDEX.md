@@ -29,6 +29,7 @@ Statuses:
 | `stage10.14_three_equation_rescoring.md`               | 10.14           | COMPLETED (C)           | Re-scoring of the 10.8.2 set against the three-equation (10.10/10.10.1) and 3eq+natural-convection (10.11) closures; Python 177 checks; no calibration, no production change |
 | `stage10.15_operational_demonstration.md`              | 10.15           | COMPLETED (operational) | Operational end-to-end demonstration: real-forcing 30-day Lagrangian iceberg run (trajectory + diagnostics, 7/7 checks), full-model 1/7-day runs (ocean NaN state documented), dependency audit, reproducible commands |
 | `stage10.15.1_trajectory_continuity_audit.md`          | 10.15.1         | COMPLETED (audit; real discontinuity identified) | Follow-up audit of the 10.15 trajectory: model-space x/y continuous and kinematically consistent, but geographic lat/lon contains 8 real jumps (~0.17°) at cell crossings — transposed bilinear weights in `model_coords_to_latlon`/`bilinear_interp_3d` (T-13); source NOT changed (audit-only); corrected projection continuous (corr 0.988); 28 Python regression checks |
+| `stage10.15.2_coordinate_mapping_bilinear_fix.md`      | 10.15.2         | COMPLETED (fix; regression-tested, re-run)       | Fix of the transposed bilinear weights (T-13): cross terms swapped in `bilinear_interp_3d` + `model_coords_to_latlon`; new Fortran regression `iceberg_test_bilinear_axis_regression` (13 checks — FAILS pre-fix, PASSES post-fix); TEST_11 re-run: 0 jumps, corr(geo, reported)=0.988; T-07 drift anomaly unchanged (OPEN); physics unchanged |
 
 Note: Stage 10.13 (Phases A–C) is complete and committed (`caa7799`); its
 reports remain here because Stage 10 as a whole is still active. Stage 10.13
@@ -44,6 +45,13 @@ Stage 10.15.1 is a narrow audit of the 10.15 trajectory output: it identifies
 a real geographic-coordinate discontinuity (transposed bilinear weights,
 T-13) and documents the correction path; the original 10.15 report is kept
 unchanged and the corrected figure is linked from the 10.15.1 report.
+Stage 10.15.2 fixes the identified defect: the transposed cross terms in
+`bilinear_interp_3d` and `model_coords_to_latlon` are swapped (wx along j/X,
+wy along i/Y), protected by a new Fortran regression test that fails on the
+pre-fix code, and verified by a repeated 30-day TEST_11 run (0 jumps,
+corr(implied geo, reported) = 0.988). It is a targeted correctness fix —
+no new physics, no calibration, no default change; T-07 drift anomaly
+remains open.
 
 ## Links to current documentation
 

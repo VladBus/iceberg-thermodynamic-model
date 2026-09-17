@@ -1,10 +1,10 @@
 # Model Physics Block Status
 
 **Date:** 2026-09-17
-**Current repository stage:** Stage 10.15 — operational end-to-end demonstration (Lagrangian iceberg 30-day real-forcing run + full-model runs; no physics change)
+**Current repository stage:** Stage 10.15.2 — coordinate mapping and bilinear interpolation fix (T-13 RESOLVED; wx along j/X, wy along i/Y; no physics change; T-07 drift anomaly open)
 **Production baseline:** Stage 10.13 (low-flow closure behind `low_flow_closure_enabled`; OFF = Stage 10.12/10.10 legacy unchanged)
 **FPM test targets:** 54
-**Local status:** 10.12 Fortran 21/21 + Python 35/35 PASS; 10.13 Fortran 23/23 + Python/Fortran comparison 56/56 PASS; 10.14 Python 177/177 PASS; 10.15 TEST_11 7/7 PASS + diagnostics 7/7 checks PASS (30-day real-forcing trajectory); full fpm battery exit 0 (with T-12 symlinks, all grid-dependent tests PASS); all 8 Python suites 0 errors (999 checks); strict `-Wall -Wextra -fcheck=all` build clean; `git diff --check` clean
+**Local status:** 10.12 Fortran 21/21 + Python 35/35 PASS; 10.13 Fortran 23/23 + Python/Fortran comparison 56/56 PASS; 10.14 Python 177/177 PASS; 10.15 TEST_11 7/7 PASS + diagnostics 7/7 checks PASS (30-day real-forcing trajectory); **10.15.1 audit 28/28 PASS; 10.15.2 fix: `iceberg_test_bilinear_axis_regression` 13/13 PASS (FAILS pre-fix, PASSES post-fix), TEST_11 re-run exit 0 with 0 coordinate jumps, corr(implied geo, reported) = 0.988; drift scaling unchanged → T-07 OPEN**; full fpm battery exit 0 (45 PASSED, 0 FAILED, 1 pre-existing SKIP requiring `fpm run` output); all 12 Python suites 0 errors; strict `-Wall -Wextra -fcheck=all` build clean; `git diff --check` clean
 **Stage 10.7 report:** `docs/validation/stage10.7_basal_melt_validation.md`
 **Stage 10.8.1 report:** `docs/validation/stage10.8.1_python_validation.md`
 **Stage 10.8.2 report:** `docs/validation/stage10.8.2_observational_validation.md`
@@ -17,6 +17,8 @@
 **Stage 10.13 reports:** `docs/validation/stage10.13_diffusion_limited_low_flow_design_note.md` (Phase A), `docs/validation/stage10.13_phase_b_results.md` (Phase B), `docs/validation/stage10.13_phase_c_results.md` (Phase C)
 **Stage 10.14 report:** `docs/validation/stage10.14_three_equation_rescoring.md`
 **Stage 10.15 report:** `docs/validation/stage10.15_operational_demonstration.md`
+**Stage 10.15.1 report:** `docs/validation/stage10.15.1_trajectory_continuity_audit.md`
+**Stage 10.15.2 report:** `docs/validation/stage10.15.2_coordinate_mapping_bilinear_fix.md`
 
 ## Classification
 

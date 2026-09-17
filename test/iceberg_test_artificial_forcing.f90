@@ -2,6 +2,17 @@
 ! Тест: Artificial Forcing Interpolation Test
 ! Назначение: Проверка билинейной интерполяции на аналитической функции
 !             F(lat, lon) = a*lat + b*lon, где точное значение известно
+!
+! Конвенция (Stage 7.6A / grid_coupling / model_coords_to_indices):
+!   i — Y/широта-подобный индекс; j — X/долгота-подобный индекс;
+!   wx — вес вдоль X → интерполирует ВДОЛЬ j (долгота);
+!   wy — вес вдоль Y → интерполирует ВДОЛЬ i (широта).
+! Синтетическая сетка: lat = 70 + (i-1)*0.1 (зависит от i),
+!                      lon = 20 + (j-1)*0.1 (зависит от j).
+! Точка запроса с весами (wx, wy): lat = 70 + (i1-1)*0.1 + wy*0.1,
+!                                  lon = 20 + (j1-1)*0.1 + wx*0.1.
+! (Stage 10.15.2: ожидания исправлены — ранее wx/wy были перепутаны,
+!  что соответствовало транспонированной формуле в bilinear_interp_3d.)
 ! ==============================================================================
 
 program iceberg_test_artificial_forcing
@@ -41,7 +52,8 @@ program iceberg_test_artificial_forcing
     ! Но у нас нет fi/dl в этом тесте (требует coup1)
     ! Поэтому создадим синтетическую регулярную сетку
 
-    ! Синтетическая регулярная сетка: lat = 70 + i*0.1, lon = 20 + j*0.1
+    ! Синтетическая регулярная сетка: lat = 70 + i*0.1 (зависит от i),
+    !                                  lon = 20 + j*0.1 (зависит от j)
     do k = 1, 1
         do j = 1, js1
             do i = 1, is1
@@ -72,8 +84,8 @@ program iceberg_test_artificial_forcing
     n_checks = n_checks + 1
 
     ! Тест 2: Центр ячейки (wx=0.5, wy=0.5)
-    lat = 70.0 + real(i1 - 1)*0.1 + 0.05
-    lon = 20.0 + real(j1 - 1)*0.1 + 0.05
+    lat = 70.0 + real(i1 - 1)*0.1 + 0.5*0.1
+    lon = 20.0 + real(j1 - 1)*0.1 + 0.5*0.1
     exact_val = a*lat + b*lon
     interp_val = bilinear_interp_3d(test_field, i1, i2, j1, j2, k, 0.5, 0.5, 0.5, 0.5)
     print *, "Test 2: At cell center (wx=0.5, wy=0.5)"
@@ -88,12 +100,13 @@ program iceberg_test_artificial_forcing
     n_checks = n_checks + 1
 
     ! Тест 3: Произвольная точка внутри ячейки
+    ! Конвенция: wx — вес вдоль X (долгота/j), wy — вес вдоль Y (широта/i)
     wx = 0.3
     wy = 0.7
     wx1 = 1.0 - wx
     wy1 = 1.0 - wy
-    lat = 70.0 + real(i1 - 1)*0.1 + wx*0.1
-    lon = 20.0 + real(j1 - 1)*0.1 + wy*0.1
+    lat = 70.0 + real(i1 - 1)*0.1 + wy*0.1
+    lon = 20.0 + real(j1 - 1)*0.1 + wx*0.1
     exact_val = a*lat + b*lon
     interp_val = bilinear_interp_3d(test_field, i1, i2, j1, j2, k, wx, wy, wx1, wy1)
     print *, "Test 3: At arbitrary point (wx=0.3, wy=0.7)"
@@ -111,13 +124,14 @@ program iceberg_test_artificial_forcing
     wy = 0.5
     wx1 = 1.0
     wy1 = 0.5
-    lat = 70.0 + real(i1 - 1)*0.1
-    lon = 20.0 + real(j1 - 1)*0.1 + wy*0.1
+    lat = 70.0 + real(i1 - 1)*0.1 + wy*0.1
+    lon = 20.0 + real(j1 - 1)*0.1 + wx*0.1
     exact_val = a*lat + b*lon
     interp_val = bilinear_interp_3d(test_field, i1, i2, j1, j2, k, wx, wy, wx1, wy1)
     print *, "Test 4: At edge (wx=0, wy=0.5)"
     print *, "  Exact: ", exact_val, " Interp: ", interp_val
-    if (abs(interp_val - exact_val) .lt. 1.0e-6) then
+    ! float32: значения ~30, epsilon ~2e-6; допуск 1e-5 как в тестах 2/5
+    if (abs(interp_val - exact_val) .lt. 1.0e-5) then
         print *, "  OK: Exact match at edge"
     else
         print *, "  ERROR: Mismatch at edge"
@@ -142,8 +156,8 @@ program iceberg_test_artificial_forcing
     i1 = 10; i2 = 11; j1 = 20; j2 = 21
     wx = 0.25; wy = 0.75
     wx1 = 0.75; wy1 = 0.25
-    lat = 70.0 + real(i1 - 1)*0.1 + wx*0.1
-    lon = 20.0 + real(j1 - 1)*0.1 + wy*0.1
+    lat = 70.0 + real(i1 - 1)*0.1 + wy*0.1
+    lon = 20.0 + real(j1 - 1)*0.1 + wx*0.1
     exact_val = a*lat + b*lon + real(k)*10.0
     interp_val = bilinear_interp_3d(test_field, i1, i2, j1, j2, k, wx, wy, wx1, wy1)
     print *, "Test 5: 3D field at layer k=2"

@@ -11,10 +11,10 @@ under atmospheric, oceanic, bathymetric, and sea-ice forcing.
 
 ## Project status
 
-- **Current stage:** Stage 10.15.1 — trajectory continuity and output
-  integrity audit (follow-up to 10.15: real geographic-coordinate
-  discontinuity identified — transposed bilinear weights, T-13; audit-only,
-  no physics change, no calibration).
+- **Current stage:** Stage 10.15.2 — coordinate mapping and bilinear
+  interpolation fix (T-13 resolved: transposed weights in
+  `model_coords_to_latlon`/`bilinear_interp_3d` corrected; regression-tested,
+  30-day run repeated; no physics change; T-07 drift anomaly remains open).
 - **Physics status and switches:** `docs/model/model_physics_status.md`
 - **Stage plan and status:** `docs/PROJECT_ROADMAP.md`
 

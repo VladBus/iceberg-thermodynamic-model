@@ -73,8 +73,10 @@ python python/validation/low_flow_fortran_comparison.py           # Stage 10.13 
 python python/tests/test_three_equation_scoring.py                # Stage 10.14 10.8.2 re-scoring (177 checks)
 python python/validation/three_equation_scoring.py                # Stage 10.14 re-scoring (prints metrics + gap tables)
 python python/analysis/stage10.15_diagnostics.py                  # Stage 10.15 operational diagnostics + plots (7 figures)
-python python/analysis/stage10.15_1_trajectory_audit.py           # Stage 10.15.1 trajectory continuity audit (28 checks, 9 figures)
-python python/tests/test_stage10_15_1_trajectory_audit.py         # Stage 10.15.1 regression tests (28 checks)
+python python/analysis/stage10.15_1_trajectory_audit.py           # Stage 10.15.1/10.15.2 trajectory continuity audit (29 checks, 9 figures)
+python python/tests/test_stage10_15_1_trajectory_audit.py         # Stage 10.15.1/10.15.2 regression tests (29 checks)
+python python/analysis/stage10.15_2_compare.py                    # Stage 10.15.2 pre-fix vs post-fix comparison (5 figures + summary)
+fpm test --flag "-I/usr/include" iceberg_test_bilinear_axis_regression   # Stage 10.15.2 bilinear axis regression (13 checks)
 ```
 
 fpm 0.13.0-alpha: `fpm build` compiles only sources reachable from targets;
@@ -198,6 +200,7 @@ ERA5 download: `conda run -n iceberg-thermodynamic-model python python/era5/down
 | 10.14                 | 10.8.2 re-scoring on 3eq/3eq+natural closures: verification only, no calibration, no production change; 177 checks | `docs/validation/stage10.14_three_equation_rescoring.md`                                                                                                                                                                             |
 | 10.15                 | Operational end-to-end demonstration: 30-day real-forcing iceberg run (trajectory + diagnostics), full-model runs with documented ocean NaN state; production executable does NOT run the iceberg module | `docs/validation/stage10.15_operational_demonstration.md`                                                                                                                                                                             |
 | 10.15.1               | Trajectory continuity audit: 8 real geographic-coordinate jumps (~0.17°) from transposed bilinear weights in `model_coords_to_latlon`/`bilinear_interp_3d` (T-13); audit-only, source unchanged; 28 Python checks | `docs/validation/stage10.15.1_trajectory_continuity_audit.md`                                                                                                                                                                           |
+| 10.15.2               | Coordinate mapping and bilinear interpolation fix (T-13 RESOLVED): cross terms swapped (wx along j/X, wy along i/Y); `iceberg_test_bilinear_axis_regression` 13 checks (FAILS pre-fix, PASSES post-fix); TEST_11 re-run: 0 jumps, corr 0.988; T-07 drift anomaly unchanged (OPEN); no physics change | `docs/validation/stage10.15.2_coordinate_mapping_bilinear_fix.md`                                                                                                                                                                           |
 
 Current physics status and switches — ALWAYS check
 `docs/model/model_physics_status.md` and `docs/DECISIONS.md`, not this file

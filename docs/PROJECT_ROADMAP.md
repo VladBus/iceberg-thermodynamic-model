@@ -1,8 +1,8 @@
 # Project Roadmap
 
 **Updated:** 2026-09-17
-**Current scientific stage:** Stage 10.15.1 — trajectory continuity and output integrity audit (real geographic-coordinate discontinuity identified — T-13; audit-only, source unchanged)
-**Current status:** Stage 10.14 committed and pushed (`ca60c62`); Stage 10.15 committed and pushed (`472fe75`). Stage 10.15.1 (audit) complete (commit pending): model-space trajectory continuous and kinematically consistent, but geographic lat/lon has 8 real jumps (~0.17°) from transposed bilinear weights in `model_coords_to_latlon`/`bilinear_interp_3d` (T-13); corrected projection continuous (corr 0.988); 28 Python regression checks; fix deferred to a dedicated stage (source unchanged in the audit).
+**Current scientific stage:** Stage 10.15.2 — coordinate mapping and bilinear interpolation fix (T-13 RESOLVED; regression-tested, 30-day run repeated; T-07 drift anomaly still open)
+**Current status:** Stages 10.14 (`ca60c62`), 10.15 (`472fe75`), 10.15.1 (`d1bfc30`) committed and pushed. Stage 10.15.2 (fix) complete (commit pending): transposed bilinear weights in `model_coords_to_latlon`/`bilinear_interp_3d` swapped (wx along j/X, wy along i/Y); new Fortran regression fails pre-fix / passes post-fix; TEST_11 re-run: 0 jumps, corr(implied geo, reported) = 0.988; drift scaling unchanged → T-07 open.
 
 ## Completed foundation
 
@@ -40,9 +40,35 @@
 | 10.13    | Diffusion-limited / double-diffusive low-flow closure: Phase A (scientific formulation + literature audit) → Phase B (research prototype, 167 checks, sweep 246/270 in band, 10.8.2 quiescent 5/5) → Phase C (production integration: selectable `low_flow_closure_enabled`, OFF default, three-equation preserved, forced branch bit-identical at high U, Fortran 23 checks + Python/Fortran comparison 56 checks; research parameterization, not universal validation)                                                                                                                                                            | **Complete** (Phases A–C); classification: research parameterization; production updated behind switch; commit pending |
 | 10.14    | Re-scoring of the 10.8.2 observational set against the 3eq (10.10/10.10.1) and 3eq+natural (10.11) closures with the 10.8.2 acceptance criterion: u>0 metrics (teq RMSE 0.366, bias +0.277 — worse than bulk 0.108/+0.083, NJ80 functional-form mismatch persists) + quiescent gap (bulk 0/5, teq 0/5, teq_nat 5/5 in band at lab scale L=1 m; Ra cap inactive → 10.11.3 gap statement is scale-specific); Python 177 checks; no calibration, no production change                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | **Complete**; classification C (verification); production UNCHANGED; commit pending |
 | 10.15    | Operational end-to-end demonstration: real-forcing 30-day Lagrangian iceberg run (TEST_11, trajectory + diagnostics, 7/7 checks; 74.8→75.1 °N, 30.3→29.8 °E, mass −15.4 %, melt bounded) + full-model 1/7-day runs (exit 0; 3D ocean NaN from day 1 — documented Stage 8 family, stable, not introduced here); T-12 symlink prerequisite exercised; dependency audit; reproducible commands; output bundle `data/output/stage10.15/` (gitignored)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | **Complete**; classification: operational demonstration with documented limitations; production UNCHANGED; committed `472fe75` |
-| 10.15.1  | Trajectory continuity and output integrity audit (follow-up to 10.15): model-space x/y continuous and kinematically consistent (implied speed == reported, corr 0.988); geographic lat/lon has **8 real jumps (~0.17°, ~19 km)** at model-cell crossings — root cause **transposed bilinear weights in `model_coords_to_latlon` / `bilinear_interp_3d`** (T-13); corrected projection continuous; 28 Python regression checks; existing Fortran coord tests miss the bug (node sampling + 0.2° tolerance; round-trip errors 0.064–0.179° only WARNING); audit-only — **source NOT changed**, fix deferred                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | **Complete**; classification: audit — real discontinuity identified; production UNCHANGED; commit pending |
+| 10.15.1  | Trajectory continuity and output integrity audit (follow-up to 10.15): model-space x/y continuous and kinematically consistent (implied speed == reported, corr 0.988); geographic lat/lon has **8 real jumps (~0.17°, ~19 km)** at model-cell crossings — root cause **transposed bilinear weights in `model_coords_to_latlon` / `bilinear_interp_3d`** (T-13); corrected projection continuous; 28 Python regression checks; existing Fortran coord tests miss the bug (node sampling + 0.2° tolerance; round-trip errors 0.064–0.179° only WARNING); audit-only — **source NOT changed**, fix deferred                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | **Complete**; classification: audit — real discontinuity identified; production UNCHANGED; committed `d1bfc30` |
+| 10.15.2  | Coordinate mapping and bilinear interpolation fix (T-13): cross terms swapped in `bilinear_interp_3d` + `model_coords_to_latlon` (wx along j/X, wy along i/Y); new Fortran regression `iceberg_test_bilinear_axis_regression` (13 checks: constant/X-only/Y-only/X+Y/node/boundary/3D/trajectory-continuity — **FAILS pre-fix, PASSES post-fix**); TEST_11 30-day re-run: **0 jumps**, corr(implied geo, reported) = **0.988** (pre: 0.029), max geographic step 97 m (pre: 19.6 km); drift-scaling numbers unchanged → **T-07 remains OPEN**; no physics/default change                                                                                                                                                                                                                                                                                                                                                                        | **Complete**; classification: targeted correctness fix, regression-tested and re-run; committed (pending) |
 
 ## Immediate next step
+
+### Stage 10.15.2 — coordinate mapping and bilinear interpolation fix (COMPLETE)
+
+Delivered:
+
+- source fix `src/iceberg_forcing.f90`: transposed cross terms swapped in
+  `bilinear_interp_3d` and `model_coords_to_latlon` (wx along j/X, wy along
+  i/Y — the Stage 7.6A / grid_coupling convention);
+- new Fortran regression `test/iceberg_test_bilinear_axis_regression.f90`
+  (13 checks: exact-node, constant, X-only, Y-only, X+Y, boundary
+  continuity, 3D layers, real-grid trajectory continuity — **FAILS on the
+  pre-fix source with 10 errors incl. the 0.17° jumps, PASSES post-fix**);
+- corrected `test/iceberg_test_artificial_forcing.f90` (expectations fixed
+  to the correct wx↔lon/j, wy↔lat/i association);
+- TEST_11 30-day re-run: exit 0, 720 rows, **0 jumps**, max geographic step
+  97 m, corr(implied geo, reported) = 0.988 (pre-fix: 8 jumps / 19.6 km /
+  0.029);
+- comparison script `python/analysis/stage10.15_2_compare.py` + output
+  bundle `data/output/stage10.15_2/` (gitignored; pre-fix preserved);
+- report `docs/validation/stage10.15.2_coordinate_mapping_bilinear_fix.md`.
+
+T-13 is RESOLVED. **T-07 drift anomaly remains OPEN** (drift-scaling
+numbers unchanged — the drift tests do not exercise the corrected
+interpolation path; the next step is a drift-scaling investigation with the
+corrected code, focusing on drag/Coriolis, not interpolation).
 
 ### Stage 10.15.1 — trajectory continuity and output integrity audit (COMPLETE)
 

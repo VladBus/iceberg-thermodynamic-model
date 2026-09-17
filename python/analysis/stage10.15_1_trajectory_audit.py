@@ -1,31 +1,30 @@
 #!/usr/bin/env python3
 """Stage 10.15.1 — trajectory continuity and output integrity audit.
 
-Audits the Stage 10.15 TEST_11 30-day Lagrangian iceberg trajectory CSV
-(``data/output/stage10.15/test11_trajectory.csv``; the raw Fortran output is
-``data/output/diagnostics/stage9.3/test11_trajectory.csv``).
+Audits the Stage 10.15/10.15.2 TEST_11 30-day Lagrangian iceberg trajectory
+CSV (``data/output/stage10.15/test11_trajectory.csv``; the raw Fortran output
+is ``data/output/diagnostics/stage9.3/test11_trajectory.csv``).
 
-Deterministic: operates only on the actual Stage 10.15 output, never modifies
-the original CSV, writes derived outputs to ``data/output/stage10.15_1/``.
+Deterministic: operates only on the actual model output, never modifies the
+original CSV, writes derived outputs to ``data/output/stage10.15_1/``.
 
-Summary of findings (Stage 10.15.1):
+Stage 10.15.1 findings (historical, pre-fix):
   * model coordinates (``x_m``, ``y_m``) are continuous and kinematically
-    consistent with the reported velocity (implied speed from coordinates
-    equals reported speed to ~0.004 m/s);
-  * the geographic columns (``lat_deg``, ``lon_deg``) contain 8 real
-    discontinuities of ~0.17 deg (~19 km), located exactly at model-cell
-    boundary crossings (i_idx/j_idx changes);
-  * the discontinuities are caused by transposed bilinear weights in
-    ``model_coords_to_latlon`` / ``bilinear_interp_3d``
-    (``src/iceberg_forcing.f90``): the x-weight is applied to the i index and
-    the y-weight to the j index, while the declared mapping is j <-> X,
-    i <-> Y;
-  * the corrected (index-consistent) bilinear formula yields a continuous
-    geographic trajectory whose implied speed matches the reported speed
-    (corr ~0.99), demonstrating the root cause;
-  * this is a coordinate-conversion bug in the source, NOT a plotting
-    artifact and NOT an output-ordering problem; the Stage 10.15 figure
-    faithfully connects genuinely discontinuous lat/lon points.
+    consistent with the reported velocity;
+  * the geographic columns (``lat_deg``, ``lon_deg``) contained 8 real
+    discontinuities of ~0.17 deg (~19 km) at model-cell boundary crossings,
+    caused by transposed bilinear weights in ``model_coords_to_latlon`` /
+    ``bilinear_interp_3d`` (x-weight applied to the i index, y-weight to the
+    j index, while the declared mapping is j <-> X, i <-> Y).
+
+Stage 10.15.2 (this source state): the transposed cross terms were fixed in
+``src/iceberg_forcing.f90``. This script now verifies the POST-FIX contract:
+  * the CSV lat/lon must match the index-consistent (production) formula;
+  * the geographic trajectory must be continuous (0 jumps > 0.05 deg);
+  * implied geographic speed must match the reported model speed.
+  The pre-fix (transposed) formula is reproduced as a regression oracle: the
+  CSV must NOT match it anymore. Pre-fix CSV copies are preserved under
+  ``data/output/stage10.15_2/pre_fix/``.
 
 Run:
     conda run -n iceberg-thermodynamic-model \\
@@ -242,6 +241,15 @@ def audit(t: dict, fi: np.ndarray, dl: np.ndarray) -> dict:
     res["repro_max_err_lon"] = float(np.nanmax(np.abs(lon_repro - lon)))
     c["csv_matches_aswritten_formula"] = bool(
         res["repro_max_err_lat"] < 1e-3 and res["repro_max_err_lon"] < 1e-3)
+    # Post-fix contract (Stage 10.15.2): the CSV must match the corrected
+    # (production) formula. The as-written (pre-fix, transposed) reproduction
+    # must NOT match — it is the regression oracle for the old bug.
+    res["repro_corr_max_err_lat"] = float(np.nanmax(np.abs(lat_corr - lat)))
+    res["repro_corr_max_err_lon"] = float(np.nanmax(np.abs(lon_corr - lon)))
+    c["csv_matches_corrected_formula"] = bool(
+        res["repro_corr_max_err_lat"] < 1e-3 and res["repro_corr_max_err_lon"] < 1e-3)
+    c["csv_does_not_match_transposed"] = bool(
+        res["repro_max_err_lat"] > 1e-3 or res["repro_max_err_lon"] > 1e-3)
 
     # Coordinate jumps (consecutive rows)
     dlat = np.abs(np.diff(lat))
@@ -372,7 +380,7 @@ def make_plots(t: dict, res: dict, out: Path) -> list[str]:
     lat, lon = t["lat_deg"], t["lon_deg"]
     lat_c = np.array(res["per_step"]["lat_deg_corrected"])
     lon_c = np.array(res["per_step"]["lon_deg_corrected"])
-    jump_idx = np.array(res["coord_jumps"]["steps"]) - 1  # 0-based rows (row before jump)
+    jump_idx = np.array(res["coord_jumps"]["steps"], dtype=int) - 1  # 0-based rows (row before jump)
     n = t["n"]
 
     def save(fig, name):
@@ -559,11 +567,15 @@ def main() -> int:
 
     c = res["checks"]
     summary = {
-        "stage": "10.15.1",
+        "stage": "10.15.1/10.15.2",
         "classification": (
-            "real trajectory discontinuity (geographic coordinates) — "
-            "transposed bilinear weights in model_coords_to_latlon / "
-            "bilinear_interp_3d (src/iceberg_forcing.f90)"),
+            "coordinate mapping and bilinear interpolation fix verified — "
+            "CSV matches the corrected (production) formula; geographic "
+            "trajectory continuous; transposed pre-fix formula no longer "
+            "matches (Stage 10.15.2)") if res["checks"]["csv_matches_corrected_formula"] else
+            ("pre-fix state detected: CSV matches the transposed (as-written) "
+             "formula — trajectory contains real coordinate discontinuities "
+             "(Stage 10.15.1 findings)"),
         "source_csv": str(src.relative_to(REPO)),
         "koord_dat": str(KOORD.relative_to(REPO)),
         "n_rows": res["row_count"],
@@ -575,6 +587,8 @@ def main() -> int:
         },
         "coordinates": {
             "csv_matches_aswritten_formula": c["csv_matches_aswritten_formula"],
+            "csv_matches_corrected_formula": c["csv_matches_corrected_formula"],
+            "csv_does_not_match_transposed": c["csv_does_not_match_transposed"],
             "coord_jumps": res["coord_jumps"],
             "jumps_at_cell_crossings": res["jumps_at_cell_crossings"],
             "corrected_continuous": res["corrected_continuous"],
@@ -618,7 +632,9 @@ def main() -> int:
     print(f"  total duration: {c['total_duration_h']:.0f} h "
           f"({c['total_duration_h']/24:.1f} d)")
     print("\n-- coordinates --")
-    print(f"  csv matches as-written formula: {c['csv_matches_aswritten_formula']}"
+    print(f"  csv matches corrected (production) formula: {c['csv_matches_corrected_formula']}"
+          f" (max err {res['repro_corr_max_err_lat']:.2e} deg lat)")
+    print(f"  csv matches transposed (pre-fix) formula: {c['csv_matches_aswritten_formula']}"
           f" (max err {res['repro_max_err_lat']:.2e} deg lat)")
     j = res["coord_jumps"]
     print(f"  coordinate jumps > {j['threshold_deg']} deg: {j['count']} "

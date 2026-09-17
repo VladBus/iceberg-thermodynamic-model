@@ -162,14 +162,18 @@ def test_real_trajectory() -> None:
     # B. coordinates
     ok(c["lat_finite"] and c["lon_finite"], "lat/lon finite")
     ok(c["lat_in_domain"] and c["lon_in_domain"], "lat/lon in domain")
-    ok(c["csv_matches_aswritten_formula"], "CSV == as-written formula",
+    # Post-fix contract (Stage 10.15.2): CSV must match the corrected
+    # (production) formula; the transposed pre-fix formula must NOT match.
+    ok(c["csv_matches_corrected_formula"], "CSV == corrected (production) formula",
+       f"max lat err {res['repro_corr_max_err_lat']:.2e} deg")
+    ok(c["csv_does_not_match_transposed"], "CSV does NOT match transposed pre-fix formula",
        f"max lat err {res['repro_max_err_lat']:.2e} deg")
     j = res["coord_jumps"]
-    ok(j["count"] == 8, "exactly 8 coordinate jumps detected",
+    ok(j["count"] == 0, "0 coordinate jumps (post-fix)",
        f"steps {j['steps']}")
-    ok(j["max_dlat_deg"] > 0.15, "max dlat jump ~0.17 deg",
-       f"{j['max_dlat_deg']:.4f}")
-    ok(res["corrected_continuous"], "corrected formula continuous",
+    ok(j["max_dlat_deg"] < 0.05, "no large coordinate jumps post-fix",
+       f"max dlat {j['max_dlat_deg']:.4f} deg")
+    ok(res["corrected_continuous"], "geographic trajectory continuous",
        f"max step {res['corrected_max_step_dlat_deg']:.5f} deg lat / "
        f"{res['corrected_max_step_dlon_deg']:.5f} deg lon")
 

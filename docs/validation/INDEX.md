@@ -31,6 +31,7 @@ Statuses:
 | `stage10.15.1_trajectory_continuity_audit.md`          | 10.15.1         | COMPLETED (audit; real discontinuity identified) | Follow-up audit of the 10.15 trajectory: model-space x/y continuous and kinematically consistent, but geographic lat/lon contains 8 real jumps (~0.17°) at cell crossings — transposed bilinear weights in `model_coords_to_latlon`/`bilinear_interp_3d` (T-13); source NOT changed (audit-only); corrected projection continuous (corr 0.988); 28 Python regression checks |
 | `stage10.15.2_coordinate_mapping_bilinear_fix.md`      | 10.15.2         | COMPLETED (fix; regression-tested, re-run)       | Fix of the transposed bilinear weights (T-13): cross terms swapped in `bilinear_interp_3d` + `model_coords_to_latlon`; new Fortran regression `iceberg_test_bilinear_axis_regression` (13 checks — FAILS pre-fix, PASSES post-fix); TEST_11 re-run: 0 jumps, corr(geo, reported)=0.988; T-07 drift anomaly unchanged (OPEN); physics unchanged |
 | `stage10.16_drift_dynamics_t07_investigation.md`       | 10.16           | COMPLETED (investigation; T-07 partially explained) | Controlled experiments A–K (wind/current/Coriolis/timestep/size/drag): the low wind-drift ratio is the physically correct **Coriolis-limited equilibrium** u = F_wind/(M·f) of a 100-m cube (analytic match 0.1 %; ratio ∝ 1/L; C_Dw-independent); 1–2 % reference assumes drag-limited regime or wind-driven (Ekman) current absent from the offline model; secondary numerical damping 1/√(1+(f·dt)²) ~11 % at dt=3600 s; NO source change; TEST_11 re-run byte-identical |
+| `stage10.17_melt_thermodynamic_budget_audit.md`        | 10.17           | COMPLETED (audit; no correction) | Melt/thermodynamic budget audit: mass ≡ ρ_i·L·W·H (max 1.5e-5 rel), model budget closure 5e-4 % over 30 d; **lateral legacy melt dominates 96.8 %** (C_LATERAL = 1e-6 m/(s·K), velocity-independent, near-constant 0.26 m/day); basal 3.0 % (bulk, U_rel-limited), surface 0.12 % (winter), vapor 0.08 %; scalings verified (U^0.5/U^0.8, ΔT-linear, L^-0.2, 1/L, dt-insensitive); findings: lateral full-height area vs submerged convention in dead helpers (F2), q_net_surface dimensional defect (F3), diag%q_cond/q_bot never populated (F5), CSV format defect (F4) — all diagnostics-only, no physics change; TEST_11 re-run byte-identical (15 shared columns); 90-day diagnostic run −42.2 % (Q1 atmosphere cycle, ocean frozen at January — annual extrapolation premature); 47+7 Fortran + 40 Python checks |
 
 Note: Stage 10.13 (Phases A–C) is complete and committed (`caa7799`); its
 reports remain here because Stage 10 as a whole is still active. Stage 10.13
@@ -61,6 +62,18 @@ reference assumes a drag-limited regime or a wind-driven surface current
 absent from this offline model; a secondary numerical damping
 1/√(1+(f·dt)²) ≈ 0.89 at dt = 3600 s contributes ~11 %. No source
 correction was made; the repeated TEST_11 run is byte-identical to 10.15.2.
+
+Stage 10.17 audits the melt and thermodynamic budgets with controlled
+experiments (A–K) and the extended real-forcing TEST_11: mass is
+identically ρ_i·L·W·H (max rel diff 1.5e-5), the model budget closes to
+5e-4 % over 30 days, and the legacy **lateral melt dominates (96.8 %)**
+via the constant C_LATERAL = 1e-6 m/(s·K) at ⟨ΔT⟩_D ≈ 3 K — a documented
+simplification, not a bug. Findings are diagnostics-only (lateral
+full-height vs submerged area convention in unused helpers; q_net_surface
+dimensional defect; unpopulated diag%q_cond/q_bot; non-CSV trajectory
+format). A 90-day diagnostic run (Q1 atmosphere, ocean frozen at January)
+loses 42.2 % of mass — annual extrapolation is premature. No physical
+correction was made; TEST_11 remains byte-identical to 10.15.2/10.16.
 
 ## Links to current documentation
 

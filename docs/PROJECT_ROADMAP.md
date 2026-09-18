@@ -1,8 +1,8 @@
 # Project Roadmap
 
-**Updated:** 2026-09-17
-**Current scientific stage:** Stage 10.16 — drift dynamics and T-07 investigation (T-07 PARTIALLY EXPLAINED: Coriolis-limited equilibrium, not a drag bug; no source change; next: Stage 10.17 melt budget audit)
-**Current status:** Stages 10.14 (`ca60c62`), 10.15 (`472fe75`), 10.15.1 (`d1bfc30`), 10.15.2 (`93b8554`) committed and pushed. Stage 10.16 (investigation) complete (commit pending): controlled experiments A–K show the low wind-drift ratio is the physically correct Coriolis-limited equilibrium u = F_wind/(M·f) for a 100-m cube (analytic match 0.1 %, ratio ∝ 1/L, C_Dw-independent, wind ≈ Coriolis ≫ water drag); the 1–2 % reference implies a drag-limited regime or wind-driven (Ekman) current absent from the offline model; secondary numerical damping 1/√(1+(f·dt)²) ≈ 0.89 at dt=3600 s (~11 %); NO source correction; TEST_11 re-run byte-identical to 10.15.2.
+**Updated:** 2026-09-18
+**Current scientific stage:** Stage 10.17 — iceberg melt and thermodynamic budget audit (COMPLETED; internal consistency confirmed, no correction; next: Stage 10.18 decision — extended operational demonstration vs dedicated lateral-melt parameterization stage)
+**Current status:** Stages 10.14 (`ca60c62`), 10.15 (`472fe75`), 10.15.1 (`d1bfc30`), 10.15.2 (`93b8554`), 10.16 (`b4d62bf`) committed and pushed; user README commit `d48c9de`; Stage 10.17 (audit) complete (commit pending): mass ≡ ρ_i·L·W·H (max 1.5e-5 rel), model budget closure 5e-4 % (30 d); lateral legacy melt dominates 96.8 % (C_LATERAL = 1e-6 m/(s·K), velocity-independent, 0.26 m/day at ⟨ΔT⟩_D ≈ 3 K); basal 3.0 %, surface 0.12 %, vapor 0.08 %; scalings verified; findings diagnostics-only (lateral full-height vs submerged convention, q_net_surface ÷dt, unpopulated diag%q_cond/q_bot, CSV format); 90-day diagnostic run −42.2 % (Q1 atmosphere, ocean frozen — annual extrapolation premature); NO physics change; TEST_11 byte-identical.
 
 ## Completed foundation
 
@@ -42,33 +42,44 @@
 | 10.15    | Operational end-to-end demonstration: real-forcing 30-day Lagrangian iceberg run (TEST_11, trajectory + diagnostics, 7/7 checks; 74.8→75.1 °N, 30.3→29.8 °E, mass −15.4 %, melt bounded) + full-model 1/7-day runs (exit 0; 3D ocean NaN from day 1 — documented Stage 8 family, stable, not introduced here); T-12 symlink prerequisite exercised; dependency audit; reproducible commands; output bundle `data/output/stage10.15/` (gitignored)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | **Complete**; classification: operational demonstration with documented limitations; production UNCHANGED; committed `472fe75` |
 | 10.15.1  | Trajectory continuity and output integrity audit (follow-up to 10.15): model-space x/y continuous and kinematically consistent (implied speed == reported, corr 0.988); geographic lat/lon has **8 real jumps (~0.17°, ~19 km)** at model-cell crossings — root cause **transposed bilinear weights in `model_coords_to_latlon` / `bilinear_interp_3d`** (T-13); corrected projection continuous; 28 Python regression checks; existing Fortran coord tests miss the bug (node sampling + 0.2° tolerance; round-trip errors 0.064–0.179° only WARNING); audit-only — **source NOT changed**, fix deferred                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | **Complete**; classification: audit — real discontinuity identified; production UNCHANGED; committed `d1bfc30` |
 | 10.15.2  | Coordinate mapping and bilinear interpolation fix (T-13): cross terms swapped in `bilinear_interp_3d` + `model_coords_to_latlon` (wx along j/X, wy along i/Y); new Fortran regression `iceberg_test_bilinear_axis_regression` (13 checks: constant/X-only/Y-only/X+Y/node/boundary/3D/trajectory-continuity — **FAILS pre-fix, PASSES post-fix**); TEST_11 30-day re-run: **0 jumps**, corr(implied geo, reported) = **0.988** (pre: 0.029), max geographic step 97 m (pre: 19.6 km); drift-scaling numbers unchanged → **T-07 remains OPEN**; no physics/default change                                                                                                                                                                                                                                                                                                                                                                        | **Complete**; classification: targeted correctness fix, regression-tested and re-run; committed `93b8554` |
-| 10.16    | Drift dynamics and T-07 investigation: controlled experiments A–K (wind/current/Coriolis on-off/timestep 1800-7200 s/size 10-300 m/drag perturbation) + force-balance diagnostics; **T-07 PARTIALLY EXPLAINED**: low wind ratio (0.04–0.13 %) = physically correct **Coriolis-limited equilibrium** u = F_wind/(M·f) for a 100-m cube (analytic match 0.1 %; ratio ∝ 1/L; C_Dw-independent — verified by temporary rebuild; force balance wind ≈ Coriolis ≫ water drag); 1–2 % reference implies drag-limited regime or wind-driven (Ekman) current absent from the offline model; secondary numerical damping 1/√(1+(f·dt)²) ≈ 0.89 at dt=3600 s (~11 %); **NO source correction**; new tests (16 Fortran + 13 Python); TEST_11 re-run byte-identical                                                                                                                                                                                                                                                                                                                | **Complete**; classification: investigation — T-07 partially explained; production UNCHANGED; commit pending |
+| 10.16    | Drift dynamics and T-07 investigation: controlled experiments A–K (wind/current/Coriolis on-off/timestep 1800-7200 s/size 10-300 m/drag perturbation) + force-balance diagnostics; **T-07 PARTIALLY EXPLAINED**: low wind ratio (0.04–0.13 %) = physically correct **Coriolis-limited equilibrium** u = F_wind/(M·f) for a 100-m cube (analytic match 0.1 %; ratio ∝ 1/L; C_Dw-independent — verified by temporary rebuild; force balance wind ≈ Coriolis ≫ water drag); 1–2 % reference implies drag-limited regime or wind-driven (Ekman) current absent from the offline model; secondary numerical damping 1/√(1+(f·dt)²) ≈ 0.89 at dt=3600 s (~11 %); **NO source correction**; new tests (16 Fortran + 13 Python); TEST_11 re-run byte-identical                                                                                                                                                                                                                                                                                                                | **Complete**; classification: investigation — T-07 partially explained; production UNCHANGED; commit `b4d62bf` |
+| 10.17    | Melt and thermodynamic budget audit: mass ≡ ρ_i·L·W·H (max 1.5e-5 rel), model budget closure 5e-4 % (30 d); **lateral legacy melt dominates 96.8 %** (C_LATERAL = 1e-6 m/(s·K), velocity-independent, 0.26 m/day at ⟨ΔT⟩_D ≈ 3 K); basal 3.0 %, surface 0.12 %, vapor 0.08 %; controlled experiments A–K verify U^0.5/U^0.8, ΔT-linear, L^-0.2, 1/L scalings and dt-insensitivity; findings diagnostics-only (lateral full-height vs submerged area convention in unused helpers; q_net_surface dimensional ÷dt defect; diag%q_cond/q_bot never populated; TEST_11 CSV format defect); extended TEST_11 diagnostics (24 columns, 15 shared byte-identical); 90-day diagnostic run −42.2 % (Q1 atmosphere cycle, ocean frozen at January — **annual extrapolation premature**); **NO physics correction**; new tests (47 + 7 Fortran, 40 Python)                                                                                                                                                                                                                                                                                            | **Complete**; classification: audit — internal consistency confirmed; production UNCHANGED; commit pending |
 
 ## Immediate next step
 
-### Stage 10.16 — drift dynamics and T-07 investigation (COMPLETE)
+### Stage 10.17 — iceberg melt and thermodynamic budget audit (COMPLETE)
 
 Delivered:
 
-- controlled experiments `test/iceberg_test_drift_dynamics.f90` (A–K:
-  zero forcing, wind, current, combined, rotation, Coriolis on/off,
-  timestep 1800–7200 s, size 10–300 m, drag perturbation, force signs);
-- force-balance diagnostics (per-step CSV + 10 figures);
-- independent analytic regression `test_stage10_16_drift_scaling.py` (13
-  checks; analytic expectations from the model's own force balance);
-- report `docs/validation/stage10.16_drift_dynamics_t07_investigation.md`.
+- controlled experiments `test/iceberg_test_10p17_melt_budget.f90` (A–K:
+  zero forcing, warm water/cold air, cold water/warm air, zero U_rel,
+  velocity/temperature/size/timestep scalings, thermal-evolution switch,
+  30-day stress test);
+- 90-day diagnostic run `test/iceberg_test_10p17_90day.f90` (Q1 ERA5
+  atmosphere cycle, ocean frozen at January state);
+- extended real-forcing TEST_11 diagnostics (9 new columns; 15 shared
+  columns byte-identical to 10.16);
+- independent Python regression `test_stage10_17_melt_budget.py` (40
+  checks) and analysis `stage10.17_melt_analysis.py` (12 figures + budgets);
+- report `docs/validation/stage10.17_melt_thermodynamic_budget_audit.md`.
 
-Result: **T-07 PARTIALLY EXPLAINED** — the low wind-drift ratio is the
-physically correct Coriolis-limited equilibrium u = F_wind/(M·f) for a
-100-m cube (analytic match 0.1 %; ratio ∝ 1/L; C_Dw-independent; force
-balance wind ≈ Coriolis ≫ water drag). The 1–2 % reference assumes a
-drag-limited regime or a wind-driven (Ekman) surface current absent from
-this offline model. Secondary numerical damping 1/√(1+(f·dt)²) ≈ 0.89 at
-dt = 3600 s (~11 %) documented. **No source correction made.** The next
-separate stage is **Stage 10.17 — Iceberg Melt and Thermodynamic Budget
-Audit** (basal/lateral/surface melt, mass/geometry consistency, thermal and
-energy budgets, sensitivity to temperature and relative velocity, seasonal
-melt behavior).
+Result: the melt machinery is internally consistent (M ≡ ρ_i·L·W·H,
+budget closure 5e-4 %), the legacy **lateral melt dominates (96.8 %)** at
+a near-constant 0.26 m/day (C_LATERAL = 1e-6 m/(s·K), velocity-independent,
+⟨ΔT⟩_D ≈ 3 K), and all findings are diagnostics-only (no physics change).
+The 90-day run loses 42.2 % of mass — annual extrapolation is premature
+(ocean state frozen at January).
+
+### Stage 10.18 — decision point (next)
+
+Choose between:
+
+- **10.18a — extended operational demonstration** (recommended: no
+  correction is justified by the audit; e.g., longer/seasonal runs, output
+  pipeline hardening, production-path integration steps), or
+- **10.18b — dedicated lateral-melt parameterization stage** (re-evaluate
+  C_LATERAL: velocity dependence, submerged-area convention, sail vs draft
+  erosion — an explicitly approved physics change).
 
 ### Stage 10.15.2 — coordinate mapping and bilinear interpolation fix (COMPLETE)
 

@@ -258,6 +258,18 @@ Corrected the fundamental limitation of zero basal melt at zero relative flow by
 - **No new physics introduced**: this stage only executes and diagnoses the existing model.
 - **Report**: `docs/validation/stage10.15_operational_demonstration.md`.
 
+## Stage 10.16 — Drift dynamics and T-07 investigation (DONE, no physics change)
+
+- **Classification**: controlled-experiment investigation; no physics change, no calibration; production UNCHANGED.
+- **Result**: **T-07 PARTIALLY EXPLAINED** — the low wind-drift ratio (0.04–0.13 %) is the physically correct Coriolis-limited equilibrium u = F_wind/(M·f) of a 100-m cube (analytic match 0.1 %; ratio ∝ 1/L; C_Dw-independent); the 1–2 % reference implies a drag-limited regime or a wind-driven (Ekman) surface current absent from this offline model; secondary numerical damping 1/√(1+(f·dt)²) ≈ 0.89 at dt=3600 s documented; NO source correction.
+- **Report**: `docs/validation/stage10.16_drift_dynamics_t07_investigation.md`.
+
+## Stage 10.17 — Melt and thermodynamic budget audit (DONE, no physics change)
+
+- **Classification**: audit; no physics change, no calibration; production UNCHANGED.
+- **Result**: mass ≡ ρ_i·L·W·H (max 1.5e-5 rel), model budget closure 5e-4 % (30 d); **lateral legacy melt dominates 96.8 %** (C_LATERAL = 1e-6 m/(s·K), velocity-independent, 0.26 m/day); basal 3.0 %, surface 0.12 %, vapor 0.08 %; scalings verified; findings diagnostics-only (lateral full-height vs submerged convention in unused helpers; q_net_surface dimensional defect; unpopulated diag%q_cond/q_bot; TEST_11 CSV format); extended TEST_11 diagnostics (24 columns, 15 byte-identical); 90-day diagnostic run −42.2 % (Q1 atmosphere, ocean frozen at January — annual extrapolation premature).
+- **Report**: `docs/validation/stage10.17_melt_thermodynamic_budget_audit.md`.
+
 ## Next modernization sequence
 
 Priority candidates after 10.13/10.14:

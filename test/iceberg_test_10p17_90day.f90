@@ -1,10 +1,14 @@
 ! ==============================================================================
-! Тест: TEST_11 — 30-day offline experiment
+! Тест: TEST_11-90 — 90-day offline diagnostic run (Stage 10.17)
+! Назначение: Операционная демонстрация сезонного (Q1) отклика таяния на
+! реальный атмосферный форсинг ERA5 (2020-01-01..2020-03-31) при фиксированном
+! океанском состоянии (EN4 initial T/S + климатологическое U/V). НЕ валидация.
+! Требует ERA5 Q1 merged файл (364 среза = 91 день).
 ! Назначение: Полный офлайн прогон с реалистичным форсингом (EN4 T/S,
 !             климатологическое U/V, ERA5 атмосфера, IBCAO батиметрия).
 ! ==============================================================================
 
-program iceberg_test_11_30day_offline
+program iceberg_test_10p17_90day
     use iceberg
     use iceberg_forcing, only: get_ocean_profile, get_atmos_forcing, interp_at_draft
     use netcdf_input, only: era5_open, era5_is_open, era5_time
@@ -48,7 +52,7 @@ program iceberg_test_11_30day_offline
     n_checks = 0
 
     print *, "=================================================="
-    print *, "  TEST_11: 30-Day Offline Experiment"
+    print *, "  TEST_11-90: 90-Day Offline Diagnostic (Stage 10.17)"
     print *, "=================================================="
 
     ! --- Проверка наличия KOORD.DAT перед инициализацией сетки ---
@@ -95,7 +99,7 @@ print *, "SKIP: KOORD.DAT not present (gitignored; run python/grid/build_real_gr
 
     ! 5. Подготовка массивов для записи траектории
     dt = 3600.0
-    nsteps = 24*30
+    nsteps = 24*90
 
     allocate (traj_x(nsteps), traj_y(nsteps), traj_lat(nsteps), traj_lon(nsteps))
     allocate (geom_L(nsteps), geom_W(nsteps), geom_H(nsteps), geom_M(nsteps))
@@ -323,7 +327,7 @@ subroutine save_trajectory_csv(n_in, x_in, y_in, lat_in, lon_in, L_in, W_in, H_i
 
         integer :: step_csv, unit, ios_csv
         unit = 10
-        open (unit, file='data/output/diagnostics/stage9.3/test11_trajectory.csv', &
+        open (unit, file='data/output/stage10.17/test11_90day_stage10.17_trajectory.csv', &
               status='replace', iostat=ios_csv)
         if (ios_csv .ne. 0) return
 
@@ -339,7 +343,7 @@ subroutine save_trajectory_csv(n_in, x_in, y_in, lat_in, lon_in, L_in, W_in, H_i
                 ur_in(step_csv), qs_in(step_csv), ts_in(step_csv), ti_in(step_csv), mv_in(step_csv)
         end do
         close (unit)
-        print *, "Trajectory saved to test11_trajectory.csv"
+        print *, "Trajectory saved to test11_90day_stage10.17_trajectory.csv"
     end subroutine save_trajectory_csv
 
-end program iceberg_test_11_30day_offline
+end program iceberg_test_10p17_90day

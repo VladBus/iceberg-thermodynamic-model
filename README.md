@@ -35,10 +35,11 @@ under atmospheric, oceanic, bathymetric, and sea-ice forcing.
 
 ## 📑 Project status
 
-- **Current stage:** Stage 10.16 — drift dynamics and T-07 investigation
-  (T-07 partially explained: the low wind-drift ratio is the physically
-  correct Coriolis-limited equilibrium of a 100-m cube, not a drag bug; no
-  source change; next: Stage 10.17 melt budget audit).
+- **Current stage:** Stage 10.17 — iceberg melt and thermodynamic budget
+  audit (completed: mass/geometry internally consistent, budget closes to
+  5e-4 %, legacy lateral melt dominates 96.8 %; findings diagnostics-only,
+  no physics change; next: Stage 10.18 decision — extended demonstration
+  vs lateral-melt parameterization).
 - **Physics status and switches:** `docs/model/model_physics_status.md`
 - **Stage plan and status:** `docs/PROJECT_ROADMAP.md`
 

@@ -1,10 +1,10 @@
 # Model Physics Block Status
 
-**Date:** 2026-09-17
-**Current repository stage:** Stage 10.16 — drift dynamics and T-07 investigation (T-07 PARTIALLY EXPLAINED: Coriolis-limited equilibrium, not a drag bug; no source change; next: Stage 10.17 melt budget audit)
+**Date:** 2026-09-18
+**Current repository stage:** Stage 10.17 — iceberg melt and thermodynamic budget audit (COMPLETED; internal consistency confirmed; findings diagnostics-only; no physics change; next: Stage 10.18 decision)
 **Production baseline:** Stage 10.13 (low-flow closure behind `low_flow_closure_enabled`; OFF = Stage 10.12/10.10 legacy unchanged)
-**FPM test targets:** 54
-**Local status:** 10.12 Fortran 21/21 + Python 35/35 PASS; 10.13 Fortran 23/23 + Python/Fortran comparison 56/56 PASS; 10.14 Python 177/177 PASS; 10.15 TEST_11 7/7 PASS + diagnostics 7/7 checks PASS (30-day real-forcing trajectory); **10.15.1 audit 28/28 PASS; 10.15.2 fix: `iceberg_test_bilinear_axis_regression` 13/13 PASS (FAILS pre-fix, PASSES post-fix), TEST_11 re-run exit 0 with 0 coordinate jumps, corr(implied geo, reported) = 0.988; 10.16: `iceberg_test_drift_dynamics` 16/16 PASS + `test_stage10_16_drift_scaling.py` 13/13 PASS — T-07 PARTIALLY EXPLAINED (Coriolis-limited equilibrium, analytic match 0.1 %, no source change)**; full fpm battery exit 0 (49 PASSED, 0 FAILED, 1 pre-existing SKIP requiring `fpm run` output); all 13 Python suites 0 errors; strict `-Wall -Wextra -fcheck=all` build clean; `git diff --check` clean
+**FPM test targets:** 56 (incl. `iceberg_test_10p17_melt_budget`, `iceberg_test_10p17_90day`)
+**Local status:** 10.12 Fortran 21/21 + Python 35/35 PASS; 10.13 Fortran 23/23 + Python/Fortran comparison 56/56 PASS; 10.14 Python 177/177 PASS; 10.15 TEST_11 7/7 PASS + diagnostics 7/7 checks PASS (30-day real-forcing trajectory); **10.15.1 audit 28/28 PASS; 10.15.2 fix: `iceberg_test_bilinear_axis_regression` 13/13 PASS (FAILS pre-fix, PASSES post-fix), TEST_11 re-run exit 0 with 0 coordinate jumps, corr(implied geo, reported) = 0.988; 10.16: `iceberg_test_drift_dynamics` 16/16 PASS + `test_stage10_16_drift_scaling.py` 13/13 PASS — T-07 PARTIALLY EXPLAINED (Coriolis-limited equilibrium, analytic match 0.1 %, no source change); 10.17: `iceberg_test_10p17_melt_budget` 47/47 PASS + `iceberg_test_10p17_90day` 7/7 PASS + `test_stage10_17_melt_budget.py` 40/40 PASS — melt budget internally consistent (M ≡ ρ_i·L·W·H, closure 5e-4 %), lateral legacy melt dominates 96.8 %, findings diagnostics-only, NO physics change**; full fpm battery exit 0 (49 PASSED, 0 FAILED, 1 pre-existing SKIP requiring `fpm run` output); all 9 Python test suites PASS (612 checks); strict `-Wall -Wextra -fcheck=all` build clean; `git diff --check` clean
 **Stage 10.7 report:** `docs/validation/stage10.7_basal_melt_validation.md`
 **Stage 10.8.1 report:** `docs/validation/stage10.8.1_python_validation.md`
 **Stage 10.8.2 report:** `docs/validation/stage10.8.2_observational_validation.md`
@@ -20,6 +20,7 @@
 **Stage 10.15.1 report:** `docs/validation/stage10.15.1_trajectory_continuity_audit.md`
 **Stage 10.15.2 report:** `docs/validation/stage10.15.2_coordinate_mapping_bilinear_fix.md`
 **Stage 10.16 report:** `docs/validation/stage10.16_drift_dynamics_t07_investigation.md`
+**Stage 10.17 report:** `docs/validation/stage10.17_melt_thermodynamic_budget_audit.md`
 
 ## Classification
 

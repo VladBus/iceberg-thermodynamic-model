@@ -1,8 +1,8 @@
 # Project Roadmap
 
 **Updated:** 2026-09-18
-**Current scientific stage:** Stage 10.17 — iceberg melt and thermodynamic budget audit (COMPLETED; internal consistency confirmed, no correction; next: Stage 10.18 decision — extended operational demonstration vs dedicated lateral-melt parameterization stage)
-**Current status:** Stages 10.14 (`ca60c62`), 10.15 (`472fe75`), 10.15.1 (`d1bfc30`), 10.15.2 (`93b8554`), 10.16 (`b4d62bf`) committed and pushed; user README commit `d48c9de`; Stage 10.17 (audit) complete (commit pending): mass ≡ ρ_i·L·W·H (max 1.5e-5 rel), model budget closure 5e-4 % (30 d); lateral legacy melt dominates 96.8 % (C_LATERAL = 1e-6 m/(s·K), velocity-independent, 0.26 m/day at ⟨ΔT⟩_D ≈ 3 K); basal 3.0 %, surface 0.12 %, vapor 0.08 %; scalings verified; findings diagnostics-only (lateral full-height vs submerged convention, q_net_surface ÷dt, unpopulated diag%q_cond/q_bot, CSV format); 90-day diagnostic run −42.2 % (Q1 atmosphere, ocean frozen — annual extrapolation premature); NO physics change; TEST_11 byte-identical.
+**Current scientific stage:** Stage 10.18A — lateral melt parameterization research audit (COMPLETED; no production physics change; legacy constant equivalent to forced-convection side melt at U≈0.30 m/s vs actual 0.005–0.027 m/s; next: OPTION D — dedicated observational validation / calibration of lateral melt before any production change)
+**Current status:** Stages 10.14 (`ca60c62`), 10.15 (`472fe75`), 10.15.1 (`d1bfc30`), 10.15.2 (`93b8554`), 10.16 (`b4d62bf`) committed and pushed; user README commit `d48c9de`; Stage 10.17 (`022f871`) committed and pushed (audit: mass ≡ ρ_i·L·W·H, closure 5e-4 %, lateral legacy dominates 96.8 %, findings diagnostics-only, NO physics change); **Stage 10.18A (lateral melt parameterization research audit) COMPLETE**: production Fortran byte-identical (git diff `src/`/`test/` empty); independent reference layer reproduces production exactly (replay dM 15.43 %/lateral 96.83 % vs production 15.41 %/96.8 %); legacy C_LATERAL = 1e-6 m/(s·K) equivalent to bulk forced-convection side melt at U_eq ≈ 0.30 m/s (γ_T = 304 W/(m²·K)) while simulated U_rel at draft is 0.005–0.027 m/s → factor 10–60; every literature-based velocity-dependent variant (bulk/Bigg1997/plume) gives 30-day lateral 0.013–0.052 m/day (5–20× below legacy) and total ΔM 1.3–3.6 % (vs 15.4 %); submerged full-perimeter geometry with legacy rate raises ΔM to 26.1 %; geometry ambiguity quantified (factor 2·ρ_i/ρ_w = 1.77 vs full-height; depth-only 1.13 = Stage 10.17 F2); wave erosion NOT TESTABLE (no ERA5 wave fields, White1980/Kubat2007 equations unverified); literature brackets legacy (Sermilik 0.06–0.10 m/day model, ~0.39 obs; C&S2023 side max 0.2 m/day) but does not validate; decision: OPTION D — multiple parameterizations remain plausible, dedicated observational validation/calibration stage required before any production change; T-07 untouched.
 
 ## Completed foundation
 
@@ -43,7 +43,8 @@
 | 10.15.1  | Trajectory continuity and output integrity audit (follow-up to 10.15): model-space x/y continuous and kinematically consistent (implied speed == reported, corr 0.988); geographic lat/lon has **8 real jumps (~0.17°, ~19 km)** at model-cell crossings — root cause **transposed bilinear weights in `model_coords_to_latlon` / `bilinear_interp_3d`** (T-13); corrected projection continuous; 28 Python regression checks; existing Fortran coord tests miss the bug (node sampling + 0.2° tolerance; round-trip errors 0.064–0.179° only WARNING); audit-only — **source NOT changed**, fix deferred                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | **Complete**; classification: audit — real discontinuity identified; production UNCHANGED; committed `d1bfc30` |
 | 10.15.2  | Coordinate mapping and bilinear interpolation fix (T-13): cross terms swapped in `bilinear_interp_3d` + `model_coords_to_latlon` (wx along j/X, wy along i/Y); new Fortran regression `iceberg_test_bilinear_axis_regression` (13 checks: constant/X-only/Y-only/X+Y/node/boundary/3D/trajectory-continuity — **FAILS pre-fix, PASSES post-fix**); TEST_11 30-day re-run: **0 jumps**, corr(implied geo, reported) = **0.988** (pre: 0.029), max geographic step 97 m (pre: 19.6 km); drift-scaling numbers unchanged → **T-07 remains OPEN**; no physics/default change                                                                                                                                                                                                                                                                                                                                                                        | **Complete**; classification: targeted correctness fix, regression-tested and re-run; committed `93b8554` |
 | 10.16    | Drift dynamics and T-07 investigation: controlled experiments A–K (wind/current/Coriolis on-off/timestep 1800-7200 s/size 10-300 m/drag perturbation) + force-balance diagnostics; **T-07 PARTIALLY EXPLAINED**: low wind ratio (0.04–0.13 %) = physically correct **Coriolis-limited equilibrium** u = F_wind/(M·f) for a 100-m cube (analytic match 0.1 %; ratio ∝ 1/L; C_Dw-independent — verified by temporary rebuild; force balance wind ≈ Coriolis ≫ water drag); 1–2 % reference implies drag-limited regime or wind-driven (Ekman) current absent from the offline model; secondary numerical damping 1/√(1+(f·dt)²) ≈ 0.89 at dt=3600 s (~11 %); **NO source correction**; new tests (16 Fortran + 13 Python); TEST_11 re-run byte-identical                                                                                                                                                                                                                                                                                                                | **Complete**; classification: investigation — T-07 partially explained; production UNCHANGED; commit `b4d62bf` |
-| 10.17    | Melt and thermodynamic budget audit: mass ≡ ρ_i·L·W·H (max 1.5e-5 rel), model budget closure 5e-4 % (30 d); **lateral legacy melt dominates 96.8 %** (C_LATERAL = 1e-6 m/(s·K), velocity-independent, 0.26 m/day at ⟨ΔT⟩_D ≈ 3 K); basal 3.0 %, surface 0.12 %, vapor 0.08 %; controlled experiments A–K verify U^0.5/U^0.8, ΔT-linear, L^-0.2, 1/L scalings and dt-insensitivity; findings diagnostics-only (lateral full-height vs submerged area convention in unused helpers; q_net_surface dimensional ÷dt defect; diag%q_cond/q_bot never populated; TEST_11 CSV format defect); extended TEST_11 diagnostics (24 columns, 15 shared byte-identical); 90-day diagnostic run −42.2 % (Q1 atmosphere cycle, ocean frozen at January — **annual extrapolation premature**); **NO physics correction**; new tests (47 + 7 Fortran, 40 Python)                                                                                                                                                                                                                                                                                            | **Complete**; classification: audit — internal consistency confirmed; production UNCHANGED; commit pending |
+| 10.17    | Melt and thermodynamic budget audit: mass ≡ ρ_i·L·W·H (max 1.5e-5 rel), model budget closure 5e-4 % (30 d); **lateral legacy melt dominates 96.8 %** (C_LATERAL = 1e-6 m/(s·K), velocity-independent, 0.26 m/day at ⟨ΔT⟩_D ≈ 3 K); basal 3.0 %, surface 0.12 %, vapor 0.08 %; controlled experiments A–K verify U^0.5/U^0.8, ΔT-linear, L^-0.2, 1/L scalings and dt-insensitivity; findings diagnostics-only (lateral full-height vs submerged area convention in unused helpers; q_net_surface dimensional ÷dt defect; diag%q_cond/q_bot never populated; TEST_11 CSV format defect); extended TEST_11 diagnostics (24 columns, 15 shared byte-identical); 90-day diagnostic run −42.2 % (Q1 atmosphere cycle, ocean frozen at January — **annual extrapolation premature**); **NO physics correction**; new tests (47 + 7 Fortran, 40 Python)                                                                                                                                                                                                                                                                                            | **Complete**; classification: audit — internal consistency confirmed; production UNCHANGED; commit `022f871` |
+| 10.18A   | Lateral melt parameterization research audit: independent reference layer (`python/validation/lateral_melt.py`, 458 checks) reproduces production exactly (replay dM 15.43 %/lateral 96.83 % vs production 15.41 %/96.8 %); **legacy C_LATERAL = 1e-6 m/(s·K) ≡ forced-convection side melt at U_eq ≈ 0.30 m/s** (γ_T = 304 W/(m²·K)) vs simulated U_rel 0.005–0.027 m/s (factor 10–60); literature-based velocity-dependent variants (bulk closure, Bigg1997 K=0.58, FitzMaurice2017 plume, +Neshyba–Josberger buoyant) give mean lateral 0.013–0.052 m/day (5–20× below legacy) and 30-day ΔM 1.3–3.6 % (vs 15.4 %) — **lateral dominance is formulation-dependent, not robust**; geometry ambiguity quantified: submerged full-perimeter vs full-height = factor 2·ρ_i/ρ_w = 1.77 (volume), depth-only 1.13 (Stage 10.17 F2); scalings verified (U^0.8/U^0.5, D^-0.2/D^-0.5, ΔT-linear, legacy U^0); wave erosion **NOT TESTABLE** (no wave fields; White1980/Kubat2007 equations unverified); literature brackets legacy (Sermilik 0.06–0.10 m/day model / ~0.39 obs; C&S2023 side max 0.2 m/day) but does not validate; **NO production physics change** (git diff `src/`/`test/` empty); decision **OPTION D** — multiple formulations plausible → dedicated observational validation/calibration stage required before any production change; T-07 untouched                                                                                                                                                                                                                                                                                            | **Complete**; classification: research/sensitivity audit; production UNCHANGED; commit pending |
 
 ## Immediate next step
 
@@ -70,16 +71,48 @@ a near-constant 0.26 m/day (C_LATERAL = 1e-6 m/(s·K), velocity-independent,
 The 90-day run loses 42.2 % of mass — annual extrapolation is premature
 (ocean state frozen at January).
 
-### Stage 10.18 — decision point (next)
+### Stage 10.18A — lateral melt parameterization research audit (COMPLETE)
 
-Choose between:
+Delivered:
 
-- **10.18a — extended operational demonstration** (recommended: no
-  correction is justified by the audit; e.g., longer/seasonal runs, output
-  pipeline hardening, production-path integration steps), or
-- **10.18b — dedicated lateral-melt parameterization stage** (re-evaluate
-  C_LATERAL: velocity dependence, submerged-area convention, sail vs draft
-  erosion — an explicitly approved physics change).
+- independent reference layer `python/validation/lateral_melt.py`
+  (legacy_full_height, legacy_submerged, bulk velocity-dependent, Bigg1997,
+  Neshyba–Josberger, FitzMaurice plume; verified literature provenance);
+- independent tests `python/tests/test_lateral_melt_parameterizations.py`
+  (458 checks, analytic expectations only);
+- analysis `python/analysis/stage10_18a_lateral_melt.py` — sensitivity
+  matrix (ΔT × U × L), scalings, TEST_11 offline replay (6 variants),
+  geometry comparison, 10 figures, machine-readable outputs
+  (`data/output/stage10.18a/`);
+- report `docs/validation/stage10.18a_lateral_melt_parameterization_audit.md`.
+
+Result: **no production physics change** (git diff on `src/`/`test/` empty).
+The reference layer reproduces production exactly (replay dM 15.43 %/lateral
+96.83 %). The legacy constant C_LATERAL = 1e-6 m/(s·K) is equivalent to
+forced-convection side melt at **U_eq ≈ 0.30 m/s** (γ_T = 304 W/(m²·K)),
+while the simulated U_rel at the draft is 0.005–0.027 m/s — a factor 10–60.
+Every literature-based velocity-dependent variant gives mean lateral melt
+0.013–0.052 m/day (5–20× below legacy) and 30-day ΔM 1.3–3.6 % (vs 15.4 %):
+**the dominance of lateral melt is formulation-dependent, not a robust
+physical outcome**. Geometry ambiguity quantified: submerged full-perimeter
+vs production full-height = factor 2·ρ_i/ρ_w = 1.77 (volume); depth-only
+1.13 (Stage 10.17 F2). Wave erosion is NOT TESTABLE with the current forcing.
+
+### Stage 10.18B — lateral melt observational/calibration constraint (next, recommended)
+
+**Decision: OPTION D** — multiple lateral-melt parameterizations remain
+plausible (legacy constant, bulk/Bigg/plume velocity-dependent, submerged vs
+full-height geometry); no unique observational constraint selects one; wave
+erosion is untestable offline. Before any production change:
+
+- assemble/version an observational lateral-melt constraint set (e.g., Grand
+  Banks / Barents Sea deterioration studies, Sermilik side-melt estimates);
+- assess whether U_rel-dependent formulations + a geometry-convention
+  decision (submerged draft only vs full height) can be constrained;
+- only then decide on a dedicated production physics implementation stage.
+
+A seasonal ocean state and wave forcing remain prerequisites for closing the
+long-run and wave-erosion gaps.
 
 ### Stage 10.15.2 — coordinate mapping and bilinear interpolation fix (COMPLETE)
 

@@ -35,11 +35,12 @@ under atmospheric, oceanic, bathymetric, and sea-ice forcing.
 
 ## 📑 Project status
 
-- **Current stage:** Stage 10.17 — iceberg melt and thermodynamic budget
-  audit (completed: mass/geometry internally consistent, budget closes to
-  5e-4 %, legacy lateral melt dominates 96.8 %; findings diagnostics-only,
-  no physics change; next: Stage 10.18 decision — extended demonstration
-  vs lateral-melt parameterization).
+- **Current stage:** Stage 10.18A — lateral melt parameterization research
+  audit (completed: no production physics change; legacy lateral constant
+  equivalent to forced-convection side melt at U≈0.30 m/s vs simulated
+  0.005–0.027 m/s — lateral dominance is formulation-dependent; decision:
+  dedicated observational/calibration constraint stage before any production
+  change).
 - **Physics status and switches:** `docs/model/model_physics_status.md`
 - **Stage plan and status:** `docs/PROJECT_ROADMAP.md`
 

@@ -35,12 +35,12 @@ under atmospheric, oceanic, bathymetric, and sea-ice forcing.
 
 ## 📑 Project status
 
-- **Current stage:** Stage 10.18B — observational constraint of lateral melt
-  parameterizations (completed: curated 17-case observational dataset; legacy
-  observationally compatible but not uniquely confirmed; lab data require a
-  buoyant/plume term + nonlinear ΔT dependence; geometry/wave erosion NOT
-  CONSTRAINED; decision: insufficient discrimination — production unchanged;
-  next: targeted observational design).
+- **Current stage:** Stage 10.18C — existing observations reanalysis and
+  velocity-resolved melt constraint (completed: public datasets reanalyzed
+  with explicit independence/velocity classification; no field case provides
+  simultaneous melt + ΔT + U_rel — velocity dependence NOT IDENTIFIABLE;
+  geometry/side-basal/wave NOT CONSTRAINED; production unchanged; next:
+  velocity-resolved observational upgrade).
 - **Physics status and switches:** `docs/model/model_physics_status.md`
 - **Stage plan and status:** `docs/PROJECT_ROADMAP.md`
 

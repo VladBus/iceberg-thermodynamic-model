@@ -34,6 +34,7 @@ Statuses:
 | `stage10.17_melt_thermodynamic_budget_audit.md`        | 10.17           | COMPLETED (audit; no correction) | Melt/thermodynamic budget audit: mass ≡ ρ_i·L·W·H (max 1.5e-5 rel), model budget closure 5e-4 % over 30 d; **lateral legacy melt dominates 96.8 %** (C_LATERAL = 1e-6 m/(s·K), velocity-independent, near-constant 0.26 m/day); basal 3.0 % (bulk, U_rel-limited), surface 0.12 % (winter), vapor 0.08 %; scalings verified (U^0.5/U^0.8, ΔT-linear, L^-0.2, 1/L, dt-insensitive); findings: lateral full-height area vs submerged convention in dead helpers (F2), q_net_surface dimensional defect (F3), diag%q_cond/q_bot never populated (F5), CSV format defect (F4) — all diagnostics-only, no physics change; TEST_11 re-run byte-identical (15 shared columns); 90-day diagnostic run −42.2 % (Q1 atmosphere cycle, ocean frozen at January — annual extrapolation premature); 47+7 Fortran + 40 Python checks |
 | `stage10.18a_lateral_melt_parameterization_audit.md`   | 10.18A          | COMPLETED (research audit; no production change) | Lateral melt parameterization research audit: independent reference layer `python/validation/lateral_melt.py` reproduces production exactly (replay dM 15.43 %/lateral 96.83 % vs production 15.41 %/96.8 %); **legacy C_LATERAL = 1e-6 m/(s·K) ≡ forced-convection side melt at U_eq ≈ 0.30 m/s** (γ_T = 304 W/(m²·K)) vs simulated U_rel 0.005–0.027 m/s (factor 10–60); literature-based velocity-dependent variants (bulk/Bigg1997 K=0.58/plume, +Neshyba–Josberger buoyant) give 30-day lateral 0.013–0.052 m/day (5–20× below legacy) and ΔM 1.3–3.6 % (vs 15.4 %) — **lateral dominance formulation-dependent**; geometry ambiguity quantified (submerged full-perimeter vs full-height = 1.77× volume; depth-only 1.13 = Stage 10.17 F2); scalings verified (U^0.8/U^0.5, D^-0.2/D^-0.5, ΔT-linear, legacy U^0); wave erosion NOT TESTABLE; literature brackets legacy but does not validate; decision OPTION D; git diff `src/`/`test/` empty; 458 Python checks + 10 figures |
 | `stage10.18b_observational_constraint.md`              | 10.18B          | COMPLETED (observational constraint; no production change) | Observational constraint and parameterization discrimination: curated dataset `data/validation/observations/iceberg_lateral_melt_observations*.csv` (17 cases, 9 sources; RH80 lab DIRECT 5, Sermilik + Antarctic + velocity INDIRECT 12; every number from fetched primary texts; Grand Banks/Barents side-melt obs unverified & excluded); prediction engine `python/validation/observational_constraint.py` + 62 independent tests + analysis (`stage10_18b_observational_constraint.py`, 10 figures); **directly comparable N=5 (RH80 lab only)** — leave-one-source-out NOT APPLICABLE; quiescent lab melt 0.04–1.6 m/day **requires a buoyant/plume U=0 term** (BULK/BIGG → 0, bias −0.56 m/day); lab temperature dependence **nonlinear ΔT^1.5** (legacy linear over-predicts 3.6× at 1.8 K → 1.1× at 19.8 K); legacy lateral exceeds observed **total** submarine melt in 3/4 Antarctic cold-shelf cases; observational **C_eff N=9 median 5.43e-7 = 0.54× production** (range 0.28–1.06×; Thwaites slope 24 m/a/°C = 0.76×); legacy equivalent-U 0.30 m/s is 10–15× above observed Sermilik velocities (0.018–0.023 m/s); velocity dependence qualitatively supported but not field-quantified; **geometry and wave erosion NOT CONSTRAINED**; **decision OPTION E** (insufficient discrimination) + **production KEEP_CURRENT**; git diff `src/`/`test/` empty; 62 Python checks + 10 figures |
+| `stage10.18c_existing_observations_reanalysis.md`      | 10.18C          | COMPLETED (observations reanalysis; no production change) | Existing observations reanalysis and velocity-resolved melt constraint: reanalyzed dataset `data/validation/observations/stage10.18c/` (18 rows; explicit independence/melt-definition/velocity classification) + analysis (`stage10_18c_existing_observations.py`, 10 figures) + tests (`test_stage10_18c_observations.py`, 61 checks); **methodological corrections to 10.18B** (RH80 = PUBLISHED_FIT_EVALUATION of ONE fit, NOT 5 independent observations; C_eff_lab vs C_eff_submarine separated; Moyer19 = u_ice NOT u_rel; nonzero U=0 melt = NONZERO_BUOYANCY_OR_FREE_CONVECTION_COMPONENT; Enderlin23 slope = submarine sensitivity); Schild21 raw GPS/CTD/multibeam data identified at Arctic Data Center (no ADCP → U_rel impossible); Enderlin23 individual-iceberg dataset identified at USAP-DC 601679 (account-gated, not retrieved); **FIELD velocity-resolved cases (melt+ΔT+U_rel) = 0** — velocity dependence NOT IDENTIFIABLE quantitatively; RH80 curve-evaluation diagnostics (legacy +0.198 bias low-ΔT; BULK/BIGG 0 at U=0); legacy lateral > total submarine melt in 3/4 Antarctic cold-shelf region cases; C_eff_lab_lateral 0.54× / C_eff_submarine 0.59× production (separate; compatible, not validated); geometry/side-basal/wave NOT CONSTRAINED; **decision OPTION D** (bounds) + OPTION E elements; **production KEEP_CURRENT**; git diff `src/`/`test/` empty; 61 Python checks + 10 figures |
 
 Note: Stage 10.13 (Phases A–C) is complete and committed (`caa7799`); its
 reports remain here because Stage 10 as a whole is still active. Stage 10.13
@@ -120,6 +121,27 @@ available observations. **Decision: OPTION E** (insufficient discrimination;
 multiple formulations remain observationally plausible) with **production
 KEEP_CURRENT**; no production physics change (git diff on `src/` and `test/`
 is empty); next: Stage 10.18C targeted observational design.
+
+Stage 10.18C reanalyzes the existing observations with explicit
+methodological corrections: the RH80 rows are evaluations of **one published
+laboratory fit** (NOT five independent observations); the field effective
+coefficient is a **submarine-total** quantity (C_eff_submarine), kept
+separate from the lab lateral coefficient (C_eff_lab_lateral); Moyer19 speeds
+are **iceberg translational velocities**, not U_rel; nonzero quiescent melt
+indicates a buoyancy/free-convection component (not necessarily a plume
+mechanism); the Enderlin23 thermal slope (24 m/a/°C) is a submarine-melt
+sensitivity. Data recovery: Schild21 raw GPS/CTD/multibeam records exist at
+the Arctic Data Center (no ADCP/current-meter data); Enderlin23 individual
+iceberg CSVs exist at USAP-DC 601679 (account-gated, not retrieved). **No
+field case provides simultaneous melt + ΔT + U_rel: the velocity-resolved
+field subset is empty, and velocity dependence is NOT IDENTIFIABLE
+quantitatively.** Legacy over-predicts cold low-ΔT (lab + Antarctic shelf);
+geometry distribution, side/basal separation and wave erosion are NOT
+CONSTRAINED. **Decision: OPTION D** (existing observations provide useful
+bounds) with OPTION E elements; **production KEEP_CURRENT**; no production
+physics change (git diff on `src/` and `test/` is empty); next: Stage 10.18D
+(velocity-resolved observational upgrade: Enderlin23 per-iceberg retrieval +
+ADCP-equipped campaign design).
 
 ## Links to current documentation
 

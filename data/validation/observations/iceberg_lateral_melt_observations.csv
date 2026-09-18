@@ -1,0 +1,39 @@
+# Stage 10.18B observational dataset: iceberg lateral/side-melt observations.
+# schema version: 1
+# provenance: see iceberg_lateral_melt_observations_provenance.md in this directory.
+# Every numerical value is either (a) taken verbatim from the cited source or
+# (b) a documented derived quantity (unit conversion or the published fit
+# evaluated at the reported temperature). No value is invented. Missing
+# quantities are NA.
+# column conventions:
+#   delta_T_K           thermal driving reported/derived by the source (K);
+#                       NA if not reported/derivable
+#   u_rel_m_s           ice-ocean relative velocity (m/s); 0.0 = quiescent;
+#                       NA = unknown
+#   L_m / D_m           characteristic length / draft (m); NA if unknown
+#   melt_obs_m_day      reported melt rate (m/day)
+#   melt_unc_m_day      symmetric +- uncertainty (m/day); NA if not reported
+#   directness          DIRECT / INDIRECT / MODEL_DERIVED / UNVERIFIED
+#   melt_definition     side / submarine (side+basal) / total / retreat /
+#                       sensitivity-slope
+#   wave_influenced     TRUE / FALSE / UNKNOWN
+#   comparability       DIRECTLY_COMPARABLE / COMPARABLE_AFTER_NORMALIZATION /
+#                       QUALITATIVE_ONLY / NOT_COMPARABLE
+case_id,source_id,year,region,environment,delta_T_K,u_rel_m_s,L_m,D_m,melt_obs_m_day,melt_unc_m_day,directness,melt_definition,measurement_method,averaging_period,wave_influenced,comparability,notes
+RH80_0C,RH80,1980,lab (saltwater tanks),LAB,1.8,0.0,1.0,0.5,0.0434,NA,DIRECT,side,lab dimensional measurement (published fit R=1.8e-2*(T+1.8)^1.5; S=35),steady-state tank,FALSE,DIRECTLY_COMPARABLE,fit-derived from published relationship; block ~1:2:4; basal and mean-side rates similar
+RH80_2C,RH80,1980,lab (saltwater tanks),LAB,3.8,0.0,1.0,0.5,0.1333,NA,DIRECT,side,lab dimensional measurement (published fit),steady-state tank,FALSE,DIRECTLY_COMPARABLE,fit-derived; same source/relationship
+RH80_5C,RH80,1980,lab (saltwater tanks),LAB,6.8,0.0,1.0,0.5,0.3192,NA,DIRECT,side,lab dimensional measurement (published fit),steady-state tank,FALSE,DIRECTLY_COMPARABLE,fit-derived
+RH80_10C,RH80,1980,lab (saltwater tanks),LAB,11.8,0.0,1.0,0.5,0.7296,NA,DIRECT,side,lab dimensional measurement (published fit),steady-state tank,FALSE,DIRECTLY_COMPARABLE,fit-derived
+RH80_18C,RH80,1980,lab (saltwater tanks),LAB,19.8,0.0,1.0,0.5,1.5859,NA,DIRECT,side,lab dimensional measurement (published fit),steady-state tank,FALSE,DIRECTLY_COMPARABLE,fit-derived
+ENDERLIN14_SERMILIK_CYL,ENDERLIN14,2014,Sermilik Fjord (SE Greenland),FJORD,NA,NA,NA,NA,0.39,0.17,INDIRECT,submarine (side+basal),repeat WorldView stereo DEM differencing,3-46 day intervals,UNKNOWN,QUALITATIVE_ONLY,area-averaged submarine melt (cylindrical idealized shape; upper bound); 10 icebergs; summer 2011-13; cylinder 0.38+-0.17 m/day
+ENDERLIN14_SERMILIK_CONE,ENDERLIN14,2014,Sermilik Fjord (SE Greenland),FJORD,NA,NA,NA,NA,0.41,0.18,INDIRECT,submarine (side+basal),repeat WorldView stereo DEM differencing,3-46 day intervals,UNKNOWN,QUALITATIVE_ONLY,area-averaged submarine melt (conical idealized shape; upper bound)
+SCHILD21_A_GPS9D,SCHILD21,2021,Sermilik Fjord (SE Greenland),FJORD,NA,NA,733.0,386.0,0.16,NA,INDIRECT,submarine (side+basal),GPS surface lowering + drone/multibeam geometry,9-day,UNKNOWN,QUALITATIVE_ONLY,iceberg A (length 733 m, keel 386 m, height ~35 m); overall melt rate (vol loss / reconstructed area); calving <4%
+SCHILD21_A_DRONE6D,SCHILD21,2021,Sermilik Fjord (SE Greenland),FJORD,NA,NA,733.0,386.0,0.27,NA,INDIRECT,submarine (side+basal),repeat drone surface DEM differencing,6-day,UNKNOWN,QUALITATIVE_ONLY,drone-differencing estimate for iceberg A
+SCHILD21_B_GPS9D,SCHILD21,2021,Sermilik Fjord (SE Greenland),FJORD,NA,NA,518.0,255.0,0.10,NA,INDIRECT,submarine (side+basal),GPS surface lowering + drone/multibeam geometry,9-day,UNKNOWN,QUALITATIVE_ONLY,iceberg B (length 518 m, keel 255 m, height ~22.5 m); calving <4%
+SCHILD21_B_DRONE6D,SCHILD21,2021,Sermilik Fjord (SE Greenland),FJORD,NA,NA,518.0,255.0,0.15,NA,INDIRECT,submarine (side+basal),repeat drone surface DEM differencing,6-day,UNKNOWN,QUALITATIVE_ONLY,drone-differencing estimate for iceberg B
+ENDERLIN23_WAP,ENDERLIN23,2023,Western Antarctic Peninsula,SHELF,1.5,NA,NA,NA,0.137,NA,INDIRECT,submarine (side+basal),satellite surface-elevation differencing,2011-2022 multi-year,UNKNOWN,COMPARABLE_AFTER_NORMALIZATION,max melt rate ~50 m/a for the WAP; T ~1-2 degC, depth-averaged thermal forcing rarely >2 degC (reported range -> delta_T=1.5, documented)
+ENDERLIN23_WAIS,ENDERLIN23,2023,West Antarctic Ice Sheet,SHELF,1.5,NA,NA,NA,0.110,NA,INDIRECT,submarine (side+basal),satellite surface-elevation differencing,2011-2022 multi-year,UNKNOWN,COMPARABLE_AFTER_NORMALIZATION,max ~40 m/a; thermal forcing ~1-2 degC (documented)
+ENDERLIN23_EAIS,ENDERLIN23,2023,East Antarctic Ice Sheet,SHELF,0.5,NA,NA,NA,0.014,NA,INDIRECT,submarine (side+basal),satellite surface-elevation differencing,2011-2022 multi-year,UNKNOWN,COMPARABLE_AFTER_NORMALIZATION,max ~5 m/a; cold shelf waters, thermal forcing small (documented ~0.3-0.5 K)
+ENDERLIN23_EAP,ENDERLIN23,2023,Eastern Antarctic Peninsula,SHELF,0.5,NA,NA,NA,0.014,NA,INDIRECT,submarine (side+basal),satellite surface-elevation differencing,2011-2022 multi-year,UNKNOWN,COMPARABLE_AFTER_NORMALIZATION,max ~5 m/a; thermal forcing small (documented)
+ENDERLIN23_OPEN_OCEAN,ENDERLIN23,2023,open Southern Ocean,OPEN_OCEAN,NA,NA,NA,NA,1.5,NA,INDIRECT,submarine (side+basal),cited in Enderlin2023 (orig. Tournadre 2012 / Bouhier 2018; not directly fetched),multi-year,UNKNOWN,QUALITATIVE_ONLY,open-ocean large-iceberg melt estimate ~1.5 m/day (~500 m/a) as quoted in Enderlin2023
+MOYER19_FJORD_VELOCITY,MOYER19,2019,Sermilik Fjord (SE Greenland),FJORD,NA,0.018,NA,NA,NA,NA,INDIRECT,ocean/iceberg velocity (constraint only),Sentinel-2 iceberg tracking,seasonal 2017-2018,UNKNOWN,QUALITATIVE_ONLY,mean iceberg velocity 0.018+-0.002 (2017) / 0.023+-0.003 (2018) m/s; max 0.14 m/s; GPS-tracker mean 0.017 m/s; used as U_rel magnitude reference (not a melt observation)

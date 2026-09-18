@@ -1,8 +1,8 @@
 # Project Roadmap
 
 **Updated:** 2026-09-18
-**Current scientific stage:** Stage 10.18A — lateral melt parameterization research audit (COMPLETED; no production physics change; legacy constant equivalent to forced-convection side melt at U≈0.30 m/s vs actual 0.005–0.027 m/s; next: OPTION D — dedicated observational validation / calibration of lateral melt before any production change)
-**Current status:** Stages 10.14 (`ca60c62`), 10.15 (`472fe75`), 10.15.1 (`d1bfc30`), 10.15.2 (`93b8554`), 10.16 (`b4d62bf`) committed and pushed; user README commit `d48c9de`; Stage 10.17 (`022f871`) committed and pushed (audit: mass ≡ ρ_i·L·W·H, closure 5e-4 %, lateral legacy dominates 96.8 %, findings diagnostics-only, NO physics change); **Stage 10.18A (lateral melt parameterization research audit) COMPLETE**: production Fortran byte-identical (git diff `src/`/`test/` empty); independent reference layer reproduces production exactly (replay dM 15.43 %/lateral 96.83 % vs production 15.41 %/96.8 %); legacy C_LATERAL = 1e-6 m/(s·K) equivalent to bulk forced-convection side melt at U_eq ≈ 0.30 m/s (γ_T = 304 W/(m²·K)) while simulated U_rel at draft is 0.005–0.027 m/s → factor 10–60; every literature-based velocity-dependent variant (bulk/Bigg1997/plume) gives 30-day lateral 0.013–0.052 m/day (5–20× below legacy) and total ΔM 1.3–3.6 % (vs 15.4 %); submerged full-perimeter geometry with legacy rate raises ΔM to 26.1 %; geometry ambiguity quantified (factor 2·ρ_i/ρ_w = 1.77 vs full-height; depth-only 1.13 = Stage 10.17 F2); wave erosion NOT TESTABLE (no ERA5 wave fields, White1980/Kubat2007 equations unverified); literature brackets legacy (Sermilik 0.06–0.10 m/day model, ~0.39 obs; C&S2023 side max 0.2 m/day) but does not validate; decision: OPTION D — multiple parameterizations remain plausible, dedicated observational validation/calibration stage required before any production change; T-07 untouched.
+**Current scientific stage:** Stage 10.18B — observational constraint of lateral melt parameterizations (COMPLETED; curated 17-case observational dataset; legacy observationally compatible but not uniquely confirmed; lab data require buoyant/plume U=0 term + nonlinear ΔT dependence; geometry/wave NOT CONSTRAINED; decision OPTION E — insufficient discrimination; production KEEP_CURRENT; next: Stage 10.18C targeted observational design)
+**Current status:** Stages 10.14 (`ca60c62`), 10.15 (`472fe75`), 10.15.1 (`d1bfc30`), 10.15.2 (`93b8554`), 10.16 (`b4d62bf`), 10.17 (`022f871`), 10.18A (`0504853`) committed and pushed; **Stage 10.18B (observational constraint) COMPLETE**: curated dataset `data/validation/observations/iceberg_lateral_melt_observations*.csv` (17 cases, 9 sources; DIRECT RH80 lab 5, INDIRECT Sermilik 7 + Antarctic 4 + velocity reference; all values from fetched primary texts; Grand Banks/Barents side-melt obs unverified & excluded); comparison engine `python/validation/observational_constraint.py` + 62 independent tests + analysis (`stage10_18b_observational_constraint.py`, 10 figures); directly-comparable set N=5 (RH80 lab only — leave-one-source-out NOT APPLICABLE); RH80 quiescent lab melt 0.04–1.6 m/day requires buoyant/plume term (BULK/BIGG give 0 → bias −0.56 m/day) and is nonlinear ΔT^1.5 (legacy linear over-predicts 3.6× at 1.8 K → 1.1× at 19.8 K); legacy lateral exceeds observed total submarine melt in 3/4 Antarctic cold shelf cases; C_eff observational distribution N=9 median 5.43e-7 = 0.54× production (range 0.28–1.06×), Thwaites slope 24 m/a/°C = 0.76×; legacy equivalent-U 0.30 m/s is 10–15× above observed Sermilik fjord velocities (0.018–0.023 m/s); velocity dependence qualitatively supported (Enderlin23) but not field-quantified; geometry and wave erosion NOT CONSTRAINED; **decision OPTION E** (multiple formulations observationally plausible; insufficient discrimination) + **production KEEP_CURRENT**; no production physics change (git diff `src/`/`test/` empty); next: 10.18C targeted observational acquisition/validation design.
 
 ## Completed foundation
 
@@ -44,7 +44,8 @@
 | 10.15.2  | Coordinate mapping and bilinear interpolation fix (T-13): cross terms swapped in `bilinear_interp_3d` + `model_coords_to_latlon` (wx along j/X, wy along i/Y); new Fortran regression `iceberg_test_bilinear_axis_regression` (13 checks: constant/X-only/Y-only/X+Y/node/boundary/3D/trajectory-continuity — **FAILS pre-fix, PASSES post-fix**); TEST_11 30-day re-run: **0 jumps**, corr(implied geo, reported) = **0.988** (pre: 0.029), max geographic step 97 m (pre: 19.6 km); drift-scaling numbers unchanged → **T-07 remains OPEN**; no physics/default change                                                                                                                                                                                                                                                                                                                                                                        | **Complete**; classification: targeted correctness fix, regression-tested and re-run; committed `93b8554` |
 | 10.16    | Drift dynamics and T-07 investigation: controlled experiments A–K (wind/current/Coriolis on-off/timestep 1800-7200 s/size 10-300 m/drag perturbation) + force-balance diagnostics; **T-07 PARTIALLY EXPLAINED**: low wind ratio (0.04–0.13 %) = physically correct **Coriolis-limited equilibrium** u = F_wind/(M·f) for a 100-m cube (analytic match 0.1 %; ratio ∝ 1/L; C_Dw-independent — verified by temporary rebuild; force balance wind ≈ Coriolis ≫ water drag); 1–2 % reference implies drag-limited regime or wind-driven (Ekman) current absent from the offline model; secondary numerical damping 1/√(1+(f·dt)²) ≈ 0.89 at dt=3600 s (~11 %); **NO source correction**; new tests (16 Fortran + 13 Python); TEST_11 re-run byte-identical                                                                                                                                                                                                                                                                                                                | **Complete**; classification: investigation — T-07 partially explained; production UNCHANGED; commit `b4d62bf` |
 | 10.17    | Melt and thermodynamic budget audit: mass ≡ ρ_i·L·W·H (max 1.5e-5 rel), model budget closure 5e-4 % (30 d); **lateral legacy melt dominates 96.8 %** (C_LATERAL = 1e-6 m/(s·K), velocity-independent, 0.26 m/day at ⟨ΔT⟩_D ≈ 3 K); basal 3.0 %, surface 0.12 %, vapor 0.08 %; controlled experiments A–K verify U^0.5/U^0.8, ΔT-linear, L^-0.2, 1/L scalings and dt-insensitivity; findings diagnostics-only (lateral full-height vs submerged area convention in unused helpers; q_net_surface dimensional ÷dt defect; diag%q_cond/q_bot never populated; TEST_11 CSV format defect); extended TEST_11 diagnostics (24 columns, 15 shared byte-identical); 90-day diagnostic run −42.2 % (Q1 atmosphere cycle, ocean frozen at January — **annual extrapolation premature**); **NO physics correction**; new tests (47 + 7 Fortran, 40 Python)                                                                                                                                                                                                                                                                                            | **Complete**; classification: audit — internal consistency confirmed; production UNCHANGED; commit `022f871` |
-| 10.18A   | Lateral melt parameterization research audit: independent reference layer (`python/validation/lateral_melt.py`, 458 checks) reproduces production exactly (replay dM 15.43 %/lateral 96.83 % vs production 15.41 %/96.8 %); **legacy C_LATERAL = 1e-6 m/(s·K) ≡ forced-convection side melt at U_eq ≈ 0.30 m/s** (γ_T = 304 W/(m²·K)) vs simulated U_rel 0.005–0.027 m/s (factor 10–60); literature-based velocity-dependent variants (bulk closure, Bigg1997 K=0.58, FitzMaurice2017 plume, +Neshyba–Josberger buoyant) give mean lateral 0.013–0.052 m/day (5–20× below legacy) and 30-day ΔM 1.3–3.6 % (vs 15.4 %) — **lateral dominance is formulation-dependent, not robust**; geometry ambiguity quantified: submerged full-perimeter vs full-height = factor 2·ρ_i/ρ_w = 1.77 (volume), depth-only 1.13 (Stage 10.17 F2); scalings verified (U^0.8/U^0.5, D^-0.2/D^-0.5, ΔT-linear, legacy U^0); wave erosion **NOT TESTABLE** (no wave fields; White1980/Kubat2007 equations unverified); literature brackets legacy (Sermilik 0.06–0.10 m/day model / ~0.39 obs; C&S2023 side max 0.2 m/day) but does not validate; **NO production physics change** (git diff `src/`/`test/` empty); decision **OPTION D** — multiple formulations plausible → dedicated observational validation/calibration stage required before any production change; T-07 untouched                                                                                                                                                                                                                                                                                            | **Complete**; classification: research/sensitivity audit; production UNCHANGED; commit pending |
+| 10.18A   | Lateral melt parameterization research audit: independent reference layer (`python/validation/lateral_melt.py`, 458 checks) reproduces production exactly (replay dM 15.43 %/lateral 96.83 % vs production 15.41 %/96.8 %); **legacy C_LATERAL = 1e-6 m/(s·K) ≡ forced-convection side melt at U_eq ≈ 0.30 m/s** (γ_T = 304 W/(m²·K)) vs simulated U_rel 0.005–0.027 m/s (factor 10–60); literature-based velocity-dependent variants (bulk closure, Bigg1997 K=0.58, FitzMaurice2017 plume, +Neshyba–Josberger buoyant) give mean lateral 0.013–0.052 m/day (5–20× below legacy) and 30-day ΔM 1.3–3.6 % (vs 15.4 %) — **lateral dominance is formulation-dependent, not robust**; geometry ambiguity quantified: submerged full-perimeter vs full-height = factor 2·ρ_i/ρ_w = 1.77 (volume), depth-only 1.13 (Stage 10.17 F2); scalings verified (U^0.8/U^0.5, D^-0.2/D^-0.5, ΔT-linear, legacy U^0); wave erosion **NOT TESTABLE** (no wave fields; White1980/Kubat2007 equations unverified); literature brackets legacy (Sermilik 0.06–0.10 m/day model / ~0.39 obs; C&S2023 side max 0.2 m/day) but does not validate; **NO production physics change** (git diff `src/`/`test/` empty); decision **OPTION D** — multiple formulations plausible → dedicated observational validation/calibration stage required before any production change; T-07 untouched                                                                                                                                                                                                                                                                                            | **Complete**; classification: research/sensitivity audit; production UNCHANGED; commit `0504853` |
+| 10.18B   | Observational constraint and parameterization discrimination: curated observational dataset (`data/validation/observations/iceberg_lateral_melt_observations*.csv` — 17 cases, 9 sources; RH80 lab DIRECT 5, Sermilik + Antarctic + velocity INDIRECT 12; every number from fetched primary texts; Grand Banks/Barents side-melt obs unverified & excluded); prediction engine `python/validation/observational_constraint.py` + analysis (`stage10_18b_observational_constraint.py`, 10 figures) + 62 independent tests; **directly comparable set N=5 (RH80 lab only)** — leave-one-source-out NOT APPLICABLE; quiescent lab melt 0.04–1.6 m/day **requires a buoyant/plume U=0 term** (BULK/BIGG → 0, bias −0.56 m/day); lab temperature dependence **nonlinear ΔT^1.5** (legacy linear over-predicts 3.6× at 1.8 K → 1.1× at 19.8 K); legacy lateral exceeds observed **total** submarine melt in 3/4 Antarctic cold-shelf cases; observational **C_eff N=9 median 5.43e-7 = 0.54× production** (range 0.28–1.06×; Thwaites slope 24 m/a/°C = 0.76×) → production 1e-6 plausible but not uniquely determined; legacy equivalent-U 0.30 m/s is 10–15× above observed Sermilik velocities (0.018–0.023 m/s); velocity dependence qualitatively supported (Enderlin23) but not field-quantified; **geometry and wave erosion NOT CONSTRAINED**; **decision OPTION E** (insufficient discrimination) + **production KEEP_CURRENT**; **no production physics change** (git diff `src/`/`test/` empty)                                                                                                                                                                                                                                                                                            | **Complete**; classification: observational constraint; production UNCHANGED; commit pending |
 
 ## Immediate next step
 
@@ -98,21 +99,49 @@ physical outcome**. Geometry ambiguity quantified: submerged full-perimeter
 vs production full-height = factor 2·ρ_i/ρ_w = 1.77 (volume); depth-only
 1.13 (Stage 10.17 F2). Wave erosion is NOT TESTABLE with the current forcing.
 
-### Stage 10.18B — lateral melt observational/calibration constraint (next, recommended)
+### Stage 10.18B — observational constraint and parameterization discrimination (COMPLETE)
 
-**Decision: OPTION D** — multiple lateral-melt parameterizations remain
-plausible (legacy constant, bulk/Bigg/plume velocity-dependent, submerged vs
-full-height geometry); no unique observational constraint selects one; wave
-erosion is untestable offline. Before any production change:
+Delivered:
 
-- assemble/version an observational lateral-melt constraint set (e.g., Grand
-  Banks / Barents Sea deterioration studies, Sermilik side-melt estimates);
-- assess whether U_rel-dependent formulations + a geometry-convention
-  decision (submerged draft only vs full height) can be constrained;
-- only then decide on a dedicated production physics implementation stage.
+- curated observational dataset `data/validation/observations/
+  iceberg_lateral_melt_observations.csv` (17 cases) + sources + provenance
+  (RH80 lab DIRECT; Sermilik + Antarctic + velocity INDIRECT; every number
+  from a fetched primary text; exclusions documented);
+- prediction engine `python/validation/observational_constraint.py`;
+- independent tests `python/tests/test_observational_constraint.py` (62
+  checks, analytic expectations only);
+- analysis `python/analysis/stage10_18b_observational_constraint.py`
+  (normalization, comparison table, filtered statistics, C_eff distribution,
+  bounded comparison, 10 figures, machine-readable outputs).
 
-A seasonal ocean state and wave forcing remain prerequisites for closing the
-long-run and wave-erosion gaps.
+Result: **no production physics change** (git diff `src/`/`test/` empty).
+Direct lateral-melt field observations are scarce — the directly comparable
+set is the Russell-Head lab (N=5). The lab evidence requires a nonzero-at-U=0
+(buoyant/plume) term and shows a nonlinear ΔT^1.5 temperature dependence that
+the linear legacy over-predicts at low ΔT; forced-convection-only variants
+fail the quiescent cases. The observational C_eff distribution (median 0.54×
+production, range 0.28–1.06×) brackets the production constant; legacy lateral
+exceeds the observed total submarine melt in 3/4 Antarctic cold-shelf cases.
+Geometry and wave erosion are NOT CONSTRAINED. **Decision: OPTION E**
+(insufficient discrimination); **production KEEP_CURRENT**.
+
+### Stage 10.18C — targeted observational acquisition / validation design (next, recommended)
+
+**Decision: OPTION E** — multiple formulations remain observationally
+plausible. The gaps are specific and designable:
+
+- concurrent, velocity-resolved side-melt measurements (GPS/sonar campaigns
+  à la Schild21 with simultaneous CTD + current-meter data → ΔT and U_rel);
+- separation of side vs basal (submarine) contributions (multibeam
+  bathymetry-style geometry change vs volume loss);
+- vertical distribution of lateral retreat (geometry convention constraint);
+- wave-erosion separation requires wave measurements + verified primary
+  parameterizations;
+- replicate the Antarctic thermal-forcing-slope method (24 m/a/°C) at more
+  sites to tighten the ΔT constraint.
+
+Before any production change, the model additionally needs a seasonal ocean
+state (annual extrapolation) and wave forcing.
 
 ### Stage 10.15.2 — coordinate mapping and bilinear interpolation fix (COMPLETE)
 

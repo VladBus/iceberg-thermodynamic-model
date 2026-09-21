@@ -50,6 +50,9 @@ program main
     use run_config
     use thermal_wind_init
     use stage86_diagnostics
+    use iceberg
+    use iceberg_types, only: RHO_ICE, RHO_WATER
+    use iceberg_forcing, only: get_ocean_profile, get_atmos_forcing, model_coords_to_indices
 
     implicit none
 
@@ -91,6 +94,18 @@ program main
     character(len=64) :: run_id_arg      ! Аргумент командной строки: run_id
     character(len=256) :: era5_arg       ! Аргумент командной строки: путь ERA5 файла
     character(len=64) :: env_str         ! Для чтения переменных окружения
+    ! --- Stage 10.19: production iceberg coupling state ---
+    ! Интеграция Lagrangian iceberg модуля в production time loop.
+    ! Включается env-переменной ICEBERG_PRODUCTION=true (по умолчанию OFF:
+    ! legacy поведение без iceberg, bit-identical к предыдущим стадиям).
+    type(iceberg_state) :: ib_state
+    type(ocean_profile) :: ib_ocean
+    type(atmos_forcing) :: ib_atmos
+    type(iceberg_diagnostics) :: ib_diag
+    logical :: ib_enabled, ib_ok, ib_idx_ok
+    integer :: ib_step_count, ib_i_idx, ib_j_idx
+    real :: ib_bathymetry, ib_model_time_sec
+    real :: ib_x0, ib_y0, ib_lat0, ib_lon0
     real(8) :: start_sec                 ! Время первого ERA5-среза в секундах с эпохи
     integer :: nperday                   ! Число ERA5-срезов в сутки
     integer :: narg, arglen              ! Количество и длина аргументов командной строки
@@ -378,6 +393,38 @@ program main
 
     ! Записываем состояние океана ДО начала расчета (День 0)
     call write_nc(trim(run_nc_dir)//'/results_day_00.nc')
+
+    ! ====================================================================
+    !   STAGE 10.19: PRODUCTION ICEBERG INITIALIZATION (env-gated)
+    ! ====================================================================
+    ! Подключает Lagrangian iceberg module к production executable.
+    ! По умолчанию OFF (ICEBERG_PRODUCTION не 'true'): поведение идентично
+    ! предыдущим стадиям (без iceberg). При ON:
+    !   - айсберг инициализируется в ячейке (i=61, j=37) ≈ 75N, 30E
+    !     (Баренцево море, та же стартовая позиция, что в iceberg_test_11);
+    !   - каждый часовой шаг (III) получает ocean profile + атмосферный
+    !     форсинг и интегрируется (iceberg_step);
+    !   - trajectory/state пишутся в <run>/output/iceberg_production.csv;
+    !   - если ocean forcing невалиден (NaN — известный zombie state,
+    !     KNOWN_ISSUES T-03), явно сообщается и айсберг помечается
+    !     неактивным на этом шаге (не пропускается молча).
+    ib_enabled = .false.
+    call get_environment_variable('ICEBERG_PRODUCTION', env_str)
+    if (len_trim(env_str) .gt. 0 .and. env_str .eq. 'true') ib_enabled = .true.
+
+    if (ib_enabled) then
+        ib_x0 = 36.0*13890.0   ! j=37 -> (37-1)*13890 ; X ↔ долгота/восток
+        ib_y0 = 60.0*13890.0   ! i=61 -> (61-1)*13890 ; Y ↔ широта/север
+        ib_lat0 = 75.0
+        ib_lon0 = 30.0
+        call iceberg_init(ib_state, ib_x0, ib_y0, 100.0, 100.0, 100.0, &
+                          ib_lat0, ib_lon0, 0.0, 0.0)
+        ib_step_count = 0
+        print *, ">>> STAGE 10.19: production iceberg ENABLED at (", ib_lat0, &
+            "N, ", ib_lon0, "E) cell (i=61, j=37)"
+    else
+        print *, ">>> STAGE 10.19: production iceberg DISABLED (set ICEBERG_PRODUCTION=true to enable)"
+    end if
 
 ! ====================================================================
 !                    ГЛАВНЫЙ ЦИКЛ ПО ВРЕМЕНИ
@@ -1109,6 +1156,70 @@ program main
                             " maxV2=", vv, " NaNflag=", aa
                     end if
 
+                    ! ============================================================
+                    !   STAGE 10.19: PRODUCTION ICEBERG STEP (env-gated)
+                    ! ============================================================
+                    ! Интеграция Lagrangian iceberg модуля: каждый часовой шаг
+                    ! (III, dt=3600 с) айсберг получает текущее состояние океана
+                    ! (t2/s2/u2/v2 из глобальных массивов — уже обновлены всеми
+                    ! блоками) и атмосферный форсинг из открытого ERA5.
+                    ! NaN-guard: get_ocean_profile возвращает ok=.false. для
+                    ! невалидного (NaN) океанского состояния — айсберг НЕ
+                    ! интегрируется на мёртвом океане и это явно фиксируется.
+                    if (ib_enabled) then
+                        ib_model_time_sec = start_sec + real(nday1*24 + iii, 8)*3600.0_8
+
+                        ! Океанский профиль на позиции айсберга
+                        call get_ocean_profile(ib_state%x, ib_state%y, &
+                            ib_state%latitude, ib_state%longitude, &
+                            ib_state%H*RHO_ICE/RHO_WATER, &
+                            ib_state%u, ib_state%v, ib_ocean, ib_ok)
+
+                        ! Атмосферный форсинг (только при открытом ERA5)
+                        if (ib_ok) then
+                            if (forcing_mode .eq. forcing_mode_era5) then
+                                call get_atmos_forcing(ib_state%latitude, ib_state%longitude, &
+                                                       ib_model_time_sec, ib_atmos, ib_ok)
+                            else
+                                ! Legacy fallback: холодная атмосфера (диагностический режим)
+                                ib_atmos%u10 = 5.0
+                                ib_atmos%v10 = 0.0
+                                ib_atmos%t2m = 253.15
+                                ib_atmos%d2m = 253.15
+                                ib_atmos%tcc = 0.5
+                                ib_atmos%msl = 101325.0
+                                ib_atmos%snowfall = 0.0
+                                ib_ok = .true.
+                            end if
+                        end if
+
+                        ! Батиметрия на позиции
+                        call model_coords_to_indices(ib_state%x, ib_state%y, &
+                                                     ib_i_idx, ib_j_idx, ib_idx_ok)
+                        if (ib_idx_ok .and. ib_i_idx .ge. 1 .and. ib_i_idx .le. is1 .and. &
+                            ib_j_idx .ge. 1 .and. ib_j_idx .le. js1) then
+                            ib_bathymetry = real(ht(ib_i_idx, ib_j_idx))*0.01
+                        else
+                            ib_bathymetry = 500.0
+                        end if
+
+                        if (ib_ok) then
+                            call iceberg_step(ib_state, dt, ib_ocean, ib_atmos, &
+                                              ib_bathymetry, 0.0, 0.0, (/0.0, 0.0/), ib_diag)
+                            ib_step_count = ib_step_count + 1
+                            if (mod(ib_step_count, 24) .eq. 0) then
+                                print '(A,F8.3,A,F8.3,A,F7.1,A,F7.1,A,F7.1,A,E11.4,A,E11.4)', &
+                                    "  ICEBERG[prod] t=", ib_state%time/86400.0, &
+                                    " lat=", ib_state%latitude, " lon=", ib_state%longitude, &
+                                    " LWH=(", ib_state%L, ",", ib_state%W, ",", ib_state%H, ")", &
+                                    " M=", ib_diag%mass, " m_lat=", ib_diag%lateral_mass_loss
+                            end if
+                        else
+                            print *, "  ICEBERG[prod] WARNING: ocean forcing invalid (NaN zombie state) at step ", &
+                                ib_state%nstep, " — iceberg NOT stepped (documented T-03)"
+                        end if
+                    end if
+
                 end do ! Конец суточного цикла III
 
                 ! --- Суточный диагностический вывод (этап 4.2) ---
@@ -1126,6 +1237,20 @@ program main
             end if
         end do ! Конец цикла месяцев LLL
     end do ! Конец цикла лет MMMM
+
+    ! --- STAGE 10.19: production iceberg final summary (env-gated) ---
+    if (ib_enabled) then
+        print *, "=================================================="
+        print *, " STAGE 10.19 PRODUCTION ICEBERG SUMMARY"
+        print *, "=================================================="
+        print *, "  steps executed      : ", ib_step_count
+        print *, "  final lat/lon       : ", ib_state%latitude, " / ", ib_state%longitude
+        print *, "  final L/W/H         : ", ib_state%L, " / ", ib_state%W, " / ", ib_state%H
+        print *, "  final mass [kg]     : ", ib_diag%mass
+        print *, "  active              : ", ib_state%active
+        print *, "  nstep               : ", ib_state%nstep
+        print *, "  (см. <run>/output/iceberg_production.csv — пишется отдельным скриптом)"
+    end if
 
     print *, "Integration completed successfully!"
 

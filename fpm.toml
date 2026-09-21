@@ -14,7 +14,7 @@ external-modules = ["netcdf"]
 [executable]
 name = "iceberg_model"
 source-dir = "app"
-main = "iceberg_main.f90"
+main = "main.f90"
 
 [test.iceberg_hydrostatic]
 source-dir = "test"

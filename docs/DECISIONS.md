@@ -149,6 +149,38 @@ Format: `ID | stage/date | status` + short description. Details — via links.
   direct lateral match; regional TF is representative, not per-iceberg;
   site-level clustering (15 groups) governs statistics, not N = 743.
 
+## D-17. Production runtime: iceberg connected behind an env gate (OFF default); ocean zombie state blocks the online-coupled run
+
+- **Stage:** 10.19 (production runtime & full iceberg coupling recovery) |
+  **Status:** ACTIVE
+- **Problem:** Stage 10.15 revealed the production executable
+  (`app/main.f90`) never called the iceberg module; the online-coupled ocean
+  state is NaN from day 1 (56.5 % day_01; start cell 15/18 levels NaN) — a
+  physically-valid fully-coupled run was impossible.
+- **Decision:** (1) connect the validated Lagrangian module to the
+  production time loop behind the `ICEBERG_PRODUCTION=true` env gate
+  (default OFF → legacy bit-identical; minimal runtime integration only);
+  (2) fix the `fpm.toml` main-file declaration (`iceberg_main.f90` →
+  `main.f90`); (3) add an explicit NaN validity guard to
+  `get_ocean_profile` (`ok = .false.` on NaN — detection of the known
+  zombie state, not masking/substituting physics); (4) classify the
+  blocking condition: **CASE C** (force-coupling blocker — ocean forcing
+  invalid from day 1) with **CASE D** root cause (Block 210 Thomas blowup
+  after a Block 200 ~25 m/s geostrophic spike from the EN4 thermal-wind
+  init; T-03 family; documented Stage 8 family, NOT introduced here);
+  (5) production physics KEEP_CURRENT — no physics stage is part of 10.19.
+- **Why:** the integration defect was a missing call, not a physics defect;
+  gating it keeps all legacy runs bit-identical; the NaN guard prevents
+  silent corruption of the iceberg state on the dead ocean; the CASE C/D
+  classification scopes the next stage (ocean-init stabilization) precisely.
+- **Sources:** `docs/validation/stage10.19_production_runtime_coupling_recovery.md`,
+  `app/main.f90`, `src/iceberg_forcing.f90`, `fpm.toml`.
+- **Limitations:** the online-coupled run shows `steps executed : 0` until
+  the ocean-init stabilization stage (10.20 candidate) passes the
+  acceptance gate (30-day run with `steps executed = 720`); the offline
+  real-forcing path (TEST_11 family) remains the sanitized mode for
+  production iceberg demonstrations.
+
 ## How to add decisions
 
 A new decision is appended with an ID, stage, status, and links to reports.

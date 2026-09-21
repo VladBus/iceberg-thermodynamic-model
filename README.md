@@ -35,12 +35,15 @@ under atmospheric, oceanic, bathymetric, and sea-ice forcing.
 
 ## 📑 Project status
 
-- **Current stage:** Stage 10.18D — velocity-resolved / per-iceberg
-  observational upgrade (completed: Enderlin23 per-iceberg dataset of 743
-  icebergs retrieved and analyzed — legacy exceeds 99.6 % of observed
-  per-iceberg melt at TF = 1.5 °C, per-iceberg C_eff_submarine median 0.16×
-  production; ADCP-equipped Schild21-style campaign designed; velocity
-  dependence still NOT IDENTIFIABLE; production unchanged).
+- **Current stage:** Stage 10.19 — production runtime & full iceberg
+  coupling recovery (completed: the Lagrangian iceberg module is now
+  connected to the production executable behind the
+  `ICEBERG_PRODUCTION=true` env gate (default OFF → legacy bit-identical);
+  the online-coupled 1/7/30-day gates expose the documented ocean zombie
+  state — 56.5 % NaN from day 1 (CASE C BLOCKER, CASE D root cause:
+  EN4-init momentum instability, T-03 family) — so the iceberg correctly
+  reports "steps executed: 0"; production physics unchanged; the offline
+  real-forcing iceberg path remains fully validated).
 - **Physics status and switches:** `docs/model/model_physics_status.md`
 - **Stage plan and status:** `docs/PROJECT_ROADMAP.md`
 

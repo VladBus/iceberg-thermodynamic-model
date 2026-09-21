@@ -160,6 +160,26 @@ contains
             prof%u_rel(k) = sqrt((prof%u(k) - u_ice)**2 + (prof%v(k) - v_ice)**2)
         end do
 
+        ! --- Stage 10.19: NaN/invalid-state guard ---------------------------
+        ! Если океанские поля на позиции содержат NaN/Inf (известный zombie
+        ! ocean state, KNOWN_ISSUES T-03), профиль не считается валидным
+        ! forcing для айсберга. Это ДЕТЕКЦИЯ невалидного океанского состояния,
+        ! не маскирование и не подмена физики: caller получает ok=.false. и
+        ! обрабатывает это явно. Без этого NaN из мёртвых ячеек океана
+        ! распространялся бы в iceberg state молча (CASE C/BLOCKER для
+        ! fully-coupled production run).
+        do k = 1, kt
+            if (prof%temp(k) .ne. prof%temp(k) .or. &
+                prof%salt(k) .ne. prof%salt(k) .or. &
+                prof%u(k) .ne. prof%u(k) .or. &
+                prof%v(k) .ne. prof%v(k)) then
+                print *, "FORCING ERROR: ocean profile contains NaN at level k=", k, &
+                    " (pos x=", x_model, " y=", y_model, ") — invalid ocean state"
+                ok = .false.
+                return
+            end if
+        end do
+
         ok = .true.
     end subroutine get_ocean_profile
 

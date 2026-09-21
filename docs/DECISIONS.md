@@ -120,6 +120,35 @@ Format: `ID | stage/date | status` + short description. Details — via links.
 - **Why:** the roadmap explicitly lists this re-scoring after 10.13; it completes the KNOWN_ISSUES N-05 dependency (calibration remains not identifiable) and qualifies the 10.11.3 gap statement as scale-specific.
 - **Sources:** `docs/validation/stage10.14_three_equation_rescoring.md`.
 
+## D-16. Lateral melt — per-iceberg observational bounds; production KEEP_CURRENT
+
+- **Stage:** 10.17 / 10.18A-D | **Status:** ACTIVE
+- **Problem:** the legacy lateral closure `m_l = C_LATERAL·⟨ΔT⟩_D`
+  (C_LATERAL = 1e-6 m/(s·K)) dominates the melt budget (96.8 % in 10.17) but
+  is a documented simplification; 10.18A-D sought observational constraint.
+- **Decision:** no production change. Per-iceberg Enderlin23 population
+  (743 icebergs, USAP-DC 10.15784/601679 — retrieved 10.18D via direct POST,
+  MD5 verified) shows: legacy exceeds 99.6 % (TF = 1.5 °C) / 88 % (TF =
+  0.6 °C) of observed per-iceberg melt (median ratio 14×/5.6×); per-iceberg
+  C_eff_submarine median = 0.16× production (range 0.08–0.33×); the
+  velocity-dependent literature variants bracket observed medians. Velocity
+  dependence remains NOT IDENTIFIABLE (no U_ocean in any public dataset);
+  the ADCP-equipped Schild21-style campaign design is the velocity-resolved
+  prerequisite (10.18D §11).
+- **Why:** no formulation is observationally selected at field scale; the
+  per-iceberg bounds are now quantitative but cannot discriminate U^0 vs
+  U^0.8 closures without paired U_rel. Changing the closure without the
+  velocity constraint would be a physics change without evidence.
+- **Sources:** `docs/validation/stage10.17_melt_thermodynamic_budget_audit.md`,
+  `docs/validation/stage10.18a_lateral_melt_parameterization_audit.md`,
+  `docs/validation/stage10.18b_observational_constraint.md`,
+  `docs/validation/stage10.18c_existing_observations_reanalysis.md`,
+  `docs/validation/stage10.18d_velocity_resolved_observational_upgrade.md`.
+- **Limitations:** C_eff_submarine is a SUBMARINE_TOTAL quantity (side+basal)
+  vs the model's lateral-only coefficient — comparison is bounded, not a
+  direct lateral match; regional TF is representative, not per-iceberg;
+  site-level clustering (15 groups) governs statistics, not N = 743.
+
 ## How to add decisions
 
 A new decision is appended with an ID, stage, status, and links to reports.

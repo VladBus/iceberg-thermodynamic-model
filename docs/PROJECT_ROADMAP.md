@@ -1,8 +1,10 @@
 # Project Roadmap
 
-**Updated:** 2026-09-18
-**Current scientific stage:** Stage 10.18C — existing observations reanalysis and velocity-resolved melt constraint (COMPLETED; reanalyzed public datasets with explicit independence/melt-definition/velocity classification; FIELD velocity-resolved cases (melt+ΔT+U_rel) = 0 — U_rel not reconstructable (no ocean-velocity data); RH80 = one lab fit; C_eff_lab/C_eff_submarine separated; velocity dependence NOT IDENTIFIABLE; geometry/side-basal/wave NOT CONSTRAINED; decision OPTION D (bounds) / E; production KEEP_CURRENT; next: account-based retrieval of Enderlin23 USAP-DC 601679 + ADCP-equipped Schild21-style campaign)
+**Updated:** 2026-09-20
+**Current scientific stage:** Stage 10.18D — velocity-resolved / per-iceberg observational upgrade (COMPLETED; Enderlin23 per-iceberg dataset of 743 icebergs retrieved and analyzed; ADCP-equipped campaign designed; production KEEP_CURRENT)table (no ocean-velocity data); RH80 = one lab fit; C_eff_lab/C_eff_submarine separated; velocity dependence NOT IDENTIFIABLE; geometry/side-basal/wave NOT CONSTRAINED; decision OPTION D (bounds) / E; production KEEP_CURRENT; next: account-based retrieval of Enderlin23 USAP-DC 601679 + ADCP-equipped Schild21-style campaign)
 **Current status:** Stages 10.14–10.18B committed and pushed (`0504853` 10.18A, `d99a4bf` 10.18B); **Stage 10.18C (observations reanalysis) COMPLETE**: methodological corrections applied (RH80 = PUBLISHED_FIT_EVALUATION not N=5 independent; C_eff_lab_lateral vs C_eff_submarine separated; Moyer19 = u_ice not u_rel; nonzero U=0 melt = buoyancy/free-convection component not plume; Enderlin23 slope = submarine sensitivity); Schild21 raw data identified at Arctic Data Center (no ADCP → U_rel impossible); Enderlin23 individual dataset identified at USAP-DC 601679 (account-gated, not retrieved); **FIELD velocity-resolved cases = 0** — no public dataset provides simultaneous melt+ΔT+U_rel; velocity dependence NOT IDENTIFIABLE quantitatively; RH80 curve-evaluation diagnostics (legacy +0.198 bias at low ΔT; forced-convection variants 0 at U=0); legacy lateral exceeds observed total submarine melt in 3/4 Antarctic cold-shelf region cases; C_eff_lab_lateral median 0.54× and C_eff_submarine 0.59× production (separate; compatible, not validated); geometry/side-basal/wave NOT CONSTRAINED; **decision OPTION D** (useful bounds) with OPTION E elements; **production KEEP_CURRENT** (git diff `src/`/`test/` empty); next: 10.18D — retrieve Enderlin23 per-iceberg population + design ADCP-equipped campaign.
+
+**Stage 10.18D (velocity-resolved / per-iceberg observational upgrade) COMPLETE** (2026-09-20, commit pending): Enderlin23 per-iceberg dataset **RETRIEVED** (USAP-DC 10.15784/601679 via direct HTTP POST to the zip endpoint; JS reCAPTCHA not enforced; MD5 `821bed51660957b65a896c42fb88a057` verified — the 10.18C "account-gated" statement is corrected); **743 per-iceberg observations** (15 sites 2011–2022) reproduce the paper's regional maxima (WAP/WAIS max 1.1–1.3× of ~50/~40 m/a; EAIS/EAP p95 5.2/3.6 vs ~5 m/a); Thwaites 24 m/a/°C consistent per-iceberg (76 % of 167 bergs imply TF in 0.2–1.6 °C); **legacy C_LATERAL exceeds 99.6 % (TF=1.5) / 88 % (TF=0.6) of per-iceberg observed melt** (median 14×/5.6×); velocity-dependent variants bracket observed medians; **per-iceberg C_eff_submarine median 1.56e-7 = 0.16× production** (range 0.08–0.33×); velocity dependence still NOT IDENTIFIABLE → **ADCP-equipped Schild21-style campaign designed** (report §11); **decision OPTION D refined** (per-iceberg bounds) + OPTION E elements; **production KEEP_CURRENT** (git diff `src/`/`test/` empty); next: any lateral-melt physics change requires the velocity-resolved campaign or an explicitly approved physics stage.
 
 ## Completed foundation
 
@@ -155,21 +157,38 @@ iceberg translational speeds (not U_rel); nonzero quiescent melt indicates a
 buoyancy/free-convection component (not necessarily a plume mechanism);
 the Enderlin23 thermal slope is a submarine sensitivity.
 
-### Stage 10.18D — velocity-resolved observational upgrade (next, recommended)
+### Stage 10.18D — velocity-resolved / per-iceberg observational upgrade (COMPLETE)
 
-**Decision: OPTION D** (bounds exist; velocity/geometry/side-basal/wave
-unconstrained). The gaps are specific:
+**Decision: OPTION D refined** (per-iceberg bounds now quantitative;
+velocity/geometry/side-basal/wave still unconstrained). Delivered:
 
-1. **Enderlin23 per-iceberg population** — retrieve USAP-DC 601679
-   (`Antarctic-iceberg-csvs.zip`, account-gated) and upgrade the ΔT-dependence
-   analysis from 4 region aggregates to iceberg level (melt + draft +
-   thermal forcing per iceberg);
-2. **ADCP-equipped Schild21-style campaign** — the minimal package that closes
-   the velocity and depth gaps: GPS + drone SfM + multibeam + repeat
+1. **Enderlin23 per-iceberg population** — USAP-DC 601679
+   (`Antarctic-iceberg-csvs.zip`) **RETRIEVED** via direct HTTP POST to the
+   zip endpoint (page-level JS reCAPTCHA is not enforced there; inner zip
+   MD5 `821bed51660957b65a896c42fb88a057` verified; the 10.18C
+   "account-gated, not retrieved" statement is corrected). Per-iceberg
+   dataset: **743 rows** (54 raw CSVs, 15 sites, 2011-2022) with
+   melt/draft/geometry/EPSG:3031→WGS84 coordinates and site→region
+   attribution (WAP/WAIS/EAIS/EAP). The ΔT-dependence, draft-dependence and
+   effective-coefficient analyses are upgraded from 4 region aggregates to
+   iceberg level;
+2. **ADCP-equipped Schild21-style campaign** — the minimal package that
+   closes the velocity and depth gaps: GPS + drone SfM + multibeam + repeat
    bathymetry (iceberg) + CTD profiles + ADCP/current meters (ocean) + wave
-   state, all temporally paired;
-3. only then, a production physics decision (e.g., buoyancy/free-convection
-   term, nonlinear ΔT dependence, geometry convention) can be evidence-based.
+   state, all temporally paired (report §11, with sizing for
+   identifiability and feasibility);
+3. production physics decision (e.g., buoyancy/free-convection term,
+   nonlinear ΔT dependence, geometry convention) remains deferred: the
+   per-iceberg bounds (legacy exceeds 99.6 % of observations at TF=1.5 °C;
+   C_eff_submarine median 0.16× production) require the velocity-resolved
+   campaign or an explicitly approved physics stage.
+
+Key results: regional maxima reproduce the paper (WAP/WAIS max 1.1–1.3× of
+~50/~40 m/a; EAIS/EAP p95 5.2/3.6 vs ~5 m/a); Thwaites 24 m/a/°C consistent
+per-iceberg (76 % of 167 bergs imply TF in 0.2–1.6 °C); velocity-dependent
+literature variants bracket observed medians; per-iceberg C_eff_submarine
+median 1.56e-7 = 0.16× production (range 0.08–0.33×). Report:
+`docs/validation/stage10.18d_velocity_resolved_observational_upgrade.md`.
 
 ### Stage 10.15.2 — coordinate mapping and bilinear interpolation fix (COMPLETE)
 

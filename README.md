@@ -35,12 +35,12 @@ under atmospheric, oceanic, bathymetric, and sea-ice forcing.
 
 ## 📑 Project status
 
-- **Current stage:** Stage 10.18C — existing observations reanalysis and
-  velocity-resolved melt constraint (completed: public datasets reanalyzed
-  with explicit independence/velocity classification; no field case provides
-  simultaneous melt + ΔT + U_rel — velocity dependence NOT IDENTIFIABLE;
-  geometry/side-basal/wave NOT CONSTRAINED; production unchanged; next:
-  velocity-resolved observational upgrade).
+- **Current stage:** Stage 10.18D — velocity-resolved / per-iceberg
+  observational upgrade (completed: Enderlin23 per-iceberg dataset of 743
+  icebergs retrieved and analyzed — legacy exceeds 99.6 % of observed
+  per-iceberg melt at TF = 1.5 °C, per-iceberg C_eff_submarine median 0.16×
+  production; ADCP-equipped Schild21-style campaign designed; velocity
+  dependence still NOT IDENTIFIABLE; production unchanged).
 - **Physics status and switches:** `docs/model/model_physics_status.md`
 - **Stage plan and status:** `docs/PROJECT_ROADMAP.md`
 

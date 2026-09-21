@@ -25,6 +25,7 @@ README.md (root)
      │
      ├─ DECISIONS.md                  key decisions journal
      ├─ PROJECT_ROADMAP.md            project plan and stage status
+     ├─ data_sources.md               external data products: sources, retrieval, units
      └─ references/                   bibliography, literature matrix
 ```
 

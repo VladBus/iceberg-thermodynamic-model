@@ -106,6 +106,11 @@ data/*
 !data/validation/observations/
 !data/validation/observations/iceberg_basal_melt_observations.csv
 !data/validation/observations/iceberg_basal_melt_observations_provenance.md
+# Stage 10.18D raw Enderlin23 archive (zip + 54 extracted CSVs) stays OUT of
+# git: reproducible via the documented USAP-DC direct-POST retrieval (see
+# docs/data_sources.md); the derived per-iceberg CSV (needed by tests/CI)
+# and provenance/sources metadata ARE versioned.
+data/validation/observations/stage10.18d/raw/
 
 # Временные и системные файлы
 *~

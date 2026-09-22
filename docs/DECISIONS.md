@@ -181,6 +181,54 @@ Format: `ID | stage/date | status` + short description. Details — via links.
   real-forcing path (TEST_11 family) remains the sanitized mode for
   production iceberg demonstrations.
 
+## D-18. Ocean-init stabilization attempt (Stage 10.20): closed necessary-but-not-sufficient; ERA5 full-coverage data fix adopted, residual float32-EOS instability characterized
+
+- **Stage:** 10.20 (ocean initialization & numerical stabilization) |
+  **Status:** ACTIVE (applied; residual CASE-D/T-03 requires a physics stage)
+- **Problem:** Stage 10.19 left the online-coupled production run blocked by
+  the ocean zombie state (CASE C force-coupling blocker; CASE D root cause
+  T-03 family). Stage 10.20 tested whether ERA5 forcing coverage was the
+  day-1 trigger and, if not, characterized the residual instability.
+- **Decision:** (1) **data-level fix (adopted, NOT physics):** the legacy
+  3-day ERA5 file was superseded by the full-coverage merged January file
+  `data/input/processed/era5/2020/2020_01/era5_2020_01_fullcoverage_merged.nc`
+  (124 slices, snowfall-merged) — with it, the 3-day
+  `ICEBERG_PRODUCTION=true` gate passes (36 steps, 0 NaN) and days 1–4 of
+  the 30-day gate are clean: **CASE C resolved at the data level** (the
+  day-1 zombie is gone, 10.19's `steps executed : 0` → 55); (2) **residual
+  instability characterized, NOT fixed (physics, out of scope):** the CA
+  1000-iteration guard saturates from day 1 (maxiter=1001 every daily
+  diagnostic; residual inversions pinned at `resid_inv = 1.1921E-07` =
+  2⁻²³ float32 EOS quantization; T-01/T-03 family) → slow T/S/ρ corruption
+  (day 4 already nonphysical: −45…+50 °C, S<0, ρ −43.7…+9.5, 0 NaN) →
+  density-first divergence on day 5 (first NaN = `NaN_RO = 198` at
+  `F_after_conv`, III=6, 0 NaN in U/V/T/S at that instant) → zombie state
+  from day 6 (full 142,081 wet cells NaN); 30-day gate: `steps executed :
+  55` → **acceptance (360) NOT met**; (3) **cadence correction:** the 10.19
+  report's "720-step" acceptance figure is a documentation error — 12
+  steps/day × 30 days = **360** (verified: 3-day gate = 36); recorded here,
+  10.19 report NOT rewritten; (4) **default-path recommendation (NOT
+  applied):** point `src/param.f90:301` to the full-coverage file together
+  with the future physics fix (keeps pre-10.20 runs reproducible);
+  (5) production physics KEEP_CURRENT — no physics change in 10.20.
+- **Why:** the coverage hypothesis was testable without physics; the
+  empirical outcome (days 1–4 clean; day-5 death) cleanly separates the
+  necessary data precondition from the residual physics instability; the
+  characterization (CA guard saturation + pinned 2⁻²³ residual → density-
+  first death) gives the next physics stage a closed mechanism to target
+  (EOS precision / CA threshold / guard policy per RULES.md, or a
+  preconditioned-solver study).
+- **Sources:** `docs/validation/stage10.20_ocean_initialization_numerical_stabilization.md`,
+  `data/runs/stage10.20_gate3d_fullcov/`,
+  `data/runs/stage10.20_gate30d_fullcov/output/csv/daily_diagnostics.csv`,
+  `data/runs/stage10.20_gate30d_fullcov/output/csv/convective_guard_events.csv`,
+  `src/param.f90:301`, `app/main.f90`.
+- **Limitations:** the online-coupled path remains blocked until the
+  physics stage lands (acceptance: 30-day gate `steps executed = 360` on a
+  clean ocean; the day-3 gate already demonstrates the required cleanliness
+  for days 1–3); the offline real-forcing path (TEST_11 family) remains the
+  sanctioned production iceberg mode.
+
 ## How to add decisions
 
 A new decision is appended with an ID, stage, status, and links to reports.

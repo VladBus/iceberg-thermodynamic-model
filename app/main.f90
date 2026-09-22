@@ -1208,7 +1208,7 @@ program main
                                               ib_bathymetry, 0.0, 0.0, (/0.0, 0.0/), ib_diag)
                             ib_step_count = ib_step_count + 1
                             if (mod(ib_step_count, 24) .eq. 0) then
-                                print '(A,F8.3,A,F8.3,A,F7.1,A,F7.1,A,F7.1,A,E11.4,A,E11.4)', &
+                                print '(A,F8.3,A,F8.3,A,F7.1,A,F7.1,A,F7.1,A,E11.4,A,A,E11.4,A,E11.4)', &
                                     "  ICEBERG[prod] t=", ib_state%time/86400.0, &
                                     " lat=", ib_state%latitude, " lon=", ib_state%longitude, &
                                     " LWH=(", ib_state%L, ",", ib_state%W, ",", ib_state%H, ")", &

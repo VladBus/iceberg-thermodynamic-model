@@ -19,11 +19,33 @@
 
 module convective_adjustment
     use param
-    use equation_of_state, only: density_anomaly
+    use equation_of_state, only: density_anomaly, density_anomaly_f64
+    use, intrinsic :: iso_fortran_env, only: real64
     implicit none
 
     private
-    public :: conv_adj, convect_column, ca_reset, ca_stats, ca_probe_inversions
+    public :: conv_adj, convect_column, convect_column_f64, ca_configure, &
+              ca_reset, ca_stats, ca_probe_inversions
+
+    ! ========================================================================
+    ! STAGE 10.21: селекторы точности convective adjustment (runtime, OFF).
+    !
+    ! Экспериментальная матрица (см. docs/validation/stage10.21_*):
+    !   A0 = полный float32 (legacy), eps 0.9e-7          — базовый вариант.
+    !   EXP-A = f64 EOS eval + f64 residual, f32 mixing    — контроль атрибуции.
+    !   EXP-C = f64 EOS + f64 residual + f64 mixing        — основной кандидат.
+    !   EXP-B = f32 + повышенный порог (1.5e-7 / 2.4e-7)   — f32-альтернатива.
+    !   EXP-D = f64 только ВНУТРИ conv_adj; все внешние
+    !           потребители RO (eos_diag, writeback) — f32 (гибридный).
+    !
+    ! Управление — из main.f90 через ca_configure (env STAGE1021_CA_*).
+    ! По умолчанию ВСЕ выключатели FALSE, eps_density = 0.9e-7:
+    ! поведение conv_adj бит-идентично предыдущим стадиям (legacy).
+    ! ========================================================================
+    logical, save :: ca_f64_mode = .false.   ! f64 EOS+residual в ядре столбца
+    logical, save :: ca_f64_mix = .false.    ! f64 арифметика перемешивания T/S
+    logical, save :: ca_f64_scope = .false.  ! scope=all: RO writeback тоже f64
+    ! ========================================================================
 
     ! ========================================================================
     ! ПОРОГ ПЛОТНОСТНОЙ НЕУСТОЙЧИВОСТИ
@@ -39,8 +61,11 @@ module convective_adjustment
     !   с точностью до 1 ULP (unit in the last place).
     !   Результат: convective adjustment может не сходиться за конечное число итераций.
     !   Решение: защитный предел iter_count > 1000 (Stage 4.3).
-    ! Не менять этот порог без promt.md процедуры и согласования!
-    real, parameter :: eps_density = 0.9e-7
+    ! Stage 10.21: параметр стал runtime (save), значение по умолчанию НЕ
+    ! менялось (0.9e-7). Переопределение — только через ca_configure
+    ! (env STAGE1021_CA_EPS) для контролируемых экспериментов EXP-B.
+    ! Исторический запрет сохраняется для production-значения.
+    real, save :: eps_density = 0.9e-7
 
     ! Диагностические счётчики convective adjustment (этап 4.2, мониторинг).
     ! НЕ меняют алгоритм перемешивания - только фиксируют статистику для отчёта.
@@ -62,6 +87,32 @@ module convective_adjustment
     integer, parameter :: ca_diag_unit = 82         ! логический блок CSV
 
 contains
+
+    ! ==========================================================================
+    ! ca_configure: настройка режимов точности convective adjustment (Stage 10.21).
+    !
+    ! Вызывается из main.f90 в блоке инициализации ДО первого conv_adj.
+    ! По умолчанию (без вызова) все f64-выключатели FALSE и eps_density = 0.9e-7
+    ! — поведение бит-идентично предыдущим стадиям.
+    !
+    ! Вход:
+    !   f64_mode  — включать f64 EOS+residual в ядре convect_column_f64 (EXP-A/C/D).
+    !   f64_mix   — f64 арифметика перемешивания T/S (EXP-C); при FALSE —
+    !               перемешивание остаётся float32 как в legacy (EXP-A атрибуция).
+    !   f64_scope — scope=all (EXP-C): RO writeback из conv_adj тоже f64;
+    !               при FALSE (EXP-D) writeback RO остаётся float32,
+    !               как и все внешние потребители.
+    !   eps_value — порог плотностной неустойчивости [г/см³] (EXP-B).
+    !               Значение по умолчанию 0.9e-7 — историческое, НЕ менять.
+    ! ==========================================================================
+    subroutine ca_configure(f64_mode, f64_mix, f64_scope, eps_value)
+        logical, intent(in) :: f64_mode, f64_mix, f64_scope
+        real, intent(in) :: eps_value
+        ca_f64_mode = f64_mode
+        ca_f64_mix = f64_mix
+        ca_f64_scope = f64_scope
+        eps_density = eps_value
+    end subroutine ca_configure
 
     ! ==========================================================================
     ! convect_column: ядро convective adjustment для ОДНОГО столбца.
@@ -188,6 +239,144 @@ contains
     end subroutine convect_column
 
     ! ==========================================================================
+    ! convect_column_f64: ядро convective adjustment для ОДНОГО столбца в
+    ! double precision (Stage 10.21, варианты EXP-A/C/D).
+    !
+    ! Алгоритм ИДЕНТИЧЕН convect_column (исторический, Coupl1.f90:818-855):
+    !   1. RO(k) = density_anomaly_f64(T(k), S(k)) для всех уровней.
+    !   2. Сканирование снизу вверх (k=1..ki-1): если RO(k)-RO(k+1) > eps_density
+    !      — объёмно-взвешенное осреднение T/S, пересчёт RO перемешанных уровней.
+    !   3. Повтор до фиксированной точки (ни одного перемешивания за проход).
+    !   4. Защита: iter_count > 1000 → выход (как в legacy, Stage 4.3).
+    !
+    ! Отличия от legacy convect_column (runtime-переключатели ca_f64_*):
+    !   - RO вычисляется плотностью density_anomaly_f64 (real64) — устраняется
+    !     float32-квантизация 2^-23 ≈ 1.19e-7, из-за которой остаточная инверсия
+    !     не опускалась ниже порога 0.9e-7 (см. docs/validation/stage10.21_*).
+    !   - Если ca_f64_mix = .true. (EXP-C), арифметика перемешивания T/S также
+    !     в real64; иначе (EXP-A) — точно legacy float32 (контроль атрибуции).
+    !   - Перемешивание по-прежнему сохраняет интегралы Σ T·DZ1, Σ S·DZ1
+    !     (объёмное взвешивание по толщинам полуслоёв) — законы сохранения.
+    !
+    ! Вход:    cdz1(:) — толщины полуслоёв DZ1 [см], ki — число уровней столбца.
+    ! Вход/выход: ct(:), cs(:) — температура [°C] и соленость [массовая доля].
+    ! Выход:   nmix — суммарное число выполненных перемешиваний.
+    ! Опционально: o_iter_count, o_guard_hit, o_k_problem, o_resid_inv
+    !   — те же диагностические выходы, что и в convect_column (этап 4.3).
+    ! ==========================================================================
+    subroutine convect_column_f64(ct, cs, cdz1, ki, nmix, o_iter_count, o_guard_hit, &
+                                  o_k_problem, o_resid_inv)
+        real, intent(inout) :: ct(:), cs(:)
+        real, intent(in) :: cdz1(:)
+        integer, intent(in) :: ki
+        integer, intent(out) :: nmix
+        integer, intent(out), optional :: o_iter_count
+        logical, intent(out), optional :: o_guard_hit
+        integer, intent(out), optional :: o_k_problem
+        real, intent(out), optional :: o_resid_inv
+        real(real64) :: cr(ks)
+        real(real64) :: dzz, dzz1, dz1z, a
+        real(real64) :: resid, rmax_inv
+        real(real64) :: t_new, s_new
+        integer :: k, k1, ki2, a1
+        integer :: iter_count
+
+        ! Начальная инициализация выходов
+        nmix = 0
+        if (present(o_iter_count)) o_iter_count = 0
+        if (present(o_guard_hit)) o_guard_hit = .false.
+        if (present(o_k_problem)) o_k_problem = 0
+        if (present(o_resid_inv)) o_resid_inv = 0.0
+        if (ki .le. 0) return  ! Пустой столбец (суша)
+
+        ! Шаг 1: Вычисление плотности в double precision до перемешивания.
+        do k = 1, ki
+            cr(k) = density_anomaly_f64(real(ct(k), real64), real(cs(k), real64))
+        end do
+
+        if (ki .eq. 1) return  ! Один уровень — перемешивать нечего
+
+        ! Шаг 2-4: Внешний проход — повторяется, пока было хотя бы одно перемешивание.
+        iter_count = 0
+        do
+            iter_count = iter_count + 1
+            dzz = real(cdz1(1), real64)  ! Толщина полуслоя текущего уровня [см]
+            ki2 = ki - 1      ! Последний интерфейс (k, k+1), k+1 = ki
+            a1 = 0            ! Счётчик перемешиваний в текущем проходе
+            do k = 1, ki2
+                k1 = k + 1
+                dzz1 = real(cdz1(k1), real64)   ! Толщина полуслоя уровня k+1 [см]
+                dz1z = dzz + dzz1              ! Суммарная толщина полуслоёв [см]
+                a = cr(k) - cr(k1)             ! Плотностная инверсия [г/см³]
+                if (a .le. real(eps_density, real64)) then
+                    dzz = dzz1  ! Нет инверсии — переходим к следующему интерфейсу
+                    cycle
+                end if
+                a1 = a1 + 1
+                ! Объёмно-взвешенное осреднение T и S (закон сохранения).
+                if (ca_f64_mix) then
+                    ! EXP-C: арифметика осреднения в real64, округление
+                    ! к float32 только при записи в ct/cs.
+                    t_new = (real(ct(k), real64)*dzz + real(ct(k1), real64)*dzz1)/dz1z
+                    s_new = (real(cs(k), real64)*dzz + real(cs(k1), real64)*dzz1)/dz1z
+                    ct(k) = real(t_new, kind(1.0))
+                    cs(k) = real(s_new, kind(1.0))
+                else
+                    ! EXP-A: точно legacy float32-арифметика (контроль атрибуции).
+                    ct(k) = (ct(k)*real(dzz, kind(1.0)) + &
+                             ct(k1)*real(dzz1, kind(1.0)))/real(dz1z, kind(1.0))
+                    cs(k) = (cs(k)*real(dzz, kind(1.0)) + &
+                             cs(k1)*real(dzz1, kind(1.0)))/real(dz1z, kind(1.0))
+                end if
+                ct(k1) = ct(k)  ! Оба уровня получают одинаковые T и S
+                cs(k1) = cs(k)
+                ! Пересчёт плотности перемешанных уровней (f64).
+                cr(k) = density_anomaly_f64(real(ct(k), real64), real(cs(k), real64))
+                cr(k1) = cr(k)
+                dzz = dzz1
+            end do
+            nmix = nmix + a1          ! Накопление общего числа перемешиваний
+            if (a1 .eq. 0) exit      ! Фиксированная точка достигнута
+            ! Защита от бесконечного цикла (как в legacy, Stage 4.3).
+            if (iter_count .gt. 1000) then
+                if (present(o_guard_hit)) o_guard_hit = .true.
+                exit
+            end if
+        end do
+        if (present(o_iter_count)) o_iter_count = iter_count
+
+        ! Остаточная инверсия на выходе: max[RO(k) - RO(k+1)] по интерфейсам
+        ! (в f64; диагностика этапа 4.3 — НЕ влияет на алгоритм). В f64-пути
+        ! сходимость реальна (resid < 0.9e-7 достижимо), поэтому guard_hit
+        ! ожидаемо всегда FALSE, а resid_inv — не нулевой, но ниже порога.
+        if (present(o_k_problem) .or. present(o_resid_inv)) then
+            rmax_inv = -huge(0.0_real64)
+            resid = 0.0_real64
+            do k = 1, ki - 1
+                resid = cr(k) - cr(k + 1)  ! Инверсия на интерфейсе k/k+1
+                if (resid .gt. rmax_inv) then
+                    rmax_inv = resid
+                    k1 = k
+                end if
+            end do
+            if (present(o_k_problem)) then
+                if (rmax_inv .gt. real(eps_density, real64)) then
+                    o_k_problem = k1
+                else
+                    o_k_problem = 0
+                end if
+            end if
+            if (present(o_resid_inv)) then
+                if (rmax_inv .gt. real(eps_density, real64)) then
+                    o_resid_inv = real(rmax_inv, kind(1.0))
+                else
+                    o_resid_inv = 0.0
+                end if
+            end if
+        end if
+    end subroutine convect_column_f64
+
+    ! ==========================================================================
     ! conv_adj: применение convective adjustment ко всем водным колонкам поля.
     !
     ! Для каждой ячейки (i,j) с kt1>0:
@@ -222,9 +411,17 @@ contains
                     cs(k) = s2(i, j, k)
                 end do
                 cdz1(1:ki) = dz1(1:ki)  ! Толщины полуслоёв [см]
-                ! Вызов ядра convective adjustment для этого столбца
-                call convect_column(ct, cs, cdz1, ki, nmix, iter_count, guard_hit, &
-                                    k_problem, resid_inv)
+                ! Вызов ядра convective adjustment для этого столбца.
+                ! Stage 10.21: при ca_f64_mode ядро работает в double precision
+                ! (convect_column_f64), иначе — исторический float32 путь
+                ! (convect_column, бит-идентичен предыдущим стадиям).
+                if (ca_f64_mode) then
+                    call convect_column_f64(ct, cs, cdz1, ki, nmix, iter_count, &
+                                            guard_hit, k_problem, resid_inv)
+                else
+                    call convect_column(ct, cs, cdz1, ki, nmix, iter_count, guard_hit, &
+                                        k_problem, resid_inv)
+                end if
                 ! Накопление диагностических счётчиков (этап 4.2)
                 ca_total_nmix = ca_total_nmix + nmix
                 if (nmix .gt. 0) ca_affected_cols = ca_affected_cols + 1
@@ -248,7 +445,15 @@ contains
                 do k = 1, ki
                     t2(i, j, k) = ct(k)
                     s2(i, j, k) = cs(k)
-                    ro(i, j, k) = density_anomaly(ct(k), cs(k))  ! Пересчёт RO
+                    if (ca_f64_mode .and. ca_f64_scope) then
+                        ! Stage 10.21 scope=all (EXP-C): RO через f64-плотность —
+                        ! единая последовательность вычислений с ядром столбца.
+                        ro(i, j, k) = real(density_anomaly_f64( &
+                            real(ct(k), real64), real(cs(k), real64)), kind(1.0))
+                    else
+                        ! Legacy float32 (в т.ч. EXP-D: writeback остаётся f32).
+                        ro(i, j, k) = density_anomaly(ct(k), cs(k))  ! Пересчёт RO
+                    end if
                 end do
             end do
         end do
@@ -360,8 +565,18 @@ contains
                 n_cols = n_cols + 1
                 col_inv = .false.
                 do k = 1, ki - 1
-                    ro_k = density_anomaly(t2(i, j, k), s2(i, j, k))
-                    ro_k1 = density_anomaly(t2(i, j, k + 1), s2(i, j, k + 1))
+                    if (ca_f64_mode .and. ca_f64_scope) then
+                        ! Stage 10.21 scope=all (EXP-C): плотность через f64,
+                        ! чтобы диагностика совпадала с фактическим полем RO.
+                        ro_k = real(density_anomaly_f64( &
+                            real(t2(i, j, k), real64), real(s2(i, j, k), real64)), kind(1.0))
+                        ro_k1 = real(density_anomaly_f64( &
+                            real(t2(i, j, k + 1), real64), &
+                            real(s2(i, j, k + 1), real64)), kind(1.0))
+                    else
+                        ro_k = density_anomaly(t2(i, j, k), s2(i, j, k))
+                        ro_k1 = density_anomaly(t2(i, j, k + 1), s2(i, j, k + 1))
+                    end if
                     inv = ro_k - ro_k1
                     if (inv .gt. eps_density) then
                         col_inv = .true.

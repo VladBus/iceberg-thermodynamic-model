@@ -107,6 +107,11 @@ program main
     real :: ib_bathymetry, ib_model_time_sec
     real :: ib_x0, ib_y0, ib_lat0, ib_lon0
     real(8) :: start_sec                 ! Время первого ERA5-среза в секундах с эпохи
+    ! --- Stage 10.21: convective adjustment & EOS precision switches ---
+    ! Runtime-выключатели экспериментальной матрицы (см. docs/validation/stage10.21_*).
+    ! По умолчанию все OFF — поведение conv_adj бит-идентично предыдущим стадиям.
+    logical :: ca_f64_mode, ca_f64_mix, ca_f64_scope
+    real :: ca_eps_value
     integer :: nperday                   ! Число ERA5-срезов в сутки
     integer :: narg, arglen              ! Количество и длина аргументов командной строки
 
@@ -323,6 +328,48 @@ program main
 
     ! --- Инициализация синтетических полей ---
     call init_ocean()
+
+    ! ====================================================================
+    !   STAGE 10.21: CONVECTIVE ADJUSTMENT & EOS PRECISION (env-gated)
+    ! ====================================================================
+    ! Вводит runtime-переключатели экспериментальной матрицы точности CA/EOS
+    ! (см. docs/validation/stage10.21_*). По умолчанию ВСЕ OFF — поведение
+    ! бит-идентично предыдущим стадиям (float32, eps_density = 0.9e-7).
+    !
+    !   A0    = (все по умолчанию)                    — legacy float32
+    !   EXP-A = STAGE1021_CA_F64=true                 — f64 EOS+residual, f32 mixing
+    !   EXP-C = STAGE1021_CA_F64=true + _MIX=true
+    !          + _SCOPE=all                           — полный f64 (как ядро, так и RO)
+    !   EXP-B = STAGE1021_CA_EPS=1.5e-7|2.4e-7        — f32 + обоснованный порог
+    !   EXP-D = STAGE1021_CA_F64=true + _MIX=true     — f64 внутри CA, RO снаружи f32
+    !
+    ! Значения env: 'true'/'all' включают; STAGE1021_CA_EPS — реальное число
+    ! (по умолчанию 0.9e-7, историческое). Конфигурирование ДО eos_diag(),
+    ! чтобы scope=all распространялся и на начальное поле RO.
+    ca_f64_mode = .false.
+    ca_f64_mix = .false.
+    ca_f64_scope = .false.
+    ca_eps_value = 0.9e-7
+    call get_environment_variable('STAGE1021_CA_F64', env_str)
+    if (len_trim(env_str) .gt. 0 .and. env_str .eq. 'true') ca_f64_mode = .true.
+    call get_environment_variable('STAGE1021_CA_F64_MIX', env_str)
+    if (len_trim(env_str) .gt. 0 .and. env_str .eq. 'true') ca_f64_mix = .true.
+    call get_environment_variable('STAGE1021_CA_F64_SCOPE', env_str)
+    if (len_trim(env_str) .gt. 0 .and. env_str .eq. 'all') ca_f64_scope = .true.
+    call get_environment_variable('STAGE1021_CA_EPS', env_str)
+    if (len_trim(env_str) .gt. 0) then
+        read (env_str, *, iostat=ios) ca_eps_value
+        if (ios .ne. 0) ca_eps_value = 0.9e-7   ! Некорректный EPS — исторический порог
+    end if
+    call ca_configure(ca_f64_mode, ca_f64_mix, ca_f64_scope, ca_eps_value)
+    call eos_configure(ca_f64_scope)
+    if (ca_f64_mode .or. ca_f64_mix .or. ca_f64_scope .or. &
+        abs(ca_eps_value - 0.9e-7) .gt. 1e-15) then
+        print *, ">>> STAGE 10.21: CA precision experiment ENABLED (f64=", ca_f64_mode, &
+            " mix=", ca_f64_mix, " scope=", ca_f64_scope, " eps=", ca_eps_value, ")"
+    else
+        print *, ">>> STAGE 10.21: CA precision experiment DISABLED (legacy float32, bit-identical)"
+    end if
 
     ! Диагностика уравнения состояния (этап 3.1): расчет RO из T2/S2
     ! в диагностическом режиме. Пока НЕ используется в уравнениях движения.

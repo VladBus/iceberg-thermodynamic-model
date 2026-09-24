@@ -50,6 +50,7 @@ program main
     use run_config
     use thermal_wind_init
     use stage86_diagnostics
+    use stage1022_diagnostics
     use iceberg
     use iceberg_types, only: RHO_ICE, RHO_WATER
     use iceberg_forcing, only: get_ocean_profile, get_atmos_forcing, model_coords_to_indices
@@ -371,9 +372,51 @@ program main
         print *, ">>> STAGE 10.21: CA precision experiment DISABLED (legacy float32, bit-identical)"
     end if
 
+    ! ============================================================================
+    !   STAGE 10.22: OCEAN DENSITY / THERMAL-WIND / BLOCK-200 STABILITY AUDIT
+    ! ============================================================================
+    ! Диагностика первой физически невозможной ячейки в цепочке
+    !   EN4 T/S -> EOS/RO -> плотностные градиенты -> thermal-wind/baroclinic
+    !   -> Block 200 -> Block 210/Thomas -> порча T/S -> расхождение RO -> NaN.
+    ! См. docs/validation/stage10.22_ocean_density_thermal_wind_block200_audit.md.
+    ! Переключатели (все OFF => бит-идентично legacy, md5 92a873ad78a31fefb0e127cfd373dcc3):
+    !   STAGE1022_DIAG=true                 — пробы/бюджеты (read-only, CSV).
+    !   STAGE1022_FREEZE_RO=true            — A1: conv_adj не пересчитывает RO.
+    !   STAGE1022_FREEZE_THERMAL_WIND=true  — A2: B200 без бароклинных интегралов.
+    !   STAGE1022_FREEZE_TS=true            — A3: T/S статичны (heat+adv+CA off).
+    !   STAGE1022_FREEZE_RO_DOWNSTREAM=true — A4: B200 видит ro_ref (сэндвич).
+    s22_diag = .false.
+    s22_freeze_ro = .false.
+    s22_freeze_tw = .false.
+    s22_freeze_ts = .false.
+    s22_freeze_ro_downstream = .false.
+    call get_environment_variable('STAGE1022_DIAG', env_str)
+    if (len_trim(env_str) .gt. 0 .and. env_str .eq. 'true') s22_diag = .true.
+    call get_environment_variable('STAGE1022_FREEZE_RO', env_str)
+    if (len_trim(env_str) .gt. 0 .and. env_str .eq. 'true') s22_freeze_ro = .true.
+    call get_environment_variable('STAGE1022_FREEZE_THERMAL_WIND', env_str)
+    if (len_trim(env_str) .gt. 0 .and. env_str .eq. 'true') s22_freeze_tw = .true.
+    call get_environment_variable('STAGE1022_FREEZE_TS', env_str)
+    if (len_trim(env_str) .gt. 0 .and. env_str .eq. 'true') s22_freeze_ts = .true.
+    call get_environment_variable('STAGE1022_FREEZE_RO_DOWNSTREAM', env_str)
+    if (len_trim(env_str) .gt. 0 .and. env_str .eq. 'true') s22_freeze_ro_downstream = .true.
+    if (s22_diag .or. s22_freeze_ro .or. s22_freeze_tw .or. s22_freeze_ts .or. &
+        s22_freeze_ro_downstream) then
+        print *, ">>> STAGE 10.22: DENSITY/THERMAL-WIND/B200 AUDIT ENABLED (diag=", s22_diag, &
+            " freeze_ro=", s22_freeze_ro, " freeze_tw=", s22_freeze_tw, &
+            " freeze_ts=", s22_freeze_ts, " freeze_ro_downstream=", s22_freeze_ro_downstream, ")"
+    else
+        print *, ">>> STAGE 10.22: density/thermal-wind/B200 audit DISABLED (bit-identical legacy)"
+    end if
+
     ! Диагностика уравнения состояния (этап 3.1): расчет RO из T2/S2
     ! в диагностическом режиме. Пока НЕ используется в уравнениях движения.
     call eos_diag()
+
+    ! Stage 10.22 A4: захват опорного RO (после начального eos_diag; T/S из EN4
+    ! уже загружены через init_ocean()). Поле ro_ref применяется "сэндвичем"
+    ! вокруг Block 200, когда STAGE1022_FREEZE_RO_DOWNSTREAM=true.
+    if (s22_freeze_ro_downstream) call s22_capture_ro_ref()
 
 ! ====================================================================
 !              ЧТЕНИЕ АТМОСФЕРНОГО ФОРСИНГА ERA5 (NetCDF)
@@ -425,6 +468,9 @@ program main
     ! Uses RO from eos_diag for thermal-wind balance, reference level, and dynamic height SSH.
     ! Mode controlled by ICEBERG_OCEAN_VELOCITY_INIT env var.
     call init_thermal_wind()
+
+    ! Stage 10.22: проба начального состояния (INIT)
+    if (s22_diag) call s22_probe('INIT', 0, 0)
 
     ! Frozen density test mode
     call get_environment_variable('ICEBERG_FROZEN_DENSITY', env_str)
@@ -560,6 +606,8 @@ program main
                     call get_environment_variable('ICEBERG_FROZEN_DENSITY', env_str)
                     if (len_trim(env_str) .gt. 0 .and. env_str .eq. 'true') then
                         ! Skip heat, redis, advection, conv_adj - keep density frozen
+                    else if (s22_freeze_ts) then
+                        ! Stage 10.22 A3: T/S frozen - heat/redis skipped (diagnostic only)
                     else
                         ! Термодинамика должна идти с тем же шагом, что и океан.
                         ! Без ERA5-полей (kl1=0) вызов дал бы деление на patm=0.
@@ -814,6 +862,8 @@ program main
                     call get_environment_variable('ICEBERG_FROZEN_DENSITY', env_str)
                     if (len_trim(env_str) .gt. 0 .and. env_str .eq. 'true') then
                         ! Skip advs, advt, conv_adj - density stays frozen
+                    else if (s22_freeze_ts) then
+                        ! Stage 10.22 A3: T/S frozen - advs/advt/conv_adj skipped (diagnostic only)
                     else
                         ! ====================================================================
                         !   6. АДВЕКЦИЯ СОЛЕНОСТИ И ТЕМПЕРАТУРЫ В ОКЕАНЕ
@@ -845,6 +895,8 @@ program main
 
                         ! Stage 8.6 diagnostics: F = after convective adjustment
                         call capture_state('F_after_conv', kkk, iii, u2, v2, w, t2, s2, ro)
+                        ! Stage 10.22: проба после convective adjustment
+                        if (s22_diag) call s22_probe('CA_after', kkk, iii)
 
                         ! Диагностика этапа 4.3: точка D - остаточные инверсии после
                         ! convective adjustment (должны быть близки к нулю, кроме
@@ -873,6 +925,8 @@ program main
 
                     ! Stage 8.6 diagnostics: G = before Block 200
                     call capture_velocity_state('G_before_B200', kkk, iii, u1, v1)
+                    ! Stage 10.22: проба перед Block 200
+                    if (s22_diag) call s22_probe('B200_before', kkk, iii)
 
                     ! ====================================================================
                     !   6b. 3D-ИМПУЛЬС (BLOCK 200): Coriolis + baroclinic + DPX + Laplacian
@@ -896,6 +950,9 @@ program main
                     ! Единицы: U1/U2 [см/с], RO [г/см³], DPX/DPY [hPa/см].
                     ! Специальная обработка: если hht = z(k) (уровень совпадает с дном),
                     !   U2 = V2 = 0 (нет движения на дне).
+                    ! Stage 10.22 A4: "сэндвич" — B200 видит ro_ref (замороженное поле RO),
+                    ! после блока RO восстанавливается (эволюционировавшее поле).
+                    if (s22_freeze_ro_downstream) call s22_sandwich_start()
                     do j = 2, js
                         do i = 2, is
                             ki = kk1(i, j)       ! Число мокрых уровней U/V-ячейки
@@ -946,6 +1003,12 @@ program main
                                 cc_val = c8*dzz
                                 sum = sum + (a + a1)*cc_val   ! ∫(∂ρ/∂x)dz
                                 sum1 = sum1 + (b + b1)*cc_val  ! ∫(∂ρ/∂y)dz
+                                ! Stage 10.22 A2: обнуление бароклинных интегралов
+                                ! (thermal-wind слагаемое в B200 выключается)
+                                if (s22_freeze_tw) then
+                                    sum = 0.0
+                                    sum1 = 0.0
+                                end if
 
                                 ! Лапласиан: ∇²U = U(i,j-1)+U(i,j+1)+U(i-1,j)+U(i+1,j) - 4·U(i,j)
                          slapu = u1(i, j2, k) + u1(i, j1, k) + u1(i2, j, k) + u1(i1, j, k) - 4.0*uij
@@ -966,6 +1029,14 @@ program main
                             end do
                         end do
                     end do
+
+                    ! Stage 10.22 A4: восстановление эволюционировавшего RO
+                    if (s22_freeze_ro_downstream) call s22_sandwich_end()
+                    ! Stage 10.22: проба после Block 200 + бюджет бароклинного интеграла
+                    if (s22_diag) then
+                        call s22_probe('B200_after', kkk, iii)
+                        call s22_block200_budget(kkk, iii, dt, c1, c3, c8)
+                    end if
 
                     ! Stage 8.6 diagnostics: H = after Block 200
                     call capture_velocity_state('H_after_B200', kkk, iii, u2, v2)
@@ -997,6 +1068,8 @@ program main
                     !   где A = средняя сплошность льда.
                     ! Обратный ход: U2(k) = uca(k)·U2(k+1) + unu(k).
                     ! ====================================================================
+                    ! Stage 10.22: сброс накопителей обусловленности Thomas (Block 210)
+                    if (s22_diag) call s22_b210_reset()
                     do j = 2, js
                         do i = 2, is
                             ki = kk1(i, j)      ! Число мокрых уровней
@@ -1036,6 +1109,8 @@ program main
                                     rr(k) = sl*sl*abs(bb - aa)/(hht - z(ki) + 50.0)
                                 end if
                                 aa = bb  ! Следующий уровень
+                                ! Stage 10.22: регистрация rr(k) в накопителе Thomas
+                                if (s22_diag) call s22_b210_rr_update(rr(k))
                             end do
                             ! skz [см²/с] — турбулентный обмен для термодинамики (верхний слой)
                             skz(i, j) = rr(1)
@@ -1081,11 +1156,19 @@ program main
                                         a1 = -1.0 + a + b         ! Диагональный элемент
                                         ! uca — безразмерный коэффициент ( forward sweep)
                                         aa = a1 - uca(k2)*a
+                                        ! Stage 10.22: pivot U (обусловленность)
+                                        if (s22_diag) call s22_b210_pivot_update(aa)
                                         uca(k) = b/aa
                                         unu(k) = (a*unu(k2) - u2(i, j, k))/aa  ! [см/с]
+                                        ! Stage 10.22: правая часть U
+                                        if (s22_diag) call s22_b210_rhs_update(unu(k))
                                         aa = a1 - vca(k2)*a
+                                        ! Stage 10.22: pivot V (обусловленность)
+                                        if (s22_diag) call s22_b210_pivot_update(aa)
                                         vca(k) = b/aa
                                         vnu(k) = (a*vnu(k2) - v2(i, j, k))/aa
+                                        ! Stage 10.22: правая часть V
+                                        if (s22_diag) call s22_b210_rhs_update(vnu(k))
                                     end do
                                 end if
                                 ! --- Граничное условие на дне + обратный ход ---
@@ -1099,6 +1182,11 @@ program main
                                 ! Нижний уровень: обратный ход
                                 u2(i, j, ki) = (u2(i, j, ki)/a + bb*unu(ki2))/(1.0 - bb*uca(ki2))
                                 v2(i, j, ki) = (v2(i, j, ki)/a + bb*vnu(ki2))/(1.0 - bb*vca(ki2))
+                                ! Stage 10.22: обусловленность нижнего ГУ (1 - bb*uc) для U/V
+                                if (s22_diag) then
+                                    call s22_b210_bottom_update(1.0_8 - real(bb, 8)*uca(ki2))
+                                    call s22_b210_bottom_update(1.0_8 - real(bb, 8)*vca(ki2))
+                                end if
                                 ! Обратный ход от нижнего уровня к поверхности
                                 do k = 1, ki2
                                     kk = ki - k
@@ -1112,6 +1200,11 @@ program main
 
                     ! Stage 8.6 diagnostics: I = after Block 210
                     call capture_velocity_state('I_after_B210', kkk, iii, u2, v2)
+                    ! Stage 10.22: проба после Block 210 + сброс накопителей Thomas
+                    if (s22_diag) then
+                        call s22_probe('B210_after', kkk, iii)
+                        call s22_b210_flush(kkk, iii)
+                    end if
 
                     ! ====================================================================
                     !   7. БАРОТРОПНЫЙ РАСЧЁТ МЕЛКОЙ ВОДЫ И УРОВНЯ МОРЯ
@@ -1181,6 +1274,8 @@ program main
 
                     ! Stage 8.6 diagnostics: J = after Block 280
                     call capture_velocity_state('J_after_B280', kkk, iii, u2, v2)
+                    ! Stage 10.22: проба в конце шага
+                    if (s22_diag) call s22_probe('END_step', kkk, iii)
 
                     ! Диагностика 3D-скоростей (этап 3.3): min/max U2,V2 после все�� блоков
                     if (kkk .le. 2) then
@@ -1302,7 +1397,9 @@ program main
     print *, "Integration completed successfully!"
 
 ! Диагностика уравнения состояния после 5 дней (этап 3.1)
-    call eos_diag()
+! Stage 10.22 A1: при заморозке RO финальная eos_diag также пропускается
+! (иначе она пересчитает RO из текущих T/S и "разморозит" поле).
+    if (.not. s22_freeze_ro) call eos_diag()
 
 ! Записываем финальное состояние океана после интеграции.
 ! Суточные срезы записаны внутри цикла как results_day_01.nc...30.nc,

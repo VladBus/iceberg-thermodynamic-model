@@ -20,6 +20,7 @@
 module convective_adjustment
     use param
     use equation_of_state, only: density_anomaly, density_anomaly_f64
+    use stage1022_diagnostics, only: s22_freeze_ro
     use, intrinsic :: iso_fortran_env, only: real64
     implicit none
 
@@ -445,14 +446,18 @@ contains
                 do k = 1, ki
                     t2(i, j, k) = ct(k)
                     s2(i, j, k) = cs(k)
-                    if (ca_f64_mode .and. ca_f64_scope) then
-                        ! Stage 10.21 scope=all (EXP-C): RO через f64-плотность —
-                        ! единая последовательность вычислений с ядром столбца.
-                        ro(i, j, k) = real(density_anomaly_f64( &
-                            real(ct(k), real64), real(cs(k), real64)), kind(1.0))
-                    else
-                        ! Legacy float32 (в т.ч. EXP-D: writeback остаётся f32).
-                        ro(i, j, k) = density_anomaly(ct(k), cs(k))  ! Пересчёт RO
+                    ! Stage 10.22 A1: при s22_freeze_ro пересчёт RO отключается
+                    ! (T/S по-прежнему перемешиваются; RO остаётся как до conv_adj).
+                    if (.not. s22_freeze_ro) then
+                        if (ca_f64_mode .and. ca_f64_scope) then
+                            ! Stage 10.21 scope=all (EXP-C): RO через f64-плотность —
+                            ! единая последовательность вычислений с ядром столбца.
+                            ro(i, j, k) = real(density_anomaly_f64( &
+                                real(ct(k), real64), real(cs(k), real64)), kind(1.0))
+                        else
+                            ! Legacy float32 (в т.ч. EXP-D: writeback остаётся f32).
+                            ro(i, j, k) = density_anomaly(ct(k), cs(k))  ! Пересчёт RO
+                        end if
                     end if
                 end do
             end do

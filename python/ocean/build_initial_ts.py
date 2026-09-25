@@ -254,6 +254,30 @@ def main():
         f"mean={dist[wet].mean():.3f} max={dist[wet].max():.3f}"
     )
 
+    # Model Z levels in meters (shared by both methods)
+    Z_M = np.array(
+        [
+            2.5,
+            5.0,
+            7.5,
+            12.5,
+            17.5,
+            25.0,
+            40.0,
+            50.0,
+            62.5,
+            75.0,
+            100.0,
+            125.0,
+            175.0,
+            225.0,
+            275.0,
+            350.0,
+            450.0,
+            550.0,
+        ]
+    )
+
     # Horizontal interpolation: nearest-neighbor or bilinear
     if args.method == "bilinear":
         from scipy.interpolate import RegularGridInterpolator
@@ -288,28 +312,6 @@ def main():
         # Vertical interpolation to model levels
         t_out = np.zeros((is1, js1, ks), dtype=np.float32)
         s_out = np.zeros((is1, js1, ks), dtype=np.float32)
-        Z_M = np.array(
-            [
-                2.5,
-                5.0,
-                7.5,
-                12.5,
-                17.5,
-                25.0,
-                40.0,
-                50.0,
-                62.5,
-                75.0,
-                100.0,
-                125.0,
-                175.0,
-                225.0,
-                275.0,
-                350.0,
-                450.0,
-                550.0,
-            ]
-        )
         en4_depth = d_en4 / 100.0  # convert to meters
         for k in range(ks):
             z_target = Z_M[k]
@@ -331,6 +333,7 @@ def main():
                     depth_idx - 1
                 ] + w * interp_s_vals[depth_idx]
         flag = np.zeros((is1, js1, ks), dtype=np.int8)
+
     else:
         # Nearest-neighbor (original)
         en4_wet = np.any(np.isfinite(t_k), axis=0)

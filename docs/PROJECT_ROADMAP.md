@@ -1,7 +1,7 @@
 # Project Roadmap
 
-**Updated:** 2026-09-24
-**Current scientific stage:** Stage 10.22 — ocean density / thermal-wind / Block-200 stability audit (COMPLETED; causal chain isolated: CA/EOS float32 density corruption (T-01) → ρ<0 day 4 → ρ NaN day 5 s6 → Block 200 transmitter → Block 210 amplifier → day-6 zombie; freeze_ro / freeze_ts / freeze_ro_downstream stabilizer levers diagnostic-only, default OFF bit-identical; Block 210 pivots negative by construction (not pathology); production physics KEEP_CURRENT per D-20; next = approved physics stage)
+**Updated:** 2026-09-25
+**Current scientific stage:** Stage 11.1 — Ocean Stability Across Seasonal Initial Conditions (COMPLETED; seasonal dependence established: instability is general to prognostic ocean evolution but timing depends on initial EN4 state; Jan survives 4 days, Apr/Jul/Oct crash Day 1 with pre-existing negative ro; frozen-ocean control 30 days stable; next = EN4 initial condition stabilization)
 **Current status:** Stages 10.14–10.22 committed (`0504853` 10.18A, `d99a4bf` 10.18B, `e99dbdc` 10.18C, `b01c902` 10.18D, `03bb42c` 10.19, `16a4c65` 10.20, `7a17cac` 10.21, `928041a` 10.22); **Stage 10.20 (ocean initialization & numerical stabilization) COMPLETE** (D-18): full-coverage ERA5 data fix resolved CASE C (3-day gate PASS, 36 steps, 0 NaN); residual CA instability characterized, NOT fixed (T-01/T-03 family; 30-day gate `steps executed = 55`, acceptance 360 NOT met); **Stage 10.21 (CA/EOS precision stabilization) COMPLETE** (D-19): float32 2⁻²³ quantization root cause confirmed, no physics change (RULES.md), bit-identical legacy verified; **Stage 10.22 (ocean density / thermal-wind / Block-200 stability audit) COMPLETE** (D-20): replay experiments a0–a4 with diagnostic freeze switches isolate the NaN chain (CA/EOS → Block 200 transmitter → Block 210 amplifier), all switches OFF default bit-identical (a0 ≡ a0_diag daily-diagnostics md5 `1ef13cb4…`); Block 210 Thomas pivots negative by construction; stabilizer levers freeze_ro (a1) / freeze_ts (a3) / freeze_ro_downstream (a4) restore physical validity (worst rel 4.213e-6) but are diagnostic-only; production physics KEEP_CURRENT; fpm battery + Python suites PASS; next = approved physics stage.
 
 ## Completed foundation
@@ -52,41 +52,29 @@
 | 10.20    | Ocean initialization & numerical stabilization — **closed necessary-but-not-sufficient (D-18)**: **data-level fix adopted** — full-coverage merged ERA5 Jan file (`era5_2020_01_fullcoverage_merged.nc`, 124 slices) → **CASE C resolved**: 3-day `ICEBERG_PRODUCTION=true` gate PASS (36 steps, 0 NaN), days 1–4 of 30-day gate clean, 10.19's `steps executed: 0` → **55**; **residual instability characterized, NOT fixed (physics)**: CA 1000-iter guard saturates from day 1 (maxiter=1001 every day; residual inversions pinned at 1.1921E-07 = 2⁻²³ float32 EOS quantization, T-01/T-03 family) → slow T/S/ρ corruption (day 4 nonphysical −45…+50 °C, S<0, 0 NaN) → **density-first divergence mid-day 5** (first NaN `NaN_RO=198` at `F_after_conv` III=6; 0 NaN in U/V/T/S) → zombie from day 6 → 30-day gate `steps executed: 55`, **acceptance (360) NOT met**; **cadence correction: 12 steps/day × 30 = 360** (10.19 "720" = doc error; 3-day gate = 36 steps); default-path fullcov recommendation recorded, NOT applied; only source change = 10.19-pending iceberg print-format fix (`app/main.f90`); next = approved physics stage (EOS precision / CA threshold / guard per RULES.md, or preconditioned-solver study), acceptance = 30-day gate `steps executed = 360`; full battery PASS | **Complete**; classification: ocean-init stabilization (data-level fix; physics unchanged); production physics UNCHANGED; commit `16a4c65` |
 | 10.21    | Stabilize convective adjustment & EOS precision — **negative-result stabilization (D-19)**: root cause of CA 1000-iter guard saturation confirmed = **float32 2⁻²³ EOS quantization (1.1921E-07 ≈ 0.9e-7 threshold)**, T-01/T-03 family; examined EOS single/double, CA threshold, iterative-guard tuning — all rejected per RULES.md procedure & approval requirement (no physics change without explicit approval); diagnostic instrumentation (stage10.21 diagnostics, `conv_DEBUG`-style columns); **production physics UNCHANGED, bit-identical legacy verified** (daily-diagnostics md5 `92a873ad…`); Python 13/13 + 18/18 PASS, Fortran battery 55 PASS; next = approved physics stage (EOS precision / CA threshold / guard) | **Complete**; classification: negative-result stabilization; production physics UNCHANGED; commit `7a17cac` |
 | 10.22    | Ocean density / thermal-wind / Block-200 stability audit — **causal chain ISOLATED (D-20)**: replay experiments a0–a4 (30 d, step 1) prove **Block 200 transmits** the CA/EOS float32 density corruption (ρ<0 from day 4 s1, min −1.946690e-04; ρ-flip diag 10.4M cells day 3; first NaN day 5 s6 `CA_after ro_nan=198`, u/v/T/S clean) **into momentum via TWO paths** (density+thermal-wind budget split EXACT: a2 ro-phase-only 9 metrics fail, momentum max_u2/v2/amp_u/v PASS; worst rel 2.954e-1); **Block 210 amplifies** (rhs_max 1.12608E+16, den_min 7.05833E-04, day-6 zombie 142,081 cells); **Thomas pivots negative BY CONSTRUCTION** (a1 = −1+a+b < 0; piv_neg = piv_cnt = 100 %, piv_min = 1.0) — structural, NOT pathology; **stabilizer levers freeze_ro (a1) / freeze_ts (a3) / freeze_ro_downstream (a4) restore physical validity (30/30 PASS, worst rel 4.213e-6) but are DIAGNOSTIC-ONLY, NOT production paths**; **production physics KEEP_CURRENT, bit-identical legacy verified** (a0 vs a0_diag daily-diagnostics md5 `1ef13cb4…`); 27-section report; Python regression `test_stage10_22_block200_audit.py` (added, 300 checks PASS); next = approved physics stage, acceptance = 30-day gate `steps executed = 360`; full battery PASS (59 targets) | **Complete**; classification: stability audit (instrumentation, no production physics change); production physics UNCHANGED; commit `928041a` |
+| 11.1     | Ocean Stability Across Seasonal Initial Conditions — **seasonal dependence established**: instability is general to prognostic ocean evolution but timing depends on initial EN4 state; Jan survives 4 days, Apr/Jul/Oct crash Day 1 with pre-existing negative ro (−20.07 g/cm³); frozen-ocean control 30 days stable (ro 0.0075–0.0082 g/cm³); atmospheric forcing alone does NOT cause instability; EN4 initial condition pathology identified for summer/autumn; next = EN4 initial condition stabilization (Stage 11.2) | **Complete**; classification: seasonal stability characterization (no production physics change); production physics UNCHANGED; commit pending |
 
 ## Next stage
 
-### Stage 11.1 — Ocean Stability Across Seasonal Initial Conditions (approved physics stage)
+### Stage 11.2 — EN4 Initial Condition Stabilization (approved physics stage)
 
-Stages 10.20–10.22 closed the CASE-C/D investigation: the data-level fix
-(full-coverage ERA5) removed the EN4-path activation trigger, and the
-residual instability is now causally isolated (D-20) — CA/EOS float32
-density corruption (T-01, 2⁻²³ quantization vs 0.9e-7 CA threshold) →
-ρ<0 from day 4 → ρ NaN day 5 s6 → Block 200 transmits into momentum via
-density + thermal-wind paths (two-path budget split EXACT) → Block 210
-amplifies → day-6 zombie. Production physics remains KEEP_CURRENT (D-17/
-D-18/D-19/D-20); the freeze_ro / freeze_ts / freeze_ro_downstream levers are
-diagnostic-only references, NOT production paths.
+Stage 11.1 established that the ocean instability is general to prognostic ocean evolution, but its timing depends critically on the initial EN4 state:
 
-The next stage is an **explicitly approved physics/numerics stage** per
-RULES.md procedure. Candidates from the 10.20–10.22 candidate list:
+- **January**: initially stable, survives 4 days, then crashes (Day 5)
+- **April/July/October**: pre-existing negative ro (−20.07 g/cm³) → crash Day 1
+- **Frozen-ocean control**: 30 days stable (ro 0.0075–0.0082 g/cm³) → atmosphere alone does NOT cause instability
 
-- EOS precision (float32 → double, or compensated summation) —
-  removes the 2⁻²³ quantization root cause;
-- CA threshold / iterative-guard tuning anchored to float32 resolution;
-- Thomas vertical-viscosity solver conditioning (documented T-03:
-  8.5×10⁵ cm²/s at k=2 leads to ill-conditioning; pivots negative
-  BY CONSTRUCTION — a1 = −1+a+b < 0 — so conditioning, not pivot sign);
-- damped geostrophic spin-up of the EN4-initialized velocity field;
-- EN4 data quality at the Barents slope (depth referencing, coast masking).
+The identical `ro_min = -20.07 g/cm³` for April/July/October surface layers indicates a systematic EN4 processing defect in the vertical regridding/extrapolation for warmer seasons (likely `shallowest_finite` flag handling in `build_initial_ts.py`).
 
-**Acceptance gate:** re-run the 30-day gate with
-`ICEBERG_PRODUCTION=true` — expect `steps executed = 360` (12 steps/day ×
-30; corrected cadence — the older "720" figure was a doc error) and a
-physically valid trajectory (no NaN warnings), across seasonal initial
-conditions.
+The next stage is an **explicitly approved physics/numerics stage** per RULES.md procedure. Focus:
 
-Meanwhile, production iceberg demonstrations use the offline real-forcing
-path (TEST_11 family), which remains fully validated.
+- Diagnose and fix the EN4 surface-layer extrapolation bug (`build_initial_ts.py` vertical regridding)
+- Test corrected initial_ts pipeline across seasons
+- Target: 30-day stable ocean run across seasons (`steps executed = 360`)
+
+**Acceptance gate:** re-run the 30-day gate with `ICEBERG_PRODUCTION=true` — expect `steps executed = 360` (12 steps/day × 30) and a physically valid trajectory (no NaN warnings), across seasonal initial conditions.
+
+Meanwhile, production iceberg demonstrations use the offline real-forcing path (TEST_11 family), which remains fully validated.
 
 ## Completed Stage 10.17 — iceberg melt and thermodynamic budget audit
 

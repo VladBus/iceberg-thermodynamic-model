@@ -1,6 +1,6 @@
 # ==============================================================================
 # GitHub Actions CI for AARI Iceberg Thermodynamic & Dynamics Model
-# Runs all Fortran tests via fpm auto-discovery (54 targets)
+# Runs all Fortran tests via fpm auto-discovery (59 targets)
 # Requires: -I/usr/include for netcdf.mod (system package libnetcdff-dev)
 # ==============================================================================
 

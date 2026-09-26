@@ -51,6 +51,7 @@ program main
     use thermal_wind_init
     use stage86_diagnostics
     use stage1022_diagnostics
+    use stage112_cfl_diagnostics
     use iceberg
     use iceberg_types, only: RHO_ICE, RHO_WATER
     use iceberg_forcing, only: get_ocean_profile, get_atmos_forcing, model_coords_to_indices
@@ -408,6 +409,16 @@ program main
     else
         print *, ">>> STAGE 10.22: density/thermal-wind/B200 audit DISABLED (bit-identical legacy)"
     end if
+
+    ! ====================================================================
+    !   STAGE 11.2: CFL + NUMERICAL TIME-DISCRETIZATION AUDIT
+    ! ====================================================================
+    ! Диагностика CFL, устойчивости и первого NaN/Inf события.
+    ! Включается env STAGE112_CFL_DIAG=true (default OFF).
+    ! First-invalid tracking: STAGE112_FIRST_INVALID=true.
+    ! ПОЛНОСТЬЮ ДИАГНОСТИЧЕСКИЙ — не меняет физику.
+    ! ====================================================================
+    call s112_init()
 
     ! Диагностика уравнения состояния (этап 3.1): расчет RO из T2/S2
     ! в диагностическом режиме. Пока НЕ используется в уравнениях движения.
@@ -845,7 +856,7 @@ program main
                             w(i, j, 1) = a
                             ym1(i, j) = ymm  ! Сохранение для следующего шага
 
-                            ! --- W на глубине (k=2..ki) ---
+! --- W на глубине (k=2..ki) ---
                             ! W(k) = W(k-1) - C9·DZ1(k-1)·(TT(k-1) + SS(k-1))
                             !   TT = ∂U/∂x, SS = ∂V/∂y
                             if (ki .ge. 2) then
@@ -857,10 +868,14 @@ program main
                             end if
                         end do
                     end do
+                end do
 
-                    ! Frozen density test: skip advection and convective adjustment
-                    call get_environment_variable('ICEBERG_FROZEN_DENSITY', env_str)
-                    if (len_trim(env_str) .gt. 0 .and. env_str .eq. 'true') then
+            ! --- STAGE 11.2: ВЕРТИКАЛЬНЫЙ CFL (W вычислен, перед адвекцией) ---
+            call s112_compute_vertical_cfl(dt, 'W_after_continuity')
+
+! Frozen density test: skip advection and convective adjustment
+            call get_environment_variable('ICEBERG_FROZEN_DENSITY', env_str)
+            if (len_trim(env_str) .gt. 0 .and. env_str .eq. 'true') then
                         ! Skip advs, advt, conv_adj - density stays frozen
                     else if (s22_freeze_ts) then
                         ! Stage 10.22 A3: T/S frozen - advs/advt/conv_adj skipped (diagnostic only)
@@ -874,6 +889,10 @@ program main
                         ! dt [с] — шаг по времени, c2 [безразм.] — коэффициент стабилизации.
                         ! Используются скорости U2/V2 (из block 210) и вертикальная W.
                         ! Массивы после вызова: S1/T1 содержат адвектированные поля.
+
+                        ! --- STAGE 11.2: ГОРИЗОНТАЛЬНЫЙ CFL ДЛЯ АДВЕКЦИИ (dt=3600с) ---
+                        call s112_compute_advection_cfl(dt, 'before_advs_advt')
+
                         call advs(dt, c2)
                         call advt(dt, c2)
 
@@ -1206,6 +1225,11 @@ program main
                         call s22_b210_flush(kkk, iii)
                     end if
 
+                    ! --- STAGE 11.2: BAROTROPIC CFL (перед shal, dt1=120с, mm3=30) ---
+                    call s112_compute_barotropic_cfl(120.0, 'before_shal')
+                    call s112_compute_coriolis_cfl(3600.0, 'before_shal')
+                    call s112_compute_diffusion_stability(3600.0, 'before_shal')
+
                     ! ====================================================================
                     !   7. БАРОТРОПНЫЙ РАСЧЁТ МЕЛКОЙ ВОДЫ И УРОВНЯ МОРЯ
                     ! ====================================================================
@@ -1272,12 +1296,18 @@ program main
                         end do
                     end do
 
-                    ! Stage 8.6 diagnostics: J = after Block 280
+! Stage 8.6 diagnostics: J = after Block 280
                     call capture_velocity_state('J_after_B280', kkk, iii, u2, v2)
                     ! Stage 10.22: проба в конце шага
                     if (s22_diag) call s22_probe('END_step', kkk, iii)
 
-                    ! Диагностика 3D-скоростей (этап 3.3): min/max U2,V2 после все�� блоков
+                    ! --- STAGE 11.2: END-OF-STEP DIAGNOSTICS ---
+                    ! Thermal wind, density, T/S ranges, and timeseries output
+                    call s112_compute_thermal_wind_diagnostics('END_step')
+                    ! Model time in seconds since start of run
+                    call s112_write_timeseries(kkk, iii, 0, real(nday1*24 + iii)*3600.0)
+
+                    ! Диагностика 3D-скоростей (этап 3.3): min/max U2,V2 после всех блоков
                     if (kkk .le. 2) then
                         uu = 0.0
                         vv = 0.0
@@ -1362,8 +1392,6 @@ program main
                         end if
                     end if
 
-                end do ! Конец суточного цикла III
-
                 ! --- Суточный диагностический вывод (этап 4.2) ---
                 ! Пишем NetCDF-срез за сутки kkk и строку CSV со статистиками
                 ! (U/V/W/T/S/RO min/max/mean, ветер, напряжения, градиенты,
@@ -1395,6 +1423,9 @@ program main
     end if
 
     print *, "Integration completed successfully!"
+
+    ! --- STAGE 11.2: FINALIZE CFL DIAGNOSTICS ---
+    call s112_finalize()
 
 ! Диагностика уравнения состояния после 5 дней (этап 3.1)
 ! Stage 10.22 A1: при заморозке RO финальная eos_diag также пропускается

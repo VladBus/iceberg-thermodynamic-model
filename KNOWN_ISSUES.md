@@ -48,6 +48,16 @@ removed from the active list (their history lives in stage reports and
   operational mode until stabilization is the offline real-forcing path
   (TEST_11 family). Report:
   `docs/validation/stage10.19_production_runtime_coupling_recovery.md`.
+
+- **EN4 initial condition pathology (Stage 11.1)**: EN4 initial T/S fields for
+  April/July/October 2020 contain pre-existing negative density anomaly
+  (`ro_min = -20.07 g/cm³`) at surface layers, causing immediate ocean crash
+  on Day 1. January EN4 state survives 4 days before the same cascade.
+  Root cause: systematic EN4 vertical regridding defect in `build_initial_ts.py`
+  (likely `shallowest_finite` flag handling for summer/autumn profiles).
+  Frozen-ocean control confirms atmosphere alone is stable; instability requires
+  prognostic ocean evolution. Next: Stage 11.2 — EN4 Initial Condition Stabilization.
+  Report: `docs/validation/stage11.1_ocean_stability_seasonal_initial_conditions.md`.
 - **Eulerian ocean dead state**: 3D ocean fields NaN from day 1 with real
   EN4 init (Stage 8 family, stable 56.5 %, T frozen at 273.15 K) — blocks
   coupled ocean forcing for the iceberg; **Stage 10.19 forensic**: first

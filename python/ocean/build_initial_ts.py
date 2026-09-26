@@ -180,7 +180,7 @@ def vertical_regrid(t_c, s_f, d_en4, ilat, ilon, need):
             for k in range(ks):
                 if not need[i, j, k]:
                     continue
-                zm = Z_M[k]
+                zm = Z_M[k] * 100.0  # convert model depth from meters to cm to match d_en4 (cm)
                 if zf[0] >= zm:
                     # top layer: model level at/below shallowest EN4 sample
                     t_out[i, j, k], s_out[i, j, k] = tvf[0], svf[0]
@@ -235,9 +235,12 @@ def main():
     t_c = (t_k - 273.15).astype(np.float32)
     s_f = (s_p / 1000.0).astype(np.float32)
 
-    en4_wet = np.any(np.isfinite(t_k), axis=0)
+    # Require BOTH T and S to be finite at some depth for a valid EN4 ocean point.
+    # This prevents selecting columns with valid T but all-NaN S at depth,
+    # which would cause S=0 at depth in the regridded output.
+    en4_wet = np.any(np.isfinite(t_k) & np.isfinite(s_p), axis=0)
     print(
-        f"EN4 wet grid points : {int(en4_wet.sum())} / "
+        f"EN4 wet grid points (T&S finite): {int(en4_wet.sum())} / "
         f"{t_k.shape[1] * t_k.shape[2]}"
     )
 

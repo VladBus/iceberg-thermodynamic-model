@@ -1,178 +1,18 @@
-# Validation Index — Active Stage 10 Validation
+# Validation Index — Active Stage 11 Validation
 
-Index of reports for the current work on iceberg thermodynamics modernization
-(Stage 10). Stage 10 materials stay here until Stage 10 as a whole is
-complete; they will then be archived to `docs/wiki/stages/stage10/` (content
-is not rewritten, links are updated).
+Index of reports for the current work on iceberg thermodynamics (Stage 11).
 
-Statuses:
+**Stage 10 is now archived** to `docs/wiki/stages/stage10/` — see archived reports there.
 
-- **ACTIVE** — stage/phase is ongoing, the document is relevant to current work;
-- **COMPLETED** — stage finished, report closed, but not yet archived;
-- **DRAFT** — draft/intermediate document.
+## Active Stage 11 Reports
 
-| Document                                               | Stage           | Status                  | Purpose                                                                                                                                              |
-| ------------------------------------------------------ | --------------- | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `stage10.7_basal_melt_validation.md`                   | 10.7            | COMPLETED (B)           | Independent analytical validation of basal melt (17 checks), literature band 0.01–1 m/day                                                            |
-| `stage10.8.1_python_validation.md`                     | 10.8.1          | COMPLETED (B)           | Independent Python validation layer (`python/validation/`, 44 checks)                                                                                |
-| `stage10.8.2_observational_validation.md`              | 10.8.2          | COMPLETED (C)           | Observational validation of basal melt (19 records, 229 checks); systematic limitations documented                                                   |
-| `stage10.9_calibration_assessment.md`                  | 10.9            | COMPLETED (C)           | Calibration assessment of the basal-melt coefficient (212 checks); scalar calibration not identifiable — calibration NOT performed                   |
-| `stage10.10_three_equation_interface.md`               | 10.10 / 10.10.1 | COMPLETED (C)           | Three-equation ice-ocean interface (H&J99/J2010); includes the 10.10.1 mass/salt convention correction (25 Fortran = 19+6, 65 Python = 46+19 checks) |
-| `stage10.11_natural_convection.md`                     | 10.11           | COMPLETED (C)           | Natural convection at the basal face (Ra/Nu, Churchill n=3) — selectable scheme                                                                      |
-| `stage10.11.2_natural_convection_audit.md`             | 10.11.2         | COMPLETED (B)           | Audit + Fortran test delivery (23 checks); incorrect claims corrected                                                                                |
-| `stage10.11.3_natural_convection_physics_audit.md`     | 10.11.3         | COMPLETED (B)           | Deep scientific audit: Ra cap always active, haline term inert, zero-flow 1.4e-3 m/day does not close the observational gap; production NOT changed  |
-| `stage10.12_internal_thermal_evolution.md`             | 10.12           | COMPLETED (C)           | Prognostic internal temperature (two-node lumped), switch `thermal_evolution_enabled`; Fortran 21 + Python 35 checks                                 |
-| `stage10.12_internal_thermal_evolution_design_note.md` | 10.12           | COMPLETED (design note) | Phase A design note: two-node model variants and the Variant C choice                                                                                |
-| `stage10.13_diffusion_limited_low_flow_design_note.md` | 10.13           | COMPLETED (Phase A)     | Scientific formulation and literature audit of the low-flow closure (MK77 / Keitzl16 / Middleton21)                                                  |
-| `stage10.13_phase_b_results.md`                        | 10.13           | COMPLETED (Phase B)     | Research prototype `python/validation/low_flow.py`: 167 checks, sweep 246/270 in the observed band, 10.8.2 re-scoring                                |
-| `stage10.13_phase_c_results.md`                        | 10.13           | COMPLETED (Phase C)     | Production integration behind `low_flow_closure_enabled` (OFF by default); Fortran 23 + comparison 56 checks; full battery exit 0                    |
-| `stage10.14_three_equation_rescoring.md`               | 10.14           | COMPLETED (C)           | Re-scoring of the 10.8.2 set against the three-equation (10.10/10.10.1) and 3eq+natural-convection (10.11) closures; Python 177 checks; no calibration, no production change |
-| `stage10.15_operational_demonstration.md`              | 10.15           | COMPLETED (operational) | Operational end-to-end demonstration: real-forcing 30-day Lagrangian iceberg run (trajectory + diagnostics, 7/7 checks), full-model 1/7-day runs (ocean NaN state documented), dependency audit, reproducible commands |
-| `stage10.15.1_trajectory_continuity_audit.md`          | 10.15.1         | COMPLETED (audit; real discontinuity identified) | Follow-up audit of the 10.15 trajectory: model-space x/y continuous and kinematically consistent, but geographic lat/lon contains 8 real jumps (~0.17°) at cell crossings — transposed bilinear weights in `model_coords_to_latlon`/`bilinear_interp_3d` (T-13); source NOT changed (audit-only); corrected projection continuous (corr 0.988); 28 Python regression checks |
-| `stage10.15.2_coordinate_mapping_bilinear_fix.md`      | 10.15.2         | COMPLETED (fix; regression-tested, re-run)       | Fix of the transposed bilinear weights (T-13): cross terms swapped in `bilinear_interp_3d` + `model_coords_to_latlon`; new Fortran regression `iceberg_test_bilinear_axis_regression` (13 checks — FAILS pre-fix, PASSES post-fix); TEST_11 re-run: 0 jumps, corr(geo, reported)=0.988; T-07 drift anomaly unchanged (OPEN); physics unchanged |
-| `stage10.16_drift_dynamics_t07_investigation.md`       | 10.16           | COMPLETED (investigation; T-07 partially explained) | Controlled experiments A–K (wind/current/Coriolis/timestep/size/drag): the low wind-drift ratio is the physically correct **Coriolis-limited equilibrium** u = F_wind/(M·f) of a 100-m cube (analytic match 0.1 %; ratio ∝ 1/L; C_Dw-independent); 1–2 % reference assumes drag-limited regime or wind-driven (Ekman) current absent from the offline model; secondary numerical damping 1/√(1+(f·dt)²) ~11 % at dt=3600 s; NO source change; TEST_11 re-run byte-identical |
-| `stage10.17_melt_thermodynamic_budget_audit.md`        | 10.17           | COMPLETED (audit; no correction) | Melt/thermodynamic budget audit: mass ≡ ρ_i·L·W·H (max 1.5e-5 rel), model budget closure 5e-4 % over 30 d; **lateral legacy melt dominates 96.8 %** (C_LATERAL = 1e-6 m/(s·K), velocity-independent, near-constant 0.26 m/day); basal 3.0 % (bulk, U_rel-limited), surface 0.12 % (winter), vapor 0.08 %; scalings verified (U^0.5/U^0.8, ΔT-linear, L^-0.2, 1/L, dt-insensitive); findings: lateral full-height area vs submerged convention in dead helpers (F2), q_net_surface dimensional defect (F3), diag%q_cond/q_bot never populated (F5), CSV format defect (F4) — all diagnostics-only, no physics change; TEST_11 re-run byte-identical (15 shared columns); 90-day diagnostic run −42.2 % (Q1 atmosphere cycle, ocean frozen at January — annual extrapolation premature); 47+7 Fortran + 40 Python checks |
-| `stage10.18a_lateral_melt_parameterization_audit.md`   | 10.18A          | COMPLETED (research audit; no production change) | Lateral melt parameterization research audit: independent reference layer `python/validation/lateral_melt.py` reproduces production exactly (replay dM 15.43 %/lateral 96.83 % vs production 15.41 %/96.8 %); **legacy C_LATERAL = 1e-6 m/(s·K) ≡ forced-convection side melt at U_eq ≈ 0.30 m/s** (γ_T = 304 W/(m²·K)) vs simulated U_rel 0.005–0.027 m/s (factor 10–60); literature-based velocity-dependent variants (bulk/Bigg1997 K=0.58/plume, +Neshyba–Josberger buoyant) give 30-day lateral 0.013–0.052 m/day (5–20× below legacy) and ΔM 1.3–3.6 % (vs 15.4 %) — **lateral dominance formulation-dependent**; geometry ambiguity quantified (submerged full-perimeter vs full-height = 1.77× volume; depth-only 1.13 = Stage 10.17 F2); scalings verified (U^0.8/U^0.5, D^-0.2/D^-0.5, ΔT-linear, legacy U^0); wave erosion NOT TESTABLE; literature brackets legacy but does not validate; decision OPTION D; git diff `src/`/`test/` empty; 458 Python checks + 10 figures |
-| `stage10.18b_observational_constraint.md`              | 10.18B          | COMPLETED (observational constraint; no production change) | Observational constraint and parameterization discrimination: curated dataset `data/validation/observations/iceberg_lateral_melt_observations*.csv` (17 cases, 9 sources; RH80 lab DIRECT 5, Sermilik + Antarctic + velocity INDIRECT 12; every number from fetched primary texts; Grand Banks/Barents side-melt obs unverified & excluded); prediction engine `python/validation/observational_constraint.py` + 62 independent tests + analysis (`stage10_18b_observational_constraint.py`, 10 figures); **directly comparable N=5 (RH80 lab only)** — leave-one-source-out NOT APPLICABLE; quiescent lab melt 0.04–1.6 m/day **requires a buoyant/plume U=0 term** (BULK/BIGG → 0, bias −0.56 m/day); lab temperature dependence **nonlinear ΔT^1.5** (legacy linear over-predicts 3.6× at 1.8 K → 1.1× at 19.8 K); legacy lateral exceeds observed **total** submarine melt in 3/4 Antarctic cold-shelf cases; observational **C_eff N=9 median 5.43e-7 = 0.54× production** (range 0.28–1.06×; Thwaites slope 24 m/a/°C = 0.76×); legacy equivalent-U 0.30 m/s is 10–15× above observed Sermilik velocities (0.018–0.023 m/s); velocity dependence qualitatively supported but not field-quantified; **geometry and wave erosion NOT CONSTRAINED**; **decision OPTION E** (insufficient discrimination) + **production KEEP_CURRENT**; git diff `src/`/`test/` empty; 62 Python checks + 10 figures |
-| `stage10.18c_existing_observations_reanalysis.md`      | 10.18C          | COMPLETED (observations reanalysis; no production change) | Existing observations reanalysis and velocity-resolved melt constraint: reanalyzed dataset `data/validation/observations/stage10.18c/` (18 rows; explicit independence/melt-definition/velocity classification) + analysis (`stage10_18c_existing_observations.py`, 10 figures) + tests (`test_stage10_18c_observations.py`, 61 checks); **methodological corrections to 10.18B** (RH80 = PUBLISHED_FIT_EVALUATION of ONE fit, NOT 5 independent observations; C_eff_lab vs C_eff_submarine separated; Moyer19 = u_ice NOT u_rel; nonzero U=0 melt = NONZERO_BUOYANCY_OR_FREE_CONVECTION_COMPONENT; Enderlin23 slope = submarine sensitivity); Schild21 raw GPS/CTD/multibeam data identified at Arctic Data Center (no ADCP → U_rel impossible); Enderlin23 individual-iceberg dataset identified at USAP-DC 601679 (account-gated, not retrieved); **FIELD velocity-resolved cases (melt+ΔT+U_rel) = 0** — velocity dependence NOT IDENTIFIABLE quantitatively; RH80 curve-evaluation diagnostics (legacy +0.198 bias low-ΔT; BULK/BIGG 0 at U=0); legacy lateral > total submarine melt in 3/4 Antarctic cold-shelf region cases; C_eff_lab_lateral 0.54× / C_eff_submarine 0.59× production (separate; compatible, not validated); geometry/side-basal/wave NOT CONSTRAINED; **decision OPTION D** (bounds) + OPTION E elements; **production KEEP_CURRENT**; git diff `src/`/`test/` empty; 61 Python checks + 10 figures |
-| `stage10.18d_velocity_resolved_observational_upgrade.md` | 10.18D          | COMPLETED (per-iceberg observational upgrade; no production change) | Per-iceberg Enderlin23 population + velocity-resolved campaign design: **10.18C gap CLOSED** — USAP-DC 601679 retrieved via direct POST (JS reCAPTCHA not enforced; inner zip MD5 `821bed51660957b65a896c42fb88a057` verified; "account-gated" statement corrected); dataset `data/validation/observations/stage10.18d/` (**743 per-iceberg rows**, 54 files/15 sites/2011-2022, melt+draft+geometry+EPSG:3031→WGS84 coordinates) + analysis (`stage10_18d_per_iceberg.py`, 10 figures) + tests (`test_stage10_18d_per_iceberg.py`, 26 checks); **regional maxima reproduce the paper** (WAP max 63.8 vs ~50, WAIS 44.8 vs ~40 m/a; EAIS/EAP p95 5.2/3.6 vs ~5 m/a — raw max inflated by paper-excluded Mertz/Edgeworth plume outliers); **Thwaites 24 m/a/°C fit consistent per-iceberg** (76 % of 167 icebergs imply TF in paper range 0.2–1.6 °C); **legacy C_LATERAL exceeds 99.6 % (TF=1.5) / 88 % (TF=0.6) of per-iceberg observed melt** (median ratio 14×/5.6×); velocity-dependent variants bracket observed medians (WAP 0.013–0.017 vs obs 0.032 m/day); **per-iceberg C_eff_submarine median 1.56e-7 = 0.16× production** (range 0.08–0.33×); draft dependence quantified per site (order-of-magnitude spread at fixed draft); velocity dependence still NOT IDENTIFIABLE (no U_ocean) → **ADCP-equipped Schild21-style campaign design** (GPS+SfM+multibeam+CTD+ADCP+wave, §11) is the velocity-resolved prerequisite; **decision OPTION D refined** (per-iceberg bounds) + OPTION E elements; **production KEEP_CURRENT**; git diff `src/`/`test/` empty; 26 Python checks + 10 figures |
-| `stage10.19_production_runtime_coupling_recovery.md` | 10.19          | COMPLETED (production runtime/coupling recovery; no physics change) | Production runtime & full iceberg coupling recovery: **Stage 10.15 finding addressed** — `app/main.f90` contained ZERO iceberg calls → connected behind `ICEBERG_PRODUCTION=true` env gate (default OFF → legacy bit-identical): `iceberg_init` after `init_thermal_wind()` at TEST_11 start (75°N, 30°E → i=61, j=37), hourly `iceberg_step` in the III loop with live `t2/s2/u2/v2` + ERA5 atmos + bathymetry; `fpm.toml` main-file fix (`iceberg_main.f90` → `main.f90`); NaN validity guard in `get_ocean_profile` (`ok=.false.` explicit detection, not masking); **ocean zombie forensic (CASE C/D)**: day_00 clean (0 % NaN) → first NaN in **Block 210 at III=2 of day 1** (Block 200 ~25 m/s geostrophic spike from EN4 thermal-wind init) → day_01 **56.5 % NaN** (142,081/251,370 cells; T clamped at 273.1 K) → start cell **15/18 levels NaN** → **CASE C BLOCKER** for online-coupled run, root cause **CASE D** (T-03 family); gates 1d/7d/30d exit 0, iceberg `steps executed : 0` (explicit warnings, not silent); offline real-forcing path (TEST_11) fully validated; **D-17: KEEP_CURRENT physics + env-gated integration**; next = ocean-init stabilization stage (acceptance: 30-day gate `steps executed = 720`); full battery PASS; production physics unchanged |
-| `stage10.20_ocean_initialization_numerical_stabilization.md` | 10.20          | COMPLETED (negative result — necessary-but-not-sufficient; no physics change) | Ocean initialization & numerical stabilization attempt: **data-level fix adopted** (full-coverage merged ERA5 Jan file `era5_2020_01_fullcoverage_merged.nc`, 124 slices — CASE C resolved: 3-day `ICEBERG_PRODUCTION=true` gate PASS with 36 steps/0 NaN; days 1–4 of the 30-day gate clean; 10.19's `steps executed : 0` → **55** real steps); **residual instability characterized, NOT fixed (physics)** — CA 1000-iter guard saturates from day 1 (maxiter=1001 every daily diagnostic; residual inversions pinned at `resid_inv = 1.1921E-07` = 2⁻²³ float32 EOS quantization) → slow T/S/ρ corruption (day 4 already nonphysical: −45…+50 °C, S<0, 0 NaN) → **density-first divergence mid-day 5** (first NaN = `NaN_RO=198` at `F_after_conv` III=6, 0 NaN in U/V/T/S at that instant) → zombie from day 6 (full 142,081 wet cells NaN) → 30-day gate `steps executed : 55` / **acceptance (360) NOT met**; 55/360 verdict holds even vs the 10.19 report's erroneous "720" (doc error — cadence is 12 steps/day, verified by the 3-day gate = 36); default-path recommendation (point `src/param.f90:301` at the fullcov file) recorded, NOT applied; **D-18 closure**; source change = only the Stage-10.19-pending iceberg print-format fix (app/main.f90, diagnostics-only); next = approved physics stage (EOS precision / CA threshold / guard policy per RULES.md, or preconditioned-solver study), acceptance = 30-day gate `steps executed = 360`; full battery PASS |
-| `stage10.21_convective_precision_stabilization.md` | 10.21          | COMPLETED (negative result — closed necessary-but-not-sufficient; production physics KEEP_CURRENT, research machinery behind OFF-by-default switches) | Convective-adjustment / EOS float32 precision stabilization attempt (D-19): **T-01 root cause CONFIRMED and closed** — the CA 1000-iter guard saturation (`maxiter=1001`, `resid_inv = 1.1921E-07` = 2⁻²³, `guard_hits = 131592` = all wet cells from day 6) is the **float32 EOS quantization floor** (`1/X ≈ 1.027 ∈ [1,2)` binade → ULP = 2⁻²³; measured `max|RO_f64 − RO_f32| = 1.39E-07`, eps `0.9e-7 < 2⁻²³ < 1.5e-7 < 2⁻²² < 2.4e-7`), NOT a convective-physics instability; **hypothesis tested with 6 experiments (A0, EXP-A/B15/B24/C/D)**: f64 EOS path (`STAGE1021_CA_F64`, EXP-A converges 147–238 iters, guard 0 on days 1–4), raised thresholds (`STAGE1021_CA_EPS` 1.5e-7/2.4e-7: EXP-B15 partial 12–35 guards, EXP-B24 converges 125–209 iters), f64-eos_diag scope=all (EXP-C/D converge) — all behind env switches, default OFF → **bit-identical legacy verified** (NC `day_00..04` + guard-events CSV 3001 lines + daily-diagnostics unique rows md5 `92a873ad78a31fefb0e127cfd373dcc3`); **negative headline: eliminating the CA residual does NOT stabilize the ocean** — ALL closures still hit density-first divergence mid-day-5 (first NaN `NaN_RO=198` at `F_after_conv`, 0 NaN in U/V/T/S) → day-6 zombie (142,081 cells) → 30-day gates `steps executed`: A0=55, A=57, B15=57, B24=51, C=56, D=52, **acceptance (360) NOT met**; the pre-divergence days 1–4 are **bit-identical across ALL closures** (euu 8.653e15/1.806e16/2.607e16/4.457e16), i.e. the guard contributes NO deterministic rounding difference until the ocean itself diverges → causal chain is the **upstream Block-200 geostrophic spike / Block-210 Thomas solver (T-03 family)**, not CA; Python validation: `test_stage10_21_precision.py` 13/13 + `test_stage10_21_convective_adjustment.py` 18/18 PASS; Fortran battery 55 PASS; **D-19: KEEP_CURRENT physics, D-03 precision clause superseded (0.9e-7 threshold retained), machinery retained behind switches; two doc defects corrected** (EOS header X/RO ranges → actual X∈[0.972462,0.974607], RO∈[0.006055,0.008318]; param.f90 z/dz comments ×100); next = approved ocean-init / geostrophic-spike stabilization stage (acceptance 30-day gate `steps executed = 360`) |
-| `stage10.22_ocean_density_thermal_wind_block200_audit.md` | 10.22          | COMPLETED (positive result — causal chain isolation and attribution; no physics change) | Causal-isolation audit of the EN4 → EOS → ρ → thermal-wind → Block 200/210 chain behind 5 OFF-by-default env switches `STAGE1022_DIAG/_FREEZE_RO/_FREEZE_THERMAL_WIND/_FREEZE_TS/_FREEZE_RO_DOWNSTREAM` (default OFF → **bit-identical legacy**, daily-diagnostics md5 `1ef13cb4d212db8570dd64737e945897` (a0 \u2261 a0_diag identical)): experiments A0 (baseline), A1 freeze_ro, A2 no_tw, A3 freeze_ts, A4 frozen_ro + step-level probes/Block-200/Block-210 instrumented CSV; **causal chain CLOSED**: first physically impossible state **day 4 s1** (`CA_after ro_min = −1.946690e-04`, ρ-anomaly < 0, day4 end −4.365810E-02) → first NaN **day 5 s6** (`CA_after ro_nan = 198`, clean u/v/T/S) → Block 200 = **transmitter** (B200_before ro_nan 198, velocities clean; B200_after u2/v2_nan = 333) → Block 210 = **downstream amplifier** (rhs_max 1.12608E+16, den_min 7.05833E-04; step-6 blowup 1.66e12/1.13e16) → day-6 zombie 142,081 cells — matches 10.20/10.21 `NaN_RO=198 at F_after_conv`; **Block 210 Thomas pivots negative BY CONSTRUCTION** (`a1 = −1+a+b < 0`, piv_neg = piv_cnt = 100 %) — structural, NOT pathology; **A5-step-1 replay verdicts**: a1 30/30 PASS (worst 4.213e-06), a3 30/30 PASS (worst 3.928e-06), a4 30/30 PASS (identical to a1), a2 FAIL ro-phase-only (8–9 metrics; momentum max_u2/v2/amp_u/v PASS → freeze_tw two-path split exact), a0 FAIL from day 1 (**13-metric ro-phase artifact**: snapshot ρ predates in-run ρ, methodology not physics — day1 worst 9.195e-03, day6+ 14 fails + 3 NaN skips); stabilizer levers proven (freeze-ρ / freeze-TS in Block 200, reduced current) are **diagnostic-only, NOT production paths**; **D-20: KEEP_CURRENT production physics**; Python regression `test_stage10_22_block200_audit.py` delivered; NO source change beyond committed instrumentation (`928041a`) |
-| `stage11.1_ocean_stability_seasonal_initial_conditions.md` | 11.1          | COMPLETED (seasonal stability characterization; no production change) | Seasonal ocean stability characterization across Jan/Apr/Jul/Oct 2020: instability is general to prognostic ocean evolution but timing depends on initial EN4 state; Jan survives 4 days (crash Day 5), Apr/Jul/Oct crash Day 1 with pre-existing negative ro (−20.07 g/cm³); frozen-ocean control 30 days stable (ro 0.0075–0.0082 g/cm³) — atmosphere alone does NOT cause instability; EN4 initial condition pathology identified for summer/autumn (identical ro_min = −20.07 g/cm³); D-21: next = EN4 initial condition stabilization (Stage 11.2); 4× 7-day runs + 30-day frozen control; full battery PASS; production physics UNCHANGED |
+| Document                                               | Stage | Status                                  | Purpose                                                                                                                                             |
+| ------------------------------------------------------ | ----- | --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `stage11.1_ocean_stability_seasonal_initial_conditions.md` | 11.1  | COMPLETED (seasonal stability characterization; no production change) | Seasonal ocean stability characterization across Jan/Apr/Jul/Oct 2020: instability is general to prognostic ocean evolution but timing depends on initial EN4 state; Jan survives 4 days (crash Day 5), Apr/Jul/Oct crash Day 1 with pre-existing negative ro (−20.07 g/cm³); frozen-ocean control 30 days stable (ro 0.0075–0.0082 g/cm³) — atmosphere alone does NOT cause instability; EN4 initial condition pathology identified for summer/autumn (identical ro_min = −20.07 g/cm³); D-21: next = EN4 initial condition stabilization (Stage 11.2); 4× 7-day runs + 30-day frozen control; full battery PASS; production physics UNCHANGED |
 
-Note: Stage 10.13 (Phases A–C) is complete and committed (`caa7799`); its
-reports remain here because Stage 10 as a whole is still active. Stage 10.13
-is a **research parameterization** (numerically tested, production-integrated
-behind a switch) — not universally validated. Stage 10.14 is a verification
-stage: it re-scores the 10.8.2 observational set against the 3eq and
-3eq+natural closures (roadmap item) — no calibration, no production change.
-Stage 10.15 is an operational demonstration: 30-day real-forcing Lagrangian
-iceberg run (trajectory + diagnostics, reproducible), full-model 1/7-day
-runs with the documented ocean NaN state, and the T-12 symlink prerequisite
-exercised. It is not a physics change and not an observational validation.
-Stage 10.15.1 is a narrow audit of the 10.15 trajectory output: it identifies
-a real geographic-coordinate discontinuity (transposed bilinear weights,
-T-13) and documents the correction path; the original 10.15 report is kept
-unchanged and the corrected figure is linked from the 10.15.1 report.
-Stage 10.15.2 fixes the identified defect: the transposed cross terms in
-`bilinear_interp_3d` and `model_coords_to_latlon` are swapped (wx along j/X,
-wy along i/Y), protected by a new Fortran regression test that fails on the
-pre-fix code, and verified by a repeated 30-day TEST_11 run (0 jumps,
-corr(implied geo, reported) = 0.988). It is a targeted correctness fix —
-no new physics, no calibration, no default change; T-07 drift anomaly
-remains open.
-Stage 10.16 investigates T-07 with controlled experiments (A–K): the low
-wind-drift ratio is the physically correct Coriolis-limited equilibrium
-u = F_wind/(M·f) of a 100-m cube (analytic match 0.1 %; ratio ∝ 1/L;
-C_Dw-independent; wind ≈ Coriolis ≫ water drag at equilibrium). The 1–2 %
-reference assumes a drag-limited regime or a wind-driven surface current
-absent from this offline model; a secondary numerical damping
-1/√(1+(f·dt)²) ≈ 0.89 at dt = 3600 s contributes ~11 %. No source
-correction was made; the repeated TEST_11 run is byte-identical to 10.15.2.
+## Archived Reports
 
-Stage 10.17 audits the melt and thermodynamic budgets with controlled
-experiments (A–K) and the extended real-forcing TEST_11: mass is
-identically ρ_i·L·W·H (max rel diff 1.5e-5), the model budget closes to
-5e-4 % over 30 days, and the legacy **lateral melt dominates (96.8 %)**
-via the constant C_LATERAL = 1e-6 m/(s·K) at ⟨ΔT⟩_D ≈ 3 K — a documented
-simplification, not a bug. Findings are diagnostics-only (lateral
-full-height vs submerged area convention in unused helpers; q_net_surface
-dimensional defect; unpopulated diag%q_cond/q_bot; non-CSV trajectory
-format). A 90-day diagnostic run (Q1 atmosphere, ocean frozen at January)
-loses 42.2 % of mass — annual extrapolation is premature. No physical
-correction was made; TEST_11 remains byte-identical to 10.15.2/10.16.
-
-Stage 10.18A is a research/sensitivity/parameterization audit of the lateral
-melt closure: an independent reference layer (`python/validation/lateral_melt.py`)
-reproduces production exactly (30-day replay: dM 15.43 %/lateral 96.83 % vs
-production 15.41 %/96.8 %), then quantifies the formulation sensitivity. The
-legacy constant C_LATERAL = 1e-6 m/(s·K) is equivalent to forced-convection
-side melt at **U_eq ≈ 0.30 m/s** (γ_T = 304 W/(m²·K)), while the simulated
-U_rel at the draft is 0.005–0.027 m/s — a factor 10–60. Every
-literature-based velocity-dependent variant (model-consistent bulk closure,
-Bigg et al. 1997, FitzMaurice et al. 2017 plume, + Neshyba–Josberger buoyant
-term) gives 30-day lateral melt 0.013–0.052 m/day (5–20× below legacy) and
-total ΔM 1.3–3.6 % (vs 15.4 %): **the dominance of lateral melt is
-formulation-dependent, not a robust physical outcome**. The geometry
-ambiguity is quantified (submerged full-perimeter vs production full-height
-= factor 2·ρ_i/ρ_w = 1.77 by volume; depth-only 1.13, the Stage 10.17 F2
-quantity). Wave erosion is **NOT TESTABLE** with the current forcing (no
-wave fields; White et al. 1980 / Kubat et al. 2007 equations unverified).
-Literature brackets the legacy rate (Sermilik model 0.06–0.10 m/day,
-observational estimate ~0.39 m/day; C&S 2023 side-melt max 0.2 m/day) but
-does not validate it. **No production physics change** (git diff on `src/`
-and `test/` is empty); decision **OPTION D** — a dedicated
-observational/calibration constraint stage is required before any production
-change; T-07 remains untouched.
-
-Stage 10.18B adds the observational constraint: a curated 17-case dataset
-(RH80 lab DIRECT; Sermilik + Antarctic + velocity INDIRECT; every number from
-a fetched primary text; Grand Banks/Barents side-melt observations unverified
-and excluded) and an independent prediction/comparison engine. The directly
-comparable set is the Russell-Head lab (N=5), so leave-one-source-out is NOT
-APPLICABLE. The lab evidence requires a nonzero-at-U=0 (buoyant/plume) term —
-the forced-convection-only variants (BULK, BIGG) predict zero and fail — and
-shows a nonlinear ΔT^1.5 temperature dependence that the linear legacy
-over-predicts at low ΔT (3.6× at 1.8 K). The legacy lateral rate exceeds the
-observed total submarine melt in 3/4 Antarctic cold-shelf cases. The
-observational C_eff distribution (N=9, median 0.54× production, range
-0.28–1.06×; Thwaites slope 24 m/a/°C = 0.76×) brackets the production
-constant without uniquely determining it; the legacy equivalent-U (0.30 m/s)
-is 10–15× above observed Sermilik iceberg velocities (0.018–0.023 m/s).
-Velocity dependence is qualitatively supported but not field-quantified;
-geometry (full-height vs submerged) and wave erosion are NOT CONSTRAINED by
-available observations. **Decision: OPTION E** (insufficient discrimination;
-multiple formulations remain observationally plausible) with **production
-KEEP_CURRENT**; no production physics change (git diff on `src/` and `test/`
-is empty); next: Stage 10.18C targeted observational design.
-
-Stage 10.18C reanalyzes the existing observations with explicit
-methodological corrections: the RH80 rows are evaluations of **one published
-laboratory fit** (NOT five independent observations); the field effective
-coefficient is a **submarine-total** quantity (C_eff_submarine), kept
-separate from the lab lateral coefficient (C_eff_lab_lateral); Moyer19 speeds
-are **iceberg translational velocities**, not U_rel; nonzero quiescent melt
-indicates a buoyancy/free-convection component (not necessarily a plume
-mechanism); the Enderlin23 thermal slope (24 m/a/°C) is a submarine-melt
-sensitivity. Data recovery: Schild21 raw GPS/CTD/multibeam records exist at
-the Arctic Data Center (no ADCP/current-meter data); Enderlin23 individual
-iceberg CSVs exist at USAP-DC 601679 (account-gated, not retrieved). **No
-field case provides simultaneous melt + ΔT + U_rel: the velocity-resolved
-field subset is empty, and velocity dependence is NOT IDENTIFIABLE
-quantitatively.** Legacy over-predicts cold low-ΔT (lab + Antarctic shelf);
-geometry distribution, side/basal separation and wave erosion are NOT
-CONSTRAINED. **Decision: OPTION D** (existing observations provide useful
-bounds) with OPTION E elements; **production KEEP_CURRENT**; no production
-physics change (git diff on `src/` and `test/` is empty); next: Stage 10.18D
-(velocity-resolved observational upgrade: Enderlin23 per-iceberg retrieval +
-ADCP-equipped campaign design).
-
-Stage 10.18D closes the 10.18C data gap and refines the bounds to the
-per-iceberg level: the Enderlin23 individual-iceberg dataset (USAP-DC
-10.15784/601679) was retrieved via a direct HTTP POST to the USAP-DC zip
-endpoint — the page-level JS reCAPTCHA is not enforced by that endpoint, so
-the "account-gated, not retrieved" statement of 10.18C is corrected (inner
-zip MD5 `821bed51660957b65a896c42fb88a057` verified). The per-iceberg
-dataset (743 rows, 54 files, 15 sites, 2011-2022) reproduces the paper's
-regional maxima (WAP/WAIS max within 1.1-1.3× of ~50/~40 m/a; EAIS/EAP p95
-5.2/3.7 vs ~5 m/a; raw max inflated only by the plume outliers the paper
-itself excludes) and confirms the Thwaites relationship per iceberg (76 %
-of 167 icebergs imply thermal forcing within the paper's 0.2-1.6 °C range).
-At the population level the legacy C_LATERAL exceeds 99.6 % (TF = 1.5 °C) /
-88 % (TF = 0.6 °C) of observed per-iceberg melt (median ratio 14×/5.6×),
-while the velocity-dependent literature variants bracket the observed
-medians; the per-iceberg C_eff_submarine median is 1.56e-7 m/(s K) = 0.16×
-production (region range 0.08-0.33×). Velocity dependence remains NOT
-IDENTIFIABLE (no U_ocean anywhere), so the stage delivers the
-**ADCP-equipped Schild21-style campaign design** (GPS + drone SfM +
-multibeam + repeat bathymetry + CTD + ADCP/current meters + wave state,
-temporally paired) as the velocity-resolved prerequisite. **Decision:
-OPTION D refined** (per-iceberg bounds) with OPTION E elements; **production
-KEEP_CURRENT**; no production physics change (git diff on `src/` and `test/`
-is empty); next: any production lateral-melt change requires the
-velocity-resolved campaign or an explicitly approved physics stage.
+Stage 10 reports have been archived to `docs/wiki/stages/stage10/`. See the archive index at `../../wiki/stages/stage10/README.md`.
 
 ## Links to current documentation
 
@@ -185,7 +25,5 @@ velocity-resolved campaign or an explicitly approved physics stage.
 
 ## Rules
 
-- Reports here are not rewritten after stage completion (exception: technical
-  navigational fixes).
-- After Stage 10 as a whole is complete, the directory will be archived to
-  `docs/wiki/stages/stage10/` with links and indexes updated.
+- Reports here are not rewritten after stage completion (exception: technical navigational fixes).
+- After Stage 11 as a whole is complete, the directory will be archived to `docs/wiki/stages/stage11/` with links and indexes updated.

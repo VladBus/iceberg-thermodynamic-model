@@ -62,6 +62,9 @@ contains
                             "nf90_open")) return
         end if
 
+        ! DEBUG: print kt values for a few cells
+        print *, "DEBUG initial_ocean_reader: kt(1,1)=", kt(1,1), " kt(1,17)=", kt(1,17), " kt(60,45)=", kt(60,45), " kt(100,50)=", kt(100,50)
+
         if (.not. check(nf90_inq_dimid(ncid, 'i', dimid_i), "dim i")) then
             call close_nc(ncid); return
         end if
@@ -121,6 +124,10 @@ contains
 
         ! Заполнение: вода — из файла, суша/ниже дна — 0.0 (конвенция модели)
         nloaded = 0
+        tmin = huge(1.0)
+        tmax = -huge(1.0)
+        smin = huge(1.0)
+        smax = -huge(1.0)
         do k = 1, size(t1o, 3)
             do j = 1, size(t1o, 2)
                 do i = 1, size(t1o, 1)
@@ -130,6 +137,10 @@ contains
                         s1o(i, j, k) = s_arr(i, j, k)
                         s2o(i, j, k) = s_arr(i, j, k)
                         nloaded = nloaded + 1
+                        tmin = min(tmin, t_arr(i, j, k))
+                        tmax = max(tmax, t_arr(i, j, k))
+                        smin = min(smin, s_arr(i, j, k))
+                        smax = max(smax, s_arr(i, j, k))
                     else
                         t1o(i, j, k) = 0.0
                         t2o(i, j, k) = 0.0
@@ -143,6 +154,38 @@ contains
             nloaded, trim(realistic_ocean_file)
         print '("     T range [C]   : ", F9.4, " .. ", F9.4)', tmin, tmax
         print '("     S range [frac] : ", F9.6, " .. ", F9.6)', smin, smax
+
+        ! --- ПОСЛЕОБРАБОТКА: ЗАМЕНА S=0 В МОКРЫХ ЯЧЕЙКАХ НА ЗНАЧЕНИЕ С УРОВНЯ ВЫШЕ ---
+        ! Это обрабатывает случаи, когда данные EN4 не достигают нижнего мокрого уровня модели.
+        do k = 2, size(t1o, 3)
+            do j = 1, size(t1o, 2)
+                do i = 1, size(t1o, 1)
+                    if (kt(i, j) .gt. 0 .and. k .le. kt(i, j)) then
+                        if (s1o(i, j, k) .eq. 0.0) then
+                            s1o(i, j, k) = s1o(i, j, k - 1)
+                            s2o(i, j, k) = s2o(i, j, k - 1)
+                        end if
+                    end if
+                end do
+            end do
+        end do
+        ! Пересчёт smin/smax после исправления
+        smin = huge(1.0)
+        smax = -huge(1.0)
+        do k = 1, size(t1o, 3)
+            do j = 1, size(t1o, 2)
+                do i = 1, size(t1o, 1)
+                    if (kt(i, j) .gt. 0 .and. k .le. kt(i, j)) then
+                        smin = min(smin, s1o(i, j, k))
+                        smax = max(smax, s1o(i, j, k))
+                    end if
+                end do
+            end do
+        end do
+        print '("INFO initial_ocean_reader: прочитано ", I0, " мокрых T/S ячеек из ", A)', &
+            nloaded, trim(realistic_ocean_file)
+        print '("     T диапазон [C]   : ", F9.4, " .. ", F9.4)', tmin, tmax
+        print '("     S диапазон [доля] : ", F9.6, " .. ", F9.6)', smin, smax
 
         deallocate (t_arr, s_arr)
         ok = .true.

@@ -17,7 +17,7 @@ reports — in `docs/validation/INDEX.md`.
 | 7     | `stages/stage07/` | 18         | Snow/ice and dynamics stability (7.1–7.4), real grid and ice initialization (7.5–7.6C), ocean forensics and stabilization (7.7–7.7C), spin-up and geostrophic initialization (7.8–7.9) |
 | 8     | `stages/stage08/` | 8          | EN4 preprocessing (8.0), energy instability (8.1), thermal-wind correction (8.2), spin-up (8.3), operator splitting (8.4–8.6), legacy iceberg module reconstruction (8.7)              |
 | 9     | `stages/stage09/` | 12 + plots | Lagrangian iceberg model: reconstruction (9.1–9.2), verification and calibration (9.3), core and forcing-pipeline corrections (9.4A–9.4C.2); diagnostic plots `plots_stage9.4b/`       |
-| 10    | `stages/stage10/` | 3          | Early Stage 10 reports completed before active documentation moved to `docs/validation/`: 10.4.2, 10.4.2.1, 10.5                                                                       |
+| 10    | `stages/stage10/` | 28         | Complete Stage 10 modernization (10.7–10.22): basal melt validation (10.7–10.9), three-equation interface (10.10), natural convection (10.11), internal thermal evolution (10.12), low-flow closure (10.13), rescoring (10.14), operational demonstration (10.15), trajectory audit & fix (10.15.1–2), drift dynamics (10.16), melt budget audit (10.17), lateral melt audit & observational constraint (10.18A–D), production coupling (10.19), ocean initialization stabilization (10.20), CA/EOS precision (10.21), Block-200/210 stability audit (10.22). Early reports (10.4.2, 10.4.2.1, 10.5) also archived. |
 
 ## Topics
 

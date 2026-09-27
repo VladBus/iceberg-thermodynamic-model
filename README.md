@@ -35,7 +35,7 @@ under atmospheric, oceanic, bathymetric, and sea-ice forcing.
 
 ## 📑 Project status
 
-- **Current stage:** Stage 10.19 — production runtime & full iceberg
+- **Current stage:** Stage 11.2 — CFL + Numerical Time-Discretization Audit (complete, diagnostic-only); Stage 11.2.2 — Causal Instability Classification (B/C/D complete); next = A/I (CSV/CFL-at-event) or approved physics fix (D-17/D-20)
   coupling recovery (completed: the Lagrangian iceberg module is now
   connected to the production executable behind the
   `ICEBERG_PRODUCTION=true` env gate (default OFF → legacy bit-identical);
@@ -93,7 +93,7 @@ README.md ──→ docs/
                |    ├─ literature_matrix.md
                |    ├─ references.bib
                |    └─ README.md
-               ├─ /validation/INDEX.md (active validation, Stage 10)
+               ├─ /validation/INDEX.md (active validation, Stage 11)
                ├─ /wiki/
                |    ├─ INDEX.md (historical stage reports 3–10)
                |    └─ README.md

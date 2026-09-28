@@ -474,3 +474,32 @@ D26 complete within its charter (exact s1-line + operands + inheritance proof). 
 
 - OFF (`stage11.4_d28_jan7off`, no env flags): all 32 output `.nc` md5-MATCH the D27-code run; exit 0; zero diagnostic artifacts. New code (`src/stage114_d28_trace.f90`, 6 call sites in `app/main.f90`) is reads+prints only when armed.
 - NO guards, NO clamps, NO equation/scheme/init changes. Forensic only.
+
+## 22. Stage 11.4-D29 ice-dynamics NaN snapshot (frozen 2026-09-28)
+
+### 22.1 First intra-dynamics NaN: `hht`, guard fails per IEEE 754 (CONFIRMED)
+
+- `D29_GUARDA day1 iii=2 jjj=1` fired for (2,96): `hices`=[NaN, 0.01169, 0, 0], `hht`=NaN, `guard(hht<0.01)`=F. Same for (3,96): `hices`=[0, 0, NaN, 0.01169] (its stencil reads the NaN from (2,96)). The guard does NOT fire on NaN (`NaN<0.01`=FALSE) and execution proceeds into drag/stress — IEEE guard-failure hypothesis CONFIRMED at the exact guard line (`main.f90:684`).
+- First intra-dynamics NaN variable = `hht` (computed inside the block from outer `hices`; all other solver inputs printed finite: uij/vij=0, water 0/0, tx/ty finite, fku finite, ym2×4=0, sxx/syy/sxy×12=0).
+
+### 22.2 Full propagation chain (printed, `D29_SOLVE` same microstep)
+
+- `hht`=NaN → `a=c17*|Vrel|/hht`=NaN (L700; `b`=0.0 finite) → `txic`/`tyic`=NaN → `b3=hht*9100`=NaN → `a2`/`b2`=NaN (`tx`/`b3`, `c11`-terms) → `fa1`/`fb1`/`fa2`/`fb2`/`aa`=NaN → `unew`/`vnew`=NaN (L739-740). Complete chain in one snapshot; `aa`-division (L738-739) is structurally safe (`aa≥1`) and is a carrier here, not a generator.
+
+### 22.3 `a3` hypothesis: REJECTED (clean)
+
+- No `D29_GUARDB` fire in any run: `ans`/`a3` finite at both cells (`a3`-guard behaved normally). The `a3>2.0` path is NOT a NaN vector on Day 1.
+
+### 22.4 Outer state notes (one hop remains → D30)
+
+- `hices(2,96)`=NaN is pre-existing outer state at dynamics entry (first writer unisolated: heat-Inf→REDIS-NaN vs advected-NaN in cats 1-4, which D28 hoods never printed — blind spot). `hices(2,95)`=`hices(3,95)`=0.01169 finite (thin low-category ice, legitimate).
+- Nothing beyond the established chain is called "root cause": the intra-dynamics mechanism (guard failure + propagation) is MATHEMATICALLY ESTABLISHED by printed operands; the `hices(2,96)` first-writer is the explicit D30 question.
+
+### 22.5 Jan vs Apr
+
+- Jan TRACE (`stage11.4_d29_jan7trace`, 30 days, exit 0): ZERO D29 prints — `hht`/`a3`/solver clean all run. April ignites at Day-1 `iii=2` `jjj=1` from outer `hices` state; January never develops it.
+
+### 22.6 Validation
+
+- OFF (`stage11.4_d29_jan7off2`, final source incl. whitespace restoration): all 32 `.nc` md5-MATCH the D28-code run; exit 0; zero artifacts. New code (`src/stage114_d29_trace.f90`, use-line + 2 locals + 4 main.f90 call sites with integer pre-guards) is reads+prints only.
+- NO guards, NO clamps, NO equation/guard-condition/init changes. Forensic only.

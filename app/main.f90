@@ -53,6 +53,7 @@ program main
     use stage1022_diagnostics
     use stage112_cfl_diagnostics
     use stage114_d28_trace, only: d28_check, d28_hood
+    use stage114_d29_trace, only: d29_guardA, d29_guardB, d29_solve
     use iceberg
     use iceberg_types, only: RHO_ICE, RHO_WATER
     use iceberg_forcing, only: get_ocean_profile, get_atmos_forcing, model_coords_to_indices
@@ -74,6 +75,8 @@ program main
     ! Рабочие переменные для вычислений в циклах
     real :: sas, a, b, a1, b1, a2, b2, a3, b3, a4, b4, cc_val
     real :: hht, uij, vij, fix, fiy, aa, au, av, sl, du, ff, ff1
+    ! Stage 11.4-D29: pre-замеры скорости воды (диагностика, только локалы)
+    real :: d29_wu, d29_wv
     real :: dzz, dzzz, dzz1, dz1z, bb, sum, sum1, asa1, asa, ymm, hh1, hh2
     real :: tt0, ss0, tt1, ss1, tt2, ss2, tt3, ss3, tt4, ss4, yyy, uu, vv
     real :: ri2j, rij, ri2j2, rij2, slapu, slapv, auu, avv
@@ -681,6 +684,11 @@ program main
 
                                 ! hht [м] — средняя толщина льда по 4 T-точкам
                               hht = 0.25*(hices(i, j) + hices(i, j2) + hices(i2, j) + hices(i2, j2))
+                                ! Stage 11.4-D29: guard-A snapshot (диагностика, env-gated)
+                                if (nday1 .eq. 1 .and. iii .eq. 2 .and. &
+                                    ((i .eq. 2 .and. j .eq. 96) .or. (i .eq. 3 .and. j .eq. 96))) &
+                                    call d29_guardA(nday1, iii, jjj, i, j, hices(i, j), hices(i, j2), &
+                                                    hices(i2, j), hices(i2, j2), hht)
                                 if (hht .lt. 0.01) then
                                     ! Guard: при hht < 1 см трение вода-лёд сингулярно.
                                     u(i, j) = 0.0
@@ -706,6 +714,11 @@ program main
 
                                 ! a3 — средняя сплошность льда (по 4 T-точкам)
                                 a3 = 0.25*(ans(i, j) + ans(i, j2) + ans(i2, j) + ans(i2, j2))
+                                ! Stage 11.4-D29: guard-B snapshot (диагностика, env-gated)
+                                if (nday1 .eq. 1 .and. iii .eq. 2 .and. &
+                                    ((i .eq. 2 .and. j .eq. 96) .or. (i .eq. 3 .and. j .eq. 96))) &
+                                    call d29_guardB(nday1, iii, jjj, i, j, ans(i, j), ans(i, j2), &
+                                                    ans(i2, j), ans(i2, j2), a3)
                                 if (a3 .gt. 2.0) cycle  ! Защита от некорректных данных
 
                                 ! fix/fiy [Н/м] — горизонтальные градиенты напряжений льда.
@@ -733,11 +746,27 @@ program main
                                 ! b1/a1 — безразмерные коэффициенты трения (matrix inverse).
                                 !   aa = a1² + b1² — норма матрицы.
                                 !   u = (a1·a2 + b1·b2)/aa — решение 2×2 системы.
+                                ! Stage 11.4-D29: pre-замер скорости воды (диагностика, только локалы)
+                                if (nday1 .eq. 1 .and. iii .eq. 2 .and. &
+                                    ((i .eq. 2 .and. j .eq. 96) .or. (i .eq. 3 .and. j .eq. 96))) then
+                                    d29_wu = a1
+                                    d29_wv = b1
+                                end if
                                 b1 = dt1*a*c16
                                 a1 = 1.0 + dt1*a*c15
                                 aa = a1*a1 + b1*b1
                                 u(i, j) = (a1*a2 + b1*b2)/aa
                                 v(i, j) = (a1*b2 - b1*a2)/aa
+                                ! Stage 11.4-D29: solve snapshot (диагностика, env-gated)
+                                if (nday1 .eq. 1 .and. iii .eq. 2 .and. &
+                                    ((i .eq. 2 .and. j .eq. 96) .or. (i .eq. 3 .and. j .eq. 96))) &
+                                    call d29_solve(nday1, iii, jjj, i, j, uij, vij, d29_wu, d29_wv, &
+                                        tx(i, j), ty(i, j), fku(i, j), &
+                                        ym2(i2, j), ym2(i2, j2), ym2(i, j), ym2(i, j2), &
+                                        sxx(i2, j), sxx(i, j), sxx(i2, j2), sxx(i, j2), &
+                                        syy(i2, j2), syy(i2, j), syy(i, j2), syy(i, j), &
+                                        sxy(i2, j), sxy(i, j2), sxy(i, j), sxy(i2, j2), &
+                                        fix, fiy, a, b, b3, a1, b1, a2, b2, aa, u(i, j), v(i, j))
 
                                 ! На последнем микрошаге: txic/tyic сохраняются для block 210
                                 if (jjj .eq. mm3) then

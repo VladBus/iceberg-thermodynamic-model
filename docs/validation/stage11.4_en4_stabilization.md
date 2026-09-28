@@ -95,7 +95,39 @@ Diagnostic 2026-09-28: Fortran `kt` ≡ Python `kk1` exactly (11067/11067 wet co
 - REQUIRED before any regeneration: rebuild ONE month to a temp `--out`/`--json` path and compare flag_counts/RO ranges against shipped stats (expect interp-dominated distribution, physical RO; only coordinate labels differ by the `Z_M` alignment); full `fpm test` battery on any Fortran touch (none in this step — Python only).
 - Seasonal `.nc` regeneration explicitly NOT performed in this step.
 
-## 12. January rebuild-to-temp comparison (2026-09-28, authorized step (a) only)
+## 12. Seasonal rebuild validation, TEMP only (2026-09-28, authorized step (a))
+
+Rebuilt all four months with the fixed working-tree script to `/tmp/stage114_check/` (raw untouched; shipped `.nc` untouched; no model run; no physics change). Commands: `python3 python/ocean/build_initial_ts.py --raw data/input/raw/ocean/EN.4.2.2.f.analysis.g10.{202001,202004,202007,202010}.nc --out /tmp/stage114_check/initial_ts_YYYY-MM-01_rebuild.nc --json /tmp/stage114_check/stats_*_rebuild.json`.
+
+| Month | dims eq | `z_model_m` canonical | Wet `S==0` | Wet `(0,0)` | NaN/Inf | RO min/max (g/cm³, in-mask) | Flags interp/shallow/deepest/land | JSON result | `ro_min` |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Jan | True | True (`[2.5..600]`) | 0 | 0 | 0/0 | +0.00438 / +0.01001 | 228722 / 22133 / 515 / 0 | PASS | physical, positive |
+| Apr | True | True | 0 | 0 | 0/0 | -0.00096 / +0.00842 | 228722 / 22133 / 515 / 0 | PASS | small negative inversion (1e-3 scale) |
+| Jul | True | True | 0 | 0 | 0/0 | -0.00386 / +0.00819 | 228722 / 22133 / 515 / 0 | PASS | small negative inversion (1e-3 scale) |
+| Oct | True | True | 0 | 0 | 0/0 | -0.00127 / +0.00828 | 228722 / 22133 / 515 / 0 | PASS | small negative inversion (1e-3 scale) |
+
+- NO CHANGE (all months): dims `(133, 105, 18)`; `wet_mask` + `water_column_levels` identical to shipped; zero NaN/Inf in outputs and RO; `product_land_column: 0`; zero wet `S==0` / `(0,0)` cells (sentinel only on land); `result: PASS`.
+- EXPECTED (fix consequences): canonical `z_model_m`; flag mix `interp/shallowest/deepest` (level 1–2 above the 5.02 m EN4 surface sample → flag 1 per spec; 515 cells below EN4 column bottoms → flag 2) instead of shipped patterns. Shipped Apr/Jul/Oct show `deepest_finite` 128382 — the signature of the pre-fix `×100` mapping (model metres read against centimetre scale pushes mid/deep levels below EN4 bottoms); the fixed mapping restores metre-consistent registration. Value shifts follow from correct depth registration plus the pre-existing (`0b673ff`) `en4_wet` T&S column-selection mask.
+- PROVENANCE (build-method difference, not fix effect): shipped Jan (all-zero flags, no zeros even on land, local `z_model_m` `[2.5..550]`) carries the `--method bilinear` signature (land pre-filled, flags never assigned), while all rebuilds use the default nearest path. Shipped-vs-rebuild Jan deltas therefore mix method + coordinate effects; shipped products stay untouched and valid.
+- UNEXPECTED, noted without action: rebuild surface T minima below freezing (Jan -3.28, Apr -2.17, Oct -2.44 °C) and S maxima up to 0.0374 — raw EN4 nearest-column values exposed by correct surface registration (within the reader `-10..40 °C` acceptance band; no code artifact introduced — nearest selection, no smoothing, unlike bilinear fill). Analyst awareness note for any future production adoption; not a defect of this fix.
+- `ro_min` verdict: **no `-20.07` in any rebuild, any shipped `.nc`, or any current Day-0 dump**. Rebuild minima are physical-scale (Jan positive; Apr/Jul/Oct small 1e-3 negative inversions — ordinary static instability for CA to process, not sentinel pathology). Historical `-20.07` remains a provenance conflict of overwritten runs (see §4), numerically identical to sentinel `(0,0)×1000` under a kg m-3/`g/cm³` label slip.
+
+## 13. Stage 11.4-D22 stability test on TEMP initial conditions (2026-09-28, runs only, no physics change)
+
+Four diagnostic runs with TEMP rebuilds (`/tmp/stage114_check/initial_ts_YYYY-MM-01_rebuild.nc` via `ICEBERG_OCEAN_INIT_FILE`), shipped ERA5 forcing per Stage 11.1 report table (`era5_2020_01_fullcoverage_merged.nc`, `era5_2020_04/07/10_merged.nc`), fresh run IDs `stage11.4_d22_{jan7,apr7,jul7,oct7}` (Stage 11.1 outputs untouched). No source edits; no switches beyond init-file override; no commit.
+
+| Run | Day-0 density min (kg m-3, dump) | Matches rebuild RO min | First NaN (day) | B3.3 Day-1 (`maxU2/maxV2`, NaNflag) | Days 1–7 state | Exit | Verdict |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Jan TEMP | +4.38 (physical) | yes (+0.00438 g/cm³) | none (30 d clean) | 42/31 cm/s, flag 0 | T/S/RO stable, EUU ~1–2e15, CA guard active (`maxiter` 1001, guard ~2–4k) but NO divergence | 0, 30 d | **STABLE_7D** (in fact 30 d) |
+| Apr TEMP | -0.96 | yes (-0.00096 g/cm³) | Day 1 (142081 NaN) | 0.0/0.0, flag 1 | all-NaN from Day 1 (T/S/RO frozen 273.15/0/0 in dump; CSV all-NaN) | 0, 29 d (zombie) | **EARLY_FAILURE** |
+| Jul TEMP | -3.86 | yes (-0.00386 g/cm³) | Day 1 (142081 NaN) | 0.0/0.0, flag 1 | all-NaN from Day 1 (W finite Day 1, rest NaN) | 0 (completed) | **EARLY_FAILURE** |
+| Oct TEMP | -1.27 | yes (-0.00127 g/cm³) | Day 1 (142081 NaN) | 0.0/0.0, flag 1 | all-NaN from Day 1 | 0, 30 d (zombie) | **EARLY_FAILURE** |
+
+- Central D22 finding: the preprocessing fix removes the `-20.07` sentinel artifact (Day-0 minima now equal rebuild minima at 1e-3 scale) but does **NOT** prevent Apr/Jul/Oct Day-1 crashes. The early seasonal failures therefore are **not** explained by the sentinel; with only ordinary 1e-3 static inversions present, momentum is already pathological on Day 1 (`maxU2/maxV2 = 0`, NaNflag 1) while Jan (positive RO init) develops finite velocities and survives. This separates two facts that Stage 11.1 conflated: (a) the `-20.07` Day-0 value was a sentinel/unit artifact of overwritten runs (no longer present anywhere); (b) a genuine fast Day-1 divergence mechanism for Apr/Jul/Oct initial+forcing states remains and is outside EN4-preprocessing scope (candidates: stronger seasonal stratification → thermal-wind/B200 response, or seasonal ERA5 forcing differences — NOT investigated here per D22 limits).
+- Jan finding: fixed-init January is stable 30/30 days with active CA guard — guard saturation without divergence, confirming (with 10.21) that CA residual is not sufficient for crash.
+- Not captured in D22 (honest gaps): per-step thermal-wind values, Block 200/210 intermediates beyond B3.3 flags, event-level CFL (plain config, no `STAGE112_CFL_DIAG`), `wind_max`/`euu` trajectories for crashed runs (CSV all-NaN post-crash; Jan values physical: `wind_max` 13–22 m/s, EUU ~1–2e15). First-invalid exact `(i,j,k,III)` for the Apr/Jul/Oct Day-1 crash was not isolated — out of D22 scope (no new forensic audit per instruction).
+
+## 14. January rebuild detail (single-month precursor, kept for record) (2026-09-28, authorized step (a) only)
 
 Command: `python3 python/ocean/build_initial_ts.py --raw data/input/raw/ocean/EN.4.2.2.f.analysis.g10.202001.nc --out /tmp/stage114_check/initial_ts_2020-01-01_rebuild.nc --json /tmp/stage114_check/stage7.7_statistics_rebuild.json` (fixed working-tree code; raw untouched; shipped `.nc` untouched). Result `PASS`, `n_nan_inf_ro/output: 0`.
 
@@ -104,3 +136,61 @@ Command: `python3 python/ocean/build_initial_ts.py --raw data/input/raw/ocean/EN
 - UNEXPECTED-relative-to-nearest-assumption (explained, no action): shipped Jan differs more than level realignment alone explains (T maxabsdiff 7.65, flag pattern all-zero, no zeros anywhere including land) — evidence indicates shipped Jan was built with `--method bilinear` (which fills land and never assigns flags 1/2/3) or a branchless ancestor, not with the default nearest path. Shipped Apr/Jul/Oct show nearest-path signatures (`deepest_finite` 128382). This is a build-method provenance note, not a defect in either file: all shipped products remain untouched and physically valid.
 - New-sentinel check: NO new `(0,0)`/S==0 wet effect introduced by the fix (zero wet S==0 cells in rebuild; RO physical 0.0044–0.0100 in-mask).
 - `ro_min` question: rebuild January wet RO min 0.0044 g/cm³ (physical); no `-20.07` anywhere in current products, dumps, or rebuild. Historical `-20.07` stays a provenance conflict of overwritten runs (see §4), numerically identical to sentinel `(0,0)×1000` with a kg m-3/`g/cm³` label slip.
+
+## 15. D22 freeze - seasonal stability experiment on TEMP initial conditions (frozen 2026-09-28)
+
+### 15.1 Objective
+
+Test whether the EN4 preprocessing correction (metre-consistent `d_en4` mapping, single canonical `Z_M`) removes the early seasonal Apr/Jul/Oct failures - without claiming it as the root cause of the whole instability.
+
+### 15.2 Experimental configuration
+
+- Initial conditions: TEMP rebuilds from section 12 (`/tmp/stage114_check/initial_ts_YYYY-MM-01_rebuild.nc` via `ICEBERG_OCEAN_INIT_FILE`); shipped `.nc` untouched.
+- Forcing: shipped ERA5 files per Stage 11.1 report table (`era5_2020_01_fullcoverage_merged.nc`, `era5_2020_04/07/10_merged.nc`); no forcing change.
+- Run IDs: `stage11.4_d22_{jan7,apr7,jul7,oct7}` (fresh dirs; Stage 11.1 outputs untouched).
+- Model code: unmodified production path (no EOS/CA/DT/Block/thermodynamics change; `STAGE112_*`/`STAGE113_*` default OFF; no S==0 guard added).
+
+### 15.3 Four-run result table (frozen values)
+
+| Run | Day-0 density min | Rebuild agreement | First NaN |
+| --- | --- | --- | --- |
+| Jan TEMP | +4.38 kg/m3 | yes | none; 30 days clean |
+| Apr TEMP | -0.96 kg/m3 | yes (-0.00096 g/cm3) | Day 1, 142081 |
+| Jul TEMP | -3.86 kg/m3 | yes (-0.00386 g/cm3) | Day 1, 142081 |
+| Oct TEMP | -1.27 kg/m3 | yes (-0.00127 g/cm3) | Day 1, 142081 |
+
+Supporting run facts (logs `run_{jan7,apr7,jul7,oct7}.log`, `daily_diagnostics.csv`, `results_day_00/01.nc`): Jan ran 30/30 days exit 0, finite velocities (B3.3 Day-1 maxU2/maxV2 42/31 cm/s, NaNflag 0), stable T/S/RO and EUU ~1-2e15 with CA guard active (`maxiter` 1001); Apr/Jul/Oct show B3.3 Day-1 maxU2/maxV2 = 0.0, NaNflag 1, all-NaN diagnostics from Day 1, runs complete 29-30 days exit 0 in zombie state (142081 NaN cells).
+
+### 15.4 Observed facts
+
+- Day-0 dump minima equal rebuild minima in all four runs (table above).
+- No `-20.07` in any TEMP product, shipped product, or current dump.
+- January stable 30 days with CA guard active; Apr/Jul/Oct crash Day 1 with only 1e-3-scale initial inversions.
+
+### 15.5 What D22 establishes
+
+- The `d_en4` metre-unit / `Z_M` correction removes the historical `-20.07` Day-0 artifact.
+- Day-0 density minima now agree with the rebuilt TEMP products.
+- January is stable for 30 days with the CA guard active.
+
+### 15.6 What D22 does NOT establish
+
+- It does NOT establish the preprocessing defect as the root cause of the whole instability.
+- Negative initial density in Apr/Jul/Oct is an observed correlation/diagnostic fact, NOT a proven root cause of the Day-1 failure - no such claim is made.
+- The exact thermal-wind pointwise mechanism, event-CFL at the failure step, `wind_max`/`euu` for failed runs, and exact `(i,j,k,III)` Day-1 event remain outside D22 scope (known gaps, section 13).
+
+### 15.7 Explicit causal classification (frozen)
+
+- Historical `-20.07` artifact as explanation for seasonal failures: **rejected** (artifact absent; failures persist without it).
+- EN4 `d_en4`/`Z_M` preprocessing defect: **corrected and validated** (TEMP rebuilds PASS; canonical levels; metre-consistent mapping verified).
+- Negative initial density as root cause: **unproven** (correlation only).
+- CA guard as crash mechanism: **rejected** (D22 January: guard active, run stable).
+- Common Day-1 dynamic mechanism for Apr/Jul/Oct: **still unresolved**.
+
+### 15.8 Limitations / out-of-scope diagnostics
+
+Per section 13 honest gaps; no per-step thermal-wind, no Block 200/210 intermediates beyond B3.3 flags, no event-level CFL, no `wind_max`/`euu` trajectories for failed runs, no exact Day-1 `(i,j,k,III)` isolation. Gaps are not reopened by this freeze.
+
+### 15.9 Decision for next stage
+
+D22 is complete; no further D22 forensic work. D23 has NOT been started. Any follow-up (e.g. Day-1 divergence mechanism) belongs to a separately authorized stage.

@@ -91,18 +91,23 @@ These are recommendations (not mandatory implementation details). Confirm direct
 | CA audit (B) | `src/convective_adjustment.f90` (line 69 `eps_density`, 121 `eckart_ro`, 151 `vertical_regrid`, 204 guard, 268 `convect_column_f64`, 351-352 f64 comment) | Source read (lines 1-400) | Completed; concrete findings |
 | Density audit (C) | `python/ocean/build_initial_ts.py` (`eckart_ro` line 121, `vertical_regrid` 151-201) | Source read | Completed; float32 REJECTED for zombie (`-20.07` >> `1.19e-07`) |
 | Timeline (D) | Synthesized from `stage11.1_`, `stage10.21_`, `stage10.22_`, `stage11.2_` audit reports + `CHANGELOG.md` | Analysis document (`/tmp/gpt_review_response.md`, `docs/validation/stage11.4_...`) | Completed; Day 0/1/4/5/6 sequence |
-| Classification (this file) | `docs/validation/stage11.2.2_causal_instability_classification.md` | Pending user confirmation for file creation / commit | Analysis complete; file written to `/tmp/` (pending `write` confirmation) |
+| Classification (this file) | `docs/validation/stage11.2.2_causal_instability_classification.md` | `861a755` (amended from `3d22462` → `861a755` after push correction) | Completed; B (STRONGLY SUPPORTED), C (REJECTED zombie / STRONGLY SUPPORTED CA), D (CONFIRMED chain), classification document finalized; file pushed `main` |
 
 ---
 
-## Next step (pending user confirmation per 11.2.2 instructions)
+## Next step (per 11.2.3 instructions)
 
 No production physics change made. No `STAGE112_*` or `STAGE113_*` switch activated in production. All source modifications (`app/main.f90` W `end if` fix, `fpm.toml` fix, `src/stage112_cfl_diagnostics.f90` diagnostic module) remain behind environment gates (`STAGE112_CFL_DIAG` / `STAGE113_*` default OFF) per 11.2.2 Sections 13-14.
 
-Confirm direction:
-- **A/I** (CSV / CFL-at-event verification) — concrete diagnostic verification.
-- **G (W)** — post-fix verification of corrected W calculation.
-- **H (Timeline formalization)** — exact event mapping.
-- **11.3 timestep sensitivity** — deferred; requires approved physics-stage decision.
-- **11.4 EN4 stabilization** — deferred; requires approved physics-stage decision (`D-21` from 11.1).
-- **Final classification commit** — commit this analysis (`docs/validation/stage11.2.2_...`) once direction confirmed.
+Confirm direction — 11.2.3 event-level forensic tasks (A-I) in priority order:
+
+1. **A — First-invalid timeline**: construct exact Day/III/variable/state table using `STAGE112_FIRST_INVALID=true` (requires production/prognostic capture at Day 5 s6 `CA_after ro_nan=198` event).
+2. **B — CFL-at-event**: measure `Cx/ Cy/ Ch/ Cz/ Cwave/ f·DT` at step immediately before first `NaN_RO` (Day 5, III ≤ 6) — confirm REJECTED with event-level evidence.
+3. **C — W verification**: confirm post-`end if` fix produces finite `W`; measure `min/max |W|`, `Cz`, temporal relation to B200 divergence.
+4. **D — wind_max**: trace to source definition; establish physical/mathematical meaning.
+5. **E — euu**: trace to mathematical definition; establish units/scale/accumulation; confirm diagnostic-only interpretation.
+6. **F — CSV integrity**: verify `stage112_cfl_timeseries.csv`/`stage112_stability_events.csv` content against NetCDF/state/probe outputs.
+7. **G — Causal ordering (timeline formalization)**: compact event-state table with before/after values (Day 0 init → Day 4 s1 density → Day 5 s6 CA → Day 5 s6 B200 → Day 5 s6 B210 → Day 6 zombie).
+8. **H — Updated classification**: refresh hypothesis status (1-8) with new A-I evidence.
+9. **I — EN4 issue (D-21)**: deferred; remains separate from 11.2.3 (per 11.2.2 §13 / 11.2.3 §9).
+10. **J — Stage decision**: only after A-I evidence; choose `11.3` (timestep — requires approved physics-stage authorization) or `11.4` (EN4 — `D-21`, deferred) or additional focused forensic stage — per 11.2.2 §16 / 11.2.3 §J.

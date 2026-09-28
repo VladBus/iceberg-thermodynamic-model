@@ -353,3 +353,42 @@ Determine exactly why `advs()` produces NaN in salinity S during the first Day-1
 ### 18.9 Decision
 
 D25 complete within its scope (advs mechanics resolved: propagation, not generation). No physics or shipped-product change. D26 NOT started. The remaining open question (which heat division produces S1-NaN at (2,2,1) on Day 1 under April ice/forcing) belongs to a separately authorized stage.
+
+## 19. Stage 11.4-D26 forensic source tracing of S1 NaN at (2,2,1) (frozen 2026-09-28)
+
+### 19.1 Objective
+
+Identify the exact line and operation producing the first S1/T1 NaN before `advs`, using targeted cell-gated tracing only. No fix, no physics change.
+
+### 19.2 Method (diagnostic-only, env-gated `STAGE114_D26_TRACE`, default OFF)
+
+- New module `src/stage114_d26_trace.f90`: `d26_heat_trap` (prints all operands of both heat S1/T1 assignments) + `d26_heat_entry` (entry snapshot distinguishing inherited vs created NaN). New file justified: avoids touching thermodynamics declarations beyond one `use` line + two call sites.
+- Trap sites in `src/thermodynamics.f90`: after melt-branch S1/T1 assignments and after else-branch assignments; fire only for (i,j)=(2,2) AND already-NaN/Inf S1/T1 (no log flood: fires only on failure).
+- OFF-equivalence: Jan run with all switches OFF gives EUU bit-identical to the D22 baseline Days 1-7, exit 0, zero diagnostic artifacts (no CSVs, no fort.*).
+
+### 19.3 Boundary audit (TASK 2)
+
+- Cell (2,2,1): wet (`kt1`=18 both months); neighbors (1,2,1),(2,1,1) are land (`kt1`=0) with initialized finite values (dump: T=273.15K, S=0.0; full-array NaN count 0). No routine assigns invalid values there.
+- `tpar/spar/anp/danp/hicp/hsnp` are module-shared scratch (`src/param.f90:202-208`); per-cell init loop covers indices 1..5 only (`thermodynamics.f90` ~L92-106); index 6 is written solely by the category k=5 body. No writers exist outside `heat()` (exhaustive grep over `src/`, `app/`, `test/`).
+
+### 19.4 Exact invalid assignment (frozen finding)
+
+- File/line: `src/thermodynamics.f90:500` `b1 = b1 + anp(k)*spar(k1)` (and `:499` for T1) in the else-branch averaging, at k=5/k1=6, cell (2,2,1), Day 1.
+- Operands (printed): `anp(5)` = 0.0, `spar(6)` = NaN → `0.0*NaN` = NaN → `b1` = NaN → `:504` `s1(i,j,1) = b1` = NaN (same for `t1` via `tpar(6)` = NaN). Pre-state: `ann1` = 1.0 (open water, no ice), `hicp`/`hsnp`/`danp` all 0.0, `tpar(1..5)`/`spar(1..5)` finite.
+- `tpar(6)`/`spar(6)` were already NaN at (2,2) heat-entry (`d26_heat_entry` fired from Day 1 on): inherited shared-scratch state, NOT created by (2,2)s own guarded category iterations (all `anp(k)=0` skip). The generating division (candidates: `:327` `b=0.6324/b4` with b4=0; `:366` `0.31/hsnp(k)`; `:373` `/hicp(k)`; `:415` `/(dzz-a1)`; `:418` `/b_tmp`) executed in some earlier-processed ice cell and was NOT isolated to a single line — explicit next-stage question, not claimed here.
+
+### 19.5 Hypothesis classification update (D25 refined)
+
+- H-upstream (heat writes S1-NaN): CONFIRMED as the first invalid assignment in the prognostic chain (exact line + operands printed).
+- Exact generating division inside heat category physics: UNKNOWN (narrowed to the k=5 division set above; entry-inheritance proven, in-cell creation excluded for (2,2)).
+- A/B/C/D/E/F/G from D25 §18.7 stand unchanged.
+
+### 19.6 Limitations
+
+- (2,2,1) is first-found in scan order, not proven unique origin cell.
+- The poisoning cell/division that first wrote `tpar(6)`/`spar(6)` NaN is not identified (requires untargeted tracing or division-guard audit across all cells — explicitly out of D26).
+- Jan-vs-Apr ice-state difference at (2,2) (why Jan never poisons shared scratch) not established.
+
+### 19.7 Decision
+
+D26 complete within its charter (exact s1-line + operands + inheritance proof). No physics or shipped-product change. D27 NOT started; the category-division isolation is a separately authorizable question.

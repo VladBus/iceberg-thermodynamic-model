@@ -36,6 +36,7 @@
 
 module thermodynamics
     use param
+    use stage114_d26_trace, only: d26_heat_trap, d26_heat_entry
     implicit none
 
 contains
@@ -178,6 +179,11 @@ contains
                 ! Положительный Q_net → нагревание воды; отрицательный → замерзание.
                 hfirst = 0.0  ! Приращение нового льда [м] (0 = нет образования)
                 ann1 = an1(i, j, 1)  ! [доли] Площадь открытой воды
+                ! Stage 11.4-D26: entry-snapshot (2,2) — унаследован ли NaN (диагностика, env-gated)
+                if (i .eq. 2 .and. j .eq. 2) then
+                    if (tpar(6) /= tpar(6) .or. spar(6) /= spar(6)) &
+                        call d26_heat_entry(nday, i, j, ann1, tpar, spar)
+                end if
 
                 if (abs(ann1) .gt. 1e-8) then
                     ! --- ЯВНОЕ ТЕПЛО (sensible heat) [Вт/м²] ---
@@ -475,6 +481,14 @@ contains
                     an1(i, j, 1) = ann2
                     t1(i, j, 1) = ann2*tpar(1) + a3_tmp - 273.15  ! [°C]
                     s1(i, j, 1) = ann2*spar(1) + b3_tmp           ! [массовая доля]
+                    ! Stage 11.4-D26: NaN-trap (2,2,1), диагностика, env-gated STAGE114_D26_TRACE
+                    if (i .eq. 2 .and. j .eq. 2) then
+                        if (s1(i,j,1) /= s1(i,j,1) .or. t1(i,j,1) /= t1(i,j,1) .or. &
+                            abs(s1(i,j,1)) > huge(1.0)*0.5 .or. abs(t1(i,j,1)) > huge(1.0)*0.5) &
+                            call d26_heat_trap(nday, i, j, 1, ann1, ann2, b_tmp, qn, a_tmp, &
+                                danp, hicp, hsnp, sicst, tpar(1), spar(1), a1, b1, a2, b2, &
+                                a3_tmp, b3_tmp, dzz, s1(i,j,1), t1(i,j,1), anp, tpar, spar)
+                    end if
                 else
                     ! --- Случай: нет таяния в разводьях ---
                     ! Осреднение T и S по всем категориям (взвешенное по площади).
@@ -488,6 +502,15 @@ contains
                     ! Итоговая T и S поверхностного слоя
                     t1(i, j, 1) = a1 - 273.15  ! [°C] (из K)
                     s1(i, j, 1) = b1           ! [массовая доля]
+                    ! Stage 11.4-D26: NaN-trap (2,2,1), диагностика, env-gated STAGE114_D26_TRACE
+                    ! (ann2/a_tmp/danp здесь могут быть stale из предыдущей ячейки — см. отчёт)
+                    if (i .eq. 2 .and. j .eq. 2) then
+                        if (s1(i,j,1) /= s1(i,j,1) .or. t1(i,j,1) /= t1(i,j,1) .or. &
+                            abs(s1(i,j,1)) > huge(1.0)*0.5 .or. abs(t1(i,j,1)) > huge(1.0)*0.5) &
+                            call d26_heat_trap(nday, i, j, 2, ann1, ann2, b_tmp, qn, a_tmp, &
+                                danp, hicp, hsnp, sicst, tpar(1), spar(1), a1, b1, a2, b2, &
+                                a3_tmp, b3_tmp, dzz, s1(i,j,1), t1(i,j,1), anp, tpar, spar)
+                    end if
 
                     if (hfirst .gt. 0.0) then
                         ! --- Формирование нового льда (hfirst = 0.01 м = 1 см) ---

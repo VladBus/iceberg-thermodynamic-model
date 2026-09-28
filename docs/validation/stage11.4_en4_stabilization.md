@@ -194,3 +194,44 @@ Per section 13 honest gaps; no per-step thermal-wind, no Block 200/210 intermedi
 ### 15.9 Decision for next stage
 
 D22 is complete; no further D22 forensic work. D23 has NOT been started. Any follow-up (e.g. Day-1 divergence mechanism) belongs to a separately authorized stage.
+
+## 16. Stage 11.4-D23 controlled seasonal density experiment (frozen 2026-09-28)
+
+### 16.1 Hypothesis (correlation under test, NOT assumed cause)
+
+Apr/Jul/Oct TEMP initial states contain small negative Day-0 density minima (rebuild wet RO: Apr -0.00096, Jul -0.00386, Oct -0.00127 g/cm3) and crash on Day 1, while Jan (positive RO min +0.00438) survives. D23 tests whether removing ONLY the initial negative-density condition changes the outcome under otherwise identical conditions.
+
+### 16.2 Design (controls vs treatments, TEMP only)
+
+- Controls (existing, unchanged, no rerun): A0 = D22 Jan TEMP (`stage11.4_d22_jan7`); A1 = D22 Apr TEMP; A3 = D22 Jul TEMP; A5 = D22 Oct TEMP.
+- Treatments (new diagnostic variants, `/tmp/stage114_d23/initial_ts_YYYY-MM-01_densadj.nc`): A2 = Apr, A4 = Jul, A6 = Oct; run IDs `stage11.4_d23_{apr7t,jul7t,oct7t}`; same ERA5 forcing and model configuration as the paired control.
+- Exact transformation (documented rule, TEMP files only): for each wet need-cell with `ro = eckart_ro(T,S) < 0` (float32, same formula as `build_initial_ts.py` L121-128), solve in float64 for the minimal `S_new >= S` with `ro(T,S_new) = +1e-6 g/cm3` (bisection, 60 iterations, bracket expansion from +0.05); store float32; T bit-identical everywhere; salinity differs ONLY in treated cells (verified: equal except flag4); `regrid_flag = 4` marks treated cells (26 Apr, 427 Jul, 80 Oct); `density_anomaly_gcm3` recomputed identically on untreated cells (verified bit-identical); masks/grid/coords/levels unchanged; file attr `diagnostic_treatment` records the rule. NOT in production code; NOT a physics correction; shipped `.nc` untouched.
+- Reader acceptance: treatment runs loaded the densadj files (INFO `initial_ocean_reader: using ICEBERG_OCEAN_INIT_FILE = /tmp/stage114_d23/...`, no fallback warnings); S values within the reader `-0.002..0.1` band.
+
+### 16.3 Results table (frozen values, 7-day verdict)
+
+| Pair | Control | Treatment | Treated cells | Day-0 dump (treat) | First NaN (treat) | Treat EUU vs control | Verdict |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Apr A1/A2 | Day-1 fail (142081) | 26 | clean (max 8.42 matches) | Day 1, 142081 | bit-identical Days 2-8 | **REJECTED** |
+| Jul A3/A4 | Day-1 fail (142081) | 427 | clean (max 8.26 matches) | Day 1, 142081 | bit-identical Days 2-8 | **REJECTED** |
+| Oct A5/A6 | Day-1 fail (142081) | 80 | clean (max 8.31 matches) | Day 1, 142081 | bit-identical Days 2-8 | **REJECTED** |
+
+Per-run records: B3.3 Day-1 `maxU2/maxV2 = 0.0`, NaNflag 1 in all treatments (same as controls); daily CSV all-NaN from Day 1 (same); CA guard active (`maxiter` 1001) in treatments; exit 0 with completed runs (zombie). Thermal-wind per-step values, event-level CFL (plain config), `wind_max`/`euu` trajectories of crashed runs, and exact `(i,j,k,III)` Day-1 isolation were not captured - same honest gaps as D22 (no new forensic instrumentation per task limits).
+
+### 16.4 Causal interpretation (frozen)
+
+- Negative initial density as cause of the Day-1 failure: **REJECTED** in all three pairs. Removing the entire initial negative-density condition (all affected cells stabilized to +1e-6, verified in-file) changes nothing - not timing, not NaN count, not even rounding-level EUU trajectory.
+- This does NOT prove density plays no role later (prognostic evolution untouched by design); it establishes that the INITIAL negative-density condition is not causally necessary for the Day-1 crash.
+- CA guard as crash mechanism: remains **rejected** (D22 Jan stable with guard active; D23 treatments fail identically with guard active - guard status does not discriminate outcome).
+- No category is called a root cause: the Day-1 Apr/Jul/Oct divergence mechanism stays unresolved; candidates (seasonal stratification response, seasonal forcing differences) were explicitly out of scope.
+
+### 16.5 Limitations
+
+- 7-day verdict only; no 30/90-day extension (per task: do not interpret as long-term stability).
+- Controls reused from D22 (no rerun; logs/dumps/CSVs on disk under `data/runs/stage11.4_d22_*`, gitignored per policy).
+- Treatment levers S only (T preserved exactly); a T-based stabilization was not tested - the S lever was chosen because haline contraction dominates density sensitivity near freezing, minimizing perturbation size.
+- TEMP products live outside the repo (`/tmp/stage114_d23/`); reproducibility rests on the documented rule + fixed script `e735c51` + shipped raw EN4.
+
+### 16.6 Decision for next stage
+
+D23 is complete; no further D23 work. D23 has NOT started any new stage. The Day-1 seasonal divergence mechanism remains an open, separately-authorizable question.

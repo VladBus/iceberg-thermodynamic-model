@@ -503,3 +503,30 @@ D26 complete within its charter (exact s1-line + operands + inheritance proof). 
 
 - OFF (`stage11.4_d29_jan7off2`, final source incl. whitespace restoration): all 32 `.nc` md5-MATCH the D28-code run; exit 0; zero artifacts. New code (`src/stage114_d29_trace.f90`, use-line + 2 locals + 4 main.f90 call sites with integer pre-guards) is reads+prints only.
 - NO guards, NO clamps, NO equation/guard-condition/init changes. Forensic only.
+
+## 23. Stage 11.4-D30 category decomposition of hices(2,96) (frozen 2026-09-28)
+
+### 23.1 First-NaN category: k=1, transition inside heat(iii=2)
+
+- INIT and PRE_HEAT `iii=1`: (2,96) all 5 categories zero (all ice files read directly: 3×3 patch zeros in every `1_k.ice`).
+- `heat(iii=1)` forms legitimate 1 cm new ice (freezing, `hfirst`>0): redis632 `iii=1` shows `anpr(1)`=1.0, `b1`=0.01. POST_ADV `iii=1` (edge advection, finite): cat-1 `an1`=0.25/`wice1`=2.5e-3 (coupled, `hices`=0.01); cats 2-5 zero.
+- PRE_HEAT `iii=2` (cat-1: 0.25/2.5e-3/`hices`=0.01, rest zero) → redis632 `iii=2` output (cat-1: `an1`=1.0/`wice1`=NaN; cats 2-5 zero) — `heat()` is the only writer between these checkpoints. FIRST NaN confined to CATEGORY 1 (`D30_REDIS_NAN`: `a1`=1.0, `b1`=NaN, `wicpr` NaN only at k=1).
+- Area 0.25→1.0 regrowth carries the new-ice-formation signature (`anp(1)`=`ann1`+`a2`); volume turns NaN in the same call.
+
+### 23.2 Heat-internal narrowing (`D30_HEATK`, same run)
+
+- `D30_HEATK day1 iii=2 k=1`: `anp`=0.25, `hicp`=NaN, `hsnp`=0.0, `dhic`=-4.43e-3 (FINITE bottom term), `dhsn`=0, `twa`=274.30 (finite), `tpar`/`spar` finite.
+- By elimination over the finite printed operands (init `hicp`=0.01, finite `dhic`, finite `twa`), the NaN entered via the unprinted surface term `dhic1` (melt-branch energy balance: `a1`/`el`/`tts`/`tfr` chain) — STRONGLY SUPPORTED, expression-level operand (`tfr`-NaN vs `el`-NaN) unisolated → D31. The bottom-term division (D26 candidate L384) is EXONERATED for this event (`dhic` finite).
+
+### 23.3 adv2d / boundary audit
+
+- `D30_ADVK iii=1`: all cats finite post-adv (adv clean when velocities clean). `D30_ADVK_NAN iii=2`: all 5 cats NaN SIMULTANEOUSLY — velocity-driven import (ice u/v already NaN from dynamics), not single-face/boundary corruption. Boundary restores touch only row `js`/column 1 (`main.f90` adv loop); (2,96) interior → NOT culprits. adv2d = importer, confirmed again.
+
+### 23.4 Jan vs Apr
+
+- Jan TRACE: 0 NaN flags in any category/checkpoint; PRE_HEAT `iii=2` (2,96) fully ice-free — January forms NO new ice there in `iii=1` (no freezing), so the thin-ice NaN substrate of heat(`iii=2`) never exists. Structural difference = April freezing at this cell (thermodynamic regime), not code path or init (identical files).
+
+### 23.5 Classification and validation
+
+- MATHEMATICALLY ESTABLISHED: first-NaN category (k=1), transition window (inside `heat(iii=2)`), importer (adv2d), manufacturer (`ice_redis` fallback), intra-dynamics mechanism (D29 guard failure). STRONGLY SUPPORTED: surface-term (`dhic1`) generator. OPEN → D31: exact `dhic1` operand and the physically correct fix design.
+- OFF (`stage11.4_d30_jan7off`): 32/32 `.nc` md5-MATCH the D29-code run; exit 0; zero artifacts. NO guards/clamps/equation/scheme/init changes (reads+prints only).

@@ -38,6 +38,7 @@ module thermodynamics
     use param
     use stage114_d26_trace, only: d26_heat_trap, d26_heat_entry
     use stage114_d27_trace, only: d27_poison_check, d27_use_init
+    use stage114_d30_trace, only: d30_heatk
     implicit none
 
 contains
@@ -450,6 +451,11 @@ contains
                         call d27_poison_check(nday, i, j, k, 4, d27_old_t, d27_old_s, &
                                               anp, hicp, hsnp, sicst, tpar, spar)
                     end if
+
+                    ! Stage 11.4-D30: heat-exit category trap (2,96) (диагностика, env-gated)
+                    if (i .eq. 2 .and. j .eq. 96) &
+                        call d30_heatk(nday, k, anp(k), hicp(k), hsnp(k), dhic, dhsn, &
+                                       tpar(k1), spar(k1), twa)
 
                     ! Обновление глобальных массивов
                     hsnow(i, j, k) = hsnp(k)

@@ -54,6 +54,7 @@ program main
     use stage112_cfl_diagnostics
     use stage114_d28_trace, only: d28_check, d28_hood
     use stage114_d29_trace, only: d29_guardA, d29_guardB, d29_solve
+    use stage114_d30_trace, only: d30_set_clock, d30_cell, d30_advk
     use iceberg
     use iceberg_types, only: RHO_ICE, RHO_WATER
     use iceberg_forcing, only: get_ocean_profile, get_atmos_forcing, model_coords_to_indices
@@ -334,6 +335,9 @@ program main
 
     ! Stage 11.4-D28: INIT checkpoint (2,95) cat 5 (диагностика, env-gated)
     call d28_check('INIT', 1, 0, an1(2, 95, 6), wice1(2, 95, 5), hice(2, 95, 5), hsnow(2, 95, 5))
+    ! Stage 11.4-D30: INIT full-category snapshot (2,96) (диагностика, env-gated)
+    call d30_set_clock(1, 0)
+    call d30_cell('INIT', an1(2, 96, 2:6), wice1(2, 96, 1:5), hices(2, 96))
 
     ! --- Инициализация синтетических полей ---
     call init_ocean()
@@ -638,10 +642,15 @@ program main
                             call d28_hood('PRE_HEAT', nday1, iii, an1(1:3, 94:96, 6), &
                                           wice1(1:3, 94:96, 5), u(2:3, 95:96), v(2:3, 95:96), &
                                           u2(2:3, 95:96, 1), v2(2:3, 95:96, 1))
+                            ! Stage 11.4-D30: PRE_HEAT full-category snapshot (2,96) (диагностика, env-gated)
+                            call d30_set_clock(nday1, iii)
+                            call d30_cell('PRE_HEAT', an1(2, 96, 2:6), wice1(2, 96, 1:5), hices(2, 96))
                             call heat(dt, nday, lll)
                             ! Stage 8.6 diagnostics: C = after heat()
                             call capture_state('C_after_heat', kkk, iii, u2, v2, w, t2, s2, ro)
                             ! heat меняет категории; динамике льда нужны новые A и h.
+                            ! Stage 11.4-D30: часы для REDIS-хука (диагностика, env-gated)
+                            call d30_set_clock(nday1, iii)
                             call redis()
                             ! Stage 8.6 diagnostics: D = after redis()
                             call capture_state('D_after_redis', kkk, iii, u2, v2, w, t2, s2, ro)
@@ -802,7 +811,13 @@ program main
                         an3(:, js) = wice1(:, js, k)
                         an3(1, :) = wice1(1, :, k)
                         wice1(:, :, k) = an3(:, :)
+                        ! Stage 11.4-D30: per-category adv snapshot (2,96) (диагностика, env-gated)
+                        if (nday1 .eq. 1 .and. iii .le. 2) &
+                            call d30_advk(k, an1(2, 96, k1), wice1(2, 96, k))
                     end do
+                    ! Stage 11.4-D30: POST_ADV full-category snapshot (2,96) (диагностика, env-gated)
+                    call d30_set_clock(nday1, iii)
+                    call d30_cell('POST_ADV', an1(2, 96, 2:6), wice1(2, 96, 1:5), hices(2, 96))
                     ! Stage 11.4-D28: POST_ADV checkpoint (диагностика, env-gated)
                     call d28_check('POST_ADV', nday1, iii, an1(2, 95, 6), &
                                    wice1(2, 95, 5), hice(2, 95, 5), hsnow(2, 95, 5))
@@ -813,6 +828,8 @@ program main
                     ! Stage 11.4-D28: POST_REDIS checkpoint (диагностика, env-gated)
                     call d28_check('POST_REDIS', nday1, iii, an1(2, 95, 6), &
                                    wice1(2, 95, 5), hice(2, 95, 5), hsnow(2, 95, 5))
+                    ! Stage 11.4-D30: POST_REDIS full-category snapshot (2,96) (диагностика, env-gated)
+                    call d30_cell('POST_REDIS', an1(2, 96, 2:6), wice1(2, 96, 1:5), hices(2, 96))
 
                     ! ====================================================================
                     !   5. РАСЧЁТ ВЕРТИКАЛЬНОЙ СКОРОСТИ TЕЧЕНИЙ (W)

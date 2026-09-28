@@ -180,7 +180,7 @@ def vertical_regrid(t_c, s_f, d_en4, ilat, ilon, need):
             for k in range(ks):
                 if not need[i, j, k]:
                     continue
-                zm = Z_M[k] * 100.0  # convert model depth from meters to cm to match d_en4 (cm)
+                zm = Z_M[k]  # metres; d_en4 is in metres (EN4 header: depth.units = "metres")
                 if zf[0] >= zm:
                     # top layer: model level at/below shallowest EN4 sample
                     t_out[i, j, k], s_out[i, j, k] = tvf[0], svf[0]
@@ -257,29 +257,10 @@ def main():
         f"mean={dist[wet].mean():.3f} max={dist[wet].max():.3f}"
     )
 
-    # Model Z levels in meters (shared by both methods)
-    Z_M = np.array(
-        [
-            2.5,
-            5.0,
-            7.5,
-            12.5,
-            17.5,
-            25.0,
-            40.0,
-            50.0,
-            62.5,
-            75.0,
-            100.0,
-            125.0,
-            175.0,
-            225.0,
-            275.0,
-            350.0,
-            450.0,
-            550.0,
-        ]
-    )
+    # Model Z levels in metres: use the canonical module-global Z_M
+    # (= Z_CM / 100, consistent with src/param.f90 data z). A previous local
+    # redefinition ([2.5, 5.0, 7.5, ...]) shadowed the global and made
+    # statistics/output coordinates inconsistent with vertical_regrid.
 
     # Horizontal interpolation: nearest-neighbor or bilinear
     if args.method == "bilinear":
@@ -315,10 +296,10 @@ def main():
         # Vertical interpolation to model levels
         t_out = np.zeros((is1, js1, ks), dtype=np.float32)
         s_out = np.zeros((is1, js1, ks), dtype=np.float32)
-        en4_depth = d_en4 / 100.0  # convert to meters
+        en4_depth = d_en4  # metres, as stored (EN4 header: depth.units = "metres")
         for k in range(ks):
             z_target = Z_M[k]
-            depth_idx = np.searchsorted(d_en4, z_target * 100)  # d_en4 is in cm
+            depth_idx = np.searchsorted(d_en4, z_target)  # both in metres
             if depth_idx == 0:
                 t_out[:, :, k] = interp_t_vals[0]
                 s_out[:, :, k] = interp_s_vals[0]

@@ -440,3 +440,37 @@ D26 complete within its charter (exact s1-line + operands + inheritance proof). 
 - Classification: spar-NaN generator at L442 under `hicp(5)`=0 MATHEMATICALLY ESTABLISHED (finite printed inputs → NaN through that single expression; the ±Inf-vs-0/0 flavor of the L384 intermediate was not printed — minor, unisolated). Stale-scratch carriage CONFIRMED (D26 entry snapshot + D27 old-values). Nothing is called "root cause" beyond this established chain.
 - Limitations: patient-zero substep `iii` unrecorded (`heat()` signature untouched — no `iii` param); finite-garbage writers not traced; (2,2,1) is first-found scan-order victim, uniqueness not proven.
 - NO production fix applied; NO physics changed (only diagnostic additions, OFF-equivalent). D28 NOT started.
+
+## 21. Stage 11.4-D28 Ghost-Ice provenance forensics (frozen 2026-09-28)
+
+### 21.1 Correction to D27: no finite ghost state exists
+
+- D27 reported `anp(5)`=1.0/`hicp(5)`=0.0 and called it "ghost ice". D28 refines this: the `hicp`/`hsnp`=0.0 in the D27 trap are POST-ZEROING locals (snow-branch `else {hicp=hsnp=0}`, `thermodynamics.f90` snow case), NOT a global state. The true global state at patient zero (same-run interleaved capture, `heat(iii=4)`): `an1(2,95,6)`=1.0, `wice1(2,95,5)`=NaN, `hsnow`=3.45e-6. A finite (`an1`=1, `wice1`=0) state was NEVER observed at any checkpoint in any run.
+- Snow-branch dependence confirmed: at `heat(iii=3)` (`hsnow`=0, case 1, finite-denominator melt branch) the identical (1.0, NaN) input passes WITHOUT firing; at `heat(iii=4)` (`hsnow`=3.45e-6, case 2, L384 `/hicp` division) it fires. D27 §20 stands except "ghost-ice cell" phrasing, superseded here.
+
+### 21.2 Pre-HEAT state and decoupling checkpoint (April, `stage11.4_d28_apr7*`)
+
+- INIT (after init `redis`, `main.f90:330`) and all of Day-1 `iii=1`: (2,95,5/6) all zeros. Ice init files (`1_1.ice`..`1_5.ice`, shared symlinks, `wice1`=char-thickness×`an1` by construction `main.f90:321-325`) EXONERATED for this cell; all-5-category patch zeros confirmed by direct file read.
+- First anomaly at POST_ADV `iii=2`: `an1`/`wice1`=NaN at (2,95),(3,95),(2,96),(3,96); (1,95),(1,96),(·,94) stay zero. PRE_HEAT `iii=2` was fully clean (zeros incl. neighborhood + ice/ocean velocities).
+- POST_REDIS `iii=2` manufactures the signature: `an1`=1.0, `wice1`=NaN — via the stage-5 fallback `src/ice_redis.f90:234-236` (`anpr(ngr)=1.0; wicpr(ngr)=a3` with `a3`=NaN after the NaN-poisoned redistribution loop exhausts). THIS is the exact constraint-breaking code (`WICE1>0 ⟺ AN1>0` violated by construction when inputs are NaN).
+
+### 21.3 Importer, carrier chain, and exonerations
+
+- Importer: `adv2d` (independent FCT advection of AN1/WICE1, `main.f90:753-766`) transports NaN into (2,95) at `iii=2` from NaN ice velocities at (2,96),(3,96) (same checkpoint: ice u/v NaN there, zeros at (2,95),(3,95)). `adv2d` creates nothing — finite inputs give finite outputs.
+- Boundary restores (`main.f90` adv2d loop: row `js`/column 1 kept) touch only row `js`/column 1; (2,95) is interior → EXONERATED as direct cause. EN4 ocean init does not touch ice arrays → EXONERATED structurally (ice files identical Jan/Apr anyway).
+- Ocean EXONERATED at the infection point: `u2`/`v2`(2:3,95:96,1) all zeros at POST_ADV `iii=2` (same checkpoint). Full chain: ice-dynamics u/v NaN (iii=2) → adv2d import → REDIS fallback (1.0, NaN) → heat site-3 scratch NaN (iii=4) → `advs` → zombie (April day-01: T/S/ro 142081/142081 NaN; `ice_thickness` 249 NaN, 247 in cat 5).
+
+### 21.4 Open micro-question → D29 (intra-dynamics line NOT isolated)
+
+- Ice u/v NaN at (2,96),(3,96) during dynamics `iii=2` with: zero neighborhood ice (all-5-cat patch zeros → `hices`=0 → `hht`=0 → guard `hht<0.01 → u=v=0` SHOULD have fired), finite ocean `u2`/`v2`=0, `aa=a1²+b1²≥1` structurally safe (`main.f90:738-739`). No other ice-u/v writers exist repo-wide (verified: solver/guard/boundary only; `deform`/`stress`/`adv2d`/`heat`/`redis` do not write u/v).
+- Candidates (unisolated): NaN `ym2` (sea level) via the `c11·Δym2` term (`main.f90:726-729`), or a memory/guard-path subtlety. Requires direct dynamics-block instrumentation (hht/aa/ym2 trap) — explicitly D29 scope. Nothing here is called "root cause" beyond the established chain.
+
+### 21.5 Jan vs Apr (control: `stage11.4_d28_jan7trace`)
+
+- Jan Day-1: all checkpoints zeros (37 STATE lines, zero GHOST), full run clean; day-01 T/S/ro/`ice_thickness`/`snow_depth` zero NaN vs April fully-NaN ocean + 249 ice NaN.
+- Structural difference: identical local patch state (zeros) through `iii=1`; divergence ignites in April dynamics at `iii=2` from outside the patch (April wind/sea-level state or far-field ice stress vs January). Ice init identical by construction.
+
+### 21.6 Validation
+
+- OFF (`stage11.4_d28_jan7off`, no env flags): all 32 output `.nc` md5-MATCH the D27-code run; exit 0; zero diagnostic artifacts. New code (`src/stage114_d28_trace.f90`, 6 call sites in `app/main.f90`) is reads+prints only when armed.
+- NO guards, NO clamps, NO equation/scheme/init changes. Forensic only.

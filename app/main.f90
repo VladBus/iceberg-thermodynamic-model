@@ -52,6 +52,7 @@ program main
     use stage86_diagnostics
     use stage1022_diagnostics
     use stage112_cfl_diagnostics
+    use stage114_d28_trace, only: d28_check, d28_hood
     use iceberg
     use iceberg_types, only: RHO_ICE, RHO_WATER
     use iceberg_forcing, only: get_ocean_profile, get_atmos_forcing, model_coords_to_indices
@@ -327,6 +328,9 @@ program main
     end do
 
     call redis()
+
+    ! Stage 11.4-D28: INIT checkpoint (2,95) cat 5 (диагностика, env-gated)
+    call d28_check('INIT', 1, 0, an1(2, 95, 6), wice1(2, 95, 5), hice(2, 95, 5), hsnow(2, 95, 5))
 
     ! --- Инициализация синтетических полей ---
     call init_ocean()
@@ -625,6 +629,12 @@ program main
                         ! Термодинамика должна идти с тем же шагом, что и океан.
                         ! Без ERA5-полей (kl1=0) вызов дал бы деление на patm=0.
                         if (kl1 .eq. 1) then
+                            ! Stage 11.4-D28: PRE_HEAT checkpoint (диагностика, env-gated)
+                            call d28_check('PRE_HEAT', nday1, iii, an1(2, 95, 6), &
+                                           wice1(2, 95, 5), hice(2, 95, 5), hsnow(2, 95, 5))
+                            call d28_hood('PRE_HEAT', nday1, iii, an1(1:3, 94:96, 6), &
+                                          wice1(1:3, 94:96, 5), u(2:3, 95:96), v(2:3, 95:96), &
+                                          u2(2:3, 95:96, 1), v2(2:3, 95:96, 1))
                             call heat(dt, nday, lll)
                             ! Stage 8.6 diagnostics: C = after heat()
                             call capture_state('C_after_heat', kkk, iii, u2, v2, w, t2, s2, ro)
@@ -764,7 +774,16 @@ program main
                         an3(1, :) = wice1(1, :, k)
                         wice1(:, :, k) = an3(:, :)
                     end do
+                    ! Stage 11.4-D28: POST_ADV checkpoint (диагностика, env-gated)
+                    call d28_check('POST_ADV', nday1, iii, an1(2, 95, 6), &
+                                   wice1(2, 95, 5), hice(2, 95, 5), hsnow(2, 95, 5))
+                    call d28_hood('POST_ADV', nday1, iii, an1(1:3, 94:96, 6), &
+                                  wice1(1:3, 94:96, 5), u(2:3, 95:96), v(2:3, 95:96), &
+                                  u2(2:3, 95:96, 1), v2(2:3, 95:96, 1))
                     call redis()
+                    ! Stage 11.4-D28: POST_REDIS checkpoint (диагностика, env-gated)
+                    call d28_check('POST_REDIS', nday1, iii, an1(2, 95, 6), &
+                                   wice1(2, 95, 5), hice(2, 95, 5), hsnow(2, 95, 5))
 
                     ! ====================================================================
                     !   5. РАСЧЁТ ВЕРТИКАЛЬНОЙ СКОРОСТИ TЕЧЕНИЙ (W)

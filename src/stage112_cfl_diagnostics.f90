@@ -48,7 +48,7 @@ module stage112_cfl_diagnostics
 
     ! --- ФАЙЛЫ ВЫВОДА ---
     integer, save :: cfl_unit = 81
-    integer, save :: events_unit = 82
+    integer, save :: events_unit = 86  ! 11.4-D24: было 82, конфликт с ca_diag_unit=82 (convective_adjustment.f90:88): CA открывает/закрывает 82 под convective_guard_events.csv, из-за чего строки s112 уходили в fort.82
     logical, save :: files_opened = .false.
 
     contains
@@ -388,12 +388,14 @@ module stage112_cfl_diagnostics
     ! =========================================================================
     ! ПРОВЕРКА НА NaN/Inf — ПЕРВОЕ СОБЫТИЕ
     ! =========================================================================
-    subroutine s112_check_first_invalid(var_id, var_name, i, j, k, val, stage_name)
+    subroutine s112_check_first_invalid(var_id, var_name, i, j, k, val, stage_name, o_day, o_iii, o_time)
         integer, intent(in) :: var_id
         character(len=*), intent(in) :: var_name
         integer, intent(in) :: i, j, k
         real, intent(in) :: val
         character(len=*), intent(in) :: stage_name
+        integer, intent(in), optional :: o_day, o_iii
+        real, intent(in), optional :: o_time
         real :: neighbor_sum
         integer :: n_count, ki
 
@@ -403,6 +405,8 @@ module stage112_cfl_diagnostics
         ! Проверка на NaN или Inf
         if (val .ne. val .or. abs(val) .gt. huge(1.0)*0.5) then
             first_invalid%found = .true.
+            if (present(o_day)) first_invalid%step_day = o_day
+            if (present(o_iii)) first_invalid%step_iii = o_iii
             first_invalid%var_id = var_id
             first_invalid%i = i
             first_invalid%j = j
@@ -438,25 +442,112 @@ module stage112_cfl_diagnostics
             end if
             if (n_count .gt. 0) first_invalid%neighbor_avg = neighbor_sum / n_count
 
-            call s112_record_event(stage_name, 'FIRST_INVALID', var_id, i, j, k, val, &
-                3600.0, 120.0, 1389000.0, 1389000.0, dz(k), &
-                u2(i, j, k), v2(i, j, k), w(i, j, k), t2(i, j, k), s2(i, j, k), ro(i, j, k), stage_name)
+            if (present(o_day) .and. present(o_iii) .and. present(o_time)) then
+                call s112_record_event(stage_name, 'FIRST_INVALID', var_id, i, j, k, val, &
+                    3600.0, 120.0, 1389000.0, 1389000.0, dz(k), &
+                    u2(i, j, k), v2(i, j, k), w(i, j, k), t2(i, j, k), s2(i, j, k), ro(i, j, k), stage_name, &
+                    o_day=o_day, o_iii=o_iii, o_time=o_time)
+            else
+                call s112_record_event(stage_name, 'FIRST_INVALID', var_id, i, j, k, val, &
+                    3600.0, 120.0, 1389000.0, 1389000.0, dz(k), &
+                    u2(i, j, k), v2(i, j, k), w(i, j, k), t2(i, j, k), s2(i, j, k), ro(i, j, k), stage_name)
+            end if
         end if
     end subroutine s112_check_first_invalid
+
+    ! =========================================================================
+    ! СКАНИРОВАНИЕ СОСТОЯНИЯ ОКЕАНА — первое невалидное значение (11.4-D24)
+    !
+    ! Диагностический сканер первого невалидного (NaN/Inf) состояния.
+    ! Проверяет wet-ячейки (kt1>0, k<=kt1 — та же маска, что daily_diagnostics
+    ! в main.f90) в порядке входов операторов: T, S, RO, U, V, W — чтобы
+    ! различить A (EOS генерирует NaN из конечных входов: T,S конечны, RO=NaN),
+    ! B (EOS получает невалидные входы: T или S уже NaN) и E (импульс первым:
+    ! U/V NaN при конечных T/S/RO). Вызывается из main.f90 на границах
+    ! операторов (AFTER_conv_adj, AFTER_block200, AFTER_block210, END_step).
+    ! При выключенных STAGE112_CFL_DIAG / STAGE112_FIRST_INVALID — мгновенный
+    ! возврат, поведение модели бит-идентично legacy. После фиксации первого
+    ! события — возврат без сканирования (сохраняется ПЕРВОЕ событие).
+    ! Физику не меняет: только чтение состояния + запись в events CSV.
+    ! =========================================================================
+    logical function s112_is_invalid(val)
+        real, intent(in) :: val
+        s112_is_invalid = (val /= val .or. abs(val) > huge(1.0)*0.5)
+    end function s112_is_invalid
+
+    subroutine s112_scan_ocean_state(day, iii, time_sec, stage_name)
+        integer, intent(in) :: day, iii
+        real, intent(in) :: time_sec
+        character(len=*), intent(in) :: stage_name
+        integer :: i, j, k, ki
+
+        if (.not. s112_enabled .or. .not. s112_first_invalid_tracking) return
+        if (first_invalid%found) return
+        if (.not. files_opened) return
+
+        do j = 2, js
+            do i = 2, is
+                ki = kt1(i, j)
+                if (ki .eq. 0) cycle
+                do k = 1, ki
+                    if (s112_is_invalid(t2(i, j, k))) then
+                        call s112_check_first_invalid(4, 'T', i, j, k, t2(i, j, k), stage_name, &
+                            o_day=day, o_iii=iii, o_time=time_sec)
+                        return
+                    end if
+                    if (s112_is_invalid(s2(i, j, k))) then
+                        call s112_check_first_invalid(5, 'S', i, j, k, s2(i, j, k), stage_name, &
+                            o_day=day, o_iii=iii, o_time=time_sec)
+                        return
+                    end if
+                    if (s112_is_invalid(ro(i, j, k))) then
+                        call s112_check_first_invalid(6, 'RO', i, j, k, ro(i, j, k), stage_name, &
+                            o_day=day, o_iii=iii, o_time=time_sec)
+                        return
+                    end if
+                    if (s112_is_invalid(u2(i, j, k))) then
+                        call s112_check_first_invalid(1, 'U', i, j, k, u2(i, j, k), stage_name, &
+                            o_day=day, o_iii=iii, o_time=time_sec)
+                        return
+                    end if
+                    if (s112_is_invalid(v2(i, j, k))) then
+                        call s112_check_first_invalid(2, 'V', i, j, k, v2(i, j, k), stage_name, &
+                            o_day=day, o_iii=iii, o_time=time_sec)
+                        return
+                    end if
+                    if (s112_is_invalid(w(i, j, k))) then
+                        call s112_check_first_invalid(3, 'W', i, j, k, w(i, j, k), stage_name, &
+                            o_day=day, o_iii=iii, o_time=time_sec)
+                        return
+                    end if
+                end do
+            end do
+        end do
+    end subroutine s112_scan_ocean_state
 
     ! =========================================================================
     ! ЗАПИСЬ СОБЫТИЯ В CSV
     ! =========================================================================
     subroutine s112_record_event(stage_name, event_type, var_id, i, j, k, val, &
-                                  dt, dt1, dx, dy, dz, u, v, w, t, s, ro, operator_name)
+                                  dt, dt1, dx, dy, dz, u, v, w, t, s, ro, operator_name, &
+                                  o_day, o_iii, o_time)
         character(len=*), intent(in) :: stage_name, event_type, operator_name
         integer, intent(in) :: var_id, i, j, k
         real, intent(in) :: val, dt, dt1, dx, dy, dz, u, v, w, t, s, ro
+        integer, intent(in), optional :: o_day, o_iii
+        real, intent(in), optional :: o_time
+        integer :: w_day, w_iii
+        real :: w_time
 
         if (.not. files_opened) return
 
-        write (events_unit, '(I3,",",I3,",",I3,",",F12.1,",",A,",",I1,",",I4,",",I4,",",I2,",",E15.6,",",F8.1,",",F8.1,",",F12.1,",",F12.1,",",F8.1,",",E15.6,",",E15.6,",",E15.6,",",E15.6,",",E15.6,",",A)') &
-            0, 0, 0, 0.0, trim(stage_name), var_id, i, j, k, val, &
+        w_day = 0; w_iii = 0; w_time = 0.0
+        if (present(o_day)) w_day = o_day
+        if (present(o_iii)) w_iii = o_iii
+        if (present(o_time)) w_time = o_time
+
+        write (events_unit, '(I3,",",I3,",",I3,",",F12.1,",",A,",",I1,",",I4,",",I4,",",I2,",",E15.6,",",F8.1,",",F8.1,",",F12.1,",",F12.1,",",F8.1,",",E15.6,",",E15.6,",",E15.6,",",E15.6,",",E15.6,",",E15.6,",",A)') &
+            w_day, w_iii, 0, w_time, trim(event_type), var_id, i, j, k, val, &
             dt, dt1, dx, dy, dz, u, v, w, t, s, ro, trim(operator_name)
     end subroutine s112_record_event
 
@@ -541,6 +632,7 @@ module stage112_cfl_diagnostics
         print '(A,E12.4)', "Max thermal wind ~ ", thermal_wind_max
         if (first_invalid%found) then
             print *, "FIRST INVALID EVENT DETECTED:"
+            print '(A,I4,A,I3)', "  day=", first_invalid%step_day, " iii=", first_invalid%step_iii
             print '(A,I1,A,I4,A,I4,A,I2)', "  var_id=", first_invalid%var_id, &
                 " i=", first_invalid%i, " j=", first_invalid%j, " k=", first_invalid%k
             print '(A,E15.6)', "  value=", first_invalid%value

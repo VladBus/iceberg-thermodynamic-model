@@ -235,3 +235,65 @@ Per-run records: B3.3 Day-1 `maxU2/maxV2 = 0.0`, NaNflag 1 in all treatments (sa
 ### 16.6 Decision for next stage
 
 D23 is complete; no further D23 work. D23 has NOT started any new stage. The Day-1 seasonal divergence mechanism remains an open, separately-authorizable question.
+
+## 17. Stage 11.4-D24 production-coupled Day-1 event capture (frozen 2026-09-28)
+
+### 17.1 Objective
+
+Capture the actual production Day-1 failure event for Apr TEMP (representative failing case) and determine the causal sequence initial-state -> first-invalid -> EOS NaN (142081) propagation. Forensic event capture only; no physics fix, no stabilization attempt.
+
+### 17.2 Baseline
+
+- D21 fix `e735c51`, D22 freeze `5eeccb9`, D23 controlled experiment `b9d3a95`; main clean and pushed at start.
+- D23 established: removing all initial negative-density cells changes nothing (bit-identical failures); negative initial density REJECTED as the Day-1 explanation. D22/D23 are NOT reopened.
+
+### 17.3 Diagnostic configuration
+
+- Existing mechanisms used first: `STAGE112_CFL_DIAG`, `STAGE112_FIRST_INVALID`, EOS/CA/B200/B210 diagnostics (`app/main.f90:421` init; module `src/stage112_cfl_diagnostics.f90`).
+- Detector audit (source-level, no run needed): `s112_check_first_invalid` (module L391) was dead code - zero callers in `app/`, `src/`, `test/` - so `STAGE112_FIRST_INVALID=true` could never fire; the FIRST_INVALID tracking blocks only recorded CFL-threshold exceedances. Classification: DETECTOR_FAILURE (design/usage gap, confirmed by grep + the D22/D23 `No NaN/Inf detected` output despite 142081 EOS NaNs).
+- Minimal added instrumentation (diagnostic-only, env-gated default OFF, no physics change): `s112_is_invalid` + `s112_scan_ocean_state(day,iii,time,stage)` (module L473-526; scans wet `kt1` cells in T,S,RO,U,V,W input order to distinguish EOS-generates (A) vs EOS-receives-invalid (B) vs momentum-first (E)); 8 hook call sites in `app/main.f90` (L589 START_day, L898 BEFORE_advs_advt, L902 BETWEEN_advs_advt, L920 BEFORE_conv_adj, L928 AFTER_conv_adj, L1070 AFTER_block200, L1240 AFTER_block210, L1324 END_step); `s112_record_event` extended with optional day/iii/time (existing 4 CFL call sites unchanged); `s112_finalize` prints day/iii of the event.
+- Two latent diagnostic bugs fixed in the same files (diagnostic-only): (1) `s112_record_event` format had 22 items vs 21 descriptors (missing one E15.6; `event_type` never written) - any first-ever call aborted the model (observed exit 2 on first D24 attempt); (2) `events_unit = 82` collided with `ca_diag_unit = 82` (`convective_adjustment.f90:88`) - CA open/close cycles hijacked the unit and event rows vanished into implicit `fort.82`. Fix: correct 22-field format writing `event_type`; `events_unit` 82 -> 86 (verified free: 83/84/85 taken by stage1022).
+- No stop-on-event logic added (smaller diff; full runs complete in minutes as proven by D22). No physics, EOS, CA, DT, Block, thermodynamics, ERA5, grid, bathymetry, or S==0-guard change.
+
+### 17.4 Event-capture method
+
+- Apr case: TEMP rebuild `/tmp/stage114_check/initial_ts_2020-04-01_rebuild.nc` via `ICEBERG_OCEAN_INIT_FILE`, shipped `era5_2020_04_merged.nc`, run ID `stage11.4_d24_apr7ev`, env `STAGE112_CFL_DIAG=true STAGE112_FIRST_INVALID=true`; full run to completion (exit 0).
+- Jan control: TEMP rebuild + shipped fullcoverage ERA5, run ID `stage11.4_d24_jan7ev`, same env; EUU Days 1-7 bit-identical to D22 Jan baseline (no-diagnostics run) - instrumentation equivalence proven, `No NaN/Inf detected`, exit 0.
+- Note on hook cadence (verified from loop nesting: `do iii` L588 closes L871; conv_adj/B200/B210/shal run once per day): hooks fire once per day with stale `iii=13`; resolution is day x operator-boundary, not substep. Sufficient for the Day-1 failure (D22 showed crash within Day 1).
+
+### 17.5 First-invalid event (frozen record)
+
+First invalid event: Day = 1; Step = daily pass (iii stale 13); Substep/operator = BETWEEN_advs_advt (immediately after `advs(dt,c2)`, before `advt`); Variable = S (`var_id=5`); Location = (i,j,k) = (2,2,1) first-found in scan order (NOT proven unique origin cell); Value before = finite (Day-0 dump all finite; START_day and BEFORE_advs_advt scans clean); Value after = NaN; Upstream inputs = `advs` FCT salinity advection operating on finite S2 field; Cell snapshot at event: u=0.0, v=0.0, w=-0.0, t=+5.94 finite, s=NaN, ro=+0.00756 finite, dz=250.0.
+
+### 17.6 Causal sequence (evidence-supported)
+
+Day-0 finite init (dump: no NaN; RO min -0.96 kg/m3 physical-scale) -> Day-1 START_day scan clean -> Day-1 BEFORE_advs_advt scan clean -> `advs()` produces S=NaN at (2,2,1,k=1) with T finite (+5.94) and RO finite (+0.00756) -> `advt`/conv_adj spread (prior run: T+S NaN at AFTER_conv_adj) -> Block 200 transmits (B3.3 Day-1 `maxU2/maxV2 = 0.0`, NaNflag 1; daily CSV all-NaN from Day 1) -> Block 210 amplifies -> 142081 EOS NaN zombie (exit 0, runs complete 29-30 d).
+
+### 17.7 CA/CFL evidence
+
+- CA guard active in all runs including stable Jan (`maxiter` 1001; guard ~2-11k; affected ~10.6-11k columns): guard activity does not discriminate outcome; CA-guard-as-crash-mechanism stays rejected.
+- CFL at event: 90-day baseline all << 1 (Cx 0.023, Cy 0.015, Cz 0.105, Cwave 0.66, fDT 0.52); event-run timeseries Day-1 values consistent (no spike). CFL violation stays rejected (preliminary event-level; exact per-step capture at the divergence cell remains a known gap).
+- Thermal wind per-step at event: not isolated (plain-config runs; 90-day baseline max ~0.0); known gap, unchanged.
+- `wind_max` (Apr D22/D24 daily CSV all-NaN post-crash; forcing itself finite per log ranges) and `euu` trajectories (smooth 2.5e15 -> 9.3e15, no explosion) add no causal signal; same honest gaps as D22.
+
+### 17.8 Classification (frozen, evidence-supported only)
+
+- FIRST_INVALID_PARTIALLY_IDENTIFIED: first invalid variable (S), producing operator (`advs`), boundary (BETWEEN_advs_advt), day (1), first-found cell (2,2,1,k=1), and downstream snapshot established; exact uniqueness of the origin cell and the intra-`advs` mechanism (e.g. FCT limiter edge at the corner surface cell) NOT isolated - no claim beyond the hook boundary.
+- EOS as source (hypothesis A): REJECTED for this event (RO finite +0.00756 while S already NaN; EOS had not yet consumed invalid inputs).
+- EOS receives invalid (hypothesis B pattern): SUPPORTED as downstream stage (conv_adj/`advt` operate on NaN S afterwards).
+- Thermal-wind-first (C): REJECTED for this event (thermal wind derives from RO, which was finite).
+- Advection-generated invalid T/S (D): SUPPORTED (S NaN immediately after `advs`, T finite before `advt`).
+- Momentum-first (E): REJECTED for this event (U/V/W finite zeros at capture).
+- No mechanism is called the root cause: identified is the first invalid operation boundary, not a proven necessary-and-sufficient cause of the whole zombie cascade.
+
+### 17.9 Limitations
+
+- Location (2,2,1) is first-found in scan order (j=2..js, i=2..is, k=1..ki, T-first), not proven unique; other cells may turn NaN in the same operator pass.
+- Intra-`advs` mechanism (which flux/limiter term divides by zero at the corner surface cell) not isolated - requires FCT internals audit, explicitly out of D24.
+- T-NaN timing (in `advt` vs in `conv_adj` mixing) not isolated between BETWEEN and AFTER_conv_adj hooks; both downstream of the S event.
+- Root CSV outputs collide across runs (relative paths); event rows must be harvested immediately after each run (lesson recorded).
+- `s112_check_first_invalid` single-value routine remains (now wired via scan); pre-existing CFL-threshold event branches untouched.
+
+### 17.10 Decision
+
+D24 complete as forensic event capture; no further D24 work. D25 NOT started. The Day-1 Apr failure enters `conv_adj` with S already NaN from `advs()`; the remaining open question (why `advs` produces NaN at the corner surface cell on first application) belongs to a separately authorized stage. No physics or shipped-product change resulted from D24.

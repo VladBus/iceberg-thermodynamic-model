@@ -585,6 +585,8 @@ program main
 
                 ! --- ЦИКЛ ПО СУТКАМ (III = 1..MM2) ---
                 ! MM2 = 12 означает 12 шагов термодинамики за сутки (dt = 3600 с)
+                ! Stage 11.4-D24: скан в начале суток, до субстепов (iii=0 = pre-substep; диагностика, env-gated)
+                call s112_scan_ocean_state(kkk, 0, real(nday1*24)*3600.0, 'START_day')
                 do iii = 1, mm2
                     ! Frozen wind test: skip temporal interpolation of wind forcing
                     call get_environment_variable('ICEBERG_FROZEN_WIND', env_str)
@@ -892,8 +894,12 @@ program main
 
                         ! --- STAGE 11.2: ГОРИЗОНТАЛЬНЫЙ CFL ДЛЯ АДВЕКЦИИ (dt=3600с) ---
                         call s112_compute_advection_cfl(dt, 'before_advs_advt')
+                        ! Stage 11.4-D24: скан до адвекции T/S (диагностика, env-gated)
+                        call s112_scan_ocean_state(kkk, iii, real(nday1*24 + iii)*3600.0, 'BEFORE_advs_advt')
 
                         call advs(dt, c2)
+                        ! Stage 11.4-D24: скан между адвекциями S и T (диагностика, env-gated)
+                        call s112_scan_ocean_state(kkk, iii, real(nday1*24 + iii)*3600.0, 'BETWEEN_advs_advt')
                         call advt(dt, c2)
 
                         ! Stage 8.6 diagnostics: E = after ocean advection
@@ -910,12 +916,16 @@ program main
                         ! Конвективная коррекция плотностной стратификации (этап 3.2):
                         ! историческая схема перемешивания при RR(K)-RR(K1) > 0.9E-7.
                         ! RO пока НЕ используется в уравнениях движения (этапы 3.1-3.2).
+                        ! Stage 11.4-D24: скан до CA (диагностика, env-gated)
+                        call s112_scan_ocean_state(kkk, iii, real(nday1*24 + iii)*3600.0, 'BEFORE_conv_adj')
                         call conv_adj(kkk, iii)
 
                         ! Stage 8.6 diagnostics: F = after convective adjustment
                         call capture_state('F_after_conv', kkk, iii, u2, v2, w, t2, s2, ro)
                         ! Stage 10.22: проба после convective adjustment
                         if (s22_diag) call s22_probe('CA_after', kkk, iii)
+                        ! Stage 11.4-D24: скан первого невалидного (диагностика, env-gated)
+                        call s112_scan_ocean_state(kkk, iii, real(nday1*24 + iii)*3600.0, 'AFTER_conv_adj')
 
                         ! Диагностика этапа 4.3: точка D - остаточные инверсии после
                         ! convective adjustment (должны быть близки к нулю, кроме
@@ -1056,6 +1066,8 @@ program main
                         call s22_probe('B200_after', kkk, iii)
                         call s22_block200_budget(kkk, iii, dt, c1, c3, c8)
                     end if
+                    ! Stage 11.4-D24: скан первого невалидного (диагностика, env-gated)
+                    call s112_scan_ocean_state(kkk, iii, real(nday1*24 + iii)*3600.0, 'AFTER_block200')
 
                     ! Stage 8.6 diagnostics: H = after Block 200
                     call capture_velocity_state('H_after_B200', kkk, iii, u2, v2)
@@ -1224,6 +1236,8 @@ program main
                         call s22_probe('B210_after', kkk, iii)
                         call s22_b210_flush(kkk, iii)
                     end if
+                    ! Stage 11.4-D24: скан первого невалидного (диагностика, env-gated)
+                    call s112_scan_ocean_state(kkk, iii, real(nday1*24 + iii)*3600.0, 'AFTER_block210')
 
                     ! --- STAGE 11.2: BAROTROPIC CFL (перед shal, dt1=120с, mm3=30) ---
                     call s112_compute_barotropic_cfl(120.0, 'before_shal')
@@ -1306,6 +1320,8 @@ program main
                     call s112_compute_thermal_wind_diagnostics('END_step')
                     ! Model time in seconds since start of run
                     call s112_write_timeseries(kkk, iii, 0, real(nday1*24 + iii)*3600.0)
+                    ! Stage 11.4-D24: скан первого невалидного в конце шага (диагностика, env-gated)
+                    call s112_scan_ocean_state(kkk, iii, real(nday1*24 + iii)*3600.0, 'END_step')
 
                     ! Диагностика 3D-скоростей (этап 3.3): min/max U2,V2 после всех блоков
                     if (kkk .le. 2) then

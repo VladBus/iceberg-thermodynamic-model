@@ -460,10 +460,12 @@ module stage112_cfl_diagnostics
     !
     ! Диагностический сканер первого невалидного (NaN/Inf) состояния.
     ! Проверяет wet-ячейки (kt1>0, k<=kt1 — та же маска, что daily_diagnostics
-    ! в main.f90) в порядке входов операторов: T, S, RO, U, V, W — чтобы
-    ! различить A (EOS генерирует NaN из конечных входов: T,S конечны, RO=NaN),
-    ! B (EOS получает невалидные входы: T или S уже NaN) и E (импульс первым:
-    ! U/V NaN при конечных T/S/RO). Вызывается из main.f90 на границах
+    ! в main.f90) в порядке входов операторов: S1, T1 (входы advs/advt, пишет heat),
+    ! затем T, S, RO, U, V, W — чтобы различить A (EOS генерирует NaN из конечных
+    ! входов: T,S конечны, RO=NaN), B (EOS получает невалидные входы: T или S уже
+    ! NaN), E (импульс первым: U/V NaN при конечных T/S/RO) и H (heat пишет NaN в
+    ! S1/T1: S1/T1 невалидны при конечных S2/T2). var_id: 1=U,2=V,3=W,4=T,5=S,6=RO,
+    ! 7=ETA, 8=S1, 9=T1.
     ! операторов (AFTER_conv_adj, AFTER_block200, AFTER_block210, END_step).
     ! При выключенных STAGE112_CFL_DIAG / STAGE112_FIRST_INVALID — мгновенный
     ! возврат, поведение модели бит-идентично legacy. После фиксации первого
@@ -490,6 +492,16 @@ module stage112_cfl_diagnostics
                 ki = kt1(i, j)
                 if (ki .eq. 0) cycle
                 do k = 1, ki
+                    if (s112_is_invalid(s1(i, j, k))) then
+                        call s112_check_first_invalid(8, 'S1', i, j, k, s1(i, j, k), stage_name, &
+                            o_day=day, o_iii=iii, o_time=time_sec)
+                        return
+                    end if
+                    if (s112_is_invalid(t1(i, j, k))) then
+                        call s112_check_first_invalid(9, 'T1', i, j, k, t1(i, j, k), stage_name, &
+                            o_day=day, o_iii=iii, o_time=time_sec)
+                        return
+                    end if
                     if (s112_is_invalid(t2(i, j, k))) then
                         call s112_check_first_invalid(4, 'T', i, j, k, t2(i, j, k), stage_name, &
                             o_day=day, o_iii=iii, o_time=time_sec)

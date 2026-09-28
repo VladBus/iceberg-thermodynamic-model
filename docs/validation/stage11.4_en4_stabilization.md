@@ -297,3 +297,59 @@ Day-0 finite init (dump: no NaN; RO min -0.96 kg/m3 physical-scale) -> Day-1 STA
 ### 17.10 Decision
 
 D24 complete as forensic event capture; no further D24 work. D25 NOT started. The Day-1 Apr failure enters `conv_adj` with S already NaN from `advs()`; the remaining open question (why `advs` produces NaN at the corner surface cell on first application) belongs to a separately authorized stage. No physics or shipped-product change resulted from D24.
+
+## 18. Stage 11.4-D25 advs/FCT first-invalid forensic audit (frozen 2026-09-28)
+
+### 18.1 Objective
+
+Determine exactly why `advs()` produces NaN in salinity S during the first Day-1 application for Apr TEMP (D24 boundary: BEFORE_advs clean, BETWEEN S-NaN). No fix, no physics change.
+
+### 18.2 advs source audit (`src/advection_3d_s.f90`, full read)
+
+- Caller: `app/main.f90:900` `call advs(dt, c2)` (after W/advection-CFL, before `advt`).
+- Stages: horizontal upwind predictor into `tt(k) = s1 - c2*(cdx+cdy)`; vertical Thomas transport into `cd`; FCT Zalesak limiter passes on X/Y/Z (max/min/sign/mult only - division-free); final `s2 = cd` whole-array.
+- Divisions in advs: `/dz(k)`, `/dz(k1)` (positive thicknesses from `src/param.f90` z-data), `/dt` (3600), `/dz1(k)` (positive). No zero-denominator path from finite inputs; FCT limiter cannot generate NaN from finite inputs.
+- Exhaustive `s1` writer audit (`grep s1(`): writers are `initial_ocean_reader` (`s1o=s_arr`), `initial_conditions` (`s1=s2` synthetic), and `heat()` (`src/thermodynamics.f90:477` melt branch, `:490` no-melt branch, surface k=1 only); `advs` only READS `s1`.
+
+### 18.3 D24 event reconstruction (extended scan with S1/T1)
+
+- Scan extended with `s1` (var 8) / `t1` (var 9) checks first (module L491-500); rerun Apr TEMP with all hooks: first event now at BEFORE_advs_advt, S1 NaN at (2,2,1,k=1), with S2/T2/RO/U/V/W all finite (snapshot: t=+5.94, s=+0.03504, ro=+0.00756, u=v=w=0).
+- START_day scan clean (now S1-aware): S1 became NaN during Day-1 pre-advection processing, i.e. inside `heat()` (the only S1 writer on that path; runs in the Day-1 substep loop before advection).
+- Therefore `advs` did NOT generate the NaN arithmetically: `tt(k) = s1 - c2*(cdx+cdy)` propagated a pre-formed S1-NaN operand (with finite fluxes - Day-1 velocities ~0, land-neighbor S=0 contributing only finite 0*finite terms).
+
+### 18.4 Local stencil analysis, cell (2,2,1) (Apr vs Jan Day-0 dumps)
+
+- (2,2,1): wet (`kt1`=18 both months); Apr T=279.09K S=0.03504, Jan T=279.57K S=0.03503 - nearly identical ocean state.
+- Neighbors (1,2,1),(2,1,1): land (`kt1`=0), T=273.15K, S=0.0 both months; with ~zero Day-1 velocities their FCT contributions are finite zeros - boundary S=0 is NOT the direct NaN mechanism in `advs`.
+- Corner position matters only via the ice state feeding `heat()` (open-water fraction `ann1`, melt heat `qn`), which differs by month/forcing - not via ocean stencil values (structurally same Apr vs Jan).
+
+### 18.5 First-invalid intermediate (frozen finding)
+
+- Intermediate: `s1(2,2,1)` NaN, produced by `heat()` on Day 1 before advection; exact heat-internal expression NOT isolated. Candidates (both read, not executed): open-water averaging division by `ann2` (`thermodynamics.f90` ~L473-474, requires melt branch with `ann2=0`) vs category-loop divisions (`/dzz`, `/(dzz-a1)`, `/b_tmp`, ~L407-418). Distinguishing them needs heat-internal tracing - explicitly out of D25 scope, no new stage started.
+
+### 18.6 Jan vs Apr comparison (structural, per TASK 5)
+
+- Ocean stencil at (2,2,1): equivalent (see 18.4). Masks/boundaries equivalent (same grid; `kt` identical). FCT coefficients: same code path, finite inputs both months.
+- Difference must enter via `heat()` inputs (ice state `ann1/anp/hicp/hsnp`, forcing `qn`) which are month-dependent. No initial condition was modified for this comparison.
+
+### 18.7 Hypothesis classification (frozen)
+
+- A (division/zero denominator in advs): REJECTED (no zero-division path from finite inputs; dz/dz1/dt positive; limiter division-free).
+- B (invalid input entering advs): CONFIRMED as S1-NaN input with all scanned state finite (mechanism class; exact heat expression UNKNOWN per 18.5).
+- C (boundary/ghost-cell problem in advs): REJECTED as direct mechanism (land S=0 contributes finite zeros at ~zero velocity); SUPPORTED as location context (corner cell ice state drives heat path).
+- D (FCT limiter invalid coefficient): REJECTED as generator (division-free; operates on already-NaN `cd` downstream).
+- E (flux calculation invalid value): REJECTED as generator (fluxes finite: ~zero velocities times finite S).
+- F (overflow/underflow): REJECTED (all magnitudes O(1e-2..1e3), no extremes).
+- G (precision/rounding): REJECTED (NaN is not a rounding artifact at these scales).
+- H (heat writes NaN to S1/T1): SUPPORTED (only S1 writer on path; divisions present; runtime S1-NaN observed with S2 finite). Exact division: UNKNOWN (next-stage question).
+
+### 18.8 Limitations
+
+- (2,2,1) is first-found in scan order, not proven unique origin cell.
+- Exact heat-internal division not isolated (two candidate sites, no heat-internal trace executed).
+- T1-NaN timing (in `advt` vs `conv_adj` mixing) not separated; both downstream of the S1 event.
+- Diagnostic hygiene notes (found while capturing): `s112_record_event` format had 22 items vs 21 descriptors (latent abort on first-ever call - fixed, diagnostic-only); `events_unit=82` collided with `ca_diag_unit=82` (event rows diverted to implicit `fort.82` - fixed to 86, verified free); root-relative diagnostic CSVs collide across runs (harvest immediately).
+
+### 18.9 Decision
+
+D25 complete within its scope (advs mechanics resolved: propagation, not generation). No physics or shipped-product change. D26 NOT started. The remaining open question (which heat division produces S1-NaN at (2,2,1) on Day 1 under April ice/forcing) belongs to a separately authorized stage.

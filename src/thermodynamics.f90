@@ -37,6 +37,7 @@
 module thermodynamics
     use param
     use stage114_d26_trace, only: d26_heat_trap, d26_heat_entry
+    use stage114_d27_trace, only: d27_poison_check, d27_use_init
     implicit none
 
 contains
@@ -53,6 +54,8 @@ contains
         real :: hfirst, ann1, ann2, sh1, el1, aaa, qn, dhsn, dhic1, dhic
         real :: tts, el, hhic1, err, err1, sh, dtts, tti, tfr, fw, tfr_new
         real :: a_tmp, b_tmp, a3_tmp, b3_tmp, a_tmp2, ansum, hour, rad_b1, rad_b2
+        ! Stage 11.4-D27: pre-замеры для poison-check (диагностика, env-gated)
+        real :: d27_old_t, d27_old_s
 
         ! ====================================================================
         !   ПРЕДВАРИТЕЛЬНЫЕ РАСЧЁТЫ (вынесены из циклов для скорости)
@@ -104,6 +107,14 @@ contains
                     spar(k) = a                      ! [массовая доля] Солёность внутри льда
                     tpar(k) = twa                     ! [K] Температура льда ≈ температура воды
                 end do
+
+                ! Stage 11.4-D27: контролируемый эксперимент инициализации
+                ! scratch (диагностика, env STAGE114_D27_INIT, default OFF).
+                ! Индекс 6 тем же фоном ячейки, что индексы 1..5 (twa/a).
+                if (d27_use_init()) then
+                    tpar(6) = twa
+                    spar(6) = a
+                end if
 
                 ! --- ОСНОВНЫЕ РАСЧЁТЫ ДЛЯ СТОЛБЦА ---
                 ansum = ans(i, j)              ! [доли] Агрегированная сплошность льда ΣA_k
@@ -410,14 +421,34 @@ contains
                             a1 = 0.0
                         end if
                         ! Новая солёность воды: разбавление за счёт соли из льда
+                        ! Stage 11.4-D27: pre-замер + poison-check site 1 (диагностика, env-gated)
+                        d27_old_t = tpar(k1)
+                        d27_old_s = spar(k1)
                         spar(k1) = (spar(k1)*(dzz + a_tmp + a1) - sicst(k)*a_tmp)/dzz
+                        call d27_poison_check(nday, i, j, k, 1, d27_old_t, d27_old_s, &
+                                              anp, hicp, hsnp, sicst, tpar, spar)
                         tfr_new = -54.0*spar(k1) + 273.15  ! [K] Новая T_freeze
+                        ! Stage 11.4-D27: pre-замер + poison-check site 2 (диагностика, env-gated)
+                        d27_old_t = tpar(k1)
+                        d27_old_s = spar(k1)
                         tpar(k1) = (tfr_new*dzz - b1)/(dzz - a1)
+                        call d27_poison_check(nday, i, j, k, 2, d27_old_t, d27_old_s, &
+                                              anp, hicp, hsnp, sicst, tpar, spar)
                     else
                         ! --- НАРАСТАНИЕ: соль из воды замораживается в лёд ---
+                        ! Stage 11.4-D27: pre-замер + poison-check site 3 (диагностика, env-gated)
+                        d27_old_t = tpar(k1)
+                        d27_old_s = spar(k1)
                         spar(k1) = (spar(k1)*dzz - sicst(k)*a_tmp)/b_tmp
+                        call d27_poison_check(nday, i, j, k, 3, d27_old_t, d27_old_s, &
+                                              anp, hicp, hsnp, sicst, tpar, spar)
                         tfr_new = -54.0*spar(k1) + 273.15  ! [K]
+                        ! Stage 11.4-D27: pre-замер + poison-check site 4 (диагностика, env-gated)
+                        d27_old_t = tpar(k1)
+                        d27_old_s = spar(k1)
                         tpar(k1) = tfr_new  ! Вода при температуре замерзания
+                        call d27_poison_check(nday, i, j, k, 4, d27_old_t, d27_old_s, &
+                                              anp, hicp, hsnp, sicst, tpar, spar)
                     end if
 
                     ! Обновление глобальных массивов

@@ -392,3 +392,51 @@ Identify the exact line and operation producing the first S1/T1 NaN before `advs
 ### 19.7 Decision
 
 D26 complete within its charter (exact s1-line + operands + inheritance proof). No physics or shipped-product change. D27 NOT started; the category-division isolation is a separately authorizable question.
+
+## 20. Stage 11.4-D27 scratch-state poisoning forensics (frozen 2026-09-28)
+
+### 20.1 Safe-division pivot: REJECTED before application
+
+- A safe-division (`MAX`-floor) implementation was started, then HALTED and fully reverted (`thermodynamics.f90` restored to `def0cb0`, new module deleted, `build/` cleared; revert verified via empty `git status`).
+- Rationale: D26 proved `0.0*NaN`, not a zero-denominator generator; blind floors would alter physics without fixing stale shared-scratch leakage. NO `MAX` guards, NO NaN clamps, NO equation changes were applied in D27.
+
+### 20.2 TASK 1 — scratch lifetime audit (frozen)
+
+| Array | Decl | Per-cell refresh | Skip? | Index 6 valid guaranteed? |
+|---|---|---|---|---|
+| `tpar/spar(1..5)` | `param.f90:202` module shared | init loop L104-108, unguarded, every cell | No | Yes (fresh `twa`/`a`) |
+| `anp/hicp/hsnp(1..5)` | `param.f90:205` module shared | init loop L94-103, unguarded, every cell | No | n/a (fresh) |
+| `tpar(6)/spar(6)` | same | NEVER in init loop; only via k=5 writer sites | — | NO |
+| `danp(1..5)` | same | only in leads branch L459-472; stale otherwise | Yes | n/a |
+| `sicst` | `param.f90:208` DATA const | never written | — | n/a |
+- Sole writers of index 6 in the whole codebase (`src/`, `app/`, `test/` grep): `heat()` sites L427 `spar` melt, L434 `tpar` melt, L442 `spar` growth, L442→L449 `tpar` growth — all inside the k-loop behind the L249 `anp(k)<0.001 → cycle` guard. Sole caller of `heat()`: `main.f90:628`. No explicit `(6)` reads/writes exist outside `heat()` except the D26 entry check.
+- Q1 (initialized before use for every cell): YES for 1..5/anp/hicp/hsnp; NO for index 6 and `danp`. Q2 (k=5 skippable before k1=6 written): YES via L249. Q3 (index 6 guaranteed valid before else-averaging): NO.
+- Secondary unguarded index-6 reads: leads loops L467/L485-486 and else-averaging L510-511 (def0cb0: L499-500).
+
+### 20.3 TASK 2/3 — Patient Zero found (April TRACE, `stage11.4_d27_apr7trace`)
+
+- `D27_PATIENT_ZERO day=1 i=2 j=95 k=5 site=3` — site 3 = `thermodynamics.f90:442` `spar(k1) = (spar(k1)*dzz - sicst(k)*a_tmp)/b_tmp` (growth branch). First-fire latch: exactly one report (no log flood).
+- Operands: `anp(5)`=1.0, `hicp(5)`=0.0, `hsnp(5)`=0.0, `sicst(5)`=4e-3 — a ghost-ice cell (full category-5 area, zero thickness). `old_spar6`=-2749.86 (finite stale garbage from earlier cells in scan order), `new_spar6`=NaN.
+- Generator mechanism (forced by printed operands): with `hicp(5)`=0, L384 `dhic = dt/302e6*(2.04*(tfr-tti)/0.0 - fw)` = ±Inf → `a_tmp`=±Inf → `b_tmp`=dzz-a_tmp=∓Inf → `(finite∓Inf)/∓Inf` = NaN at L442. First NaN creation in the run; the D26 (2,2) `0*NaN` is downstream carriage via shared scratch (scan order j=1..js: (2,95) poisons scratch used by later cells/substeps).
+- Pre-existing finite garbage (`old_tpar6`=148765.4 K, `old_spar6`=-2749.86) shows the scratch channel carries unphysical-but-finite values before the first NaN; writers of that garbage are outside D27 scope (finite, not NaN).
+
+### 20.4 TASK 3 — controlled INIT experiment (April, `stage11.4_d27_apr7init`)
+
+- `STAGE114_D27_INIT=true` sets `tpar(6)=twa`, `spar(6)=a` per cell after the init loop (same background as indices 1..5; diagnostic-only). Effect confirmed: `old_tpar6`=274.30, `old_spar6`=0.0337 (finite, staleness removed).
+- Result: NaN REMAINS — same cell/site/operands (`new_spar6`=NaN). Verdict: STRONG EVIDENCE that staleness is the CARRIER (explains (2,2) inheritance) while the in-cell `hicp`=0 division chain is the GENERATOR. INIT is NOT a fix (and is not proposed as one). Downstream trajectory shifts slightly under INIT (B3.3 Day-1 maxU2 27 vs 0.0), as expected for an experiment.
+
+### 20.5 TASK 4 — January comparison
+
+- Jan TRACE (`stage11.4_d27_jan7trace`, 30 days, exit 0): ZERO D27 firings, no FIRST-INVALID event. Index 6 stays finite all run — the ghost-ice + zero-thickness generator path never triggers under January state (thicker/healthier ice; k=5 always has thickness where it has area).
+- Jan-vs-Apr difference: April melt produces `anp(5)`≈1/`hicp(5)`=0 cells (area without volume); January does not. The generator precondition is a state property, not a code-path difference.
+
+### 20.6 Validation: OFF bit-identity to `def0cb0`
+
+- Jan OFF (`stage11.4_d27_jan7off`, no env flags): EUU bit-identical to the D22 baseline Days 1-8+; all 32 output `.nc` files md5-MATCH the `def0cb0`-code run (`stage11.4_d26_jan7off`); exit 0; zero diagnostic artifacts (no CSVs, no fort.*).
+- New code (module `src/stage114_d27_trace.f90`, 6 hook sites in `thermodynamics.f90`) executes only reads + early-return calls when flags are OFF.
+
+### 20.7 Decision and limitations
+
+- Classification: spar-NaN generator at L442 under `hicp(5)`=0 MATHEMATICALLY ESTABLISHED (finite printed inputs → NaN through that single expression; the ±Inf-vs-0/0 flavor of the L384 intermediate was not printed — minor, unisolated). Stale-scratch carriage CONFIRMED (D26 entry snapshot + D27 old-values). Nothing is called "root cause" beyond this established chain.
+- Limitations: patient-zero substep `iii` unrecorded (`heat()` signature untouched — no `iii` param); finite-garbage writers not traced; (2,2,1) is first-found scan-order victim, uniqueness not proven.
+- NO production fix applied; NO physics changed (only diagnostic additions, OFF-equivalent). D28 NOT started.

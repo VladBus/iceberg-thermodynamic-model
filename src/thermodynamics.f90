@@ -36,10 +36,6 @@
 
 module thermodynamics
     use param
-    use stage114_d26_trace, only: d26_heat_trap, d26_heat_entry
-    use stage114_d27_trace, only: d27_poison_check, d27_use_init
-    use stage114_d30_trace, only: d30_heatk
-    use stage114_d31_trace, only: d31_dhic1
     implicit none
 
 contains
@@ -56,10 +52,6 @@ contains
         real :: hfirst, ann1, ann2, sh1, el1, aaa, qn, dhsn, dhic1, dhic
         real :: tts, el, hhic1, err, err1, sh, dtts, tti, tfr, fw, tfr_new
         real :: a_tmp, b_tmp, a3_tmp, b3_tmp, a_tmp2, ansum, hour, rad_b1, rad_b2
-        ! Stage 11.4-D27: pre-замеры для poison-check (диагностика, env-gated)
-        real :: d27_old_t, d27_old_s
-        ! Stage 11.4-D31: pre-замер hicp для ловушки dhic1 (диагностика, только локал)
-        real :: d31_hicp_before
 
         ! ====================================================================
         !   ПРЕДВАРИТЕЛЬНЫЕ РАСЧЁТЫ (вынесены из циклов для скорости)
@@ -111,14 +103,6 @@ contains
                     spar(k) = a                      ! [массовая доля] Солёность внутри льда
                     tpar(k) = twa                     ! [K] Температура льда ≈ температура воды
                 end do
-
-                ! Stage 11.4-D27: контролируемый эксперимент инициализации
-                ! scratch (диагностика, env STAGE114_D27_INIT, default OFF).
-                ! Индекс 6 тем же фоном ячейки, что индексы 1..5 (twa/a).
-                if (d27_use_init()) then
-                    tpar(6) = twa
-                    spar(6) = a
-                end if
 
                 ! --- ОСНОВНЫЕ РАСЧЁТЫ ДЛЯ СТОЛБЦА ---
                 ansum = ans(i, j)              ! [доли] Агрегированная сплошность льда ΣA_k
@@ -194,11 +178,6 @@ contains
                 ! Положительный Q_net → нагревание воды; отрицательный → замерзание.
                 hfirst = 0.0  ! Приращение нового льда [м] (0 = нет образования)
                 ann1 = an1(i, j, 1)  ! [доли] Площадь открытой воды
-                ! Stage 11.4-D26: entry-snapshot (2,2) — унаследован ли NaN (диагностика, env-gated)
-                if (i .eq. 2 .and. j .eq. 2) then
-                    if (tpar(6) /= tpar(6) .or. spar(6) /= spar(6)) &
-                        call d26_heat_entry(nday, i, j, ann1, tpar, spar)
-                end if
 
                 if (abs(ann1) .gt. 1e-8) then
                     ! --- ЯВНОЕ ТЕПЛО (sensible heat) [Вт/м²] ---
@@ -312,15 +291,9 @@ contains
                             tts = 273.15
                             ! dhic1 [м] = -dt/(ρ_i·L_f) · Q_net(T_s=0°C)
                             !   ρ_i·L_f = 302e6 Дж/м³ — объёмная теплота плавления льда.
-                            ! Stage 11.4-D31: pre-замер hicp (диагностика, только локал)
-                            if (i .eq. 2 .and. j .eq. 96 .and. k .eq. 1) d31_hicp_before = hicp(k)
                             dhic1 = -dt/302.e6*(a1 - 5.4999e-8*tts**4 + b*(tfr - tts))
                             hicp(k) = hicp(k) + dhic1
                             if (hicp(k) .lt. 0.01) hicp(k) = 0.0  ! Лёд исчез (<1 см)
-                            ! Stage 11.4-D31: ловушка операндов dhic1 (диагностика, env-gated)
-                            if (i .eq. 2 .and. j .eq. 96 .and. k .eq. 1) &
-                                call d31_dhic1(d31_hicp_before, hicp(k), dhic1, tta, twa, tts, tfr, &
-                                               hhum, a3, el, sh, sw, wl, a1, b)
                         end if
 
                         ! --- Нарастание/таяние СНИЗУ (водный поток fw) ---
@@ -431,40 +404,15 @@ contains
                             a1 = 0.0
                         end if
                         ! Новая солёность воды: разбавление за счёт соли из льда
-                        ! Stage 11.4-D27: pre-замер + poison-check site 1 (диагностика, env-gated)
-                        d27_old_t = tpar(k1)
-                        d27_old_s = spar(k1)
                         spar(k1) = (spar(k1)*(dzz + a_tmp + a1) - sicst(k)*a_tmp)/dzz
-                        call d27_poison_check(nday, i, j, k, 1, d27_old_t, d27_old_s, &
-                                              anp, hicp, hsnp, sicst, tpar, spar)
                         tfr_new = -54.0*spar(k1) + 273.15  ! [K] Новая T_freeze
-                        ! Stage 11.4-D27: pre-замер + poison-check site 2 (диагностика, env-gated)
-                        d27_old_t = tpar(k1)
-                        d27_old_s = spar(k1)
                         tpar(k1) = (tfr_new*dzz - b1)/(dzz - a1)
-                        call d27_poison_check(nday, i, j, k, 2, d27_old_t, d27_old_s, &
-                                              anp, hicp, hsnp, sicst, tpar, spar)
                     else
                         ! --- НАРАСТАНИЕ: соль из воды замораживается в лёд ---
-                        ! Stage 11.4-D27: pre-замер + poison-check site 3 (диагностика, env-gated)
-                        d27_old_t = tpar(k1)
-                        d27_old_s = spar(k1)
                         spar(k1) = (spar(k1)*dzz - sicst(k)*a_tmp)/b_tmp
-                        call d27_poison_check(nday, i, j, k, 3, d27_old_t, d27_old_s, &
-                                              anp, hicp, hsnp, sicst, tpar, spar)
                         tfr_new = -54.0*spar(k1) + 273.15  ! [K]
-                        ! Stage 11.4-D27: pre-замер + poison-check site 4 (диагностика, env-gated)
-                        d27_old_t = tpar(k1)
-                        d27_old_s = spar(k1)
                         tpar(k1) = tfr_new  ! Вода при температуре замерзания
-                        call d27_poison_check(nday, i, j, k, 4, d27_old_t, d27_old_s, &
-                                              anp, hicp, hsnp, sicst, tpar, spar)
                     end if
-
-                    ! Stage 11.4-D30: heat-exit category trap (2,96) (диагностика, env-gated)
-                    if (i .eq. 2 .and. j .eq. 96) &
-                        call d30_heatk(nday, k, anp(k), hicp(k), hsnp(k), dhic, dhsn, &
-                                       tpar(k1), spar(k1), twa)
 
                     ! Обновление глобальных массивов
                     hsnow(i, j, k) = hsnp(k)
@@ -527,14 +475,6 @@ contains
                     an1(i, j, 1) = ann2
                     t1(i, j, 1) = ann2*tpar(1) + a3_tmp - 273.15  ! [°C]
                     s1(i, j, 1) = ann2*spar(1) + b3_tmp           ! [массовая доля]
-                    ! Stage 11.4-D26: NaN-trap (2,2,1), диагностика, env-gated STAGE114_D26_TRACE
-                    if (i .eq. 2 .and. j .eq. 2) then
-                        if (s1(i,j,1) /= s1(i,j,1) .or. t1(i,j,1) /= t1(i,j,1) .or. &
-                            abs(s1(i,j,1)) > huge(1.0)*0.5 .or. abs(t1(i,j,1)) > huge(1.0)*0.5) &
-                            call d26_heat_trap(nday, i, j, 1, ann1, ann2, b_tmp, qn, a_tmp, &
-                                danp, hicp, hsnp, sicst, tpar(1), spar(1), a1, b1, a2, b2, &
-                                a3_tmp, b3_tmp, dzz, s1(i,j,1), t1(i,j,1), anp, tpar, spar)
-                    end if
                 else
                     ! --- Случай: нет таяния в разводьях ---
                     ! Осреднение T и S по всем категориям (взвешенное по площади).
@@ -548,15 +488,6 @@ contains
                     ! Итоговая T и S поверхностного слоя
                     t1(i, j, 1) = a1 - 273.15  ! [°C] (из K)
                     s1(i, j, 1) = b1           ! [массовая доля]
-                    ! Stage 11.4-D26: NaN-trap (2,2,1), диагностика, env-gated STAGE114_D26_TRACE
-                    ! (ann2/a_tmp/danp здесь могут быть stale из предыдущей ячейки — см. отчёт)
-                    if (i .eq. 2 .and. j .eq. 2) then
-                        if (s1(i,j,1) /= s1(i,j,1) .or. t1(i,j,1) /= t1(i,j,1) .or. &
-                            abs(s1(i,j,1)) > huge(1.0)*0.5 .or. abs(t1(i,j,1)) > huge(1.0)*0.5) &
-                            call d26_heat_trap(nday, i, j, 2, ann1, ann2, b_tmp, qn, a_tmp, &
-                                danp, hicp, hsnp, sicst, tpar(1), spar(1), a1, b1, a2, b2, &
-                                a3_tmp, b3_tmp, dzz, s1(i,j,1), t1(i,j,1), anp, tpar, spar)
-                    end if
 
                     if (hfirst .gt. 0.0) then
                         ! --- Формирование нового льда (hfirst = 0.01 м = 1 см) ---

@@ -579,3 +579,31 @@ D26 complete within its charter (exact s1-line + operands + inheritance proof). 
 ### 25.4 Decision
 
 - The fix converts unphysical zero-init forcing at out-of-coverage edge cells into file-edge persistence. Suitable for production: minimal (loader-only), no physics change, empirically neutral on covered cells. NOTE (env): post-reboot `/tmp` rebuilds regenerated via the documented D22 procedure (deterministic; April values re-verified).
+
+## 26. Stage 11.4-D33 cleanup, inventory, and Ocean Baseline 11.x (frozen 2026-09-29)
+
+### 26.1 src/ inventory (40 files)
+
+- PRODUCTION (29, kept): advection_2d/3d_s/3d_t, barotropic_dynamics, convective_adjustment, equation_of_state, grid_coupling, grid_masks, ice_deform, ice_redis, ice_stress, iceberg×6 (types/geometry/forcing/dynamics/thermodynamics/main), initial_conditions, initial_ocean_reader, netcdf_input/output, param, run_config, shallow_water, smooth_filter, thermal_wind_init, thermodynamics, tide_forcing, wind_forcing (incl. D32 nearest-edge fallback — production fix, kept).
+- ACTIVE_DIAGNOSTIC (3, kept): stage86/stage1022/stage112_cfl diagnostics (wired in main, env-gated, referenced in validation docs; 112 FIRST_INVALID used throughout 11.4).
+- HISTORICAL_DIAGNOSTIC (6, DELETED via `git rm`): stage114_d26/d27/d28/d29/d30/d31_trace (only consumers were the removed hooks below).
+- UNUSED (1, KEPT + documented): geostrophic_init.f90 (zero references in app/src/test/docs/fpm; left for a future audit — removal out of D33 scope). UNKNOWN: 0.
+
+### 26.2 Hook removal (production files restored, purely subtractive)
+
+- `app/main.f90`: D28 use + INIT/PRE_HEAT/POST_ADV/POST_REDIS checkpoints + 2 hoods; D29 use + d29_wu/wv locals + guardA/guardB/wu-wv/solve sites + POST_DYN; D30 use + clocks/cells/advk sites; D31 use + clock + POST_HEAT/PRE_DYN/POST_DYN sites. Verified: heat/redis block and hht line byte-restored (no `-` lines on physics in final diff).
+- `src/thermodynamics.f90`: D26 use/entry/traps (2), D27 use/locals/INIT-block/4 poison sites, D30 use/heatk hook, D31 use/local/pre-read/trap. `src/ice_redis.f90`: D30 use + stage-6 hook. `src/wind_forcing.f90`: D32 env-tracer removed (fallback + lat_use + message kept). Final `grep stage114_d/D2[6-9]_/D3[01]_` over app/src: zero hits.
+
+### 26.3 data/runs inventory (11 GB → 2.8 GB)
+
+- KEPT (11): Stage 11.1 baselines jan7/apr7/jul7/oct7 + frozen_jan7; 11.2 cfl_test (90-day); d24_apr7ev (first-invalid event); d32 apr/jul/oct/jan fix-validation runs.
+- DELETED (35 dirs, `rm -rf` by explicit name): d22×4, d23×3, d24_jan7ev, d25, d26×2, d27×4, d28×6, d29×4, d30×4, d31×3, jan7_test, Q1_test_heat_on, test_run. Raw ERA5/EN4/IBCAO untouched.
+
+### 26.4 Validation after cleanup
+
+- Full battery `rm -rf build && fpm test --flag "-I/usr/include"`: EXIT 0 (all suites `errors: 0`, 540 PASS/SUCCESS/OK). Strict `fpm build --flag "-I/usr/include -Wall -Wextra -fcheck=all -ffpe-trap=invalid,zero,overflow"`: EXIT 0, zero warnings.
+
+### 26.5 Ocean Baseline 11.x (cleaned code, exit 0 each, 0 NaN in T/S/ro/ice finals)
+
+- JAN (`stage11.4_d33_jan30`, 30 d): EUU 0→1.95e15; EOS [-0.00061, 0.00890]. APR (`stage11.4_d33_apr30`, 29 d): EUU 0→2.09e15; EOS [-0.00087, 0.00821]. JUL (`stage11.4_d33_jul30`, 30 d): EUU 0→0.89e15; EOS [-0.00420, 0.00872]. OCT (`stage11.4_d33_oct30`, 30 d): EUU 0→2.12e15; EOS [-0.00134, 0.00829].
+- Remaining known issues (unchanged, non-blocking): small negative density excursions (finite, monitored since D23 — cause REJECTED as NaN source); CA float32 quantization floor (T-01 family); legacy Eckart EOS (separate experiment). Codebase ready for Stage 11.3 timestep sensitivity.

@@ -52,10 +52,6 @@ program main
     use stage86_diagnostics
     use stage1022_diagnostics
     use stage112_cfl_diagnostics
-    use stage114_d28_trace, only: d28_check, d28_hood
-    use stage114_d29_trace, only: d29_guardA, d29_guardB, d29_solve
-    use stage114_d30_trace, only: d30_set_clock, d30_cell, d30_advk
-    use stage114_d31_trace, only: d31_set_clock, d31_cell
     use iceberg
     use iceberg_types, only: RHO_ICE, RHO_WATER
     use iceberg_forcing, only: get_ocean_profile, get_atmos_forcing, model_coords_to_indices
@@ -77,8 +73,6 @@ program main
     ! Рабочие переменные для вычислений в циклах
     real :: sas, a, b, a1, b1, a2, b2, a3, b3, a4, b4, cc_val
     real :: hht, uij, vij, fix, fiy, aa, au, av, sl, du, ff, ff1
-    ! Stage 11.4-D29: pre-замеры скорости воды (диагностика, только локалы)
-    real :: d29_wu, d29_wv
     real :: dzz, dzzz, dzz1, dz1z, bb, sum, sum1, asa1, asa, ymm, hh1, hh2
     real :: tt0, ss0, tt1, ss1, tt2, ss2, tt3, ss3, tt4, ss4, yyy, uu, vv
     real :: ri2j, rij, ri2j2, rij2, slapu, slapv, auu, avv
@@ -333,12 +327,6 @@ program main
     end do
 
     call redis()
-
-    ! Stage 11.4-D28: INIT checkpoint (2,95) cat 5 (диагностика, env-gated)
-    call d28_check('INIT', 1, 0, an1(2, 95, 6), wice1(2, 95, 5), hice(2, 95, 5), hsnow(2, 95, 5))
-    ! Stage 11.4-D30: INIT full-category snapshot (2,96) (диагностика, env-gated)
-    call d30_set_clock(1, 0)
-    call d30_cell('INIT', an1(2, 96, 2:6), wice1(2, 96, 1:5), hices(2, 96))
 
     ! --- Инициализация синтетических полей ---
     call init_ocean()
@@ -637,34 +625,13 @@ program main
                         ! Термодинамика должна идти с тем же шагом, что и океан.
                         ! Без ERA5-полей (kl1=0) вызов дал бы деление на patm=0.
                         if (kl1 .eq. 1) then
-                            ! Stage 11.4-D28: PRE_HEAT checkpoint (диагностика, env-gated)
-                            call d28_check('PRE_HEAT', nday1, iii, an1(2, 95, 6), &
-                                           wice1(2, 95, 5), hice(2, 95, 5), hsnow(2, 95, 5))
-                            call d28_hood('PRE_HEAT', nday1, iii, an1(1:3, 94:96, 6), &
-                                          wice1(1:3, 94:96, 5), u(2:3, 95:96), v(2:3, 95:96), &
-                                          u2(2:3, 95:96, 1), v2(2:3, 95:96, 1))
-                            ! Stage 11.4-D30: PRE_HEAT full-category snapshot (2,96) (диагностика, env-gated)
-                            call d30_set_clock(nday1, iii)
-                            call d30_cell('PRE_HEAT', an1(2, 96, 2:6), wice1(2, 96, 1:5), hices(2, 96))
-                            ! Stage 11.4-D31: часы ловушки dhic1 (диагностика, env-gated)
-                            call d31_set_clock(nday1, iii)
                             call heat(dt, nday, lll)
                             ! Stage 8.6 diagnostics: C = after heat()
                             call capture_state('C_after_heat', kkk, iii, u2, v2, w, t2, s2, ro)
-                            ! Stage 11.4-D31: POST_HEAT checkpoint (диагностика, env-gated)
-                            if (nday1 .eq. 1 .and. iii .eq. 1) &
-                                call d31_cell('POST_HEAT', nday1, iii, an1(2, 96, 2:6), &
-                                              wice1(2, 96, 1:5), hices(2, 96), u(2, 96), v(2, 96))
                             ! heat меняет категории; динамике льда нужны новые A и h.
-                            ! Stage 11.4-D30: часы для REDIS-хука (диагностика, env-gated)
-                            call d30_set_clock(nday1, iii)
                             call redis()
                             ! Stage 8.6 diagnostics: D = after redis()
                             call capture_state('D_after_redis', kkk, iii, u2, v2, w, t2, s2, ro)
-                            ! Stage 11.4-D31: PRE_DYN checkpoint (диагностика, env-gated)
-                            if (nday1 .eq. 1 .and. iii .le. 2) &
-                                call d31_cell('PRE_DYN', nday1, iii, an1(2, 96, 2:6), &
-                                              wice1(2, 96, 1:5), hices(2, 96), u(2, 96), v(2, 96))
                         end if
                     end if
 
@@ -704,11 +671,6 @@ program main
 
                                 ! hht [м] — средняя толщина льда по 4 T-точкам
                               hht = 0.25*(hices(i, j) + hices(i, j2) + hices(i2, j) + hices(i2, j2))
-                                ! Stage 11.4-D29: guard-A snapshot (диагностика, env-gated)
-                                if (nday1 .eq. 1 .and. iii .eq. 2 .and. &
-                                    ((i .eq. 2 .and. j .eq. 96) .or. (i .eq. 3 .and. j .eq. 96))) &
-                                    call d29_guardA(nday1, iii, jjj, i, j, hices(i, j), hices(i, j2), &
-                                                    hices(i2, j), hices(i2, j2), hht)
                                 if (hht .lt. 0.01) then
                                     ! Guard: при hht < 1 см трение вода-лёд сингулярно.
                                     u(i, j) = 0.0
@@ -734,11 +696,6 @@ program main
 
                                 ! a3 — средняя сплошность льда (по 4 T-точкам)
                                 a3 = 0.25*(ans(i, j) + ans(i, j2) + ans(i2, j) + ans(i2, j2))
-                                ! Stage 11.4-D29: guard-B snapshot (диагностика, env-gated)
-                                if (nday1 .eq. 1 .and. iii .eq. 2 .and. &
-                                    ((i .eq. 2 .and. j .eq. 96) .or. (i .eq. 3 .and. j .eq. 96))) &
-                                    call d29_guardB(nday1, iii, jjj, i, j, ans(i, j), ans(i, j2), &
-                                                    ans(i2, j), ans(i2, j2), a3)
                                 if (a3 .gt. 2.0) cycle  ! Защита от некорректных данных
 
                                 ! fix/fiy [Н/м] — горизонтальные градиенты напряжений льда.
@@ -766,27 +723,13 @@ program main
                                 ! b1/a1 — безразмерные коэффициенты трения (matrix inverse).
                                 !   aa = a1² + b1² — норма матрицы.
                                 !   u = (a1·a2 + b1·b2)/aa — решение 2×2 системы.
-                                ! Stage 11.4-D29: pre-замер скорости воды (диагностика, только локалы)
-                                if (nday1 .eq. 1 .and. iii .eq. 2 .and. &
-                                    ((i .eq. 2 .and. j .eq. 96) .or. (i .eq. 3 .and. j .eq. 96))) then
-                                    d29_wu = a1
-                                    d29_wv = b1
-                                end if
                                 b1 = dt1*a*c16
                                 a1 = 1.0 + dt1*a*c15
                                 aa = a1*a1 + b1*b1
                                 u(i, j) = (a1*a2 + b1*b2)/aa
                                 v(i, j) = (a1*b2 - b1*a2)/aa
-                                ! Stage 11.4-D29: solve snapshot (диагностика, env-gated)
-                                if (nday1 .eq. 1 .and. iii .eq. 2 .and. &
-                                    ((i .eq. 2 .and. j .eq. 96) .or. (i .eq. 3 .and. j .eq. 96))) &
-                                    call d29_solve(nday1, iii, jjj, i, j, uij, vij, d29_wu, d29_wv, &
-                                        tx(i, j), ty(i, j), fku(i, j), &
-                                        ym2(i2, j), ym2(i2, j2), ym2(i, j), ym2(i, j2), &
-                                        sxx(i2, j), sxx(i, j), sxx(i2, j2), sxx(i, j2), &
-                                        syy(i2, j2), syy(i2, j), syy(i, j2), syy(i, j), &
-                                        sxy(i2, j), sxy(i, j2), sxy(i, j), sxy(i2, j2), &
-                                        fix, fiy, a, b, b3, a1, b1, a2, b2, aa, u(i, j), v(i, j))
+
+                                ! На последнем микрошаге: txic/tyic сохраняются для block 210
 
                                 ! На последнем микрошаге: txic/tyic сохраняются для block 210
                                 if (jjj .eq. mm3) then
@@ -807,11 +750,6 @@ program main
                         v(1, :) = v(2, :)
                     end do
 
-                    ! Stage 11.4-D31: POST_DYN checkpoint (диагностика, env-gated)
-                    if (nday1 .eq. 1 .and. iii .le. 2) &
-                        call d31_cell('POST_DYN', nday1, iii, an1(2, 96, 2:6), &
-                                      wice1(2, 96, 1:5), hices(2, 96), u(2, 96), v(2, 96))
-
                     ! 4. Адвекция сплошности и массы льда
                     ! Цикл по категориям толщины (NGR = 5 категорий)
                     do k = 1, ngr
@@ -827,25 +765,8 @@ program main
                         an3(:, js) = wice1(:, js, k)
                         an3(1, :) = wice1(1, :, k)
                         wice1(:, :, k) = an3(:, :)
-                        ! Stage 11.4-D30: per-category adv snapshot (2,96) (диагностика, env-gated)
-                        if (nday1 .eq. 1 .and. iii .le. 2) &
-                            call d30_advk(k, an1(2, 96, k1), wice1(2, 96, k))
                     end do
-                    ! Stage 11.4-D30: POST_ADV full-category snapshot (2,96) (диагностика, env-gated)
-                    call d30_set_clock(nday1, iii)
-                    call d30_cell('POST_ADV', an1(2, 96, 2:6), wice1(2, 96, 1:5), hices(2, 96))
-                    ! Stage 11.4-D28: POST_ADV checkpoint (диагностика, env-gated)
-                    call d28_check('POST_ADV', nday1, iii, an1(2, 95, 6), &
-                                   wice1(2, 95, 5), hice(2, 95, 5), hsnow(2, 95, 5))
-                    call d28_hood('POST_ADV', nday1, iii, an1(1:3, 94:96, 6), &
-                                  wice1(1:3, 94:96, 5), u(2:3, 95:96), v(2:3, 95:96), &
-                                  u2(2:3, 95:96, 1), v2(2:3, 95:96, 1))
                     call redis()
-                    ! Stage 11.4-D28: POST_REDIS checkpoint (диагностика, env-gated)
-                    call d28_check('POST_REDIS', nday1, iii, an1(2, 95, 6), &
-                                   wice1(2, 95, 5), hice(2, 95, 5), hsnow(2, 95, 5))
-                    ! Stage 11.4-D30: POST_REDIS full-category snapshot (2,96) (диагностика, env-gated)
-                    call d30_cell('POST_REDIS', an1(2, 96, 2:6), wice1(2, 96, 1:5), hices(2, 96))
 
                     ! ====================================================================
                     !   5. РАСЧЁТ ВЕРТИКАЛЬНОЙ СКОРОСТИ TЕЧЕНИЙ (W)

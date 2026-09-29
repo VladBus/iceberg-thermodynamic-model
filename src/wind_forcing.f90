@@ -232,12 +232,8 @@ contains
         integer :: nbad
         real(8) :: lat, lon, u10v, v10v, t2mv, mslv, d2mv, tccv, snowfallv
         real(8) :: spd, cof8, u_cm, v_cm
-        ! Stage 11.4-D32: clamped latitude for nearest-edge fallback (диагностика: только локал)
+        ! Stage 11.4-D32: clamped latitude for nearest-edge fallback (только локал)
         real(8) :: lat_use
-        ! Stage 11.4-D32: env-gated fallback tracer (default OFF)
-        logical, save :: d32_armed = .false.
-        logical, save :: d32_env_read = .false.
-        character(len=256) :: d32_env
         real, parameter :: dxx = 13.89e5 ! Горизонтальный шаг сетки (см)
         logical :: ok
 
@@ -281,15 +277,6 @@ contains
                     nbad = nbad + 1
                     lat_use = min(max(lat, era5_lat(1)), era5_lat(era5_nlat))
                     ok = era5_bilinear2d(era5_u10(:, :, tidx), lat_use, lon, u10v)
-                    if (.not. d32_env_read) then
-                        call get_environment_variable('STAGE114_D32_TRACE', d32_env)
-                        if (len_trim(d32_env) .gt. 0 .and. &
-                            (d32_env .eq. 'true' .or. d32_env .eq. '1')) d32_armed = .true.
-                        d32_env_read = .true.
-                    end if
-                    if (d32_armed .and. i .eq. 2 .and. j .eq. 96) &
-                        print *, 'D32_FALLBACK lat=', lat, 'clamped=', lat_use, 'ok=', ok, &
-                                 'u10v=', u10v
                     if (.not. ok) cycle
                 end if
                 ok = era5_bilinear2d(era5_v10(:, :, tidx), lat_use, lon, v10v)

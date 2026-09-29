@@ -58,7 +58,6 @@
 
 module ice_redis
     use param
-    use stage114_d30_trace, only: d30_redis_cell
     implicit none
 
 contains
@@ -251,9 +250,6 @@ contains
                     hsnow(i, j, k) = hsnp(k)
                     if (abs(anpr(k)) .gt. 1e-8) hice(i, j, k) = wicpr(k)/anpr(k)
                 end do
-                ! Stage 11.4-D30: pre-summation snapshot (2,96) (диагностика, env-gated)
-                if (i .eq. 2 .and. j .eq. 96) &
-                    call d30_redis_cell(i, j, anpr, wicpr, a1, b1)
 
                 ! --- ДОПОЛНИТЕЛЬНАЯ ПРОВЕРКА НА ТОЛЩИНУ ---
                 ! Если средняя толщина категории k < hmax(k-1),

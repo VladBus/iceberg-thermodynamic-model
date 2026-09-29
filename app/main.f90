@@ -55,6 +55,7 @@ program main
     use stage114_d28_trace, only: d28_check, d28_hood
     use stage114_d29_trace, only: d29_guardA, d29_guardB, d29_solve
     use stage114_d30_trace, only: d30_set_clock, d30_cell, d30_advk
+    use stage114_d31_trace, only: d31_set_clock, d31_cell
     use iceberg
     use iceberg_types, only: RHO_ICE, RHO_WATER
     use iceberg_forcing, only: get_ocean_profile, get_atmos_forcing, model_coords_to_indices
@@ -645,15 +646,25 @@ program main
                             ! Stage 11.4-D30: PRE_HEAT full-category snapshot (2,96) (диагностика, env-gated)
                             call d30_set_clock(nday1, iii)
                             call d30_cell('PRE_HEAT', an1(2, 96, 2:6), wice1(2, 96, 1:5), hices(2, 96))
+                            ! Stage 11.4-D31: часы ловушки dhic1 (диагностика, env-gated)
+                            call d31_set_clock(nday1, iii)
                             call heat(dt, nday, lll)
                             ! Stage 8.6 diagnostics: C = after heat()
                             call capture_state('C_after_heat', kkk, iii, u2, v2, w, t2, s2, ro)
+                            ! Stage 11.4-D31: POST_HEAT checkpoint (диагностика, env-gated)
+                            if (nday1 .eq. 1 .and. iii .eq. 1) &
+                                call d31_cell('POST_HEAT', nday1, iii, an1(2, 96, 2:6), &
+                                              wice1(2, 96, 1:5), hices(2, 96), u(2, 96), v(2, 96))
                             ! heat меняет категории; динамике льда нужны новые A и h.
                             ! Stage 11.4-D30: часы для REDIS-хука (диагностика, env-gated)
                             call d30_set_clock(nday1, iii)
                             call redis()
                             ! Stage 8.6 diagnostics: D = after redis()
                             call capture_state('D_after_redis', kkk, iii, u2, v2, w, t2, s2, ro)
+                            ! Stage 11.4-D31: PRE_DYN checkpoint (диагностика, env-gated)
+                            if (nday1 .eq. 1 .and. iii .le. 2) &
+                                call d31_cell('PRE_DYN', nday1, iii, an1(2, 96, 2:6), &
+                                              wice1(2, 96, 1:5), hices(2, 96), u(2, 96), v(2, 96))
                         end if
                     end if
 
@@ -795,6 +806,11 @@ program main
                         u(1, :) = u(2, :)
                         v(1, :) = v(2, :)
                     end do
+
+                    ! Stage 11.4-D31: POST_DYN checkpoint (диагностика, env-gated)
+                    if (nday1 .eq. 1 .and. iii .le. 2) &
+                        call d31_cell('POST_DYN', nday1, iii, an1(2, 96, 2:6), &
+                                      wice1(2, 96, 1:5), hices(2, 96), u(2, 96), v(2, 96))
 
                     ! 4. Адвекция сплошности и массы льда
                     ! Цикл по категориям толщины (NGR = 5 категорий)

@@ -39,6 +39,7 @@ module thermodynamics
     use stage114_d26_trace, only: d26_heat_trap, d26_heat_entry
     use stage114_d27_trace, only: d27_poison_check, d27_use_init
     use stage114_d30_trace, only: d30_heatk
+    use stage114_d31_trace, only: d31_dhic1
     implicit none
 
 contains
@@ -57,6 +58,8 @@ contains
         real :: a_tmp, b_tmp, a3_tmp, b3_tmp, a_tmp2, ansum, hour, rad_b1, rad_b2
         ! Stage 11.4-D27: pre-замеры для poison-check (диагностика, env-gated)
         real :: d27_old_t, d27_old_s
+        ! Stage 11.4-D31: pre-замер hicp для ловушки dhic1 (диагностика, только локал)
+        real :: d31_hicp_before
 
         ! ====================================================================
         !   ПРЕДВАРИТЕЛЬНЫЕ РАСЧЁТЫ (вынесены из циклов для скорости)
@@ -309,9 +312,15 @@ contains
                             tts = 273.15
                             ! dhic1 [м] = -dt/(ρ_i·L_f) · Q_net(T_s=0°C)
                             !   ρ_i·L_f = 302e6 Дж/м³ — объёмная теплота плавления льда.
+                            ! Stage 11.4-D31: pre-замер hicp (диагностика, только локал)
+                            if (i .eq. 2 .and. j .eq. 96 .and. k .eq. 1) d31_hicp_before = hicp(k)
                             dhic1 = -dt/302.e6*(a1 - 5.4999e-8*tts**4 + b*(tfr - tts))
                             hicp(k) = hicp(k) + dhic1
                             if (hicp(k) .lt. 0.01) hicp(k) = 0.0  ! Лёд исчез (<1 см)
+                            ! Stage 11.4-D31: ловушка операндов dhic1 (диагностика, env-gated)
+                            if (i .eq. 2 .and. j .eq. 96 .and. k .eq. 1) &
+                                call d31_dhic1(d31_hicp_before, hicp(k), dhic1, tta, twa, tts, tfr, &
+                                               hhum, a3, el, sh, sw, wl, a1, b)
                         end if
 
                         ! --- Нарастание/таяние СНИЗУ (водный поток fw) ---

@@ -530,3 +530,30 @@ D26 complete within its charter (exact s1-line + operands + inheritance proof). 
 
 - MATHEMATICALLY ESTABLISHED: first-NaN category (k=1), transition window (inside `heat(iii=2)`), importer (adv2d), manufacturer (`ice_redis` fallback), intra-dynamics mechanism (D29 guard failure). STRONGLY SUPPORTED: surface-term (`dhic1`) generator. OPEN → D31: exact `dhic1` operand and the physically correct fix design.
 - OFF (`stage11.4_d30_jan7off`): 32/32 `.nc` md5-MATCH the D29-code run; exit 0; zero artifacts. NO guards/clamps/equation/scheme/init changes (reads+prints only).
+
+## 24. Stage 11.4-D31 dhic1 operands and temporal causality (frozen 2026-09-29)
+
+### 24.1 Exact NaN operand in dhic1 (`D31_DHIC1`, heat Day-1 iii=2 k=1 at (2,96))
+
+- Printed: `hicp_before`=0.01, `hicp_after`=NaN, `dhic1`=NaN; `tta`=273.15, `twa`=274.30, `tts`=273.15, `tfr`=271.33 (ALL FINITE — ocean T/S clean, Luna-downstream concern REJECTED for this cell); `hhum`=0.0, `a3`=NaN, `el`=NaN, `sh`=-0.0, `sw`=10.92, `wl`=226.26, `a1`=NaN, `b`=204.
+- Generator: `a3 = 0.6650735*ratm/ppatm*ww` = NaN (only NaN input; `el` fixed pre-loop NaN) → Newton iter-1 `dtts`=NaN → while-check (`NaN>=0.25`)=FALSE exits after 1 iter → fallback check (`NaN>=100`/n==100)=FALSE keeps `tts`=NaN → branch check (`NaN<=273.15`)=FALSE enters melt branch → `dhic1`=NaN → `hicp`=NaN (zero-guard FALSE). Three IEEE-false comparisons route INTO the melting path.
+
+### 24.2 a3=NaN root input: ERA5-skipped edge cell (ESTABLISHED)
+
+- Cell (2,96) = (64.9578°N, 36.2516°E) from KOORD.DAT; April file `era5_2020_04_merged.nc` latitude axis starts at 65.0°N → bilinear returns ok=false → `cycle` (`wind_forcing.f90:266-270`) → meteo arrays stay at init 0.0 persistently (only u10 `ok` is checked, L267-270; later fields unchecked).
+- Corroboration (independent): run log `ERA5 WIND WARNING: 55 model points outside ERA5 latitude range`; exactly 55/13965 model cells have lat<65.0; `p1` min = 0.0; runtime zeros at (2,96): `hhum`=0.0, `patm`=0, `tx`=`ty`=0, `tta`=273.15 (=0.0°C init), `dhsn`=0; `sw`/`wl` finite (computed downstream from `cz`/`tta`).
+- Mechanism: `ppatm`=0 → `ratm`=0 → `a3`=(0.665·0)/0·ww = 0/0 = NaN (any `ww`). PRIMARY SOURCE, mathematically and temporally established (no physics claim beyond this chain).
+
+### 24.3 Temporal causality (first NaN inside heat(iii=2))
+
+- POST_HEAT iii=1: cat-1 1.0/0.01 FINITE (open-water `tfr`-fallback forms legitimate new ice despite NaN `qn`: NaN-comparisons route to `tfr`, finite). PRE_DYN/POST_DYN iii=1: finite. PRE_HEAT iii=2: 0.25/2.5e-3 finite.
+- `D31_DHIC1` fires during heat(iii=2); PRE_DYN iii=2 already GHOST (1.0/NaN). FIRST NaN is created inside heat(iii=2,k=1) — NOT pre-existing (Luna caution resolved by brackets: pre-heat finite, dhic1-NaN intra-heat, post-heat NaN).
+- Downstream (frozen, D25-D30): redis632 → `hices`=NaN → dynamics guard failure → ice u/v NaN → adv2d import → REDIS fallback (1.0,NaN)@(2,95) → heat scratch → `advs` → (2,2) S1-NaN → zombie (April day-01 T/S/ro fully NaN; Jan fully clean).
+
+### 24.4 Jan vs Apr
+
+- Jan TRACE: 0 NaN flags; Jan file latitude starts at 63.0°N → (2,96) covered (no skip warning); Jan forms no new ice at (2,96) (PRE_HEAT iii=2 ice-free). April diverges by (a) out-of-coverage meteo zeros at edge cells AND (b) freezing that creates the executing thin-ice category. Ice init files identical.
+
+### 24.5 Validation
+
+- OFF (`stage11.4_d31_jan7off`): 32/32 `.nc` md5-MATCH the D30-code run; exit 0; zero artifacts. NOTE (env): post-reboot `/tmp` rebuilds regenerated via documented D22 procedure (April values verified identical: T −2.17…6.75). NO guards/clamps/equation/scheme/init changes (reads+prints only).

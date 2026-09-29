@@ -163,6 +163,21 @@ program main
     dt = 3600.0         ! [с] Шаг бароклинной моды и термодинамики (1 час).
     !   CFL для бароклинных волн: dt < dx/c_bc, c_bc~1-2 м/с.
     !   dx=13890 м, c_bc=1.5 м/с → CFL≈9260 с > 3600 с — безопасно.
+    ! Stage 11.3C: timestep sensitivity matrix (env-gated, default legacy).
+    !   STAGE113_DT  — бароклинный шаг [с] (default 3600); STAGE113_DT1 —
+    !   баротропный микрошаг [с] (default 120). Только измерение: схемы не
+    !   меняются; c2/c4/c5/c10 пересчитываются ниже. mm2=12 фиксировано
+    !   (модельных часов в сутках = 12·DT — документировано в отчёте).
+    call get_environment_variable('STAGE113_DT', env_str)
+    if (len_trim(env_str) .gt. 0) then
+        read (env_str, *, iostat=ios) dt
+        if (ios .ne. 0 .or. dt .le. 0.0) dt = 3600.0
+    end if
+    call get_environment_variable('STAGE113_DT1', env_str)
+    if (len_trim(env_str) .gt. 0) then
+        read (env_str, *, iostat=ios) dt1
+        if (ios .ne. 0 .or. dt1 .le. 0.0) dt1 = 120.0
+    end if
     mm1 = 91            ! Число модельных дней (Q1 2020: 91 день = 31+28+31).
     mm2 = 12            ! Число термодинамических шагов в сутках (12 × 3600 с = 12 ч).
     mm3 = 30            ! Число баротропных микрошагов на бароклинный (30 × 120 с = 1 ч).

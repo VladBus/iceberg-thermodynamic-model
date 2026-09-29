@@ -1,7 +1,8 @@
 # Project Roadmap
 
-**Updated:** 2026-09-25
-**Current scientific stage:** Stage 11.1 — Ocean Stability Across Seasonal Initial Conditions (COMPLETED; seasonal dependence established: instability is general to prognostic ocean evolution but timing depends on initial EN4 state; Jan survives 4 days, Apr/Jul/Oct crash Day 1 with pre-existing negative ro; frozen-ocean control 30 days stable; next = EN4 initial condition stabilization)
+**Updated:** 2026-09-29
+**Current scientific stage:** Stage 11.3C — Numerical Scheme Audit + Timestep Sensitivity (COMPLETED below; all-seasons baseline STABLE since 11.4-D32 loader fix; Day-1 zombie accident CLOSED; forensic chain condensed in `docs/validation/stage11.4_forensic_chain_summary.md`)
+**Stages 3–11.3B: COMPLETED** (10.x iceberg modernization; 11.1 seasonal characterization; 11.2 CFL audit; 11.4-D21…D33 EN4 stabilization → ERA5-coverage fix → cleanup + Ocean Baseline 11.x; 11.3A execution-graph audit; 11.3B input-architecture audit + NetCDF contracts).
 **Current status:** Stages 10.14–10.22 committed (`0504853` 10.18A, `d99a4bf` 10.18B, `e99dbdc` 10.18C, `b01c902` 10.18D, `03bb42c` 10.19, `16a4c65` 10.20, `7a17cac` 10.21, `928041a` 10.22); **Stage 10.20 (ocean initialization & numerical stabilization) COMPLETE** (D-18): full-coverage ERA5 data fix resolved CASE C (3-day gate PASS, 36 steps, 0 NaN); residual CA instability characterized, NOT fixed (T-01/T-03 family; 30-day gate `steps executed = 55`, acceptance 360 NOT met); **Stage 10.21 (CA/EOS precision stabilization) COMPLETE** (D-19): float32 2⁻²³ quantization root cause confirmed, no physics change (RULES.md), bit-identical legacy verified; **Stage 10.22 (ocean density / thermal-wind / Block-200 stability audit) COMPLETE** (D-20): replay experiments a0–a4 with diagnostic freeze switches isolate the NaN chain (CA/EOS → Block 200 transmitter → Block 210 amplifier), all switches OFF default bit-identical (a0 ≡ a0_diag daily-diagnostics md5 `1ef13cb4…`); Block 210 Thomas pivots negative by construction; stabilizer levers freeze_ro (a1) / freeze_ts (a3) / freeze_ro_downstream (a4) restore physical validity (worst rel 4.213e-6) but are diagnostic-only; production physics KEEP_CURRENT; fpm battery + Python suites PASS; next = approved physics stage.
 
 ## Completed foundation
@@ -54,9 +55,45 @@
 | 10.22    | Ocean density / thermal-wind / Block-200 stability audit — **causal chain ISOLATED (D-20)**: replay experiments a0–a4 (30 d, step 1) prove **Block 200 transmits** the CA/EOS float32 density corruption (ρ<0 from day 4 s1, min −1.946690e-04; ρ-flip diag 10.4M cells day 3; first NaN day 5 s6 `CA_after ro_nan=198`, u/v/T/S clean) **into momentum via TWO paths** (density+thermal-wind budget split EXACT: a2 ro-phase-only 9 metrics fail, momentum max_u2/v2/amp_u/v PASS; worst rel 2.954e-1); **Block 210 amplifies** (rhs_max 1.12608E+16, den_min 7.05833E-04, day-6 zombie 142,081 cells); **Thomas pivots negative BY CONSTRUCTION** (a1 = −1+a+b < 0; piv_neg = piv_cnt = 100 %, piv_min = 1.0) — structural, NOT pathology; **stabilizer levers freeze_ro (a1) / freeze_ts (a3) / freeze_ro_downstream (a4) restore physical validity (30/30 PASS, worst rel 4.213e-6) but are DIAGNOSTIC-ONLY, NOT production paths**; **production physics KEEP_CURRENT, bit-identical legacy verified** (a0 vs a0_diag daily-diagnostics md5 `1ef13cb4…`); 27-section report; Python regression `test_stage10_22_block200_audit.py` (added, 300 checks PASS); next = approved physics stage, acceptance = 30-day gate `steps executed = 360`; full battery PASS (59 targets) | **Complete**; classification: stability audit (instrumentation, no production physics change); production physics UNCHANGED; commit `928041a` |
 | 11.1     | Ocean Stability Across Seasonal Initial Conditions — **seasonal dependence established**: instability is general to prognostic ocean evolution but timing depends on initial EN4 state; Jan survives 4 days, Apr/Jul/Oct crash Day 1 with pre-existing negative ro (−20.07 g/cm³); frozen-ocean control 30 days stable (ro 0.0075–0.0082 g/cm³); atmospheric forcing alone does NOT cause instability; EN4 initial condition pathology identified for summer/autumn; next = EN4 initial condition stabilization (Stage 11.2) | **Complete**; classification: seasonal stability characterization (no production physics change); production physics UNCHANGED; commit pending |
 
-## Next stage
+## Next stages (forward roadmap, post-11.3B)
 
-### Stage 11.2 — EN4 Initial Condition Stabilization (approved physics stage)
+> HISTORICAL NOTE (11.3C): the 11.2 section below is superseded. EN4
+> extrapolation was fixed in 11.4-D21/D22; the seasonal Day-1 crash was
+> proven (D24–D32) to be an ERA5 coverage-gap accident, fixed in D32.
+> Baselines are stable (D33 Ocean Baseline 11.x). The 11.2 acceptance gate
+> below is obsolete.
+
+### Stage 11.3C (current) — Scheme Audit + Timestep Sensitivity
+
+Forensic audit of ACTUAL numerical schemes (`docs/model/numerical_scheme_inventory.md`):
+advt/advs vertical is EXPLICIT upwind (code comments claiming "implicit
+Thomas" are FALSE documentation — code unchanged); FCT-Zalesak active in 3D
+T/S; advsh FCT intentionally disabled; B200 semi-implicit Coriolis + explicit
+forcing; B210 genuine implicit Thomas; shal/W/ice-dynamics explicit
+(+semi-implicit friction 2×2). Timestep matrix (April 30 d, `STAGE113_DT/DT1`):
+A(3600/120), B(1800/120), C(900/120), D(3600/60), E(3600/30) — all 29 d,
+no NaN; CA guard saturation DT-independent (quantization floor).
+
+### Stage 11.4 — EOS-80 A/B Experiment (next physics stage)
+
+Controlled density-EOS experiment (legacy Eckart vs EOS-80) per RULES.md
+procedure; acceptance against 11.x baselines + FIRST_INVALID guardrail.
+
+### Stage 11.5 — Modern NetCDF Input Architecture (implementation)
+
+Execute the 11.3B contracts: `model/grid.nc`, monthly `ice_initial_*.nc`,
+reader migration, legacy dead-path removal — each md5-gated.
+
+### Stage 11.6 — Seasonal Sea-Ice Initialization Upgrade
+
+Month-resolved ice state (replaces January-only reuse; D30/D31 showed the
+freezing-regime difference matters).
+
+### Stage 12.0 — Voxel Iceberg Thermodynamics
+
+3D internal iceberg model (explicitly out of scope until 11.4–11.6 land).
+
+### Stage 11.2 — EN4 Initial Condition Stabilization (SUPERSEDED — archive)
 
 Stage 11.1 established that the ocean instability is general to prognostic ocean evolution, but its timing depends critically on the initial EN4 state:
 

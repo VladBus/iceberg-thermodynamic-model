@@ -444,3 +444,27 @@ The scientific validation requirement for future stages is: equation/source prov
 - Bigg et al. (1997); Martin & Adcroft (2010); NEMO-ICB literature — iceberg dynamics/thermodynamics and coupled modelling context.
 
 Full records are maintained in `docs/references/references.bib`; source-to-component roles are maintained in `docs/references/literature_matrix.md`.
+
+## 16. Ocean advection schemes (11.3C authoritative note)
+
+Forensic code audit (Stage 11.3C) established the ACTUAL schemes; this
+ledger previously did not specify ocean advection — no contradiction is
+corrected here, coverage is added. Full inventory:
+`docs/model/numerical_scheme_inventory.md`.
+
+- `advt`/`advs` (3D T/S): explicit 1st-order upwind predictor (X/Y/Z) +
+  Zalesak FCT corrector in all three directions; final `t2/s2 = cd`.
+- HISTORICAL NOTE: comments in `advection_3d_t.f90` (lines ~20/83/139-144)
+  and `advection_3d_s.f90` (~13/121) claim an "implicit Thomas" vertical
+  solve. The code performs a single explicit upwind sweep over old values;
+  no tridiagonal system is assembled. Vertical advection is EXPLICIT and
+  CFL-limited (measured Cz max 4.63 over 29 d without blowup — FCT-Z
+  absorbs overshoot). Comments left untouched (audit-only stage).
+- `advsh` (barotropic momentum): Lax–Richtmyer predictor with FCT
+  anti-diffusion INTENTIONALLY disabled (`apx2/apy2 = 0`, `CDY*0` in
+  X-block) — do not "fix" (stability constraint, AGENTS.md).
+- Block 200: semi-implicit Coriolis via analytic 2×2 solve
+  (`asa1 = f·dt/2`, `asa = 1+asa1²`) + explicit baroclinic/DPX/Laplacian.
+- Block 210: genuine IMPLICIT Thomas solve for vertical viscosity
+  (forward `uca/unu`, backward substitution; pivots negative by
+  construction per Stage 10.22).

@@ -557,3 +557,25 @@ D26 complete within its charter (exact s1-line + operands + inheritance proof). 
 ### 24.5 Validation
 
 - OFF (`stage11.4_d31_jan7off`): 32/32 `.nc` md5-MATCH the D30-code run; exit 0; zero artifacts. NOTE (env): post-reboot `/tmp` rebuilds regenerated via documented D22 procedure (April values verified identical: T −2.17…6.75). NO guards/clamps/equation/scheme/init changes (reads+prints only).
+
+## 25. Stage 11.4-D32 ERA5 coverage fix (frozen 2026-09-29)
+
+### 25.1 Fix implemented: Option B (nearest-edge fallback in the loader)
+
+- Site: `src/wind_forcing.f90`, `era5_wind()` (the D31-established culprit lines). On `era5_bilinear2d` ok=false, latitude is clamped into the file range (`lat_use = min(max(lat, era5_lat(1)), era5_lat(era5_nlat))`) and interpolation retried with the edge value; legacy `cycle` kept only if the retry also fails. All six fields (u10/v10/t2m/msl/d2m/tcc/sf) use the clamped latitude. Covered cells take the identical path as before (`lat_use == lat` bitwise).
+- No data files changed; no thermodynamic/dynamics/adv2d/REDIS equations changed; no `MAX(ppatm)`/`MAX(a3)`/NaN-clamp guards anywhere (only the loader gap is addressed).
+- Tracer: `D32_FALLBACK` print for (2,96) behind env `STAGE114_D32_TRACE` (default OFF); `nbad` warning message updated (nearest-edge instead of "zeroed").
+
+### 25.2 Mechanism confirmation (forcing level)
+
+- April run log: `D32_FALLBACK lat=64.9578 clamped=65.0 ok=T` with finite `u10v` (1.76/7.83 m/s across slices) — `ok=true` restored, `ppatm`/`ratm`/`a3` finite downstream.
+- Zero firings of all NaN traps (D27/D29/D30/D31) across the full April run; no FIRST-INVALID event; April day-01: T/S/ro/ice 0 NaN (pre-fix: 142081 T/S/ro + 249 ice NaN). Chain broken at the forcing level.
+
+### 25.3 Validation (full runs, exit 0 each)
+
+- April (`stage11.4_d32_apr7fix`, 29 d): clean (above). July (`stage11.4_d32_jul7fix`, 30 d): no FIRST-INVALID, day-01 0 NaN. October (`stage11.4_d32_oct7fix`, 30 d): no FIRST-INVALID, day-01 0 NaN. All three monthly files share the 65.0°N edge (same 55-cell gap) — one fix covers all.
+- January (`stage11.4_d32_jan7fix`, 30 d): 32/32 output `.nc` md5-MATCH the pre-fix D31 run — covered cells provably unaffected (backward compatible).
+
+### 25.4 Decision
+
+- The fix converts unphysical zero-init forcing at out-of-coverage edge cells into file-edge persistence. Suitable for production: minimal (loader-only), no physics change, empirically neutral on covered cells. NOTE (env): post-reboot `/tmp` rebuilds regenerated via the documented D22 procedure (deterministic; April values re-verified).

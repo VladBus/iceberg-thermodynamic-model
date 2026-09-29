@@ -42,7 +42,8 @@ module wind_forcing
     use smooth_filter    ! Подключаем модуль сглаживания
     use netcdf_input, only: era5_find_time_index, era5_bilinear2d, &
                             era5_u10, era5_v10, era5_t2m, era5_msl, &
-                            era5_d2m, era5_tcc, era5_snowfall, era5_is_open
+                            era5_d2m, era5_tcc, era5_snowfall, era5_is_open, &
+                            era5_lat, era5_nlat
     implicit none
 
 contains
@@ -231,6 +232,12 @@ contains
         integer :: nbad
         real(8) :: lat, lon, u10v, v10v, t2mv, mslv, d2mv, tccv, snowfallv
         real(8) :: spd, cof8, u_cm, v_cm
+        ! Stage 11.4-D32: clamped latitude for nearest-edge fallback (диагностика: только локал)
+        real(8) :: lat_use
+        ! Stage 11.4-D32: env-gated fallback tracer (default OFF)
+        logical, save :: d32_armed = .false.
+        logical, save :: d32_env_read = .false.
+        character(len=256) :: d32_env
         real, parameter :: dxx = 13.89e5 ! Горизонтальный шаг сетки (см)
         logical :: ok
 
@@ -263,17 +270,34 @@ contains
                 lat = real(fi(i, j), 8)
                 lon = real(dl(i, j), 8)
 
+                lat_use = lat
                 ok = era5_bilinear2d(era5_u10(:, :, tidx), lat, lon, u10v)
                 if (.not. ok) then
+                    ! Stage 11.4-D32: nearest-edge fallback. Model points outside
+                    ! the ERA5 latitude range (e.g. April file starts at 65N)
+                    ! reuse the file-edge value instead of keeping zero init
+                    ! (zero ppatm gave a3 = 0/0 = NaN in heat, Day-1 zombie).
+                    ! Covered cells are unaffected (lat_use == lat, same path).
                     nbad = nbad + 1
-                    cycle
+                    lat_use = min(max(lat, era5_lat(1)), era5_lat(era5_nlat))
+                    ok = era5_bilinear2d(era5_u10(:, :, tidx), lat_use, lon, u10v)
+                    if (.not. d32_env_read) then
+                        call get_environment_variable('STAGE114_D32_TRACE', d32_env)
+                        if (len_trim(d32_env) .gt. 0 .and. &
+                            (d32_env .eq. 'true' .or. d32_env .eq. '1')) d32_armed = .true.
+                        d32_env_read = .true.
+                    end if
+                    if (d32_armed .and. i .eq. 2 .and. j .eq. 96) &
+                        print *, 'D32_FALLBACK lat=', lat, 'clamped=', lat_use, 'ok=', ok, &
+                                 'u10v=', u10v
+                    if (.not. ok) cycle
                 end if
-                ok = era5_bilinear2d(era5_v10(:, :, tidx), lat, lon, v10v)
-                ok = era5_bilinear2d(era5_t2m(:, :, tidx), lat, lon, t2mv)
-                ok = era5_bilinear2d(era5_msl(:, :, tidx), lat, lon, mslv)
-                ok = era5_bilinear2d(era5_d2m(:, :, tidx), lat, lon, d2mv)
-                ok = era5_bilinear2d(era5_tcc(:, :, tidx), lat, lon, tccv)
-                ok = era5_bilinear2d(era5_snowfall(:, :, tidx), lat, lon, snowfallv)
+                ok = era5_bilinear2d(era5_v10(:, :, tidx), lat_use, lon, v10v)
+                ok = era5_bilinear2d(era5_t2m(:, :, tidx), lat_use, lon, t2mv)
+                ok = era5_bilinear2d(era5_msl(:, :, tidx), lat_use, lon, mslv)
+                ok = era5_bilinear2d(era5_d2m(:, :, tidx), lat_use, lon, d2mv)
+                ok = era5_bilinear2d(era5_tcc(:, :, tidx), lat_use, lon, tccv)
+                ok = era5_bilinear2d(era5_snowfall(:, :, tidx), lat_use, lon, snowfallv)
                 ! Точка росы: определение относительной влажности RH
                 ! по формуле Клаузиуса-Клапейрона ( appeals saturation vapor pressure):
                 !   e_sat(T) = 610.78 * 10^(8.61503*(T_K - 273.15)/T_K)  [Па]
@@ -314,7 +338,7 @@ contains
 
         if (nbad .gt. 0) then
             print *, "ERA5 WIND WARNING: ", nbad, &
-                " model points outside ERA5 latitude range (zeroed)."
+                " model points outside ERA5 latitude range (nearest-edge fallback, D32)."
         end if
 
         ! Градиент атмосферного давления (независимая ветвь от ветра).

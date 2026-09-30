@@ -19,7 +19,8 @@
 
 module convective_adjustment
     use param
-    use equation_of_state, only: density_anomaly, density_anomaly_f64
+    use equation_of_state, only: density_anomaly, density_anomaly_f64, &
+                                 eos_density, eos_density_f64
     use stage1022_diagnostics, only: s22_freeze_ro
     use, intrinsic :: iso_fortran_env, only: real64
     implicit none
@@ -162,7 +163,8 @@ contains
 
         ! Шаг 1: Вычисление плотности до перемешивания [г/см³].
         do k = 1, ki
-            cr(k) = density_anomaly(ct(k), cs(k))
+            ! Stage 11.4: диспетчер EOS (LEGACY = тот же вызов; EOS80: p = z[см]×0.01 [дбар]).
+            cr(k) = eos_density(ct(k), cs(k), z(k)*0.01)
         end do
 
         if (ki .eq. 1) return  ! Один уровень — перемешивать нечего
@@ -193,7 +195,8 @@ contains
                 ct(k1) = ct(k)  ! Оба уровня получают одинаковые T и S
                 cs(k1) = cs(k)
                 ! Пересчёт плотности перемешанных уровней.
-                cr(k) = density_anomaly(ct(k), cs(k))
+                ! Stage 11.4: диспетчер EOS (LEGACY = тот же вызов).
+                cr(k) = eos_density(ct(k), cs(k), z(k)*0.01)
                 cr(k1) = cr(k)
                 dzz = dzz1
             end do
@@ -292,7 +295,9 @@ contains
 
         ! Шаг 1: Вычисление плотности в double precision до перемешивания.
         do k = 1, ki
-            cr(k) = density_anomaly_f64(real(ct(k), real64), real(cs(k), real64))
+            ! Stage 11.4: диспетчер EOS (LEGACY = тот же вызов).
+            cr(k) = eos_density_f64(real(ct(k), real64), real(cs(k), real64), &
+                                    real(z(k)*0.01, real64))
         end do
 
         if (ki .eq. 1) return  ! Один уровень — перемешивать нечего
@@ -332,7 +337,9 @@ contains
                 ct(k1) = ct(k)  ! Оба уровня получают одинаковые T и S
                 cs(k1) = cs(k)
                 ! Пересчёт плотности перемешанных уровней (f64).
-                cr(k) = density_anomaly_f64(real(ct(k), real64), real(cs(k), real64))
+                ! Stage 11.4: диспетчер EOS (LEGACY = тот же вызов).
+                cr(k) = eos_density_f64(real(ct(k), real64), real(cs(k), real64), &
+                                        real(z(k)*0.01, real64))
                 cr(k1) = cr(k)
                 dzz = dzz1
             end do
@@ -452,11 +459,14 @@ contains
                         if (ca_f64_mode .and. ca_f64_scope) then
                             ! Stage 10.21 scope=all (EXP-C): RO через f64-плотность —
                             ! единая последовательность вычислений с ядром столбца.
-                            ro(i, j, k) = real(density_anomaly_f64( &
-                                real(ct(k), real64), real(cs(k), real64)), kind(1.0))
+                            ! Stage 11.4: диспетчер EOS (LEGACY = тот же вызов).
+                            ro(i, j, k) = real(eos_density_f64( &
+                                real(ct(k), real64), real(cs(k), real64), &
+                                real(z(k)*0.01, real64)), kind(1.0))
                         else
                             ! Legacy float32 (в т.ч. EXP-D: writeback остаётся f32).
-                            ro(i, j, k) = density_anomaly(ct(k), cs(k))  ! Пересчёт RO
+                            ! Stage 11.4: диспетчер EOS (LEGACY = тот же вызов).
+                            ro(i, j, k) = eos_density(ct(k), cs(k), z(k)*0.01)
                         end if
                     end if
                 end do

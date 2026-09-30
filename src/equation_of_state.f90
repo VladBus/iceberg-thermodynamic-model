@@ -38,6 +38,7 @@
 
 module equation_of_state
     use param
+    use eos80_unesco, only: unesco_rho
     use, intrinsic :: iso_fortran_env, only: real64
     implicit none
 
@@ -54,7 +55,62 @@ module equation_of_state
     ! Не влияет на density_anomaly (legacy f32) и density_anomaly_f64.
     logical, save :: eos_f64_mode = .false.
 
-contains
+    ! ==========================================================================
+    ! Stage 11.4: селектор EOS-80 (runtime, по умолчанию LEGACY = OFF).
+    !
+    !   eos80_mode = .true.  → диспетчеры eos_density/eos_density_f64 считают
+    !                            плотность по UNESCO EOS-80 (давление-зависимо).
+    !   eos80_mode = .false. → бит-идентичный legacy Эккарт (тот же вызов).
+    !
+    !   Управляется из main.f90 через eos80_configure() (env EOS_MODE:
+    !   'EOS80'/'eos80'/'true'/'1' → ON; всё остальное/пусто → OFF/LEGACY).
+    !   Конвенция выхода сохранена: аномалия rho-1.02 [г/см³]; S модели
+    !   (массовая доля) ×1000 → PSU; p [дбар] передаётся вызывающим
+    !   (глубина уровня в метрах: z[см]×0.01).
+    ! ==========================================================================
+    logical, save :: eos80_mode = .false.
+
+    contains
+
+    subroutine eos80_configure()
+        character(len=256) :: env_str
+        call get_environment_variable('EOS_MODE', env_str)
+        if (len_trim(env_str) .gt. 0 .and. (env_str .eq. 'EOS80' .or. &
+            env_str .eq. 'eos80' .or. env_str .eq. 'true' .or. env_str .eq. '1')) then
+            eos80_mode = .true.
+            print *, '>>> Stage 11.4: EOS_MODE=EOS80 (UNESCO 1983 density)'
+        else
+            print *, '>>> Stage 11.4: EOS_MODE=LEGACY (Eckart, bit-identical)'
+        end if
+    end subroutine eos80_configure
+
+    ! Аномалия EOS-80 в конвенции модели: rho[кг/м³]/1000 − 1.02 [г/см³].
+    pure real(real64) function eos80_density_anomaly(t_frac, s_frac, p_dbar) result(ro_anom)
+        real(real64), intent(in) :: t_frac, s_frac, p_dbar
+        ro_anom = unesco_rho(s_frac*1000.0_real64, t_frac, p_dbar)/1000.0_real64 &
+                  - 1.02_real64
+    end function eos80_density_anomaly
+
+    ! Диспетчер f32: OFF → тот же вызов legacy (бит-идентично).
+    pure real function eos_density(t, s, p) result(ro_anom)
+        real, intent(in) :: t, s, p
+        if (eos80_mode) then
+            ro_anom = real(eos80_density_anomaly(real(t, real64), real(s, real64), &
+                                                 real(p, real64)))
+        else
+            ro_anom = density_anomaly(t, s)
+        end if
+    end function eos_density
+
+    ! Диспетчер f64: OFF → тот же вызов legacy (бит-идентично).
+    pure real(real64) function eos_density_f64(t, s, p) result(ro_anom)
+        real(real64), intent(in) :: t, s, p
+        if (eos80_mode) then
+            ro_anom = eos80_density_anomaly(t, s, p)
+        else
+            ro_anom = density_anomaly_f64(t, s)
+        end if
+    end function eos_density_f64
 
     ! ==========================================================================
     ! eos_configure: включение/выключение f64-режима eos_diag (Stage 10.21).
@@ -154,6 +210,11 @@ contains
                         ro(i, j, k) = real(density_anomaly_f64( &
                             real(t2(i, j, k), real64), real(s2(i, j, k), real64)), &
                             kind(1.0))
+                    else if (eos80_mode) then
+                        ! Stage 11.4: EOS-80, давление уровня p = z[см]×0.01 [дбар].
+                        ro(i, j, k) = real(eos_density_f64( &
+                            real(t2(i, j, k), real64), real(s2(i, j, k), real64), &
+                            real(z(k)*0.01, real64)), kind(1.0))
                     else
                         ro(i, j, k) = density_anomaly(t2(i, j, k), s2(i, j, k))
                     end if

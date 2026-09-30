@@ -399,6 +399,8 @@ program main
     end if
     call ca_configure(ca_f64_mode, ca_f64_mix, ca_f64_scope, ca_eps_value)
     call eos_configure(ca_f64_scope)
+    ! Stage 11.4: EOS-80 selector (env EOS_MODE; default LEGACY = bit-identical).
+    call eos80_configure()
     if (ca_f64_mode .or. ca_f64_mix .or. ca_f64_scope .or. &
         abs(ca_eps_value - 0.9e-7) .gt. 1e-15) then
         print *, ">>> STAGE 10.21: CA precision experiment ENABLED (f64=", ca_f64_mode, &

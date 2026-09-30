@@ -24,6 +24,8 @@
 module netcdf_output
     use param
     use netcdf
+    use equation_of_state, only: eos_density_f64
+    use, intrinsic :: iso_fortran_env, only: real64
     implicit none
 
 contains
@@ -39,8 +41,10 @@ contains
         integer :: dpx_varid, dpy_varid
         integer :: tatm_varid, patm_varid
         integer :: humid_varid, cloud_varid, era5_snowfall_rate_varid
-        integer :: status, i, k
+        integer :: status, i, j, k
         integer :: ro_varid
+        ! Stage 11.4.1: коэффициенты расширения/сжатия (диагностика, active EOS).
+        integer :: alpha_varid, beta_varid
         integer :: cat_dimid, snow_depth_varid, ice_thick_varid, ice_conc_varid
         real :: x_coord(is1), y_coord(js1), depth(ks), depth_w(ks1)
         ! Буферы канонических единиц СИ (только на границе вывода; внутренние
@@ -51,6 +55,10 @@ contains
         real :: tau_pa(is1, js1), tauy_pa(is1, js1)
         real :: dpx_pam(is1, js1), dpy_pam(is1, js1)
         real :: tatm_k(is1, js1), patm_pa(is1, js1)
+        ! Stage 11.4.1: alpha=-dRO/dT [г/см³/K], beta=dRO/dS [г/см³/доля]
+        ! через активный EOS (диспетчер): центральные разности h_T=1e-3,
+        ! h_S=1e-4 в f64. Только чтение состояния; модель не затрагивается.
+        real :: alpha_w(is1, js1, ks), beta_w(is1, js1, ks)
 
         ! --- ПОДГОТОВКА КООРДИНАТ ---
         ! x/y - координаты регулярной сетки [км]; dx в модели = 13.89 км.
@@ -193,6 +201,18 @@ status = nf90_put_att(ncid, nf90_global, 'unit_system', 'SI (canonical external 
         if (.not. nc_ok(status, 'define w_velocity')) then
             status = nf90_close(ncid); return
         end if
+        ! Stage 11.4.1: alpha/beta (диагностика активного EOS).
+        status = nf90_def_var(ncid, 'alpha_thermal', nf90_real, (/x_dimid, y_dimid, z_dimid/), alpha_varid)
+        if (.not. nc_ok(status, 'define alpha_thermal')) then
+            status = nf90_close(ncid); return
+        end if
+        status = nf90_def_var(ncid, 'beta_haline', nf90_real, (/x_dimid, y_dimid, z_dimid/), beta_varid)
+        if (.not. nc_ok(status, 'define beta_haline')) then
+            status = nf90_close(ncid); return
+        end if
+        if (.not. nc_ok(status, 'define w_velocity')) then
+            status = nf90_close(ncid); return
+        end if
 
         ! --- ДИАГНОСТИЧЕСКИЕ ПОЛЯ ФОРСИНГА ---
         status = nf90_def_var(ncid, 'wind_speed', nf90_real, (/x_dimid, y_dimid/), wind_varid)
@@ -311,6 +331,14 @@ status = nf90_put_att(ncid, nf90_global, 'unit_system', 'SI (canonical external 
         call set_att(ncid, w_varid, 'standard_name', 'upward_sea_water_velocity')
         call set_att(ncid, w_varid, 'long_name', 'vertical ocean velocity')
         call set_att(ncid, w_varid, 'comment', 'canonical SI unit m s-1 (internal cm s-1 * 0.01)')
+
+        ! Stage 11.4.1: alpha/beta attrs (диагностика активного EOS).
+        call set_att(ncid, alpha_varid, 'units', 'g cm-3 K-1')
+        call set_att(ncid, alpha_varid, 'long_name', 'thermal expansion coefficient (active EOS)')
+        call set_att(ncid, alpha_varid, 'comment', 'alpha = -dRO/dT via active EOS dispatcher, central FD h_T=1e-3 C; LEGACY or EOS-80 depending on EOS_MODE')
+        call set_att(ncid, beta_varid, 'units', 'g cm-3')
+        call set_att(ncid, beta_varid, 'long_name', 'haline contraction coefficient (active EOS)')
+        call set_att(ncid, beta_varid, 'comment', 'beta = dRO/dS via active EOS dispatcher, central FD h_S=1e-4 mass fraction; LEGACY or EOS-80 depending on EOS_MODE')
 
         call set_att(ncid, wind_varid, 'units', 'm s-1')
         call set_att(ncid, wind_varid, 'standard_name', 'wind_speed')
@@ -432,6 +460,41 @@ status = nf90_put_att(ncid, nf90_global, 'unit_system', 'SI (canonical external 
 
         status = nf90_put_var(ncid, ro_varid, ro_kgm3)
         if (.not. nc_ok(status, 'write density')) then
+            status = nf90_close(ncid); return
+        end if
+
+        ! Stage 11.4.1: alpha/beta через активный EOS (только чтение T2/S2;
+        ! модель не затрагивается). p уровня = z[см]x0.01 [дбар].
+        do k = 1, ks
+            do j = 1, js1
+                do i = 1, is1
+                    if (kt1(i, j) .eq. 0 .or. k .gt. kt1(i, j)) then
+                        alpha_w(i, j, k) = 0.0
+                        beta_w(i, j, k) = 0.0
+                    else
+                        alpha_w(i, j, k) = real(-(eos_density_f64( &
+                            real(t2(i, j, k), real64) + 1.0e-3_real64, &
+                            real(s2(i, j, k), real64), real(z(k)*0.01, real64)) - &
+                            eos_density_f64(real(t2(i, j, k), real64) - 1.0e-3_real64, &
+                            real(s2(i, j, k), real64), real(z(k)*0.01, real64)))/ &
+                            (2.0e-3_real64))
+                        beta_w(i, j, k) = real((eos_density_f64( &
+                            real(t2(i, j, k), real64), &
+                            real(s2(i, j, k), real64) + 1.0e-4_real64, &
+                            real(z(k)*0.01, real64)) - &
+                            eos_density_f64(real(t2(i, j, k), real64), &
+                            real(s2(i, j, k), real64) - 1.0e-4_real64, &
+                            real(z(k)*0.01, real64)))/(2.0e-4_real64))
+                    end if
+                end do
+            end do
+        end do
+        status = nf90_put_var(ncid, alpha_varid, alpha_w)
+        if (.not. nc_ok(status, 'write alpha_thermal')) then
+            status = nf90_close(ncid); return
+        end if
+        status = nf90_put_var(ncid, beta_varid, beta_w)
+        if (.not. nc_ok(status, 'write beta_haline')) then
             status = nf90_close(ncid); return
         end if
 

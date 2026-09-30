@@ -1,8 +1,8 @@
 # Project Roadmap
 
-**Updated:** 2026-09-29
-**Current scientific stage:** Stage 11.3C — Numerical Scheme Audit + Timestep Sensitivity (COMPLETED below; all-seasons baseline STABLE since 11.4-D32 loader fix; Day-1 zombie accident CLOSED; forensic chain condensed in `docs/validation/stage11.4_forensic_chain_summary.md`)
-**Stages 3–11.3B: COMPLETED** (10.x iceberg modernization; 11.1 seasonal characterization; 11.2 CFL audit; 11.4-D21…D33 EN4 stabilization → ERA5-coverage fix → cleanup + Ocean Baseline 11.x; 11.3A execution-graph audit; 11.3B input-architecture audit + NetCDF contracts).
+**Updated:** 2026-09-30
+**Current scientific stage:** Stage 11.4 (planning) — Roadmap Reconciliation & Temporal Integration Architecture Planning (docs-only; next: EOS-80 experiment).
+**Stages 3–11.3C.3: COMPLETED** (10.x iceberg modernization; 11.1 seasonal characterization; 11.2 CFL audit; 11.4-D21…D33 EN4 stabilization → ERA5-coverage fix → cleanup + Ocean Baseline 11.x; 11.3A execution-graph audit; 11.3B input-architecture audit + NetCDF contracts; 11.3C scheme audit + timestep matrix; 11.3C.1 semantics + CFL distributions; 11.3C.2 time-integration audit; 11.3C.3 historical loop-bound search → VERDICT D, unresolved).
 **Current status:** Stages 10.14–10.22 committed (`0504853` 10.18A, `d99a4bf` 10.18B, `e99dbdc` 10.18C, `b01c902` 10.18D, `03bb42c` 10.19, `16a4c65` 10.20, `7a17cac` 10.21, `928041a` 10.22); **Stage 10.20 (ocean initialization & numerical stabilization) COMPLETE** (D-18): full-coverage ERA5 data fix resolved CASE C (3-day gate PASS, 36 steps, 0 NaN); residual CA instability characterized, NOT fixed (T-01/T-03 family; 30-day gate `steps executed = 55`, acceptance 360 NOT met); **Stage 10.21 (CA/EOS precision stabilization) COMPLETE** (D-19): float32 2⁻²³ quantization root cause confirmed, no physics change (RULES.md), bit-identical legacy verified; **Stage 10.22 (ocean density / thermal-wind / Block-200 stability audit) COMPLETE** (D-20): replay experiments a0–a4 with diagnostic freeze switches isolate the NaN chain (CA/EOS → Block 200 transmitter → Block 210 amplifier), all switches OFF default bit-identical (a0 ≡ a0_diag daily-diagnostics md5 `1ef13cb4…`); Block 210 Thomas pivots negative by construction; stabilizer levers freeze_ro (a1) / freeze_ts (a3) / freeze_ro_downstream (a4) restore physical validity (worst rel 4.213e-6) but are diagnostic-only; production physics KEEP_CURRENT; fpm battery + Python suites PASS; next = approved physics stage.
 
 ## Completed foundation
@@ -63,7 +63,7 @@
 > Baselines are stable (D33 Ocean Baseline 11.x). The 11.2 acceptance gate
 > below is obsolete.
 
-### Stage 11.3C (current) — Scheme Audit + Timestep Sensitivity
+### Stage 11.3C (COMPLETED) — Scheme Audit + Timestep Sensitivity
 
 Forensic audit of ACTUAL numerical schemes (`docs/model/numerical_scheme_inventory.md`):
 advt/advs vertical is EXPLICIT upwind (code comments claiming "implicit
@@ -78,20 +78,41 @@ no NaN; CA guard saturation DT-independent (quantization floor).
 
 Controlled density-EOS experiment (legacy Eckart vs EOS-80) per RULES.md
 procedure; acceptance against 11.x baselines + FIRST_INVALID guardrail.
+Runs at reference cadence A (DT=3600/DT1=120, mm2=24).
 
-### Stage 11.5 — Modern NetCDF Input Architecture (implementation)
+> STAGE NUMBERING NOTE (11.4-planning): the "11.4" label collides with the
+> frozen forensic chain (`stage11.4_en4_stabilization.md`, D21–D33, completed).
+> Convention going forward: "11.4-D*" = the closed EN4-stabilization forensics;
+> "11.4" = the EOS-80 experiment stage. Frozen filenames are NOT renamed.
+
+### Stage 11.5 — Temporal Integration Architecture Fix (deferred, after EOS-80)
+
+PROBLEM STATEMENT (11.3C.2): the `iii`-loop (`main.f90:624→909`) covers ICE
+ONLY (heat/redis/dynamics/adv2d/redis/W-recompute); ocean operators (advs,
+advt, CA, Block 200/210, shal, B280, iceberg_step) run ONCE PER DAY with
+stale `iii`. Legacy cadence integrates ice 12 h/day but ocean 1 h/day
+(DT=3600); the 11.3C/11.3C.1 A/B/C matrix is therefore cadence-sensitivity,
+not ocean convergence. Historical placement UNRESOLVED (11.3C.3 VERDICT D).
+RECONCILIATION DECISION (Option A): EOS-80 first (contained, ready, on the
+stable reference cadence), temporal fix second (high-risk restructuring:
+move ocean pass inside `iii`, re-baseline everything, RULES procedure).
+Minimal fix sketch (NOT approved, NOT executed): relocate the ocean pass
+inside `iii` (24×3600 s = coherent day); re-validate full battery + 11.x
+baselines + matrix.
+
+### Stage 11.6 — Modern NetCDF Input Architecture (implementation)
 
 Execute the 11.3B contracts: `model/grid.nc`, monthly `ice_initial_*.nc`,
 reader migration, legacy dead-path removal — each md5-gated.
 
-### Stage 11.6 — Seasonal Sea-Ice Initialization Upgrade
+### Stage 11.7 — Seasonal Sea-Ice Initialization Upgrade
 
 Month-resolved ice state (replaces January-only reuse; D30/D31 showed the
 freezing-regime difference matters).
 
 ### Stage 12.0 — Voxel Iceberg Thermodynamics
 
-3D internal iceberg model (explicitly out of scope until 11.4–11.6 land).
+3D internal iceberg model (explicitly out of scope until 11.4–11.7 land).
 
 ### Stage 11.2 — EN4 Initial Condition Stabilization (SUPERSEDED — archive)
 

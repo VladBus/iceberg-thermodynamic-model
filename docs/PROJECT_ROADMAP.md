@@ -1,8 +1,8 @@
 # Project Roadmap
 
 **Updated:** 2026-09-30
-**Current scientific stage:** Stage 11.4 (planning) — Roadmap Reconciliation & Temporal Integration Architecture Planning (docs-only; next: EOS-80 experiment).
-**Stages 3–11.3C.3: COMPLETED** (10.x iceberg modernization; 11.1 seasonal characterization; 11.2 CFL audit; 11.4-D21…D33 EN4 stabilization → ERA5-coverage fix → cleanup + Ocean Baseline 11.x; 11.3A execution-graph audit; 11.3B input-architecture audit + NetCDF contracts; 11.3C scheme audit + timestep matrix; 11.3C.1 semantics + CFL distributions; 11.3C.2 time-integration audit; 11.3C.3 historical loop-bound search → VERDICT D, unresolved).
+**Current scientific stage:** Stage 11.5A — Ocean Time-Integration Architecture Audit & Design (docs-only; next: 11.5B MM2 experiment).
+**Stages 3–11.4.1: COMPLETED** (10.x iceberg modernization; 11.1 seasonal characterization; 11.2 CFL audit; 11.4-D21…D33 EN4 stabilization → ERA5-coverage fix → cleanup + Ocean Baseline 11.x; 11.3A execution-graph audit; 11.3B input-architecture audit + NetCDF contracts; 11.3C scheme audit + timestep matrix; 11.3C.1 semantics + CFL distributions; 11.3C.2 time-integration audit; 11.3C.3 loop-bound search (VERDICT D); 11.4 EOS-80 experiment + 11.4.1 impact validation (OPTIONAL, not default)).
 **Current status:** Stages 10.14–10.22 committed (`0504853` 10.18A, `d99a4bf` 10.18B, `e99dbdc` 10.18C, `b01c902` 10.18D, `03bb42c` 10.19, `16a4c65` 10.20, `7a17cac` 10.21, `928041a` 10.22); **Stage 10.20 (ocean initialization & numerical stabilization) COMPLETE** (D-18): full-coverage ERA5 data fix resolved CASE C (3-day gate PASS, 36 steps, 0 NaN); residual CA instability characterized, NOT fixed (T-01/T-03 family; 30-day gate `steps executed = 55`, acceptance 360 NOT met); **Stage 10.21 (CA/EOS precision stabilization) COMPLETE** (D-19): float32 2⁻²³ quantization root cause confirmed, no physics change (RULES.md), bit-identical legacy verified; **Stage 10.22 (ocean density / thermal-wind / Block-200 stability audit) COMPLETE** (D-20): replay experiments a0–a4 with diagnostic freeze switches isolate the NaN chain (CA/EOS → Block 200 transmitter → Block 210 amplifier), all switches OFF default bit-identical (a0 ≡ a0_diag daily-diagnostics md5 `1ef13cb4…`); Block 210 Thomas pivots negative by construction; stabilizer levers freeze_ro (a1) / freeze_ts (a3) / freeze_ro_downstream (a4) restore physical validity (worst rel 4.213e-6) but are diagnostic-only; production physics KEEP_CURRENT; fpm battery + Python suites PASS; next = approved physics stage.
 
 ## Completed foundation
@@ -74,18 +74,29 @@ forcing; B210 genuine implicit Thomas; shal/W/ice-dynamics explicit
 A(3600/120), B(1800/120), C(900/120), D(3600/60), E(3600/30) — all 29 d,
 no NaN; CA guard saturation DT-independent (quantization floor).
 
-### Stage 11.4 — EOS-80 A/B Experiment (next physics stage)
+### Stage 11.4 — EOS-80 A/B Experiment (COMPLETED) + 11.4.1 Impact Validation
 
-Controlled density-EOS experiment (legacy Eckart vs EOS-80) per RULES.md
-procedure; acceptance against 11.x baselines + FIRST_INVALID guardrail.
-Runs at reference cadence A (DT=3600/DT1=120, mm2=24).
+Controlled density-EOS experiment (legacy Eckart vs EOS-80): UNESCO EOS-80
+implemented opt-in (`EOS_MODE=EOS80`, LEGACY default bit-identical —
+127/127 md5); 8/8 reference checks; all 4 seasons clean; CA transformed
+(maxiter ~90 vs 1001); April EUU −7% (gradual circulation adjustment);
+RECOMMENDATION: OPTIONAL, not default. Runs at reference cadence A
+(DT=3600/DT1=120, mm2=24).
 
 > STAGE NUMBERING NOTE (11.4-planning): the "11.4" label collides with the
 > frozen forensic chain (`stage11.4_en4_stabilization.md`, D21–D33, completed).
 > Convention going forward: "11.4-D*" = the closed EN4-stabilization forensics;
 > "11.4" = the EOS-80 experiment stage. Frozen filenames are NOT renamed.
 
-### Stage 11.5 — Temporal Integration Architecture Fix (deferred, after EOS-80)
+### Stage 11.5 — Temporal Integration Architecture Fix (CURRENT: 11.5A done)
+
+11.5A (this stage, audit+design, COMPLETED): timeline verified (ice mm2×/day,
+ocean 1×/day); ocean integrates 1 h/day vs ice 24 h/day (dynamically young
+ocean — no trajectory validation exists to date); INVERTED vs modern practice
+(NEMO/MITgcm/CICE step together); options A(full)/B(selective)/C(multi-rate)/
+D(keep) compared; RECOMMENDATION: phased A — 11.5B `STAGE113_MM2` separation
+experiment (measurement only) → 11.5C flagged prototype → 11.5D promote +
+re-baseline. NEXT: 11.5B.
 
 PROBLEM STATEMENT (11.3C.2): the `iii`-loop (`main.f90:624→909`) covers ICE
 ONLY (heat/redis/dynamics/adv2d/redis/W-recompute); ocean operators (advs,

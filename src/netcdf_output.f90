@@ -210,9 +210,6 @@ status = nf90_put_att(ncid, nf90_global, 'unit_system', 'SI (canonical external 
         if (.not. nc_ok(status, 'define beta_haline')) then
             status = nf90_close(ncid); return
         end if
-        if (.not. nc_ok(status, 'define w_velocity')) then
-            status = nf90_close(ncid); return
-        end if
 
         ! --- ДИАГНОСТИЧЕСКИЕ ПОЛЯ ФОРСИНГА ---
         status = nf90_def_var(ncid, 'wind_speed', nf90_real, (/x_dimid, y_dimid/), wind_varid)

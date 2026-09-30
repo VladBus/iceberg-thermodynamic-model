@@ -49,6 +49,8 @@ module stage112_cfl_diagnostics
     ! --- ФАЙЛЫ ВЫВОДА ---
     integer, save :: cfl_unit = 81
     integer, save :: events_unit = 86  ! 11.4-D24: было 82, конфликт с ca_diag_unit=82 (convective_adjustment.f90:88): CA открывает/закрывает 82 под convective_guard_events.csv, из-за чего строки s112 уходили в fort.82
+    ! Stage 11.3C.1: распределение CFL (диагностика, открывается вместе с остальными)
+    integer, save :: dist_unit = 87
     logical, save :: files_opened = .false.
 
     contains
@@ -83,6 +85,15 @@ module stage112_cfl_diagnostics
         open (events_unit, file='stage112_stability_events.csv', status='replace', iostat=ios)
         if (ios .eq. 0) then
             write (events_unit, '(A)') "day,iii,jjj,time_sec,event_type,var_id,i,j,k,value,dt,dt1,dx,dy,dz,u,v,w,t,s,ro,operator"
+        end if
+
+        ! Stage 11.3C.1: гистограммные процентили CFL (P50/P90/P95/P99/max +
+        ! доли >1/>0.5 + локация max Cz + |w| на ней). Только при ENABLED.
+        open (dist_unit, file='cfl_distribution.csv', status='replace', iostat=ios)
+        if (ios .eq. 0) then
+            write (dist_unit, '(A)') "day,iii,cx_p50,cx_p90,cx_p95,cx_p99,cx_max,cx_fgt1,cx_fgt05," // &
+                "cy_p50,cy_p90,cy_p95,cy_p99,cy_max,cy_fgt1,cy_fgt05," // &
+                "cz_p50,cz_p90,cz_p95,cz_p99,cz_max,cz_fgt1,cz_fgt05,cz_mi,cz_mj,cz_mk,w_at_czmax"
         end if
 
         files_opened = .true.
@@ -562,6 +573,139 @@ module stage112_cfl_diagnostics
             w_day, w_iii, 0, w_time, trim(event_type), var_id, i, j, k, val, &
             dt, dt1, dx, dy, dz, u, v, w, t, s, ro, trim(operator_name)
     end subroutine s112_record_event
+
+    ! =========================================================================
+    ! Stage 11.3C.1: ПРОЦЕНТИЛЬ ИЗ ГИСТОГРАММЫ (вспомогательная)
+    ! =========================================================================
+    subroutine s112_pct(hist, nbins, maxv, n, p50, p90, p95, p99)
+        integer, intent(in) :: nbins, n
+        integer, intent(in) :: hist(nbins)
+        real, intent(in) :: maxv
+        real, intent(out) :: p50, p90, p95, p99
+        integer :: b, acc
+        integer :: t50, t90, t95, t99
+        p50 = 0.0; p90 = 0.0; p95 = 0.0; p99 = 0.0
+        if (n .le. 0 .or. maxv .le. 0.0) return
+        t50 = int(0.50*n) + 1; t90 = int(0.90*n) + 1
+        t95 = int(0.95*n) + 1; t99 = int(0.99*n) + 1
+        acc = 0
+        do b = 1, nbins
+            acc = acc + hist(b)
+            if (p50 .eq. 0.0 .and. acc .ge. t50) p50 = (real(b) - 0.5)/real(nbins)*maxv
+            if (p90 .eq. 0.0 .and. acc .ge. t90) p90 = (real(b) - 0.5)/real(nbins)*maxv
+            if (p95 .eq. 0.0 .and. acc .ge. t95) p95 = (real(b) - 0.5)/real(nbins)*maxv
+            if (p99 .eq. 0.0 .and. acc .ge. t99) p99 = (real(b) - 0.5)/real(nbins)*maxv
+        end do
+    end subroutine s112_pct
+
+    ! =========================================================================
+    ! Stage 11.3C.1: РАСПРЕДЕЛЕНИЕ CFL (процентили + доли + локация max Cz)
+    ! Два прохода по мокрым клеткам: (1) максимумы/счётчики, (2) гистограммы
+    ! 2000 бинов. NaN пропускаются (в счёт n не входят). Только при ENABLED.
+    ! =========================================================================
+    subroutine s112_cfl_dist(dt_used, day, iii)
+        real, intent(in) :: dt_used
+        integer, intent(in) :: day, iii
+        integer, parameter :: NB = 2000
+        integer :: i, j, k, ki, b
+        real :: cx, cy, cz, dxl, dzl, wl
+        real :: mxx, mxy, mxz, wloc
+        integer :: lxi, lxj, lxk, lyi, lyj, lyk, lzi, lzj, lzk
+        integer :: hx(NB), hy(NB), hz(NB)
+        integer :: nx, ny, nz, n1x, n1y, n1z, n05x, n05y, n05z
+        real :: p50x, p90x, p95x, p99x, p50y, p90y, p95y, p99y, p50z, p90z, p95z, p99z
+        real :: f1x, f05x, f1y, f05y, f1z, f05z
+
+        if (.not. s112_enabled .or. .not. files_opened) return
+        dxl = 1389000.0
+        hx = 0; hy = 0; hz = 0
+        mxx = 0.0; mxy = 0.0; mxz = 0.0
+        lxi = 0; lxj = 0; lxk = 0; lyi = 0; lyj = 0; lyk = 0; lzi = 0; lzj = 0; lzk = 0
+        wloc = 0.0
+        nx = 0; ny = 0; nz = 0
+        n1x = 0; n1y = 0; n1z = 0; n05x = 0; n05y = 0; n05z = 0
+
+        do j = 2, js
+            do i = 2, is
+                ki = kt1(i, j)
+                if (ki .eq. 0) cycle
+                do k = 1, ki
+                    cx = abs(u2(i, j, k))*dt_used/dxl
+                    if (cx .eq. cx) then
+                        nx = nx + 1
+                        if (cx .gt. 1.0) n1x = n1x + 1
+                        if (cx .gt. 0.5) n05x = n05x + 1
+                        if (cx .gt. mxx) then
+                            mxx = cx; lxi = i; lxj = j; lxk = k
+                        end if
+                    end if
+                    cy = abs(v2(i, j, k))*dt_used/dxl
+                    if (cy .eq. cy) then
+                        ny = ny + 1
+                        if (cy .gt. 1.0) n1y = n1y + 1
+                        if (cy .gt. 0.5) n05y = n05y + 1
+                        if (cy .gt. mxy) then
+                            mxy = cy; lyi = i; lyj = j; lyk = k
+                        end if
+                    end if
+                    dzl = dz(k)
+                    if (dzl .gt. 0.0) then
+                        wl = abs(w(i, j, k))
+                        cz = wl*dt_used/dzl
+                        if (cz .eq. cz) then
+                            nz = nz + 1
+                            if (cz .gt. 1.0) n1z = n1z + 1
+                            if (cz .gt. 0.5) n05z = n05z + 1
+                            if (cz .gt. mxz) then
+                                mxz = cz; lzi = i; lzj = j; lzk = k; wloc = w(i, j, k)
+                            end if
+                        end if
+                    end if
+                end do
+            end do
+        end do
+
+        do j = 2, js
+            do i = 2, is
+                ki = kt1(i, j)
+                if (ki .eq. 0) cycle
+                do k = 1, ki
+                    cx = abs(u2(i, j, k))*dt_used/dxl
+                    if (cx .eq. cx .and. mxx .gt. 0.0) then
+                        b = min(NB, int(cx/mxx*real(NB)) + 1)
+                        hx(max(1, b)) = hx(max(1, b)) + 1
+                    end if
+                    cy = abs(v2(i, j, k))*dt_used/dxl
+                    if (cy .eq. cy .and. mxy .gt. 0.0) then
+                        b = min(NB, int(cy/mxy*real(NB)) + 1)
+                        hy(max(1, b)) = hy(max(1, b)) + 1
+                    end if
+                    dzl = dz(k)
+                    if (dzl .gt. 0.0) then
+                        cz = abs(w(i, j, k))*dt_used/dzl
+                        if (cz .eq. cz .and. mxz .gt. 0.0) then
+                            b = min(NB, int(cz/mxz*real(NB)) + 1)
+                            hz(max(1, b)) = hz(max(1, b)) + 1
+                        end if
+                    end if
+                end do
+            end do
+        end do
+
+        call s112_pct(hx, NB, mxx, nx, p50x, p90x, p95x, p99x)
+        call s112_pct(hy, NB, mxy, ny, p50y, p90y, p95y, p99y)
+        call s112_pct(hz, NB, mxz, nz, p50z, p90z, p95z, p99z)
+        f1x = real(n1x)/real(max(nx, 1)); f05x = real(n05x)/real(max(nx, 1))
+        f1y = real(n1y)/real(max(ny, 1)); f05y = real(n05y)/real(max(ny, 1))
+        f1z = real(n1z)/real(max(nz, 1)); f05z = real(n05z)/real(max(nz, 1))
+
+        write (dist_unit, '(I0,",",I0,21(",",ES12.4E2),3(",",I0),",",ES12.4E2)') &
+            day, iii, &
+            p50x, p90x, p95x, p99x, mxx, f1x, f05x, &
+            p50y, p90y, p95y, p99y, mxy, f1y, f05y, &
+            p50z, p90z, p95z, p99z, mxz, f1z, f05z, &
+            lzi, lzj, lzk, wloc
+    end subroutine s112_cfl_dist
 
     ! =========================================================================
     ! ЗАПИСЬ ТАЙМСЕРИИ CFL (каждый baroclinic step)

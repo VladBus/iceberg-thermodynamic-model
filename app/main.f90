@@ -105,6 +105,8 @@ program main
     type(atmos_forcing) :: ib_atmos
     type(iceberg_diagnostics) :: ib_diag
     logical :: ib_enabled, ib_ok, ib_idx_ok
+    ! Stage 11.3C.1: flag for timestep-matrix semantics (default .false.)
+    logical :: stage113_active
     integer :: ib_step_count, ib_i_idx, ib_j_idx
     real :: ib_bathymetry, ib_model_time_sec
     real :: ib_x0, ib_y0, ib_lat0, ib_lon0
@@ -166,21 +168,38 @@ program main
     ! Stage 11.3C: timestep sensitivity matrix (env-gated, default legacy).
     !   STAGE113_DT  — бароклинный шаг [с] (default 3600); STAGE113_DT1 —
     !   баротропный микрошаг [с] (default 120). Только измерение: схемы не
-    !   меняются; c2/c4/c5/c10 пересчитываются ниже. mm2=12 фиксировано
-    !   (модельных часов в сутках = 12·DT — документировано в отчёте).
+    !   меняются; c2/c4/c5/c10 пересчитываются ниже. Семантика суток —
+    !   см. блок 11.3C.1 ниже (mm2/mm3 при активном env).
+    ! Stage 11.3C.1: correct timestep semantics WHEN the matrix override is
+    ! active (env set): full 86400 s day (mm2 = 86400/DT) + DT/DT1 microsteps
+    ! (mm3 = DT/DT1). Default path (no env) keeps legacy mm2=12/mm3=30
+    ! bit-identically. mm2/mm3 feed only loop bounds below (generic code).
+    stage113_active = .false.
     call get_environment_variable('STAGE113_DT', env_str)
     if (len_trim(env_str) .gt. 0) then
         read (env_str, *, iostat=ios) dt
         if (ios .ne. 0 .or. dt .le. 0.0) dt = 3600.0
+        stage113_active = .true.
     end if
     call get_environment_variable('STAGE113_DT1', env_str)
     if (len_trim(env_str) .gt. 0) then
         read (env_str, *, iostat=ios) dt1
         if (ios .ne. 0 .or. dt1 .le. 0.0) dt1 = 120.0
+        stage113_active = .true.
     end if
     mm1 = 91            ! Число модельных дней (Q1 2020: 91 день = 31+28+31).
     mm2 = 12            ! Число термодинамических шагов в сутках (12 × 3600 с = 12 ч).
     mm3 = 30            ! Число баротропных микрошагов на бароклинный (30 × 120 с = 1 ч).
+    ! Stage 11.3C.1: correct timestep semantics WHEN the matrix override is
+    ! active (env set above): full 86400 s day (mm2 = 86400/DT) + DT/DT1
+    ! microsteps (mm3 = DT/DT1). Default path (no env) keeps legacy values
+    ! bit-identically. Positioned AFTER the legacy assignments on purpose.
+    if (stage113_active) then
+        mm2 = max(1, nint(86400.0/dt))
+        mm3 = max(1, nint(dt/dt1))
+        print *, 'STAGE113: DT=', dt, 'mm2=', mm2, 's/day=', mm2*dt
+        print *, 'STAGE113: DT1=', dt1, 'mm3=', mm3
+    end if
     mm4 = 1             ! Число расчётных месяцев (1 для Q1 2020).
     mm5 = 1             ! Число расчётных лет.
     dx = 1389000.0      ! [см] Пространственный шаг сетки = 13.89 км.
@@ -891,6 +910,10 @@ program main
 
             ! --- STAGE 11.2: ВЕРТИКАЛЬНЫЙ CFL (W вычислен, перед адвекцией) ---
             call s112_compute_vertical_cfl(dt, 'W_after_continuity')
+            ! Stage 11.3C.1: распределение CFL за сутки (диагностика).
+            ! NOTE: океан идёт 1 раз/сутки ВНЕ iii-цикла (iii там stale=mm2+1),
+            ! поэтому метка iii=0 = суточный агрегат, не субстеп.
+            call s112_cfl_dist(dt, kkk, 0)
 
 ! Frozen density test: skip advection and convective adjustment
             call get_environment_variable('ICEBERG_FROZEN_DENSITY', env_str)

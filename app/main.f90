@@ -52,6 +52,7 @@ program main
     use stage86_diagnostics
     use stage1022_diagnostics
     use stage112_cfl_diagnostics
+    use stage115c1_trace
     use iceberg
     use iceberg_types, only: RHO_ICE, RHO_WATER
     use iceberg_forcing, only: get_ocean_profile, get_atmos_forcing, model_coords_to_indices
@@ -496,6 +497,9 @@ program main
     ! ПОЛНОСТЬЮ ДИАГНОСТИЧЕСКИЙ — не меняет физику.
     ! ====================================================================
     call s112_init()
+    ! Stage 11.5C.1: forensic substepping trace + frozen-coupling control
+    ! (env-gated, default OFF; purely diagnostic).
+    call s115c1_init()
 
     ! Диагностика уравнения состояния (этап 3.1): расчет RO из T2/S2
     ! в диагностическом режиме. Пока НЕ используется в уравнениях движения.
@@ -962,6 +966,10 @@ program main
                 dt_save = dt; c2_save = c2; c4_save = c4; c5_save = c5
                 dt = dt_ocean; c2 = dt_ocean/dx
                 c4 = aht/(dx*dx)*dt_ocean; c5 = ahs/(dx*dx)*dt_ocean
+            ! Stage 11.5C.1: substep counting + freeze apply (diagnostic, OFF default)
+            call s115c1_gate_entry(iii)
+            ! Stage 11.5C.1: START checkpoint (diagnostic, OFF default)
+            call s115c1_checkpoint(kkk, iii, 'START')
             call s112_compute_vertical_cfl(dt, 'W_after_continuity')
             ! Stage 11.3C.1: распределение CFL за сутки (диагностика).
             ! NOTE: океан идёт 1 раз/сутки ВНЕ iii-цикла (iii там stale=mm2+1),
@@ -991,9 +999,11 @@ program main
                         call s112_scan_ocean_state(kkk, iii, real(nday1*24 + iii)*3600.0, 'BEFORE_advs_advt')
 
                         call advs(dt, c2)
+                        call s115c1_checkpoint(kkk, iii, 'AFTER_advs')
                         ! Stage 11.4-D24: скан между адвекциями S и T (диагностика, env-gated)
                         call s112_scan_ocean_state(kkk, iii, real(nday1*24 + iii)*3600.0, 'BETWEEN_advs_advt')
                         call advt(dt, c2)
+                        call s115c1_checkpoint(kkk, iii, 'AFTER_advt')
 
                         ! Stage 8.6 diagnostics: E = after ocean advection
                         call capture_state('E_after_adv', kkk, iii, u2, v2, w, t2, s2, ro)
@@ -1019,6 +1029,7 @@ program main
                         if (s22_diag) call s22_probe('CA_after', kkk, iii)
                         ! Stage 11.4-D24: скан первого невалидного (диагностика, env-gated)
                         call s112_scan_ocean_state(kkk, iii, real(nday1*24 + iii)*3600.0, 'AFTER_conv_adj')
+                        call s115c1_checkpoint(kkk, iii, 'AFTER_CA')
 
                         ! Диагностика этапа 4.3: точка D - остаточные инверсии после
                         ! convective adjustment (должны быть близки к нулю, кроме
@@ -1161,6 +1172,7 @@ program main
                     end if
                     ! Stage 11.4-D24: скан первого невалидного (диагностика, env-gated)
                     call s112_scan_ocean_state(kkk, iii, real(nday1*24 + iii)*3600.0, 'AFTER_block200')
+                    call s115c1_checkpoint(kkk, iii, 'AFTER_B200')
 
                     ! Stage 8.6 diagnostics: H = after Block 200
                     call capture_velocity_state('H_after_B200', kkk, iii, u2, v2)
@@ -1331,6 +1343,7 @@ program main
                     end if
                     ! Stage 11.4-D24: скан первого невалидного (диагностика, env-gated)
                     call s112_scan_ocean_state(kkk, iii, real(nday1*24 + iii)*3600.0, 'AFTER_block210')
+                    call s115c1_checkpoint(kkk, iii, 'AFTER_B210')
 
                     ! --- STAGE 11.2: BAROTROPIC CFL (перед shal, dt1=120с, mm3=30) ---
                     call s112_compute_barotropic_cfl(120.0, 'before_shal')
@@ -1345,6 +1358,7 @@ program main
                     !   ∂U_bar/∂t + f×U_bar + g·∇η = τ/ρ·H  (импульс)
                     ! Где U_bar = (UP2, VP2) — интегральные потоки [см²/с].
                     call shal()
+                    call s115c1_checkpoint(kkk, iii, 'AFTER_shal')
 
                     ! ====================================================================
                     !   8. ВОЗВРАТ БАРОТРОПНОЙ КОМПОНЕНТЫ (BLOCK 280)
@@ -1405,6 +1419,7 @@ program main
 
 ! Stage 8.6 diagnostics: J = after Block 280
                     call capture_velocity_state('J_after_B280', kkk, iii, u2, v2)
+                    call s115c1_checkpoint(kkk, iii, 'AFTER_B280')
                     ! Stage 10.22: проба в конце шага
                     if (s22_diag) call s22_probe('END_step', kkk, iii)
 

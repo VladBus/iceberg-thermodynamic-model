@@ -109,6 +109,9 @@ program main
     logical :: stage113_active
     ! Stage 11.5B: MM2-override flag (declaration with the other one).
     logical :: stage113_mm2_set
+    ! Stage 11.5C: experimental ocean-substep scheduler state (default 1).
+    integer :: nsub_115c, ostep_115c
+    real :: dt_ocean, dt_save, c2_save, c4_save, c5_save
     integer :: ib_step_count, ib_i_idx, ib_j_idx
     real :: ib_bathymetry, ib_model_time_sec
     real :: ib_x0, ib_y0, ib_lat0, ib_lon0
@@ -216,6 +219,27 @@ program main
         mm3 = max(1, nint(dt/dt1))
         print *, 'STAGE113: DT=', dt, 'mm2=', mm2, 's/day=', mm2*dt
         print *, 'STAGE113: DT1=', dt1, 'mm3=', mm3
+    end if
+    ! Stage 11.5C: experimental ocean substepping (default N=1 = legacy single
+    ! ocean pass/day; bit-identical when unset). N>1: gated tail below runs
+    ! N×/day with dt_ocean = 86400/N. Requires N ≤ mm2 (documented).
+    nsub_115c = 1
+    call get_environment_variable('STAGE115C_OCEAN_SUBSTEPS', env_str)
+    if (len_trim(env_str) .gt. 0) then
+        if (env_str .eq. 'OFF' .or. env_str .eq. 'off' .or. env_str .eq. '0') then
+            nsub_115c = 1
+        else
+            read (env_str, *, iostat=ios) nsub_115c
+            if (ios .ne. 0 .or. nsub_115c .le. 1) nsub_115c = 1
+        end if
+    end if
+    ostep_115c = max(1, mm2/max(1, nsub_115c))
+    if (nsub_115c .gt. 1) then
+        dt_ocean = 86400.0/real(nsub_115c)
+        print *, 'STAGE115C: nsub=', nsub_115c, ' ostep=', ostep_115c, &
+                 ' dt_ocean=', dt_ocean
+    else
+        dt_ocean = dt
     end if
     mm4 = 1             ! Число расчётных месяцев (1 для Q1 2020).
     mm5 = 1             ! Число расчётных лет.
@@ -925,9 +949,19 @@ program main
                             end if
                         end do
                     end do
-                end do
+            ! Stage 11.5C: old iii end-do REMOVED — loop now closes after the
+            ! gated ocean tail below (single structural move; physics untouched).
 
             ! --- STAGE 11.2: ВЕРТИКАЛЬНЫЙ CFL (W вычислен, перед адвекцией) ---
+            ! Stage 11.5C: experimental ocean-substep gate. Default (N=1):
+            ! fires once at iii==mm2 with dt_ocean==dt → legacy behavior
+            ! bit-identical (same state as post-loop execution). N>1: fires
+            ! every ostep-th iii with dt_ocean=86400/N. Tail code below is
+            ! UNTOUCHED (indentation kept); only dt/c2/c4/c5 are swapped.
+            if (mod(iii, ostep_115c) .eq. 0) then
+                dt_save = dt; c2_save = c2; c4_save = c4; c5_save = c5
+                dt = dt_ocean; c2 = dt_ocean/dx
+                c4 = aht/(dx*dx)*dt_ocean; c5 = ahs/(dx*dx)*dt_ocean
             call s112_compute_vertical_cfl(dt, 'W_after_continuity')
             ! Stage 11.3C.1: распределение CFL за сутки (диагностика).
             ! NOTE: океан идёт 1 раз/сутки ВНЕ iii-цикла (iii там stale=mm2+1),
@@ -1402,6 +1436,11 @@ program main
                             "B3.3 d=", kkk, " III=", iii, " maxU2=", uu, &
                             " maxV2=", vv, " NaNflag=", aa
                     end if
+                    ! Stage 11.5C: restore legacy step (gate close; iceberg_step
+                    ! and daily output below stay once/day, outside the gate).
+                    dt = dt_save; c2 = c2_save; c4 = c4_save; c5 = c5_save
+            end if
+                end do  ! iii-loop (Stage 11.5C: gated ocean tail is now inside)
 
                     ! ============================================================
                     !   STAGE 10.19: PRODUCTION ICEBERG STEP (env-gated)

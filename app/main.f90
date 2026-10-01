@@ -107,6 +107,8 @@ program main
     logical :: ib_enabled, ib_ok, ib_idx_ok
     ! Stage 11.3C.1: flag for timestep-matrix semantics (default .false.)
     logical :: stage113_active
+    ! Stage 11.5B: MM2-override flag (declaration with the other one).
+    logical :: stage113_mm2_set
     integer :: ib_step_count, ib_i_idx, ib_j_idx
     real :: ib_bathymetry, ib_model_time_sec
     real :: ib_x0, ib_y0, ib_lat0, ib_lon0
@@ -174,7 +176,12 @@ program main
     ! active (env set): full 86400 s day (mm2 = 86400/DT) + DT/DT1 microsteps
     ! (mm3 = DT/DT1). Default path (no env) keeps legacy mm2=12/mm3=30
     ! bit-identically. mm2/mm3 feed only loop bounds below (generic code).
+    ! Stage 11.5B: STAGE113_MM2 decouples ice cadence from DT (2D matrix).
+    ! Precedence: MM2-set → use it as-is (even if mm2·DT ≠ 86400; the print
+    ! below exposes actual s/day — enforcement would collapse the design
+    ! space); else → 86400/DT (11.3C.1 rule); else legacy 12 (bit-identical).
     stage113_active = .false.
+    stage113_mm2_set = .false.
     call get_environment_variable('STAGE113_DT', env_str)
     if (len_trim(env_str) .gt. 0) then
         read (env_str, *, iostat=ios) dt
@@ -190,12 +197,22 @@ program main
     mm1 = 91            ! Число модельных дней (Q1 2020: 91 день = 31+28+31).
     mm2 = 12            ! Число термодинамических шагов в сутках (12 × 3600 с = 12 ч).
     mm3 = 30            ! Число баротропных микрошагов на бароклинный (30 × 120 с = 1 ч).
+    ! Stage 11.5B: MM2 override (decoupled ice cadence). Positioned AFTER the
+    ! legacy assignments on purpose (they would otherwise clobber the env).
+    call get_environment_variable('STAGE113_MM2', env_str)
+    if (len_trim(env_str) .gt. 0) then
+        read (env_str, *, iostat=ios) mm2
+        if (ios .ne. 0 .or. mm2 .le. 0) mm2 = 12
+        stage113_active = .true.
+        stage113_mm2_set = .true.
+    end if
     ! Stage 11.3C.1: correct timestep semantics WHEN the matrix override is
     ! active (env set above): full 86400 s day (mm2 = 86400/DT) + DT/DT1
     ! microsteps (mm3 = DT/DT1). Default path (no env) keeps legacy values
     ! bit-identically. Positioned AFTER the legacy assignments on purpose.
     if (stage113_active) then
-        mm2 = max(1, nint(86400.0/dt))
+        ! Stage 11.5B: MM2-set → keep as-is (2D design space); else 86400/DT.
+        if (.not. stage113_mm2_set) mm2 = max(1, nint(86400.0/dt))
         mm3 = max(1, nint(dt/dt1))
         print *, 'STAGE113: DT=', dt, 'mm2=', mm2, 's/day=', mm2*dt
         print *, 'STAGE113: DT1=', dt1, 'mm3=', mm3

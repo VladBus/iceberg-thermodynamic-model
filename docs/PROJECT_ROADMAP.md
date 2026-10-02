@@ -1,7 +1,7 @@
 # Project Roadmap
 
 **Updated:** 2026-09-30
-**Current scientific stage:** Stage 11.5C.1 — Forensic Ocean Substepping Instability Audit (N=24 first-invalid trace; 11.5A/11.5B/11.5C COMPLETE).
+**Current scientific stage:** Stage 11.5C.2 — Coupling Forensics COMPLETE (Scenario 1+4: heat-necessary, B200-driven fast blowup); 11.5D still BLOCKED, next = T/S-held control + B200-gain regression (proposed).
 **Stages 3–11.4.1: COMPLETED** (10.x iceberg modernization; 11.1 seasonal characterization; 11.2 CFL audit; 11.4-D21…D33 EN4 stabilization → ERA5-coverage fix → cleanup + Ocean Baseline 11.x; 11.3A execution-graph audit; 11.3B input-architecture audit + NetCDF contracts; 11.3C scheme audit + timestep matrix; 11.3C.1 semantics + CFL distributions; 11.3C.2 time-integration audit; 11.3C.3 loop-bound search (VERDICT D); 11.4 EOS-80 experiment + 11.4.1 impact validation (OPTIONAL, not default)).
 **Current status:** Stages 10.14–10.22 committed (`0504853` 10.18A, `d99a4bf` 10.18B, `e99dbdc` 10.18C, `b01c902` 10.18D, `03bb42c` 10.19, `16a4c65` 10.20, `7a17cac` 10.21, `928041a` 10.22); **Stage 10.20 (ocean initialization & numerical stabilization) COMPLETE** (D-18): full-coverage ERA5 data fix resolved CASE C (3-day gate PASS, 36 steps, 0 NaN); residual CA instability characterized, NOT fixed (T-01/T-03 family; 30-day gate `steps executed = 55`, acceptance 360 NOT met); **Stage 10.21 (CA/EOS precision stabilization) COMPLETE** (D-19): float32 2⁻²³ quantization root cause confirmed, no physics change (RULES.md), bit-identical legacy verified; **Stage 10.22 (ocean density / thermal-wind / Block-200 stability audit) COMPLETE** (D-20): replay experiments a0–a4 with diagnostic freeze switches isolate the NaN chain (CA/EOS → Block 200 transmitter → Block 210 amplifier), all switches OFF default bit-identical (a0 ≡ a0_diag daily-diagnostics md5 `1ef13cb4…`); Block 210 Thomas pivots negative by construction; stabilizer levers freeze_ro (a1) / freeze_ts (a3) / freeze_ro_downstream (a4) restore physical validity (worst rel 4.213e-6) but are diagnostic-only; production physics KEEP_CURRENT; fpm battery + Python suites PASS; next = approved physics stage.
 
@@ -99,9 +99,17 @@ N=2/4/12/24 singular — BUT with documentation errors (N=1 dt_ocean = DT, not
 86400 s; shal() cadence mismatch for N=2/4/12; EUU incomparability),
 corrected in 11.5C.1. Only N=24 physically consistent, also fails → forensic
 audit 11.5C.1 (CURRENT).
-11.5C.1 (CURRENT): forensic first-invalid trace for N=24 (per-operator
-checkpoints, N=1 vs N=24 divergence, frozen-coupling control, mechanism
-A/B/C/D classification). 11.5D promotion BLOCKED until 11.5C.1 completes.
+11.5C.1 (COMPLETED, commit `1014e53`): forensic N=24 first-invalid trace
+(per-operator checkpoints, N=1 vs N=24 divergence, frozen-coupling
+control) → Mechanism A (ocean self-instability), B/C/D-primary ruled out;
+corrected 11.5C doc errors (N=1 dt=DT, shal cadence, EUU/N).
+11.5C.2 (COMPLETED, this commit): heat-freeze control + per-cell operator
+gain + global energy audit → Scenario 1 (heat evolution necessary for fast
+3-day blowup) + Scenario 4 (B200 thermal-wind generator, +3.9e6/pass) with
+barotropic-imprint (B280, +4.2e6) co-amplification; B210 net-damping,
+shal dE≡0; refined loop t1/s1→adv→RO→B200→U→adv→CA→Inf; slow 9-day core
+mode (Scenario 6 admixture) open. 11.5D promotion BLOCKED until T/S-held
+control + B200-gain regression complete.
 
 11.5A (this stage, audit+design, COMPLETED): timeline verified (ice mm2×/day,
 ocean 1×/day); ocean integrates 1 h/day vs ice 24 h/day (dynamically young

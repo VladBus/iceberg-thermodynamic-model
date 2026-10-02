@@ -53,6 +53,7 @@ program main
     use stage1022_diagnostics
     use stage112_cfl_diagnostics
     use stage115c1_trace
+    use stage115c2_gain
     use iceberg
     use iceberg_types, only: RHO_ICE, RHO_WATER
     use iceberg_forcing, only: get_ocean_profile, get_atmos_forcing, model_coords_to_indices
@@ -500,6 +501,9 @@ program main
     ! Stage 11.5C.1: forensic substepping trace + frozen-coupling control
     ! (env-gated, default OFF; purely diagnostic).
     call s115c1_init()
+    ! Stage 11.5C.2: heat-freeze control + operator gain audit
+    ! (env-gated, default OFF; purely diagnostic).
+    call s115c2_init()
 
     ! Диагностика уравнения состояния (этап 3.1): расчет RO из T2/S2
     ! в диагностическом режиме. Пока НЕ используется в уравнениях движения.
@@ -968,6 +972,8 @@ program main
                 c4 = aht/(dx*dx)*dt_ocean; c5 = ahs/(dx*dx)*dt_ocean
             ! Stage 11.5C.1: substep counting + freeze apply (diagnostic, OFF default)
             call s115c1_gate_entry(iii)
+            ! Stage 11.5C.2: substep counting + heat-freeze apply (diagnostic, OFF default)
+            call s115c2_gate_entry(iii)
             ! Stage 11.5C.1: START checkpoint (diagnostic, OFF default)
             call s115c1_checkpoint(kkk, iii, 'START')
             call s112_compute_vertical_cfl(dt, 'W_after_continuity')
@@ -1058,6 +1064,7 @@ program main
 
                     ! Stage 8.6 diagnostics: G = before Block 200
                     call capture_velocity_state('G_before_B200', kkk, iii, u1, v1)
+                    call s115c2_op(kkk, iii, 'B200', 0)
                     ! Stage 10.22: проба перед Block 200
                     if (s22_diag) call s22_probe('B200_before', kkk, iii)
 
@@ -1173,6 +1180,7 @@ program main
                     ! Stage 11.4-D24: скан первого невалидного (диагностика, env-gated)
                     call s112_scan_ocean_state(kkk, iii, real(nday1*24 + iii)*3600.0, 'AFTER_block200')
                     call s115c1_checkpoint(kkk, iii, 'AFTER_B200')
+                    call s115c2_op(kkk, iii, 'B200', 1)
 
                     ! Stage 8.6 diagnostics: H = after Block 200
                     call capture_velocity_state('H_after_B200', kkk, iii, u2, v2)
@@ -1206,6 +1214,7 @@ program main
                     ! ====================================================================
                     ! Stage 10.22: сброс накопителей обусловленности Thomas (Block 210)
                     if (s22_diag) call s22_b210_reset()
+                    call s115c2_op(kkk, iii, 'B210', 0)
                     do j = 2, js
                         do i = 2, is
                             ki = kk1(i, j)      ! Число мокрых уровней
@@ -1344,6 +1353,7 @@ program main
                     ! Stage 11.4-D24: скан первого невалидного (диагностика, env-gated)
                     call s112_scan_ocean_state(kkk, iii, real(nday1*24 + iii)*3600.0, 'AFTER_block210')
                     call s115c1_checkpoint(kkk, iii, 'AFTER_B210')
+                    call s115c2_op(kkk, iii, 'B210', 1)
 
                     ! --- STAGE 11.2: BAROTROPIC CFL (перед shal, dt1=120с, mm3=30) ---
                     call s112_compute_barotropic_cfl(120.0, 'before_shal')
@@ -1357,8 +1367,10 @@ program main
                     !   ∂η/∂t + ∇·(H·U_bar) = 0  (неразрывность)
                     !   ∂U_bar/∂t + f×U_bar + g·∇η = τ/ρ·H  (импульс)
                     ! Где U_bar = (UP2, VP2) — интегральные потоки [см²/с].
+                    call s115c2_op(kkk, iii, 'shal', 0)
                     call shal()
                     call s115c1_checkpoint(kkk, iii, 'AFTER_shal')
+                    call s115c2_op(kkk, iii, 'shal', 1)
 
                     ! ====================================================================
                     !   8. ВОЗВРАТ БАРОТРОПНОЙ КОМПОНЕНТЫ (BLOCK 280)
@@ -1375,6 +1387,7 @@ program main
                     ! Аналогично для V2 с VP2.
                     ! DZ1(k) — толщина полуслоя; для нижнего уровня: HHT - 0.5·(z(ki)+z(ki-1)).
                     ! ====================================================================
+                    call s115c2_op(kkk, iii, 'B280', 0)
                     do j = 2, js
                         do i = 2, is
                             ki = kk1(i, j)      ! Число мокрых уровней
@@ -1420,6 +1433,7 @@ program main
 ! Stage 8.6 diagnostics: J = after Block 280
                     call capture_velocity_state('J_after_B280', kkk, iii, u2, v2)
                     call s115c1_checkpoint(kkk, iii, 'AFTER_B280')
+                    call s115c2_op(kkk, iii, 'B280', 1)
                     ! Stage 10.22: проба в конце шага
                     if (s22_diag) call s22_probe('END_step', kkk, iii)
 

@@ -55,6 +55,7 @@ program main
     use stage115c1_trace
     use stage115c2_gain
     use stage115c3_ts
+    use stage115c4_icefreeze
     use iceberg
     use iceberg_types, only: RHO_ICE, RHO_WATER
     use iceberg_forcing, only: get_ocean_profile, get_atmos_forcing, model_coords_to_indices
@@ -508,6 +509,9 @@ program main
     ! Stage 11.5C.3: pure T/S-held control + B200 regression + temporal seq
     ! (env-gated, default OFF; purely diagnostic).
     call s115c3_init()
+    ! Stage 11.5C.4: single-field ice-state freezes (env-gated, default OFF;
+    ! purely diagnostic).
+    call s115c4_init()
 
     ! Диагностика уравнения состояния (этап 3.1): расчет RO из T2/S2
     ! в диагностическом режиме. Пока НЕ используется в уравнениях движения.
@@ -981,6 +985,9 @@ program main
             ! Stage 11.5C.3: substep counting + pure T/S freeze + RO day-start
             ! (diagnostic, OFF default).
             call s115c3_gate_entry(iii)
+            ! Stage 11.5C.4: single-field ice freeze snapshot/restore +
+            ! seed-cell ice-state CSV (diagnostic, OFF default).
+            call s115c4_gate_entry(iii, kkk)
             ! Stage 11.5C.1: START checkpoint (diagnostic, OFF default)
             call s115c1_checkpoint(kkk, iii, 'START')
             call s115c3_seq(kkk, iii, 'START')

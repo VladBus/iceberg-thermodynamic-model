@@ -57,6 +57,7 @@ program main
     use stage115c3_ts
     use stage115c4_icefreeze
     use stage115c5_optrace
+    use stage115c6_terms
     use iceberg
     use iceberg_types, only: RHO_ICE, RHO_WATER
     use iceberg_forcing, only: get_ocean_profile, get_atmos_forcing, model_coords_to_indices
@@ -516,6 +517,9 @@ program main
     ! Stage 11.5C.5: same-cell operator trace + global energy
     ! (env-gated, default OFF; purely diagnostic).
     call s115c5_init()
+    ! Stage 11.5C.6: B200/B280 term-level mirrors (env-gated, default OFF;
+    ! purely diagnostic — existing formulas instrumented, not rewritten).
+    call s115c6_init()
 
     ! Диагностика уравнения состояния (этап 3.1): расчет RO из T2/S2
     ! в диагностическом режиме. Пока НЕ используется в уравнениях движения.
@@ -1092,6 +1096,7 @@ program main
                     call capture_velocity_state('G_before_B200', kkk, iii, u1, v1)
                     call s115c2_op(kkk, iii, 'B200', 0)
                     call s115c3_b200(kkk, iii, 0)
+                    call s115c6_b200_before(kkk, iii)
                     ! Stage 10.22: проба перед Block 200
                     if (s22_diag) call s22_probe('B200_before', kkk, iii)
 
@@ -1211,6 +1216,7 @@ program main
                     call s115c3_seq(kkk, iii, 'AFTER_B200')
                     call s115c2_op(kkk, iii, 'B200', 1)
                     call s115c3_b200(kkk, iii, 1)
+                    call s115c6_b200_after(kkk, iii)
 
                     ! Stage 8.6 diagnostics: H = after Block 200
                     call capture_velocity_state('H_after_B200', kkk, iii, u2, v2)
@@ -1422,6 +1428,7 @@ program main
                     ! DZ1(k) — толщина полуслоя; для нижнего уровня: HHT - 0.5·(z(ki)+z(ki-1)).
                     ! ====================================================================
                     call s115c2_op(kkk, iii, 'B280', 0)
+                    call s115c6_b280_before(kkk, iii)
                     do j = 2, js
                         do i = 2, is
                             ki = kk1(i, j)      ! Число мокрых уровней
@@ -1470,6 +1477,7 @@ program main
                     call s115c5_trace(kkk, iii, 'AFTER_B280')
                     call s115c3_seq(kkk, iii, 'AFTER_B280')
                     call s115c2_op(kkk, iii, 'B280', 1)
+                    call s115c6_b280_after(kkk, iii)
                     ! Stage 10.22: проба в конце шага
                     if (s22_diag) call s22_probe('END_step', kkk, iii)
 

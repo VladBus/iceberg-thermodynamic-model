@@ -56,6 +56,7 @@ program main
     use stage115c2_gain
     use stage115c3_ts
     use stage115c4_icefreeze
+    use stage115c5_optrace
     use iceberg
     use iceberg_types, only: RHO_ICE, RHO_WATER
     use iceberg_forcing, only: get_ocean_profile, get_atmos_forcing, model_coords_to_indices
@@ -512,6 +513,9 @@ program main
     ! Stage 11.5C.4: single-field ice-state freezes (env-gated, default OFF;
     ! purely diagnostic).
     call s115c4_init()
+    ! Stage 11.5C.5: same-cell operator trace + global energy
+    ! (env-gated, default OFF; purely diagnostic).
+    call s115c5_init()
 
     ! Диагностика уравнения состояния (этап 3.1): расчет RO из T2/S2
     ! в диагностическом режиме. Пока НЕ используется в уравнениях движения.
@@ -990,6 +994,7 @@ program main
             call s115c4_gate_entry(iii, kkk)
             ! Stage 11.5C.1: START checkpoint (diagnostic, OFF default)
             call s115c1_checkpoint(kkk, iii, 'START')
+            call s115c5_trace(kkk, iii, 'START')
             call s115c3_seq(kkk, iii, 'START')
             call s112_compute_vertical_cfl(dt, 'W_after_continuity')
             ! Stage 11.3C.1: распределение CFL за сутки (диагностика).
@@ -1021,11 +1026,13 @@ program main
 
                         call advs(dt, c2)
                         call s115c1_checkpoint(kkk, iii, 'AFTER_advs')
+                        call s115c5_trace(kkk, iii, 'AFTER_advs')
                         call s115c3_seq(kkk, iii, 'AFTER_advs')
                         ! Stage 11.4-D24: скан между адвекциями S и T (диагностика, env-gated)
                         call s112_scan_ocean_state(kkk, iii, real(nday1*24 + iii)*3600.0, 'BETWEEN_advs_advt')
                         call advt(dt, c2)
                         call s115c1_checkpoint(kkk, iii, 'AFTER_advt')
+                        call s115c5_trace(kkk, iii, 'AFTER_advt')
                         call s115c3_seq(kkk, iii, 'AFTER_advt')
 
                         ! Stage 8.6 diagnostics: E = after ocean advection
@@ -1053,6 +1060,7 @@ program main
                         ! Stage 11.4-D24: скан первого невалидного (диагностика, env-gated)
                         call s112_scan_ocean_state(kkk, iii, real(nday1*24 + iii)*3600.0, 'AFTER_conv_adj')
                         call s115c1_checkpoint(kkk, iii, 'AFTER_CA')
+                        call s115c5_trace(kkk, iii, 'AFTER_CA')
                         call s115c3_seq(kkk, iii, 'AFTER_CA')
 
                         ! Диагностика этапа 4.3: точка D - остаточные инверсии после
@@ -1199,6 +1207,7 @@ program main
                     ! Stage 11.4-D24: скан первого невалидного (диагностика, env-gated)
                     call s112_scan_ocean_state(kkk, iii, real(nday1*24 + iii)*3600.0, 'AFTER_block200')
                     call s115c1_checkpoint(kkk, iii, 'AFTER_B200')
+                    call s115c5_trace(kkk, iii, 'AFTER_B200')
                     call s115c3_seq(kkk, iii, 'AFTER_B200')
                     call s115c2_op(kkk, iii, 'B200', 1)
                     call s115c3_b200(kkk, iii, 1)
@@ -1374,6 +1383,7 @@ program main
                     ! Stage 11.4-D24: скан первого невалидного (диагностика, env-gated)
                     call s112_scan_ocean_state(kkk, iii, real(nday1*24 + iii)*3600.0, 'AFTER_block210')
                     call s115c1_checkpoint(kkk, iii, 'AFTER_B210')
+                    call s115c5_trace(kkk, iii, 'AFTER_B210')
                     call s115c3_seq(kkk, iii, 'AFTER_B210')
                     call s115c2_op(kkk, iii, 'B210', 1)
 
@@ -1392,6 +1402,7 @@ program main
                     call s115c2_op(kkk, iii, 'shal', 0)
                     call shal()
                     call s115c1_checkpoint(kkk, iii, 'AFTER_shal')
+                    call s115c5_trace(kkk, iii, 'AFTER_shal')
                     call s115c3_seq(kkk, iii, 'AFTER_shal')
                     call s115c2_op(kkk, iii, 'shal', 1)
 
@@ -1456,6 +1467,7 @@ program main
 ! Stage 8.6 diagnostics: J = after Block 280
                     call capture_velocity_state('J_after_B280', kkk, iii, u2, v2)
                     call s115c1_checkpoint(kkk, iii, 'AFTER_B280')
+                    call s115c5_trace(kkk, iii, 'AFTER_B280')
                     call s115c3_seq(kkk, iii, 'AFTER_B280')
                     call s115c2_op(kkk, iii, 'B280', 1)
                     ! Stage 10.22: проба в конце шага

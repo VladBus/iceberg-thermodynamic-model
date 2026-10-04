@@ -78,6 +78,13 @@ module stage115c6_terms
     integer, save :: s_day = -1, s_iii = -1, s_flag(3)
     logical, save :: s_armed = .false.
 
+    ! Stage 11.5C.7: override трёх слотов через env STAGE115C6_CELLS =
+    ! "i,j,k;i,j,k;i,j,k" (ровно 3 тройки, иначе default). Имена файлов НЕ
+    ! меняются (b200_terms_112_17_9.csv и т.д. — слот 1/2/3 ↔ override
+    ! ячейка 1/2/3; соответствие фиксируется в отчёте прогона).
+    ! Диагностический, default OFF-поведение (без env) — как раньше.
+    integer, save :: ov_i(3) = (/-1, -1, -1/), ov_j(3) = (/-1, -1, -1/), ov_k(3) = (/-1, -1, -1/)
+    logical, save :: ov_on = .false.
     integer, parameter :: Q_I = 50, Q_J = 50, Q_K = 9
 
 contains
@@ -97,11 +104,42 @@ contains
         if (t115c6_b200 .or. t115c6_b280) then
             print *, 'STAGE115C6: b200_terms=', t115c6_b200, ' b280_terms=', t115c6_b280
         end if
+        call s115c6_parse_cells()
     end subroutine s115c6_init
+
+    ! Парсинг STAGE115C6_CELLS = "i,j,k;i,j,k;i,j,k" (ровно 3 тройки).
+    ! Невалидно/отсутствует → default (ov_on=.false.).
+    subroutine s115c6_parse_cells()
+        character(len=128) :: cs
+        integer :: p1, p2, ios, a, b, c
+        call get_environment_variable('STAGE115C6_CELLS', cs)
+        if (len_trim(cs) .eq. 0) return
+        p1 = index(cs, ';')
+        if (p1 .le. 1) return
+        p2 = index(cs(p1+1:), ';')
+        if (p2 .le. 1) return
+        p2 = p1 + p2
+        read (cs(1:p1-1), *, iostat=ios) a, b, c
+        if (ios .ne. 0) return
+        ov_i(1) = a; ov_j(1) = b; ov_k(1) = c
+        read (cs(p1+1:p2-1), *, iostat=ios) a, b, c
+        if (ios .ne. 0) return
+        ov_i(2) = a; ov_j(2) = b; ov_k(2) = c
+        read (cs(p2+1:), *, iostat=ios) a, b, c
+        if (ios .ne. 0) return
+        ov_i(3) = a; ov_j(3) = b; ov_k(3) = c
+        ov_on = .true.
+        print *, 'STAGE115C6: cell override ON:', ov_i(1), ov_j(1), ov_k(1), '|', &
+                 ov_i(2), ov_j(2), ov_k(2), '|', ov_i(3), ov_j(3), ov_k(3)
+    end subroutine s115c6_parse_cells
 
     subroutine s115c6_cell_ij(n, i0, j0, k0)
         integer, intent(in) :: n
         integer, intent(out) :: i0, j0, k0
+        if (ov_on .and. n .ge. 1 .and. n .le. 3) then
+            i0 = ov_i(n); j0 = ov_j(n); k0 = ov_k(n)
+            return
+        end if
         if (n .eq. 1) then
             i0 = 112; j0 = 17; k0 = 9
         else if (n .eq. 2) then

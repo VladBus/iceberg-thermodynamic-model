@@ -59,8 +59,11 @@ module stage115c6_terms
 
     logical, save :: t115c6_b200 = .false.
     logical, save :: t115c6_b280 = .false.
-    integer, save :: u200_1 = 81, u200_2 = 82, u200_3 = 83
-    integer, save :: u280_1 = 84, u280_2 = 85, u280_3 = 86
+    ! Unit-номера 171–176: верхняя область, коллизий нет (заняты 1,3,17,
+    ! 77,81,82,86,87,89–99; 11.5C.6R: было 81–86 → коллизия с s112/CA,
+    ! чужеродные строки в CSV; исправлено).
+    integer, save :: u200_1 = 171, u200_2 = 172, u200_3 = 173
+    integer, save :: u280_1 = 174, u280_2 = 175, u280_3 = 176
     logical, save :: f200_open = .false., f280_open = .false.
 
     ! B200 before-снапшот (3 ячейки: 2 seed + quiet)

@@ -47,6 +47,15 @@ module stage115c81_attr
     real, parameter :: T81_DT = 3600.0
 
     logical, save :: t81_on = .false.
+    ! Stage 11.5C.8.2: per-pass scalar attribution (day-1 passes 1,12,20-24).
+    logical, save :: t81_pp = .false.
+    integer, save :: pp_unit = 181
+    logical, save :: pp_open = .false.
+    integer, parameter :: PP_N = 7
+    integer, parameter :: PP_LIST(PP_N) = (/1, 12, 20, 21, 22, 23, 24/)
+    real, save :: pp_tw, pp_cor, pp_dpx, pp_lap, pp_sol
+    real, save :: pp_btp, pp_bcl, pp_b10, pp_ex
+    logical, save :: pp_armed = .false.
     integer, save :: t81_substep = 0
     integer, save :: t81_prev_iii = -1
     integer, save :: attr_unit = 180
@@ -71,6 +80,12 @@ contains
             (env_str .eq. 'true' .or. env_str .eq. 'TRUE' .or. env_str .eq. '1')) then
             t81_on = .true.
             print *, 'STAGE115C81: attr= T'
+        end if
+        call get_environment_variable('STAGE115C81_PERPASS', env_str)
+        if (len_trim(env_str) .gt. 0 .and. &
+            (env_str .eq. 'true' .or. env_str .eq. 'TRUE' .or. env_str .eq. '1')) then
+            t81_pp = .true.
+            print *, 'STAGE115C81: perpass= T'
         end if
     end subroutine s115c81_init
 
@@ -129,8 +144,197 @@ contains
             if (op .eq. 'B200') call s115c81_b200()
             if (op .eq. 'B210') call s115c81_b210()
             if (op .eq. 'B280') call s115c81_b280()
+            if (t81_pp .and. day .eq. 1) call s115c81_pp(op)
         end if
     end subroutine s115c81_op
+
+    logical function s115c81_istarget(sub)
+        integer, intent(in) :: sub
+        integer :: t
+        s115c81_istarget = .false.
+        do t = 1, PP_N
+            if (PP_LIST(t) .eq. sub) then
+                s115c81_istarget = .true.
+                return
+            end if
+        end do
+    end function s115c81_istarget
+
+    subroutine s115c81_pp_open()
+        if (pp_open) return
+        open (unit=pp_unit, file='late_day_attribution.csv', status='replace', action='write')
+        write (pp_unit, '(A)') 'pass,' // &
+            'dE_B200_TW,dE_B200_Cor,dE_B200_DPX,dE_B200_Lap,dE_B200_solve,dE_B200_net,' // &
+            'dE_B280_btp,dE_B280_bcl,dE_B280_net,dE_B210,dE_total_first_order,dE_exact'
+        pp_open = .true.
+    end subroutine s115c81_pp_open
+
+    ! Per-pass скалярная атрибуция (day-1, target passes). Сброс в B200/phase1,
+    ! накопление по операторам, строка на B280/phase1. Зеркальная математика —
+    ! ТА ЖЕ, что в s115c81_b200/b210/b280 (first-order + exact).
+    subroutine s115c81_pp(op)
+        character(len=*), intent(in) :: op
+        if (op .eq. 'B200') then
+            pp_tw = 0.0; pp_cor = 0.0; pp_dpx = 0.0; pp_lap = 0.0; pp_sol = 0.0
+            pp_btp = 0.0; pp_bcl = 0.0; pp_b10 = 0.0; pp_ex = 0.0
+            pp_armed = .true.
+        end if
+        if (.not. pp_armed) return
+        if (.not. s115c81_istarget(t81_substep)) then
+            if (op .eq. 'B280') pp_armed = .false.
+            return
+        end if
+        call s115c81_pp_open()
+        if (op .eq. 'B200') call s115c81_pp_b200()
+        if (op .eq. 'B210') call s115c81_pp_b210()
+        if (op .eq. 'B280') then
+            call s115c81_pp_b280()
+            write (pp_unit, '(I4,",",12(E15.7,","),E15.7)') t81_substep, &
+                pp_tw, pp_cor, pp_dpx, pp_lap, pp_sol, &
+                pp_tw + pp_cor + pp_dpx + pp_lap + pp_sol, &
+                pp_btp, pp_bcl, pp_btp + pp_bcl, pp_b10, &
+                pp_tw + pp_cor + pp_dpx + pp_lap + pp_sol + pp_btp + pp_bcl + pp_b10, pp_ex
+            flush (pp_unit)
+            pp_armed = .false.
+        end if
+    end subroutine s115c81_pp
+
+    subroutine s115c81_pp_b200()
+        integer :: i, j, k, ki, i1, i2, j1, j2, k1
+        real :: hht, a, b, a1, b1, dzz, dzz1, cc, s, s1, uij, vij
+        real :: ri2j, rij, ri2j2, rij2, asa1, asa, slapu, slapv
+        real :: fu_tw, fu_pg, fu_lp, fv_tw, fv_pg, fv_lp
+        real :: du_tw, du_pg, du_co, du_lp, du_sv
+        real :: dv_tw, dv_pg, dv_co, dv_lp, dv_sv
+        real :: ub, vb, ua, va
+        do j = 2, js
+            do i = 2, is
+                ki = kt1(i, j)
+                if (ki .eq. 0) cycle
+                i1 = i + 1; i2 = i - 1; j1 = j + 1; j2 = j - 1
+                hht = map1(i, j)
+                if (abs(hht - 8888.0) .lt. 1e-8) cycle
+                asa1 = fku(i, j)*0.5*T81_DT
+                asa = 1.0 + asa1*asa1
+                ri2j = ro(i2, j, 1); rij = ro(i, j, 1)
+                ri2j2 = ro(i2, j2, 1); rij2 = ro(i, j2, 1)
+                a = ri2j + rij - ri2j2 - rij2
+                b = ri2j2 + ri2j - rij2 - rij
+                dzz = dz(1)
+                s = 0.0; s1 = 0.0
+                do k = 1, ki
+                    k1 = k + 1
+                    dzz1 = dz(k1)
+                    uij = u1(i, j, k); vij = v1(i, j, k)
+                    ri2j = ro(i2, j, k); rij2 = ro(i, j2, k)
+                    rij = ro(i, j, k); ri2j2 = ro(i2, j2, k)
+                    a1 = ri2j + rij - ri2j2 - rij2
+                    b1 = ri2j2 + ri2j - rij2 - rij
+                    cc = T81_C8*dzz
+                    s = s + (a + a1)*cc
+                    s1 = s1 + (b + b1)*cc
+                    if (s22_freeze_tw) then
+                        s = 0.0
+                        s1 = 0.0
+                    end if
+                    if (abs(hht - z(k)) .lt. 1e-6) then
+                        a = a1; b = b1; dzz = dzz1
+                        cycle
+                    end if
+                    slapu = u1(i, j2, k) + u1(i, j1, k) + u1(i2, j, k) + u1(i1, j, k) - 4.0*uij
+                    slapv = v1(i1, j, k) + v1(i2, j, k) + v1(i, j1, k) + v1(i, j2, k) - 4.0*vij
+                    fu_tw = -T81_C1*s; fu_pg = -dpx(i, j); fu_lp = T81_C3*slapu
+                    fv_tw = -T81_C1*s1; fv_pg = -dpy(i, j); fv_lp = T81_C3*slapv
+                    du_tw = T81_DT*(fu_tw + asa1*fv_tw)/asa
+                    du_pg = T81_DT*(fu_pg + asa1*fv_pg)/asa
+                    du_lp = T81_DT*(fu_lp + asa1*fv_lp)/asa
+                    du_co = (asa1*vij + asa1*(vij - asa1*uij))/asa
+                    du_sv = uij/asa - uij
+                    dv_tw = T81_DT*(fv_tw - asa1*fu_tw)/asa
+                    dv_pg = T81_DT*(fv_pg - asa1*fu_pg)/asa
+                    dv_lp = T81_DT*(fv_lp - asa1*fu_lp)/asa
+                    dv_co = (-asa1*uij - asa1*asa1*vij)/asa
+                    dv_sv = (vij - asa1*uij)/asa - vij
+                    ub = su(i, j, k); vb = sv(i, j, k)
+                    ua = u2(i, j, k); va = v2(i, j, k)
+                    if (t81_is_invalid(ub) .or. t81_is_invalid(vb) .or. &
+                        t81_is_invalid(ua) .or. t81_is_invalid(va)) cycle
+                    pp_tw = pp_tw + 2.0*ub*du_tw + 2.0*vb*dv_tw
+                    pp_cor = pp_cor + 2.0*ub*du_co + 2.0*vb*dv_co
+                    pp_dpx = pp_dpx + 2.0*ub*du_pg + 2.0*vb*dv_pg
+                    pp_lap = pp_lap + 2.0*ub*du_lp + 2.0*vb*dv_lp
+                    pp_sol = pp_sol + 2.0*ub*du_sv + 2.0*vb*dv_sv
+                    pp_ex = pp_ex + ((ua*ua + va*va) - (ub*ub + vb*vb))
+                    a = a1
+                    b = b1
+                    dzz = dzz1
+                end do
+            end do
+        end do
+    end subroutine s115c81_pp_b200
+
+    subroutine s115c81_pp_b210()
+        integer :: i, j, k, ki
+        real :: ub, vb, ua, va
+        do j = 2, js
+            do i = 2, is
+                ki = kt1(i, j)
+                if (ki .eq. 0) cycle
+                if (abs(map1(i, j) - 8888.0) .lt. 1e-8) cycle
+                do k = 1, ki
+                    ub = su(i, j, k); vb = sv(i, j, k)
+                    ua = u2(i, j, k); va = v2(i, j, k)
+                    if (t81_is_invalid(ub) .or. t81_is_invalid(vb) .or. &
+                        t81_is_invalid(ua) .or. t81_is_invalid(va)) cycle
+                    pp_b10 = pp_b10 + 2.0*ub*(ua - ub) + 2.0*vb*(va - vb)
+                    pp_ex = pp_ex + ((ua*ua + va*va) - (ub*ub + vb*vb))
+                end do
+            end do
+        end do
+    end subroutine s115c81_pp_b210
+
+    subroutine s115c81_pp_b280()
+        integer :: i, j, k, ki, i2, j2, k1
+        real :: hht, dzz, s, s1, btp_u, btp_v, bcl_u, bcl_v
+        real :: ub, vb, ua, va
+        do j = 2, js
+            do i = 2, is
+                ki = kt1(i, j)
+                if (ki .eq. 0) cycle
+                i2 = i - 1; j2 = j - 1
+                hht = map1(i, j)
+                if (abs(hht - 8888.0) .lt. 1e-8) cycle
+                s = 0.0; s1 = 0.0
+                do k = 1, ki
+                    k1 = k + 1
+                    if (k .eq. ki) then
+                        if (ki .ne. 1) then
+                            dzz = hht - 0.5*(z(ki) + z(ki - 1))
+                        else
+                            dzz = hht
+                        end if
+                    else
+                        dzz = dz1(k)
+                    end if
+                    s = su(i, j, k)*dzz + s
+                    s1 = sv(i, j, k)*dzz + s1
+                end do
+                btp_u = 0.5*(up2(i, j) + up2(i2, j))/hht
+                btp_v = 0.5*(vp2(i, j) + vp2(i, j2))/hht
+                bcl_u = -s/hht
+                bcl_v = -s1/hht
+                do k = 1, ki
+                    ub = su(i, j, k); vb = sv(i, j, k)
+                    ua = u2(i, j, k); va = v2(i, j, k)
+                    if (t81_is_invalid(ub) .or. t81_is_invalid(vb) .or. &
+                        t81_is_invalid(ua) .or. t81_is_invalid(va)) cycle
+                    pp_btp = pp_btp + 2.0*ub*btp_u + 2.0*vb*btp_v
+                    pp_bcl = pp_bcl + 2.0*ub*bcl_u + 2.0*vb*bcl_v
+                    pp_ex = pp_ex + ((ua*ua + va*va) - (ub*ub + vb*vb))
+                end do
+            end do
+        end do
+    end subroutine s115c81_pp_b280
 
     ! B200: recompute-зеркало по всем wet + first-order E в аккумуляторы.
     subroutine s115c81_b200()

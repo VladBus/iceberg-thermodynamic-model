@@ -116,6 +116,9 @@ program main
     logical :: ib_enabled, ib_ok, ib_idx_ok
     ! Stage 11.3C.1: flag for timestep-matrix semantics (default .false.)
     logical :: stage113_active
+    ! Stage 11.5D.1: Family A controlled temporal prototype (default OFF → legacy).
+    integer :: famA_N
+    logical :: famA_active, famA_preswapped
     ! Stage 11.5B: MM2-override flag (declaration with the other one).
     logical :: stage113_mm2_set
     ! Stage 11.5C: experimental ocean-substep scheduler state (default 1).
@@ -249,6 +252,29 @@ program main
                  ' dt_ocean=', dt_ocean
     else
         dt_ocean = dt
+    end if
+    ! Stage 11.5D.1: Family A — legacy-total-preserving ocean substepping.
+    ! dt_sub = 3600/N: the ocean integrates 3600 s/day TOTAL for every N
+    ! (legacy behavior split finer — true refinement, NOT full-day).
+    ! Takes precedence over STAGE115C_OCEAN_SUBSTEPS when set (documented).
+    ! Unset/invalid → legacy path untouched (bit-identical).
+    famA_active = .false.
+    famA_N = 1
+    famA_preswapped = .false.
+    call get_environment_variable('STAGE115D1_FAMILY_A_N', env_str)
+    if (len_trim(env_str) .gt. 0) then
+        read (env_str, *, iostat=ios) famA_N
+        if (ios .eq. 0 .and. famA_N .ge. 1 .and. famA_N .le. mm2) then
+            famA_active = .true.
+            nsub_115c = famA_N
+            ostep_115c = max(1, mm2/max(1, nsub_115c))
+            dt_ocean = 3600.0/real(nsub_115c)
+            print *, 'STAGE115D1 Family A: N=', nsub_115c, ' ostep=', ostep_115c, &
+                     ' dt_sub=', dt_ocean, ' ocean-s/day=', nsub_115c*dt_ocean
+        else
+            famA_N = 1
+            print *, 'STAGE115D1 Family A: invalid N (need 1..mm2) → legacy'
+        end if
     end if
     mm4 = 1             ! Число расчётных месяцев (1 для Q1 2020).
     mm5 = 1             ! Число расчётных лет.
@@ -902,6 +928,16 @@ program main
                     !   ym2 [см] — уровень моря (eta) на текущем шаге.
                     !   ym1 [см] — уровень моря на предыдущем шаге (для ∂η/∂t).
                     ! ====================================================================
+                    ! Stage 11.5D.1: Family A early dt-swap (N>1 firing iiis only),
+                    ! so the per-iii W recompute below uses dt_sub. N=1, legacy,
+                    ! and non-firing iiis: untouched.
+                    famA_preswapped = .false.
+                    if (famA_active .and. famA_N .gt. 1 .and. mod(iii, ostep_115c) .eq. 0) then
+                        dt_save = dt; c2_save = c2; c4_save = c4; c5_save = c5
+                        dt = dt_ocean; c2 = dt_ocean/dx
+                        c4 = aht/(dx*dx)*dt_ocean; c5 = ahs/(dx*dx)*dt_ocean
+                        famA_preswapped = .true.
+                    end if
                     do j = 2, js
                         j1 = j + 1
                         j2 = j - 1
@@ -995,9 +1031,12 @@ program main
             ! every ostep-th iii with dt_ocean=86400/N. Tail code below is
             ! UNTOUCHED (indentation kept); only dt/c2/c4/c5 are swapped.
             if (mod(iii, ostep_115c) .eq. 0) then
+                ! Stage 11.5D.1: skip re-swap if pre-swapped before W (same values).
+                if (.not. famA_preswapped) then
                 dt_save = dt; c2_save = c2; c4_save = c4; c5_save = c5
                 dt = dt_ocean; c2 = dt_ocean/dx
                 c4 = aht/(dx*dx)*dt_ocean; c5 = ahs/(dx*dx)*dt_ocean
+                end if
             ! Stage 11.5C.1: substep counting + freeze apply (diagnostic, OFF default)
             call s115c1_gate_entry(iii)
             ! Stage 11.5C.2: substep counting + heat-freeze apply (diagnostic, OFF default)
@@ -1429,7 +1468,11 @@ program main
                     !   ∂U_bar/∂t + f×U_bar + g·∇η = τ/ρ·H  (импульс)
                     ! Где U_bar = (UP2, VP2) — интегральные потоки [см²/с].
                     call s115c2_op(kkk, iii, 'shal', 0)
-                    call shal()
+                    ! Stage 11.5D.1 Family A: shal runs ONCE per day (last fire,
+                    ! iii==mm2) — its fixed 3600 s then equals the daily ocean
+                    ! total for every N. Legacy/inactive/N=1: unchanged (the
+                    ! single daily fire is at iii==mm2).
+                    if (.not. famA_active .or. iii .eq. mm2) call shal()
                     call s115c1_checkpoint(kkk, iii, 'AFTER_shal')
                     call s115c5_trace(kkk, iii, 'AFTER_shal')
                     call s115c3_seq(kkk, iii, 'AFTER_shal')

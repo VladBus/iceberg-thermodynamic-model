@@ -119,6 +119,10 @@ program main
     ! Stage 11.5D.1: Family A controlled temporal prototype (default OFF → legacy).
     integer :: famA_N
     logical :: famA_active, famA_preswapped
+    ! Stage 11.5D.2: factor isolation Experiment B (default OFF → legacy).
+    ! B = N=24 fires/day × dt=3600 (86400 s/day ocean) + shal 1×/day.
+    logical :: d2_active, d2_shalonce
+    integer :: ss_d2, d2_npass
     ! Stage 11.5B: MM2-override flag (declaration with the other one).
     logical :: stage113_mm2_set
     ! Stage 11.5C: experimental ocean-substep scheduler state (default 1).
@@ -274,6 +278,49 @@ program main
         else
             famA_N = 1
             print *, 'STAGE115D1 Family A: invalid N (need 1..mm2) → legacy'
+        end if
+    end if
+    ! Stage 11.5D.2: Experiment B — full-day ocean at legacy dt with shal 1×/day.
+    ! N=24 fires/day, dt_sub = 3600 s (== DT, swap is numerically a no-op),
+    ! ocean total 86400 s/day; shal stays once/day (like Family A).
+    ! Isolates (dt=3600, total=86400) from shal cadence (C = 11.5C-E path
+    ! has shal 24×/day). Takes precedence over FAMILY_A and 115C (documented).
+    ! Unset/unknown → untouched (bit-identical).
+    d2_active = .false.
+    d2_shalonce = .false.
+    d2_npass = 1
+    call get_environment_variable('STAGE115D2_EXP', env_str)
+    if (len_trim(env_str) .gt. 0) then
+        if (env_str .eq. 'B' .or. env_str .eq. 'b') then
+            if (mm2 .lt. 24) then
+                print *, 'STAGE115D2 ExpB: need mm2>=24 (STAGE113_MM2=24) → legacy'
+            else
+            d2_active = .true.
+            d2_shalonce = .true.
+            nsub_115c = 24
+            ostep_115c = max(1, mm2/max(1, nsub_115c))
+            dt_ocean = dt
+            print *, 'STAGE115D2 ExpB: N=24 dt_sub=', dt_ocean, ' ocean-s/day=', 24.0*dt_ocean, &
+                     ' shal=1x/day'
+            end if
+        else if (env_str .eq. 'D' .or. env_str .eq. 'd') then
+            ! Experiment D (optional): 24 fires/day × 24 internal passes,
+            ! dt_sub = 150 s → ocean total 86400 s/day, shal 1×/day.
+            ! Same totals as B/C but legacy-small dt: separates dt vs total.
+            if (mm2 .lt. 24) then
+                print *, 'STAGE115D2 ExpD: need mm2>=24 (STAGE113_MM2=24) → legacy'
+            else
+            d2_active = .true.
+            d2_shalonce = .true.
+            d2_npass = 24
+            nsub_115c = 24
+            ostep_115c = max(1, mm2/max(1, nsub_115c))
+            dt_ocean = 150.0
+            print *, 'STAGE115D2 ExpD: 24x24 passes dt_sub=', dt_ocean, ' ocean-s/day=', 576.0*dt_ocean, &
+                     ' shal=1x/day'
+            end if
+        else
+            print *, 'STAGE115D2: unknown EXP (need B or D) → legacy'
         end if
     end if
     mm4 = 1             ! Число расчётных месяцев (1 для Q1 2020).
@@ -928,11 +975,13 @@ program main
                     !   ym2 [см] — уровень моря (eta) на текущем шаге.
                     !   ym1 [см] — уровень моря на предыдущем шаге (для ∂η/∂t).
                     ! ====================================================================
-                    ! Stage 11.5D.1: Family A early dt-swap (N>1 firing iiis only),
-                    ! so the per-iii W recompute below uses dt_sub. N=1, legacy,
-                    ! and non-firing iiis: untouched.
+                    ! Stage 11.5D.1/11.5D.2: early dt-swap on firing iiis (N>1 only).
+                    ! Family A: dt_sub for W; ExpB: dt==legacy so numerically a
+                    ! no-op (kept for structural uniformity). N=1, legacy,
+                    ! non-firing iiis, and the 11.5C path: untouched.
                     famA_preswapped = .false.
-                    if (famA_active .and. famA_N .gt. 1 .and. mod(iii, ostep_115c) .eq. 0) then
+                    if (((famA_active .and. famA_N .gt. 1) .or. d2_active) .and. &
+                        mod(iii, ostep_115c) .eq. 0) then
                         dt_save = dt; c2_save = c2; c4_save = c4; c5_save = c5
                         dt = dt_ocean; c2 = dt_ocean/dx
                         c4 = aht/(dx*dx)*dt_ocean; c5 = ahs/(dx*dx)*dt_ocean
@@ -1058,6 +1107,10 @@ program main
             call s112_cfl_dist(dt, kkk, 0)
 
 ! Frozen density test: skip advection and convective adjustment
+                    ! Stage 11.5D.2: internal substep loop (Experiment D: 24× per
+                    ! gate fire → 576 passes/day; d2_npass=1 otherwise = single
+                    ! pass, behavior identical).
+                    do ss_d2 = 1, d2_npass
             call get_environment_variable('ICEBERG_FROZEN_DENSITY', env_str)
             if (len_trim(env_str) .gt. 0 .and. env_str .eq. 'true') then
                         ! Skip advs, advt, conv_adj - density stays frozen
@@ -1468,11 +1521,14 @@ program main
                     !   ∂U_bar/∂t + f×U_bar + g·∇η = τ/ρ·H  (импульс)
                     ! Где U_bar = (UP2, VP2) — интегральные потоки [см²/с].
                     call s115c2_op(kkk, iii, 'shal', 0)
-                    ! Stage 11.5D.1 Family A: shal runs ONCE per day (last fire,
-                    ! iii==mm2) — its fixed 3600 s then equals the daily ocean
-                    ! total for every N. Legacy/inactive/N=1: unchanged (the
-                    ! single daily fire is at iii==mm2).
-                    if (.not. famA_active .or. iii .eq. mm2) call shal()
+                    ! Stage 11.5D.1/11.5D.2: shal runs ONCE per day — at the last
+                    ! gate fire (iii==mm2) AND the last internal pass
+                    ! (ss_d2==d2_npass; always true unless Experiment D).
+                    ! Its fixed 3600 s then matches Family A daily totals
+                    ! (ExpB/D: barotropic stays 3600 s/day by design).
+                    ! Legacy/11.5C/inactive/N=1: unchanged.
+                    if ((.not. famA_active .and. .not. d2_shalonce) .or. &
+                        (iii .eq. mm2 .and. ss_d2 .eq. d2_npass)) call shal()
                     call s115c1_checkpoint(kkk, iii, 'AFTER_shal')
                     call s115c5_trace(kkk, iii, 'AFTER_shal')
                     call s115c3_seq(kkk, iii, 'AFTER_shal')
@@ -1540,7 +1596,10 @@ program main
                         end do
                     end do
 
-! Stage 8.6 diagnostics: J = after Block 280
+                    ! Stage 11.5D.2: end of internal substep loop (single pass
+                    ! unless Experiment D).
+                    end do  ! ss_d2
+                    ! Stage 8.6 diagnostics: J = after Block 280
                     call capture_velocity_state('J_after_B280', kkk, iii, u2, v2)
                     call s115c1_checkpoint(kkk, iii, 'AFTER_B280')
                     call s115c5_trace(kkk, iii, 'AFTER_B280')

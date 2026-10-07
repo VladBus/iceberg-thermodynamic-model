@@ -119,10 +119,14 @@ program main
     ! Stage 11.5D.1: Family A controlled temporal prototype (default OFF → legacy).
     integer :: famA_N
     logical :: famA_active, famA_preswapped
-    ! Stage 11.5D.2: factor isolation Experiment B (default OFF → legacy).
+    ! Stage 11.5D.2/11.5D.3: factor-isolation experiments (default OFF → legacy).
     ! B = N=24 fires/day × dt=3600 (86400 s/day ocean) + shal 1×/day.
+    ! D = 24 fires/day × d2_npass internal passes × dt (86400 s/day, 11.5D.3: any dt).
     logical :: d2_active, d2_shalonce
     integer :: ss_d2, d2_npass
+    real :: d2_dt
+    character(len=64) :: env_str2
+    integer :: ios2
     ! Stage 11.5B: MM2-override flag (declaration with the other one).
     logical :: stage113_mm2_set
     ! Stage 11.5C: experimental ocean-substep scheduler state (default 1).
@@ -304,20 +308,32 @@ program main
                      ' shal=1x/day'
             end if
         else if (env_str .eq. 'D' .or. env_str .eq. 'd') then
-            ! Experiment D (optional): 24 fires/day × 24 internal passes,
-            ! dt_sub = 150 s → ocean total 86400 s/day, shal 1×/day.
-            ! Same totals as B/C but legacy-small dt: separates dt vs total.
+            ! Experiment D / Stage 11.5D.3 dt-threshold scan: 24 fires/day ×
+            ! d2_npass internal passes, dt_sub = STAGE115D3_DT (default 150 s)
+            ! → ocean total 86400 s/day, shal 1×/day. d2_npass = 3600/dt_sub
+            ! (must be integer ≥1). Same totals as B/C at any dt: separates
+            ! dt vs total integration time. 11.5D.3 matrix: 1800/900/450/225/150.
             if (mm2 .lt. 24) then
                 print *, 'STAGE115D2 ExpD: need mm2>=24 (STAGE113_MM2=24) → legacy'
             else
+            d2_dt = 150.0
+            call get_environment_variable('STAGE115D3_DT', env_str2)
+            if (len_trim(env_str2) .gt. 0) then
+                read (env_str2, *, iostat=ios2) d2_dt
+                if (ios2 .ne. 0 .or. d2_dt .le. 0.0) d2_dt = 150.0
+            end if
+            if (abs(nint(3600.0/d2_dt)*d2_dt - 3600.0) .gt. 1e-6 .or. d2_dt .gt. 3600.0) then
+                print *, 'STAGE115D2 ExpD: bad DT (need 3600/dt integer, dt<=3600) → legacy'
+            else
             d2_active = .true.
             d2_shalonce = .true.
-            d2_npass = 24
+            d2_npass = max(1, nint(3600.0/d2_dt))
             nsub_115c = 24
             ostep_115c = max(1, mm2/max(1, nsub_115c))
-            dt_ocean = 150.0
-            print *, 'STAGE115D2 ExpD: 24x24 passes dt_sub=', dt_ocean, ' ocean-s/day=', 576.0*dt_ocean, &
-                     ' shal=1x/day'
+            dt_ocean = d2_dt
+            print *, 'STAGE115D2 ExpD: 24x', d2_npass, ' passes dt_sub=', dt_ocean, &
+                     ' ocean-s/day=', 24.0*d2_npass*dt_ocean, ' shal=1x/day'
+            end if
             end if
         else
             print *, 'STAGE115D2: unknown EXP (need B or D) → legacy'

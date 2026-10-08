@@ -62,6 +62,7 @@ program main
     use stage115c8_full
     use stage115c81_attr
     use stage115g_skzfreeze
+    use stage115h_production
     use iceberg
     use iceberg_types, only: RHO_ICE, RHO_WATER
     use iceberg_forcing, only: get_ocean_profile, get_atmos_forcing, model_coords_to_indices
@@ -241,6 +242,10 @@ program main
         print *, 'STAGE113: DT=', dt, 'mm2=', mm2, 's/day=', mm2*dt
         print *, 'STAGE113: DT1=', dt1, 'mm3=', mm3
     end if
+    ! Stage 11.5H: production flag read BEFORE forensic env parsing —
+    ! the production path does NOT consult STAGE115C/D/F/G env (forced below).
+    call s115h_init()
+    if (.not. s115h_prod_active()) then
     ! Stage 11.5C: experimental ocean substepping (default N=1 = legacy single
     ! ocean pass/day; bit-identical when unset). N>1: gated tail below runs
     ! N×/day with dt_ocean = 86400/N. Requires N ≤ mm2 (documented).
@@ -338,6 +343,34 @@ program main
             end if
         else
             print *, 'STAGE115D2: unknown EXP (need B or D) → legacy'
+        end if
+    end if
+    end if ! (.not. prod): forensic env skipped on the production path
+    ! Stage 11.5H: production temporal architecture override (STALE coupling).
+    ! OCEAN_DT=150, 24 fires/day x 24 passes, shal 1x/day; ice->ocean STALE
+    ! (day-start txic/tyic/ans via s115h_gate_entry). Requires mm2>=24
+    ! (same pattern as ExpD guard); otherwise legacy config (prod freeze inert:
+    ! single fire/day snapshots without restore = no behavior change).
+    if (s115h_prod_active()) then
+        famA_active = .false.
+        famA_N = 1
+        famA_preswapped = .false.
+        d2_active = .true.
+        d2_shalonce = .true.
+        d2_npass = 24
+        nsub_115c = 24
+        ostep_115c = max(1, mm2/max(1, nsub_115c))
+        dt_ocean = 150.0
+        if (mm2 .lt. 24) then
+            print *, 'STAGE115H production: need mm2>=24 (STAGE113_MM2=24) -> legacy config'
+            d2_active = .false.
+            d2_shalonce = .false.
+            d2_npass = 1
+            nsub_115c = 1
+            ostep_115c = max(1, mm2)
+            dt_ocean = dt
+        else
+            print *, 'STAGE115H production: 24x24 passes dt_sub=150 shal=1x/day (STALE coupling)'
         end if
     end if
     mm4 = 1             ! Число расчётных месяцев (1 для Q1 2020).
@@ -597,34 +630,34 @@ program main
     call s112_init()
     ! Stage 11.5C.1: forensic substepping trace + frozen-coupling control
     ! (env-gated, default OFF; purely diagnostic).
-    call s115c1_init()
+    if (.not. s115h_prod_active()) call s115c1_init()
     ! Stage 11.5C.2: heat-freeze control + operator gain audit
     ! (env-gated, default OFF; purely diagnostic).
-    call s115c2_init()
+    if (.not. s115h_prod_active()) call s115c2_init()
     ! Stage 11.5C.3: pure T/S-held control + B200 regression + temporal seq
     ! (env-gated, default OFF; purely diagnostic).
-    call s115c3_init()
+    if (.not. s115h_prod_active()) call s115c3_init()
     ! Stage 11.5C.4: single-field ice-state freezes (env-gated, default OFF;
     ! purely diagnostic).
-    call s115c4_init()
+    if (.not. s115h_prod_active()) call s115c4_init()
     ! Stage 11.5C.5: same-cell operator trace + global energy
     ! (env-gated, default OFF; purely diagnostic).
-    call s115c5_init()
+    if (.not. s115h_prod_active()) call s115c5_init()
     ! Stage 11.5C.6: B200/B280 term-level mirrors (env-gated, default OFF;
     ! purely diagnostic — existing formulas instrumented, not rewritten).
-    call s115c6_init()
+    if (.not. s115h_prod_active()) call s115c6_init()
     ! Stage 11.5C.7: max-|U| spatial tracking (env-gated, default OFF;
     ! purely diagnostic).
-    call s115c7_init()
+    if (.not. s115h_prod_active()) call s115c7_init()
     ! Stage 11.5C.8: full-field per-cell dE aggregates (env-gated, default
     ! OFF; purely diagnostic).
-    call s115c8_init()
+    if (.not. s115h_prod_active()) call s115c8_init()
     ! Stage 11.5C.8.1: full-field term attribution (env-gated, default OFF;
     ! purely diagnostic).
-    call s115c81_init()
+    if (.not. s115h_prod_active()) call s115c81_init()
     ! Stage 11.5G: skz-freeze final coupling check (env-gated, default OFF;
     ! purely diagnostic).
-    call s115g_init()
+    if (.not. s115h_prod_active()) call s115g_init()
 
     ! Диагностика уравнения состояния (этап 3.1): расчет RO из T2/S2
     ! в диагностическом режиме. Пока НЕ используется в уравнениях движения.
@@ -1107,21 +1140,23 @@ program main
                 c4 = aht/(dx*dx)*dt_ocean; c5 = ahs/(dx*dx)*dt_ocean
                 end if
             ! Stage 11.5C.1: substep counting + freeze apply (diagnostic, OFF default)
-            call s115c1_gate_entry(iii)
+            if (.not. s115h_prod_active()) call s115c1_gate_entry(iii)
             ! Stage 11.5C.2: substep counting + heat-freeze apply (diagnostic, OFF default)
-            call s115c2_gate_entry(iii)
+            if (.not. s115h_prod_active()) call s115c2_gate_entry(iii)
             ! Stage 11.5C.3: substep counting + pure T/S freeze + RO day-start
             ! (diagnostic, OFF default).
-            call s115c3_gate_entry(iii)
+            if (.not. s115h_prod_active()) call s115c3_gate_entry(iii)
             ! Stage 11.5C.4: single-field ice freeze snapshot/restore +
             ! seed-cell ice-state CSV (diagnostic, OFF default).
-            call s115c4_gate_entry(iii, kkk)
+            if (.not. s115h_prod_active()) call s115c4_gate_entry(iii, kkk)
             ! Stage 11.5G: skz day-start snapshot on first fire (diagnostic, OFF default)
-            call s115g_gate_entry(iii)
+            if (.not. s115h_prod_active()) call s115g_gate_entry(iii)
+            ! Stage 11.5H: STALE ice->ocean day-start freeze (production-owned)
+            call s115h_gate_entry(iii)
             ! Stage 11.5C.1: START checkpoint (diagnostic, OFF default)
-            call s115c1_checkpoint(kkk, iii, 'START')
-            call s115c5_trace(kkk, iii, 'START')
-            call s115c3_seq(kkk, iii, 'START')
+            if (.not. s115h_prod_active()) call s115c1_checkpoint(kkk, iii, 'START')
+            if (.not. s115h_prod_active()) call s115c5_trace(kkk, iii, 'START')
+            if (.not. s115h_prod_active()) call s115c3_seq(kkk, iii, 'START')
             call s112_compute_vertical_cfl(dt, 'W_after_continuity')
             ! Stage 11.3C.1: распределение CFL за сутки (диагностика).
             ! NOTE: океан идёт 1 раз/сутки ВНЕ iii-цикла (iii там stale=mm2+1),
@@ -1155,15 +1190,15 @@ program main
                         call s112_scan_ocean_state(kkk, iii, real(nday1*24 + iii)*3600.0, 'BEFORE_advs_advt')
 
                         call advs(dt, c2)
-                        call s115c1_checkpoint(kkk, iii, 'AFTER_advs')
-                        call s115c5_trace(kkk, iii, 'AFTER_advs')
-                        call s115c3_seq(kkk, iii, 'AFTER_advs')
+                        if (.not. s115h_prod_active()) call s115c1_checkpoint(kkk, iii, 'AFTER_advs')
+                        if (.not. s115h_prod_active()) call s115c5_trace(kkk, iii, 'AFTER_advs')
+                        if (.not. s115h_prod_active()) call s115c3_seq(kkk, iii, 'AFTER_advs')
                         ! Stage 11.4-D24: скан между адвекциями S и T (диагностика, env-gated)
                         call s112_scan_ocean_state(kkk, iii, real(nday1*24 + iii)*3600.0, 'BETWEEN_advs_advt')
                         call advt(dt, c2)
-                        call s115c1_checkpoint(kkk, iii, 'AFTER_advt')
-                        call s115c5_trace(kkk, iii, 'AFTER_advt')
-                        call s115c3_seq(kkk, iii, 'AFTER_advt')
+                        if (.not. s115h_prod_active()) call s115c1_checkpoint(kkk, iii, 'AFTER_advt')
+                        if (.not. s115h_prod_active()) call s115c5_trace(kkk, iii, 'AFTER_advt')
+                        if (.not. s115h_prod_active()) call s115c3_seq(kkk, iii, 'AFTER_advt')
 
                         ! Stage 8.6 diagnostics: E = after ocean advection
                         call capture_state('E_after_adv', kkk, iii, u2, v2, w, t2, s2, ro)
@@ -1189,9 +1224,9 @@ program main
                         if (s22_diag) call s22_probe('CA_after', kkk, iii)
                         ! Stage 11.4-D24: скан первого невалидного (диагностика, env-gated)
                         call s112_scan_ocean_state(kkk, iii, real(nday1*24 + iii)*3600.0, 'AFTER_conv_adj')
-                        call s115c1_checkpoint(kkk, iii, 'AFTER_CA')
-                        call s115c5_trace(kkk, iii, 'AFTER_CA')
-                        call s115c3_seq(kkk, iii, 'AFTER_CA')
+                        if (.not. s115h_prod_active()) call s115c1_checkpoint(kkk, iii, 'AFTER_CA')
+                        if (.not. s115h_prod_active()) call s115c5_trace(kkk, iii, 'AFTER_CA')
+                        if (.not. s115h_prod_active()) call s115c3_seq(kkk, iii, 'AFTER_CA')
 
                         ! Диагностика этапа 4.3: точка D - остаточные инверсии после
                         ! convective adjustment (должны быть близки к нулю, кроме
@@ -1220,12 +1255,12 @@ program main
 
                     ! Stage 8.6 diagnostics: G = before Block 200
                     call capture_velocity_state('G_before_B200', kkk, iii, u1, v1)
-                    call s115c2_op(kkk, iii, 'B200', 0)
-                    call s115c8_op(kkk, iii, 'B200', 0)
-                    call s115c81_op(kkk, iii, 'B200', 0)
-                    call s115c3_b200(kkk, iii, 0)
-                    call s115c6_b200_before(kkk, iii)
-                    call s115c7_track(kkk, iii, 'B200', 0)
+                    if (.not. s115h_prod_active()) call s115c2_op(kkk, iii, 'B200', 0)
+                    if (.not. s115h_prod_active()) call s115c8_op(kkk, iii, 'B200', 0)
+                    if (.not. s115h_prod_active()) call s115c81_op(kkk, iii, 'B200', 0)
+                    if (.not. s115h_prod_active()) call s115c3_b200(kkk, iii, 0)
+                    if (.not. s115h_prod_active()) call s115c6_b200_before(kkk, iii)
+                    if (.not. s115h_prod_active()) call s115c7_track(kkk, iii, 'B200', 0)
                     ! Stage 10.22: проба перед Block 200
                     if (s22_diag) call s22_probe('B200_before', kkk, iii)
 
@@ -1340,15 +1375,15 @@ program main
                     end if
                     ! Stage 11.4-D24: скан первого невалидного (диагностика, env-gated)
                     call s112_scan_ocean_state(kkk, iii, real(nday1*24 + iii)*3600.0, 'AFTER_block200')
-                    call s115c1_checkpoint(kkk, iii, 'AFTER_B200')
-                    call s115c5_trace(kkk, iii, 'AFTER_B200')
-                    call s115c3_seq(kkk, iii, 'AFTER_B200')
-                    call s115c2_op(kkk, iii, 'B200', 1)
-                    call s115c8_op(kkk, iii, 'B200', 1)
-                    call s115c81_op(kkk, iii, 'B200', 1)
-                    call s115c3_b200(kkk, iii, 1)
-                    call s115c6_b200_after(kkk, iii)
-                    call s115c7_track(kkk, iii, 'B200', 1)
+                    if (.not. s115h_prod_active()) call s115c1_checkpoint(kkk, iii, 'AFTER_B200')
+                    if (.not. s115h_prod_active()) call s115c5_trace(kkk, iii, 'AFTER_B200')
+                    if (.not. s115h_prod_active()) call s115c3_seq(kkk, iii, 'AFTER_B200')
+                    if (.not. s115h_prod_active()) call s115c2_op(kkk, iii, 'B200', 1)
+                    if (.not. s115h_prod_active()) call s115c8_op(kkk, iii, 'B200', 1)
+                    if (.not. s115h_prod_active()) call s115c81_op(kkk, iii, 'B200', 1)
+                    if (.not. s115h_prod_active()) call s115c3_b200(kkk, iii, 1)
+                    if (.not. s115h_prod_active()) call s115c6_b200_after(kkk, iii)
+                    if (.not. s115h_prod_active()) call s115c7_track(kkk, iii, 'B200', 1)
 
                     ! Stage 8.6 diagnostics: H = after Block 200
                     call capture_velocity_state('H_after_B200', kkk, iii, u2, v2)
@@ -1382,9 +1417,9 @@ program main
                     ! ====================================================================
                     ! Stage 10.22: сброс накопителей обусловленности Thomas (Block 210)
                     if (s22_diag) call s22_b210_reset()
-                    call s115c2_op(kkk, iii, 'B210', 0)
-                    call s115c8_op(kkk, iii, 'B210', 0)
-                    call s115c81_op(kkk, iii, 'B210', 0)
+                    if (.not. s115h_prod_active()) call s115c2_op(kkk, iii, 'B210', 0)
+                    if (.not. s115h_prod_active()) call s115c8_op(kkk, iii, 'B210', 0)
+                    if (.not. s115h_prod_active()) call s115c81_op(kkk, iii, 'B210', 0)
                     do j = 2, js
                         do i = 2, is
                             ki = kk1(i, j)      ! Число мокрых уровней
@@ -1522,13 +1557,13 @@ program main
                     end if
                     ! Stage 11.4-D24: скан первого невалидного (диагностика, env-gated)
                     call s112_scan_ocean_state(kkk, iii, real(nday1*24 + iii)*3600.0, 'AFTER_block210')
-                    call s115c1_checkpoint(kkk, iii, 'AFTER_B210')
-                    call s115c5_trace(kkk, iii, 'AFTER_B210')
-                    call s115c3_seq(kkk, iii, 'AFTER_B210')
-                    call s115c2_op(kkk, iii, 'B210', 1)
-                    call s115c8_op(kkk, iii, 'B210', 1)
-                    call s115c81_op(kkk, iii, 'B210', 1)
-                    call s115c7_track(kkk, iii, 'B210', 1)
+                    if (.not. s115h_prod_active()) call s115c1_checkpoint(kkk, iii, 'AFTER_B210')
+                    if (.not. s115h_prod_active()) call s115c5_trace(kkk, iii, 'AFTER_B210')
+                    if (.not. s115h_prod_active()) call s115c3_seq(kkk, iii, 'AFTER_B210')
+                    if (.not. s115h_prod_active()) call s115c2_op(kkk, iii, 'B210', 1)
+                    if (.not. s115h_prod_active()) call s115c8_op(kkk, iii, 'B210', 1)
+                    if (.not. s115h_prod_active()) call s115c81_op(kkk, iii, 'B210', 1)
+                    if (.not. s115h_prod_active()) call s115c7_track(kkk, iii, 'B210', 1)
 
                     ! --- STAGE 11.2: BAROTROPIC CFL (перед shal, dt1=120с, mm3=30) ---
                     call s112_compute_barotropic_cfl(120.0, 'before_shal')
@@ -1542,7 +1577,7 @@ program main
                     !   ∂η/∂t + ∇·(H·U_bar) = 0  (неразрывность)
                     !   ∂U_bar/∂t + f×U_bar + g·∇η = τ/ρ·H  (импульс)
                     ! Где U_bar = (UP2, VP2) — интегральные потоки [см²/с].
-                    call s115c2_op(kkk, iii, 'shal', 0)
+                    if (.not. s115h_prod_active()) call s115c2_op(kkk, iii, 'shal', 0)
                     ! Stage 11.5D.1/11.5D.2: shal runs ONCE per day — at the last
                     ! gate fire (iii==mm2) AND the last internal pass
                     ! (ss_d2==d2_npass; always true unless Experiment D).
@@ -1551,10 +1586,10 @@ program main
                     ! Legacy/11.5C/inactive/N=1: unchanged.
                     if ((.not. famA_active .and. .not. d2_shalonce) .or. &
                         (iii .eq. mm2 .and. ss_d2 .eq. d2_npass)) call shal()
-                    call s115c1_checkpoint(kkk, iii, 'AFTER_shal')
-                    call s115c5_trace(kkk, iii, 'AFTER_shal')
-                    call s115c3_seq(kkk, iii, 'AFTER_shal')
-                    call s115c2_op(kkk, iii, 'shal', 1)
+                    if (.not. s115h_prod_active()) call s115c1_checkpoint(kkk, iii, 'AFTER_shal')
+                    if (.not. s115h_prod_active()) call s115c5_trace(kkk, iii, 'AFTER_shal')
+                    if (.not. s115h_prod_active()) call s115c3_seq(kkk, iii, 'AFTER_shal')
+                    if (.not. s115h_prod_active()) call s115c2_op(kkk, iii, 'shal', 1)
 
                     ! ====================================================================
                     !   8. ВОЗВРАТ БАРОТРОПНОЙ КОМПОНЕНТЫ (BLOCK 280)
@@ -1571,11 +1606,11 @@ program main
                     ! Аналогично для V2 с VP2.
                     ! DZ1(k) — толщина полуслоя; для нижнего уровня: HHT - 0.5·(z(ki)+z(ki-1)).
                     ! ====================================================================
-                    call s115c2_op(kkk, iii, 'B280', 0)
-                    call s115c8_op(kkk, iii, 'B280', 0)
-                    call s115c81_op(kkk, iii, 'B280', 0)
-                    call s115c6_b280_before(kkk, iii)
-                    call s115c7_track(kkk, iii, 'B280', 0)
+                    if (.not. s115h_prod_active()) call s115c2_op(kkk, iii, 'B280', 0)
+                    if (.not. s115h_prod_active()) call s115c8_op(kkk, iii, 'B280', 0)
+                    if (.not. s115h_prod_active()) call s115c81_op(kkk, iii, 'B280', 0)
+                    if (.not. s115h_prod_active()) call s115c6_b280_before(kkk, iii)
+                    if (.not. s115h_prod_active()) call s115c7_track(kkk, iii, 'B280', 0)
                     do j = 2, js
                         do i = 2, is
                             ki = kk1(i, j)      ! Число мокрых уровней
@@ -1623,14 +1658,14 @@ program main
                     end do  ! ss_d2
                     ! Stage 8.6 diagnostics: J = after Block 280
                     call capture_velocity_state('J_after_B280', kkk, iii, u2, v2)
-                    call s115c1_checkpoint(kkk, iii, 'AFTER_B280')
-                    call s115c5_trace(kkk, iii, 'AFTER_B280')
-                    call s115c3_seq(kkk, iii, 'AFTER_B280')
-                    call s115c2_op(kkk, iii, 'B280', 1)
-                    call s115c8_op(kkk, iii, 'B280', 1)
-                    call s115c81_op(kkk, iii, 'B280', 1)
-                    call s115c6_b280_after(kkk, iii)
-                    call s115c7_track(kkk, iii, 'B280', 1)
+                    if (.not. s115h_prod_active()) call s115c1_checkpoint(kkk, iii, 'AFTER_B280')
+                    if (.not. s115h_prod_active()) call s115c5_trace(kkk, iii, 'AFTER_B280')
+                    if (.not. s115h_prod_active()) call s115c3_seq(kkk, iii, 'AFTER_B280')
+                    if (.not. s115h_prod_active()) call s115c2_op(kkk, iii, 'B280', 1)
+                    if (.not. s115h_prod_active()) call s115c8_op(kkk, iii, 'B280', 1)
+                    if (.not. s115h_prod_active()) call s115c81_op(kkk, iii, 'B280', 1)
+                    if (.not. s115h_prod_active()) call s115c6_b280_after(kkk, iii)
+                    if (.not. s115h_prod_active()) call s115c7_track(kkk, iii, 'B280', 1)
                     ! Stage 10.22: проба в конце шага
                     if (s22_diag) call s22_probe('END_step', kkk, iii)
 
@@ -1664,7 +1699,7 @@ program main
                     end if
                     ! Stage 11.5G: restore skz day-start value every fire
                     ! (diagnostic, OFF default; T/S/CA stay fresh).
-                    call s115g_gate_exit()
+                    if (.not. s115h_prod_active()) call s115g_gate_exit()
                     ! Stage 11.5C: restore legacy step (gate close; iceberg_step
                     ! and daily output below stay once/day, outside the gate).
                     dt = dt_save; c2 = c2_save; c4 = c4_save; c5 = c5_save

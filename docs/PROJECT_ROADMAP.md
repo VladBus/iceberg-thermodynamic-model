@@ -1,7 +1,7 @@
 # Project Roadmap
 
 **Updated:** 2026-09-30
-**Current scientific stage:** Stage 11.5H — Production Temporal Architecture COMPLETE (115H scheduler: dt150/STALE/ICE3600; prod-STALE bit-identical to F3 → STALE≡fresh, NOT legacy; legacy N=1 stays reference; 71 forensic sites guarded; skt debt recorded; perf ~230×legacy). NEXT: 11.6 EOS-80 productionization (NOT started).
+**Current scientific stage:** Stage 11.5H-RC — Release-Candidate Gate CURRENT (production scheduler self-contained: forces mm2=24/dt150/24×24, warns+ignores conflicting env, hard-fails instead of silent fallback; docs synchronized: D-22…D-28, KNOWN_ISSUES N-11/12/13 + T-14). NEXT MAJOR: 11.6 EOS-80 Production Integration & Re-baseline (NOT started).
 **Stages 3–11.4.1: COMPLETED** (10.x iceberg modernization; 11.1 seasonal characterization; 11.2 CFL audit; 11.4-D21…D33 EN4 stabilization → ERA5-coverage fix → cleanup + Ocean Baseline 11.x; 11.3A execution-graph audit; 11.3B input-architecture audit + NetCDF contracts; 11.3C scheme audit + timestep matrix; 11.3C.1 semantics + CFL distributions; 11.3C.2 time-integration audit; 11.3C.3 loop-bound search (VERDICT D); 11.4 EOS-80 experiment + 11.4.1 impact validation (OPTIONAL, not default)).
 **Current status:** Stages 10.14–10.22 committed (`0504853` 10.18A, `d99a4bf` 10.18B, `e99dbdc` 10.18C, `b01c902` 10.18D, `03bb42c` 10.19, `16a4c65` 10.20, `7a17cac` 10.21, `928041a` 10.22); **Stage 10.20 (ocean initialization & numerical stabilization) COMPLETE** (D-18): full-coverage ERA5 data fix resolved CASE C (3-day gate PASS, 36 steps, 0 NaN); residual CA instability characterized, NOT fixed (T-01/T-03 family; 30-day gate `steps executed = 55`, acceptance 360 NOT met); **Stage 10.21 (CA/EOS precision stabilization) COMPLETE** (D-19): float32 2⁻²³ quantization root cause confirmed, no physics change (RULES.md), bit-identical legacy verified; **Stage 10.22 (ocean density / thermal-wind / Block-200 stability audit) COMPLETE** (D-20): replay experiments a0–a4 with diagnostic freeze switches isolate the NaN chain (CA/EOS → Block 200 transmitter → Block 210 amplifier), all switches OFF default bit-identical (a0 ≡ a0_diag daily-diagnostics md5 `1ef13cb4…`); Block 210 Thomas pivots negative by construction; stabilizer levers freeze_ro (a1) / freeze_ts (a3) / freeze_ro_downstream (a4) restore physical validity (worst rel 4.213e-6) but are diagnostic-only; production physics KEEP_CURRENT; fpm battery + Python suites PASS; next = approved physics stage.
 
@@ -88,7 +88,7 @@ RECOMMENDATION: OPTIONAL, not default. Runs at reference cadence A
 > Convention going forward: "11.4-D*" = the closed EN4-stabilization forensics;
 > "11.4" = the EOS-80 experiment stage. Frozen filenames are NOT renamed.
 
-### Stage 11.5 — Temporal Integration Architecture Fix (CURRENT: 11.5C.1; 11.5A/11.5B/11.5C COMPLETE)
+### Stage 11.5 — Temporal Integration Architecture Fix (CURRENT: 11.5H-RC; 11.5A/11.5B/11.5C/11.5C.1–11.5C.8.2/11.5D.0–11.5D.3/11.5E/11.5F/11.5G/11.5H COMPLETE)
 
 11.5B (COMPLETED, commit `0463161`): `STAGE113_MM2` separation experiment —
 DT × MM2 two-dimensional sensitivity matrix; ice cadence decoupled from
@@ -110,6 +110,13 @@ barotropic-imprint (B280, +4.2e6) co-amplification; B210 net-damping,
 shal dE≡0; refined loop t1/s1→adv→RO→B200→U→adv→CA→Inf; slow 9-day core
 mode (Scenario 6 admixture) open. 11.5D promotion BLOCKED until T/S-held
 control + B200-gain regression complete.
+11.5C.3–11.5C.8.2 (COMPLETED, commits `24b96ab`/`14db952`/`4a0624b`/`adad522`+`510dcab`/`0f761f2`/`2126c79`/`edc9ae0`/`c61ba8b`/`e94ffc5`): T/S-held control, single-field ice freezes, operator-trace/term-decomposition/energy-map/attribution chain → two-phase blowup (B200-deep +2.0e7 / B210-damping / B280-shallow +1.3e7, fill-dominated, TW/btp sustained drivers); 11.5C COMPLETE.
+11.5D.0–11.5D.3 (COMPLETED, commits `913bf41`/`9580244`/`1445007`/`59e88a0`): temporal specification (Family A/B) + controlled prototypes → Family A stable (EUU −9%), Family B dt-threshold scan: blowup d4/d7 at 1800/900, marginal 450, PASS 225/150 → boundary dt_blow∈(450,900], largest-stable=225.
+11.5E (COMPLETED, commit `c230414`, temporal contract closure): Family B stable-but-WRONG-climate (heat −22% d7/−50% d29, ice 5–8× legacy, salt identical, 225-vs-150 unconverged O(1)); shal dt1/mm3 conflict documented; sea-ice validation gate required; dt=150 conservative reference.
+11.5F (COMPLETED, commit `547ae16`, coupling cadence isolation): F1 exchange graph + u1-rollover theorem (freezable-without-freezing-ocean = {txic,tyic,ans}); F2 budgets (divergent = basal freezing+export); F3 dt150+frozen-txic/ans ≡ fresh (ice→ocean ruled out); F4 skipped (incoherent); driver = ocean→ice freshness and/or ocean-internal cadence.
+11.5G (COMPLETED, commit `4bdc3f2`, final coupling check + productionization spec): CORRECTS 11.5F (skz write-only for physics, skt write-never in production → fw≡0); B150-SKZ bit-identical to fresh (skz ruled out); NO MORE freezes (mandate); spec 11.5H→11.6→11.7→11.8→12.
+11.5H (COMPLETED, commit `1c59a2c`, production temporal architecture): 115H scheduler (OCEAN_DT=150, 24×24, ICE_DT=3600, STALE day-start freeze, shal 1×/day, `STAGE115H_PRODUCTION_MODE` OFF-default); 71 forensic sites guarded; PROD-STALE bit-identical to F3 (≈fresh, NOT legacy) → legacy N=1 LOCKED as reference (D-22); skt debt (D-25); perf ~230 s/d vs ~1 s/d legacy; EOS-80 criterion corrected.
+11.5H-RC (CURRENT, this stage, release-candidate gate): self-contained scheduler (forces mm2=24, warns+ignores conflicting env, hard-fail, no silent fallback) + documentation synchronization (D-22…D-28, N-11/12/13, T-14) + full re-verification. NEXT MAJOR: 11.6.
 
 11.5A (this stage, audit+design, COMPLETED): timeline verified (ice mm2×/day,
 ocean 1×/day); ocean integrates 1 h/day vs ice 24 h/day (dynamically young
@@ -132,19 +139,47 @@ Minimal fix sketch (NOT approved, NOT executed): relocate the ocean pass
 inside `iii` (24×3600 s = coherent day); re-validate full battery + 11.x
 baselines + matrix.
 
-### Stage 11.6 — Modern NetCDF Input Architecture (implementation)
+### Stage 11.6 — EOS-80 Production Integration & Re-baseline (NEXT MAJOR)
 
-Execute the 11.3B contracts: `model/grid.nc`, monthly `ice_initial_*.nc`,
-reader migration, legacy dead-path removal — each md5-gated.
+Criterion (D-correction, NOT "improvement vs observations" — EOS-80 is a
+fundamental EOS, not a calibration closure): physical correctness +
+reference tests + numerical stability + impact on model. On pass:
+`EOS_MODE=EOS80` becomes production default (`LEGACY_REFERENCE` fallback);
+full re-baseline EN4 → EOS80 → density → thermal wind → B200 → B210 →
+B280 → ocean → ice coupling + 11.8 matrix re-run.
 
-### Stage 11.7 — Seasonal Sea-Ice Initialization Upgrade
+### Stage 11.7 — NetCDF Migration + Legacy Removal + Permanent CFL
 
-Month-resolved ice state (replaces January-only reuse; D30/D31 showed the
-freezing-regime difference matters).
+`grid.nc` (replaces KOORD.DAT/hhh.bar), `bathymetry.nc`,
+`ocean_initial.nc`, `forcing_era5.nc`, `seaice_initial.nc` (replaces
+1_1.ice…1_5.ice), `tides.nc` (replaces GRM2 or null tides) — each
+md5-gated, legacy removed after its .nc validates. CFL monitoring becomes
+a permanent production feature (cfl_x/y/z/wave/coriolis/diffusion in
+NetCDF diagnostics; PASS/WARNING/FAIL; WARNING logs only).
 
-### Stage 12.0 — Voxel Iceberg Thermodynamics
+### Stage 11.8A — Scientific Validation (gated)
 
-3D internal iceberg model (explicitly out of scope until 11.4–11.7 land).
+30-day Jan/Apr/Jul/Oct on the production executable vs N=1 legacy
+baseline (D-22); conservation (salt/heat/volume); CFL active; no NaN/Inf;
+mandatory OSI-SAF/NSIDC sea-ice gate (D-27) adjudicating legacy vs dt=150
+climates before ANY regime promotion.
+
+### Stage 11.8B — Production Release Audit
+
+Scheduler self-containment re-verified, forensic archive detached from the
+production graph (11.8 modular-ocean-core work), temporal splitting +
+operator cadence documented, reproducibility (same exe + input contract).
+
+### Stage 11.9 — Stage 11 Closure
+
+Stage-11 COMPLETE criteria (11.5G §5.4, reaffirmed 11.5H §8): numerical +
+physical + software + reproducibility. Only then does the Stage-12 gate
+open (D-28).
+
+### Stage 12.0 — Voxel Iceberg Thermodynamics (BLOCKED until Stage 11 complete)
+
+3D internal iceberg model (explicitly out of scope until 11.9 lands and
+the D-28 entry gate opens).
 
 ### Stage 11.2 — EN4 Initial Condition Stabilization (SUPERSEDED — archive)
 

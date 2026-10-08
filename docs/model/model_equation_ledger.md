@@ -1,7 +1,7 @@
 # Model Equation Ledger — Mathematical Specification of the Current Model
 
 **Date:** 2026-09-15
-**Current repository stage:** Stage 10.13 — low-flow closure (Phase C: production integration, OFF by default)
+**Current repository stage:** Stage 11.5H-RC (release-candidate gate). Equations below are the PHYSICAL specification (unchanged by Stages 11.5–11.5H-RC); temporal integration architecture (operator cadence, substepping, STALE coupling, production scheduler) is documented separately in `docs/validation/stage11.5H_production_temporal_architecture.md` and does not alter these equations.
 **Production baseline:** Stage 10.13 (low-flow closure behind `low_flow_closure_enabled`; OFF = Stage 10.12/10.10 behavior unchanged)
 **Units:** SI in the iceberg module unless explicitly noted.
 

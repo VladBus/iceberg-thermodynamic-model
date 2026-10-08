@@ -348,30 +348,31 @@ program main
     end if ! (.not. prod): forensic env skipped on the production path
     ! Stage 11.5H: production temporal architecture override (STALE coupling).
     ! OCEAN_DT=150, 24 fires/day x 24 passes, shal 1x/day; ice->ocean STALE
-    ! (day-start txic/tyic/ans via s115h_gate_entry). Requires mm2>=24
-    ! (same pattern as ExpD guard); otherwise legacy config (prod freeze inert:
-    ! single fire/day snapshots without restore = no behavior change).
+    ! (day-start txic/tyic/ans via s115h_gate_entry).
+    ! Stage 11.5H-RC: SELF-CONTAINED scheduler — production forces its own
+    ! config (mm2=24 included) and overrides conflicting env with a warning;
+    ! NO silent fallback: inconsistent final config is a hard fail (stop 1).
     if (s115h_prod_active()) then
+        call s115h_warn_ignored('STAGE113_MM2')
+        call s115h_warn_ignored('STAGE115C_OCEAN_SUBSTEPS')
+        call s115h_warn_ignored('STAGE115D2_EXP')
+        call s115h_warn_ignored('STAGE115D3_DT')
         famA_active = .false.
         famA_N = 1
         famA_preswapped = .false.
         d2_active = .true.
         d2_shalonce = .true.
         d2_npass = 24
+        mm2 = 24
         nsub_115c = 24
         ostep_115c = max(1, mm2/max(1, nsub_115c))
         dt_ocean = 150.0
-        if (mm2 .lt. 24) then
-            print *, 'STAGE115H production: need mm2>=24 (STAGE113_MM2=24) -> legacy config'
-            d2_active = .false.
-            d2_shalonce = .false.
-            d2_npass = 1
-            nsub_115c = 1
-            ostep_115c = max(1, mm2)
-            dt_ocean = dt
-        else
-            print *, 'STAGE115H production: 24x24 passes dt_sub=150 shal=1x/day (STALE coupling)'
+        if (mm2 .ne. 24 .or. nsub_115c .ne. 24 .or. ostep_115c .ne. 1 .or. &
+            d2_npass .ne. 24 .or. abs(dt_ocean - 150.0) .gt. 1e-9) then
+            print *, 'STAGE115H FATAL: production config inconsistent — aborting (no silent fallback)'
+            stop 1
         end if
+        print *, 'STAGE115H production: 24x24 passes dt_sub=150 shal=1x/day (STALE coupling, self-contained)'
     end if
     mm4 = 1             ! Число расчётных месяцев (1 для Q1 2020).
     mm5 = 1             ! Число расчётных лет.

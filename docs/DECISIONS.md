@@ -257,6 +257,76 @@ Format: `ID | stage/date | status` + short description. Details — via links.
 - **Limitations:** only 7-day screening runs (not full 30-day acceptance gate); no cross-forcing matrix (J-A, A-J) tested; EN4 raw data not independently validated for April/July/October surface layers; frozen-ocean control only run for January atmosphere.
 - **Next:** Stage 11.2 — EN4 Initial Condition Stabilization (fix the EN4 surface-layer extrapolation bug; target: 30-day stable ocean run across seasons, `steps executed = 360`).
 
+## D-22. Legacy N=1 remains the scientific reference regime (Stage 11.5H, 2026-10-08)
+
+- **Stage:** 11.5H | **Status:** DECIDED (reference locked for the 11.8 validation matrix)
+- **Problem:** Family-B dt=150 climates (fresh and STALE) diverge thermodynamically from legacy (heat −22% vs −1%, ice 777 vs 215 at April d7) while kinetic energy stays within 2% — which regime anchors production validation?
+- **Decision:** legacy N=1 (dt=3600, 1 ocean pass/day, day-stale coupling) REMAINS the scientific reference; all dt=150 variants are experimental climates pending the mandatory sea-ice gate.
+- **Why:** temporal convergence NOT achieved (11.5E: dt=225 vs dt=150 fields differ O(1)); STALE coupling provably cannot rejoin legacy (11.5H: PROD-STALE bit-identical to F3); promoting an unconverged regime would launder a regime change as a fix.
+- **Sources:** `docs/validation/stage11.5H_production_temporal_architecture.md` §2/§4, `docs/validation/stage11.5E_temporal_contract_closure.md`.
+- **Limitations:** legacy itself is dynamically young (ocean 1 h/day vs ice 24 h/day, 11.5A) — reference ≠ ideal, only validated.
+- **Next:** 11.8 matrix baselines against N=1; sea-ice gate adjudicates climates (D-27).
+
+## D-23. dt=150 is a numerically-stable candidate reference, NOT a validated production climate (Stage 11.5H, 2026-10-08)
+
+- **Stage:** 11.5H | **Status:** DECIDED (terminology locked; Luna correction adopted)
+- **Problem:** 11.5E/11.5G loosely called dt=150 "largest fully validated stable" — but 225 s is the largest proven 29-day stable dt (11.5D.3), and 225-vs-150 climates are unconverged.
+- **Decision:** dt=150 = conservative numerically-stable candidate reference for scheduler work; production-climate validation requires temporal convergence + sea-ice gate, neither met.
+- **Why:** stability ≠ correctness; heat −22%/ice 3–8× vs legacy at BOTH 150 and 225 (11.5E) with O(1) field differences between them.
+- **Sources:** `docs/validation/stage11.5D.3_dt_threshold_scan.md`, `docs/validation/stage11.5E_temporal_contract_closure.md`.
+- **Limitations:** convergence study (dt→0 limit) not performed — listed in KNOWN_ISSUES.
+- **Next:** 11.8 decides promotion only via gate evidence.
+
+## D-24. STALE ice→ocean coupling does not recover the legacy regime (Stage 11.5H, 2026-10-08)
+
+- **Stage:** 11.5H | **Status:** DECIDED (experimentally closed; no further coupling-freeze work)
+- **Problem:** is the Family-B thermodynamic divergence carried by ice→ocean feedback freshness (fixable by STALE coupling)?
+- **Decision:** NO — PROD-STALE (day-start-frozen txic/tyic/ans, production scheduler) is md5-bit-identical to F3 and ≈ fresh (heat −22%, ice 777 vs legacy −1%/215). Driver = ocean→ice freshness + ocean-internal cadence (11.5F closure, 11.5G narrowed out skz).
+- **Why:** two independent implementations (115C1-freeze, 115H-owned freeze) agree bit-for-bit; freezing the only freezable direction (11.5F §1 theorem) changes nothing.
+- **Sources:** `docs/validation/stage11.5H_production_temporal_architecture.md` §2/§4, `stage11.5F_coupling_cadence_isolation.md`, `stage11.5G_final_coupling_check_and_productionization.md`.
+- **Limitations:** residual {T/S-freshness?, CA-cadence?} unseparated (requires freezing the ocean itself — impossible by the u1-rollover theorem).
+- **Next:** NO MORE freeze experiments (mandate since 11.5G); 11.5H-RC closes the coupling-forensics line.
+
+## D-25. skt remains scientific debt; no flux closure in Stage 11 (Stage 11.5G/H, 2026-10-08)
+
+- **Stage:** 11.5G/11.5H | **Status:** DECIDED (documented, deferred post-Stage-11)
+- **Problem:** `heat()` reads `skt` for turbulent flux fw (`thermodynamics.f90:117`) but production never writes `skt` (sole write = synthetic test) → fw ≡ 0 in all production runs; basal evolution runs on conduction + fresh T1.
+- **Decision:** record as scientific debt (proper ice-ocean turbulent thermodynamic flux closure: prognostic skt + formulation + validation); DO NOT implement in Stage 11 — it would re-open Stage-10 physics.
+- **Why:** 11.5G audit (repo-wide word-boundary: `skz` write-only for physics, `skt` write-never); correcting the 11.5F skz→fw misread.
+- **Sources:** `docs/validation/stage11.5G_final_coupling_check_and_productionization.md` §1, `stage11.5H_production_temporal_architecture.md` §5.
+- **Limitations:** fw≡0 affects basal balance interpretation in all climates (legacy included).
+- **Next:** future stage (possibly Stage 12+) with dedicated physics review per RULES.md.
+
+## D-26. shal() unchanged; hardcoded dt1=120/mm3=30 requires separate physics/RULES review (Stage 11.5H-RC, 2026-10-08)
+
+- **Stage:** 11.5H-RC | **Status:** REAFFIRMED (constraint carried since 11.5C)
+- **Problem:** `shal()` uses shadowing locals dt1=120/mm3=30 (3600 s/call always) regardless of ocean dt — a structural conflict with substepped ocean (11.5E §E3).
+- **Decision:** DO NOT touch; any modification needs a dedicated physics stage with RULES.md procedure + approval. Production scheduler keeps shal 1×/day.
+- **Why:** barotropic solver stability + FCT anti-diffusion guards nearby; "fixing" risks blowup (AGENTS.md constraints).
+- **Sources:** `src/shallow_water.f90:97,102`, `docs/validation/stage11.5E_temporal_contract_closure.md` §E3.
+- **Limitations:** shal cadence mismatch vs substepped ocean persists (documented, not resolved).
+- **Next:** 11.8 notes it as residual; change only via approved physics stage.
+
+## D-27. Sea-ice validation (OSI-SAF/NSIDC) is a mandatory production gate (Stage 11.5H-RC, 2026-10-08)
+
+- **Stage:** 11.5H-RC | **Status:** DECIDED (gate defined; execution in 11.8A)
+- **Problem:** legacy April-d7 ice 215 vs Family-B 779–2736 = regime change, not numerical noise; no lawful basis to prefer either climate without observations.
+- **Decision:** no production regime promotion (STALE, fresh, or dt change) without OSI-SAF/NSIDC adjudication; 11.8A executes the gate, 11.8B audits it.
+- **Why:** 11.5E established the divergence; 11.5H proved coupling-freeze cannot rejoin legacy — observations are the only remaining arbiter.
+- **Sources:** `docs/validation/stage11.5E_temporal_contract_closure.md`, `stage11.5H_production_temporal_architecture.md` §8.
+- **Limitations:** gate design (metrics, tolerance, datasets) deferred to 11.8A.
+- **Next:** 11.8A sea-ice validation; 11.8B release audit.
+
+## D-28. Stage 12 (voxel iceberg thermodynamics) blocked until Stage 11 complete (Stage 11.5H-RC, 2026-10-08)
+
+- **Stage:** 11.5H-RC | **Status:** DECIDED (entry gate locked)
+- **Problem:** premature voxel work on an unvalidated temporal/thermodynamic interface risks building on a regime-change artifact.
+- **Decision:** Stage 12 may start ONLY after Stage-11 COMPLETE: validated production ocean core + defined interface semantics + active CFL monitoring + validated NetCDF I/O + removed legacy inputs + closed validation baseline (11.5G §5.5 criteria, reaffirmed).
+- **Why:** 11.5-series proved the interface cadence changes the climate; voxel thermodynamics couples through exactly this interface.
+- **Sources:** `docs/validation/stage11.5G_final_coupling_check_and_productionization.md` §5.5, 11.5H §8.
+- **Limitations:** none (pure gating decision).
+- **Next:** 11.6 → 11.7 → 11.8A → 11.8B → 11.9 → Stage 12.
+
 ## How to add decisions
 
 A new decision is appended with an ID, stage, status, and links to reports.

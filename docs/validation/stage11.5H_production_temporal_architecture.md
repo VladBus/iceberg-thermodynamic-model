@@ -114,7 +114,7 @@ Method: script-epoch wall-clock (includes fpm startup; same for both).
   `stage11.5C_janOFF` (NDIFF=0) — guards neutral when OFF.
 - Jan prod-mode (`stage11.5H_JanProd`, STALE): stable-flat 8 outputs
   (maxU/V 0.24–0.48), 0 NaN, killed d8.
-- Full fpm battery: TBD. `git diff --check`: TBD.
+- Full fpm battery: PASS (zero failures). `git diff --check`: clean.
 
 ## 8. Implications for next stages
 
@@ -126,8 +126,8 @@ Method: script-epoch wall-clock (includes fpm startup; same for both).
   migration target; CFL monitoring becomes permanent (11.2 analytic
   bounds + 11.5H empirical table as baseline).
 - 11.8 (closure): validation matrix (30-day Jan/Apr/Jul/Oct) runs the
-  production executable; reference regime decision from §4 locks the
-  baseline (legacy N=1 vs STALE — TBD).
+  production executable; reference regime LOCKED to legacy N=1 (§4 verdict:
+  STALE does not rejoin legacy — the gate adjudicates between two climates).
 - Sea-ice validation (OSI-SAF/NSIDC) is a MANDATORY production gate:
   legacy d7 ice 215 vs Family-B 779–2736 is a regime change (11.5E);
   §4 decides whether STALE rejoins legacy or the gate must adjudicate

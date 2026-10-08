@@ -35,7 +35,7 @@ under atmospheric, oceanic, bathymetric, and sea-ice forcing.
 
 ## 📑 Project status
 
-- **Current stage:** Stage 11.2 — CFL + Numerical Time-Discretization Audit (complete, diagnostic-only); Stage 11.2.2 — Causal Instability Classification (B/C/D complete); next = A/I (CSV/CFL-at-event) or approved physics fix (D-17/D-20)
+- **Current stage:** Stage 11.5H-RC — Production Scheduler Release-Candidate Gate (production temporal architecture implemented, legacy N=1 remains scientific reference; next = 11.6 EOS-80)
   coupling recovery (completed: the Lagrangian iceberg module is now
   connected to the production executable behind the
   `ICEBERG_PRODUCTION=true` env gate (default OFF → legacy bit-identical);

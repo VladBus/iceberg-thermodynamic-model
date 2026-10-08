@@ -20,6 +20,9 @@
 !   s115h_init()         — ПЕРЕД 115C parse-блоком (флаг нужен override).
 !   s115h_prod_active()  — logical function для guard/if.
 !   s115h_gate_entry(iii)— в gate entry cluster (STALE snapshot/restore).
+!   s115h_warn_ignored() — в production override: предупреждение о
+!                          проигнорированных конфликтующих env (11.5H-RC:
+!                          self-contained scheduler, без silent fallback).
 ! ==============================================================================
 module stage115h_production
     use param
@@ -49,6 +52,20 @@ contains
     logical function s115h_prod_active()
         s115h_prod_active = s115h_prod
     end function s115h_prod_active
+
+    ! Предупреждение о проигнорированной конфликтующей env-переменной.
+    ! Только на production-пути (11.5H-RC self-containment: production
+    ! форсирует собственный конфиг и НЕ читает forensic env).
+    subroutine s115h_warn_ignored(env_name)
+        character(len=*), intent(in) :: env_name
+        character(len=32) :: env_str
+        if (.not. s115h_prod) return
+        call get_environment_variable(env_name, env_str)
+        if (len_trim(env_str) .gt. 0) then
+            print *, 'STAGE115H WARNING: ', trim(env_name), '="', &
+                     trim(env_str), '" ignored (production forces its own config)'
+        end if
+    end subroutine s115h_warn_ignored
 
     ! STALE ice→ocean: snapshot day-start, restore на поздних фаерах суток.
     ! Вызывать в gate entry cluster. При OFF — мгновенный возврат.

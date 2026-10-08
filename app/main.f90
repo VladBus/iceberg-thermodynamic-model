@@ -61,6 +61,7 @@ program main
     use stage115c7_maxu
     use stage115c8_full
     use stage115c81_attr
+    use stage115g_skzfreeze
     use iceberg
     use iceberg_types, only: RHO_ICE, RHO_WATER
     use iceberg_forcing, only: get_ocean_profile, get_atmos_forcing, model_coords_to_indices
@@ -621,6 +622,9 @@ program main
     ! Stage 11.5C.8.1: full-field term attribution (env-gated, default OFF;
     ! purely diagnostic).
     call s115c81_init()
+    ! Stage 11.5G: skz-freeze final coupling check (env-gated, default OFF;
+    ! purely diagnostic).
+    call s115g_init()
 
     ! Диагностика уравнения состояния (этап 3.1): расчет RO из T2/S2
     ! в диагностическом режиме. Пока НЕ используется в уравнениях движения.
@@ -1112,6 +1116,8 @@ program main
             ! Stage 11.5C.4: single-field ice freeze snapshot/restore +
             ! seed-cell ice-state CSV (diagnostic, OFF default).
             call s115c4_gate_entry(iii, kkk)
+            ! Stage 11.5G: skz day-start snapshot on first fire (diagnostic, OFF default)
+            call s115g_gate_entry(iii)
             ! Stage 11.5C.1: START checkpoint (diagnostic, OFF default)
             call s115c1_checkpoint(kkk, iii, 'START')
             call s115c5_trace(kkk, iii, 'START')
@@ -1656,6 +1662,9 @@ program main
                             "B3.3 d=", kkk, " III=", iii, " maxU2=", uu, &
                             " maxV2=", vv, " NaNflag=", aa
                     end if
+                    ! Stage 11.5G: restore skz day-start value every fire
+                    ! (diagnostic, OFF default; T/S/CA stay fresh).
+                    call s115g_gate_exit()
                     ! Stage 11.5C: restore legacy step (gate close; iceberg_step
                     ! and daily output below stay once/day, outside the gate).
                     dt = dt_save; c2 = c2_save; c4 = c4_save; c5 = c5_save

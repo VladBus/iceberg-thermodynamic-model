@@ -1,7 +1,7 @@
 # Project Roadmap
 
 **Updated:** 2026-10-11
-**Current scientific stage:** Stage 11.7A NetCDF Contracts Preflight COMPLETE (read-only audit: 6-source inventory + migration matrix + equivalence plan + CFL design + Q1–Q4 open; NO migration, NO code change). NEXT: 11.7B grid.nc/bathymetry.nc builders + equivalence (NOT started).
+**Current scientific stage:** Stage 11.7B Grid & Bathymetry Migration COMPLETE (grid.nc/bathymetry.nc built + 34/34 equivalence incl. 11067/143176 anchors; legacy inputs stay production; EOS-agnostic). NEXT: 11.7C ocean_initial.nc + forcing_era5.nc passthrough (NOT started).
 **Stages 3–11.4.1: COMPLETED** (10.x iceberg modernization; 11.1 seasonal characterization; 11.2 CFL audit; 11.4-D21…D33 EN4 stabilization → ERA5-coverage fix → cleanup + Ocean Baseline 11.x; 11.3A execution-graph audit; 11.3B input-architecture audit + NetCDF contracts; 11.3C scheme audit + timestep matrix; 11.3C.1 semantics + CFL distributions; 11.3C.2 time-integration audit; 11.3C.3 loop-bound search (VERDICT D); 11.4 EOS-80 experiment + 11.4.1 impact validation (OPTIONAL, not default)).
 **Current status:** Stages 10.14–11.6.1 committed (see `git log` and `CHANGELOG.md` for history). **Stage 11.6.1 COMPLETE** (this stage: dispatch closure, D-30).
 **Stage 11.5H-RC COMPLETE** (release-candidate gate: self-contained production scheduler, docs synced D-22…D-28). Plan: 11.7 NetCDF+CFL → 11.8A validation → 11.8B audit → 11.9 closure → 12.0 voxel (blocked, D-28).
@@ -165,10 +165,15 @@ full/short run wording split + Jan/Apr OFF bit-identical reruns.
 
 Criterion (D-correction, NOT "improvement vs observations" — EOS-80 is a
 fundamental EOS, not a calibration closure): physical correctness +
-reference tests + numerical stability + impact on model. On pass:
-`EOS_MODE=EOS80` becomes production default (`LEGACY_REFERENCE` fallback);
-full re-baseline EN4 → EOS80 → density → thermal wind → B200 → B210 →
-B280 → ocean → ice coupling + 11.8 matrix re-run.
+reference tests + numerical stability + impact on model. ~~On pass:
+`EOS_MODE=EOS80` becomes production default (`LEGACY_REFERENCE` fallback)~~
+— SUPERSEDED by binding decision D-29 (Stage 11.6): EOS-80 stays OPTIONAL,
+legacy Eckart remains DEFAULT and scientific reference; default decision
+deferred to 11.8A observational validation; legacy EOS retained permanently
+as regression baseline, NOT scheduled for removal.
+Full re-baseline procedure (on any future promotion): EN4 → EOS80 →
+density → thermal wind → B200 → B210 → B280 → ocean → ice coupling +
+11.8 matrix re-run.
 
 ### Stage 11.7 — NetCDF Migration + Legacy Removal + Permanent CFL
 
@@ -182,7 +187,19 @@ MD5-only-byte-identical checksum policy, test-coverage map (3 existing +
 thresholds exist → all TBD with 11.8A-evidence plan), Q1–Q4 open questions,
 11.7B–F staged sequence, EOS-agnostic binding statement.
 Report: `docs/validation/stage11.7A_netcdf_contracts_preflight.md`.
-NEXT: 11.7B (grid.nc/bathymetry.nc builders + reader-equivalence).
+NEXT: 11.7C (ocean_initial.nc + forcing_era5.nc passthrough builders +
+equivalence + coverage gates). No reader migration yet.
+
+### Stage 11.7B — Grid & Bathymetry NetCDF Builders + Equivalence (COMPLETE)
+
+grid.nc/bathymetry.nc built from KOORD.DAT/hhh.bar (+ z-DATA) with
+CF-1.10 + provenance/MD5 attrs; 34/34 equivalence (int bit-exact, coords
+within policy, anchors 11067 wet cols / 143176 levels vs April product);
+i=is1 border asymmetry caught by anchor and fixed pre-test; :238 quirk
+replicated-not-fixed; battery 50/50, strict clean, Jan OFF NDIFF=0;
+legacy KOORD.DAT/hhh.bar stay sole production inputs; EOS-agnostic.
+Report: `docs/validation/stage11.7B_grid_bathymetry_migration.md`.
+NEXT: 11.7C.
 
 `grid.nc` (replaces KOORD.DAT/hhh.bar), `bathymetry.nc`,
 `ocean_initial.nc`, `forcing_era5.nc`, `seaice_initial.nc` (replaces

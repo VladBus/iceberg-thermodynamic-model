@@ -1,0 +1,213 @@
+#!/usr/bin/env python3
+"""
+Stage 11.7B — grid.nc builder (coordinates + masks + level counts).
+
+Reads legacy KOORD.DAT + hhh.bar (+ vertical DATA z, transcribed from
+src/param.f90:310-313) and writes data/input/processed/grid/grid.nc.
+
+Transcription rules (authoritative: src/grid_coupling.f90:coup1 + writer
+python/grid/build_real_grid_inputs.py):
+  - KOORD.DAT: 2 list-directed records (FI=lat °N, DL=lon °E), each
+    133x105 float32 4-decimal, Fortran column-major (i fastest).
+    Q1 RESOLVED (writer lines 119-120,144-145 + round-trip 310-328).
+  - hhh.bar: 7 blocks x (header + 133 lines x 15I5), KT1 codes
+    (8=land, 3..600 = depth metres, from IBCAO depth round+clip[3,600]).
+  - ht ladder: ht=real(kt1); borders land (incl. ht[0:15,93]);
+    kt1==8 -> 8888.0; land cycles the mod loop; wet: 5<HT<=10 -> 10,
+    HT<=3 -> 3, x100 -> cm.
+  - kt1-final (AUTHORITATIVE second pass, grid_coupling:317-329):
+    0 default; land (8888.0) stays 0; wet max{k: z(k)<=HT}.
+  - kk1-01 (grid_coupling:238-246): 1 iff all 4 T-neighbours' RAW kt1 != 8
+    (i=2..is, j=2..js 1-indexed); kk1-min (:410-428): min of 4 kt1-final,
+    borders 0.
+  - z DATA (cm, centers, surface->bottom): 250,500,1000,1500,2000,2500,
+    3000,4000,5000,7500,10000,15000,20000,25000,30000,40000,50000,60000.
+
+Field ownership: grid.nc owns coordinates + integer codes/counts/masks.
+Depths (ht/map1) live in bathymetry.nc (build_bathymetry_nc.py).
+Index mapping: netCDF dim x<->Fortran i (133), y<->Fortran j (105);
+arrays stored (x,y) C-order == elementwise model correspondence
+(NO transpose: file (i,j) layout matches model (i,j)).
+
+NO model code is touched by this builder. Legacy files stay production
+inputs until the approved dual-read transition (later 11.7 substage).
+"""
+
+import hashlib
+import os
+import subprocess
+import time
+
+import numpy as np
+from netCDF4 import Dataset
+
+IS1, JS1, KS = 133, 105, 18
+LAND = 8888.0
+LAND_CODE = 8
+
+# Transcribed from src/param.f90:310-313 (DATA z, cm, centers top->bottom).
+Z_CM = np.array([250., 500., 1000., 1500., 2000., 2500., 3000., 4000.,
+                 5000., 7500., 10000., 15000., 20000., 25000.,
+                 30000., 40000., 50000., 60000.], dtype=np.float64)
+
+PROJECT = os.path.dirname(os.path.dirname(os.path.dirname(
+    os.path.abspath(__file__))))
+REAL_GRID = os.path.join(PROJECT, "data", "input", "generated", "real_grid")
+OUT_DIR = os.path.join(PROJECT, "data", "input", "processed", "grid")
+
+
+def md5(path):
+    h = hashlib.md5()
+    with open(path, "rb") as f:
+        h.update(f.read())
+    return h.hexdigest()
+
+
+def read_koord(path):
+    """Two list-directed records of 133x105 reals, Fortran order (i fastest)."""
+    with open(path) as f:
+        tokens = f.read().split()
+    vals = np.array(tokens, dtype=np.float64)
+    assert vals.size == 2 * IS1 * JS1, vals.size
+    fi = vals[:IS1 * JS1].reshape((JS1, IS1)).T.copy()  # [i,j] == fi(i,j)
+    dl = vals[IS1 * JS1:].reshape((JS1, IS1)).T.copy()
+    return fi, dl
+
+
+def read_hhh(path):
+    """7 blocks: header line + 133 lines of 15I5; block b -> j1..j2 (0-idx)."""
+    kt1 = np.zeros((IS1, JS1), dtype=np.int32)
+    with open(path) as f:
+        lines = f.read().split("\n")
+    pos = 0
+    for b in range(7):
+        pos += 1  # header line
+        j1, j2 = b * 15, b * 15 + 15
+        for i in range(IS1):
+            row = [int(x) for x in lines[pos].split()]
+            assert len(row) == 15, (b, i, len(row))
+            kt1[i, j1:j2] = row
+            pos += 1
+    return kt1
+
+
+def build_ht(kt1_raw):
+    """Transcription of grid_coupling.f90 ht ladder (float64)."""
+    ht = kt1_raw.astype(np.float64)
+    # Forced-land borders (grid_coupling.f90:82-85): segment i=1..15@j=94,
+    # full j=1 and j=js1 rows, full i=1 column. The i=is1 column is NOT
+    # forced (stays wet per hhh.bar) — verified: product wet_mask=11067
+    # includes 0-indexed i=132 wet cells with kt1raw=600.
+    ht[0:15, 93] = LAND
+    ht[:, 0] = LAND
+    ht[:, JS1 - 1] = LAND
+    ht[0, :] = LAND
+    land = kt1_raw == LAND_CODE
+    ht[land] = LAND
+    wet = ~np.isclose(ht, LAND)
+    shallow = wet & (ht > 5.0) & (ht <= 10.0)
+    ht[shallow] = 10.0
+    low = wet & (ht <= 3.0)
+    ht[low] = 3.0
+    ht[wet] *= 100.0
+    return ht
+
+
+def build_kt1_final(ht):
+    """Authoritative second pass (grid_coupling:317-329)."""
+    kt1 = np.zeros((IS1, JS1), dtype=np.int16)
+    wet = ~np.isclose(ht, LAND)
+    for k in range(KS):
+        kt1[wet & (Z_CM[k] <= ht)] = k + 1
+    return kt1
+
+
+def build_kk1(kt1_final):
+    """kk1-min (grid_coupling:410-428): min of 4 kt1-final neighbours.
+
+    NOTE: the kk1 0/1 pre-pass (:238-246) tests RAW kt1==8 AFTER the
+    first-pass conversion already overwrote kt1 with counts — it is
+    semantically muddy BUT harmless: map1 re-checks ht members
+    independently, and :410 overwrites kk1 with min-counts before any
+    other consumer. Only kk1-min is stored (the lasting field).
+    """
+    kk1 = np.zeros((IS1, JS1), dtype=np.int16)
+    core = np.ones((IS1, JS1), dtype=bool)
+    core[0, :] = core[IS1 - 1, :] = False
+    core[:, 0] = core[:, JS1 - 1] = False
+    kmin = np.minimum(np.minimum(kt1_final.astype(np.int32),
+                                 np.roll(kt1_final, 1, axis=0)),
+                      np.minimum(np.roll(kt1_final, 1, axis=1),
+                                 np.roll(np.roll(kt1_final, 1, axis=0), 1, axis=1)))
+    kk1[core] = kmin[core]
+    return kk1
+
+
+def main():
+    koord = os.path.join(REAL_GRID, "KOORD.DAT")
+    hhh = os.path.join(REAL_GRID, "hhh.bar")
+    os.makedirs(OUT_DIR, exist_ok=True)
+    out = os.path.join(OUT_DIR, "grid.nc")
+
+    fi, dl = read_koord(koord)
+    kt1_raw = read_hhh(hhh)
+    ht = build_ht(kt1_raw)
+    kt1 = build_kt1_final(ht)
+    kk1 = build_kk1(kt1)
+    wet_mask = (kt1 > 0).astype(np.int8)
+    land_mask = (kt1 == 0).astype(np.int8)
+
+    try:
+        sha = subprocess.run(["git", "rev-parse", "HEAD"], cwd=PROJECT,
+                             capture_output=True, text=True).stdout.strip()
+    except Exception:
+        sha = "unknown"
+
+    with Dataset(out, "w") as ds:
+        ds.createDimension("x", IS1)
+        ds.createDimension("y", JS1)
+        ds.createDimension("z", KS)
+        v = ds.createVariable("lon", "f8", ("x", "y"))
+        v.units, v.long_name = "degrees_east", "longitude (DL, 0-indexed [x=i,y=j])"
+        v[:] = dl
+        v = ds.createVariable("lat", "f8", ("x", "y"))
+        v.units, v.long_name = "degrees_north", "latitude (FI, 0-indexed [x=i,y=j])"
+        v[:] = fi
+        v = ds.createVariable("kt1_raw", "i2", ("x", "y"))
+        v.long_name = "hhh.bar integer codes (8=land, 3..600=depth m)"
+        v[:] = kt1_raw
+        v = ds.createVariable("kt1_levels", "i1", ("x", "y"))
+        v.long_name = "final wet vertical-level count (0=land), authoritative 2nd pass"
+        v[:] = kt1.astype(np.int8)
+        v = ds.createVariable("kk1", "i1", ("x", "y"))
+        v.long_name = "velocity-cell active levels = min of 4 kt1 (0 if any land)"
+        v[:] = kk1.astype(np.int8)
+        v = ds.createVariable("wet_mask", "i1", ("x", "y"))
+        v.long_name = "1 where kt1_levels>0"
+        v[:] = wet_mask
+        v = ds.createVariable("land_mask", "i1", ("x", "y"))
+        v.long_name = "1 where kt1_levels==0"
+        v[:] = land_mask
+        v = ds.createVariable("z_levels", "f8", ("z",))
+        v.units, v.long_name = "cm", "Z-level centers surface->bottom (transcribed param.f90 DATA z)"
+        v[:] = Z_CM
+        ds.Conventions = "CF-1.10"
+        ds.title = "Model grid: coordinates, masks, level counts (Stage 11.7B)"
+        ds.index_mapping = "netCDF x<->Fortran i (133), y<->Fortran j (105); elementwise, NO transpose"
+        ds.land_convention = "land = 8888.0 with epsilon abs(x-8888)<1e-8 (never ==); stored masks are authoritative"
+        ds.crs = "IBCAO Polar Stereographic, DX=DY=1389000 cm"
+        ds.source_koord, ds.source_hhh = koord, hhh
+        ds.source_koord_md5, ds.source_hhh_md5 = md5(koord), md5(hhh)
+        ds.builder_git_sha, ds.created = sha, time.strftime("%Y-%m-%dT%H:%M:%S")
+        ds.history = "built by python/grid/build_grid_nc.py (Stage 11.7B); legacy KOORD.DAT/hhh.bar stay production inputs"
+        ds.eos_note = "EOS-agnostic (grid carries no EOS state); legacy EOS default untouched"
+
+    print("grid.nc written: %s" % out)
+    print("  wet columns (kt1>0): %d; 3D wet levels sum(kt1): %d" %
+          (int(wet_mask.sum()), int(kt1.sum())))
+    print("  lon range: %.4f .. %.4f; lat range: %.4f .. %.4f" %
+          (dl.min(), dl.max(), fi.min(), fi.max()))
+
+
+if __name__ == "__main__":
+    main()

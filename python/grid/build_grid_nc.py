@@ -91,13 +91,14 @@ def read_hhh(path):
     return kt1
 
 
-def build_ht(kt1_raw):
-    """Transcription of grid_coupling.f90 ht ladder (float64)."""
+def build_ht_raw(kt1_raw):
+    """ht after the mod loop (grid_coupling.f90:96-114), pre-smoothing.
+
+    ht=real(kt1); forced-land borders (:82-85: segment 0-indexed [0:15,93],
+    j=0/j=104 rows, i=0 col; the i=132 col is NOT forced and stays wet);
+    kt1==8 -> 8888.0; land cycles; wet 5<HT<=10 -> 10, HT<=3 -> 3, x100->cm.
+    """
     ht = kt1_raw.astype(np.float64)
-    # Forced-land borders (grid_coupling.f90:82-85): segment i=1..15@j=94,
-    # full j=1 and j=js1 rows, full i=1 column. The i=is1 column is NOT
-    # forced (stays wet per hhh.bar) — verified: product wet_mask=11067
-    # includes 0-indexed i=132 wet cells with kt1raw=600.
     ht[0:15, 93] = LAND
     ht[:, 0] = LAND
     ht[:, JS1 - 1] = LAND
@@ -113,6 +114,52 @@ def build_ht(kt1_raw):
     return ht
 
 
+def build_ht_smooth(ht_raw, kt1_raw):
+    """ht smoothing (grid_coupling.f90:143-236, float64 transcription).
+
+    hu/hv face means from ht_raw (wet-wet pairs only, else 8888; edges
+    zeroed); then ht(i,j) = mean of valid faces for i=0..131, j=0..103,
+    SKIPPING cells whose stale-block kt1 == 8. The stale-hht block
+    (:180-196) sets land kt1=8 and all wet cells to one uniform garbage
+    count C (same uninitialized hht for every cell); observed model
+    behaviour (map1 wet ~10957, not ~0) PROVES C != 8, hence the skip
+    fires exactly on land — i.e. all wet cells are smoothed. (If C were
+    8, kk1/map1 would be near-empty, contradicting the running model.)
+    Land cells keep 8888.0 (all 4 adjacent faces involve the land cell
+    itself, so valid_count is always 0).
+    """
+    wet = ~np.isclose(ht_raw, LAND)
+    hu = np.full((IS1, JS1), LAND)
+    hv = np.full((IS1, JS1), LAND)
+    # hu(i,j) = mean(ht(i,j), ht(i,j-1)): j-adjacent (0-indexed j>=1)
+    a = wet[:, 1:] & wet[:, :-1]
+    hu[:, 1:][a] = 0.5 * (ht_raw[:, 1:][a] + ht_raw[:, :-1][a])
+    # hv(i,j) = mean(ht(i,j), ht(i-1,j)): i-adjacent (0-indexed i>=1)
+    b = wet[1:, :] & wet[:-1, :]
+    hv[1:, :][b] = 0.5 * (ht_raw[1:, :][b] + ht_raw[:-1, :][b])
+    hu[:, 0] = LAND
+    hu[:, JS1 - 1] = LAND
+    hv[0, :] = LAND
+    hv[IS1 - 1, :] = LAND
+    ht = ht_raw.copy()
+    region = np.zeros((IS1, JS1), dtype=bool)
+    region[0:IS1 - 1, 0:JS1 - 1] = True
+    # Fortran hu(i,j)/(i,j-1) and hv(i,j)/(i-1,j) neighbour layout in
+    # 0-indexed (i,j): faces hu[i,j], hu[i,j+1], hv[i,j], hv[i+1,j].
+    tot = np.zeros((IS1, JS1))
+    cnt = np.zeros((IS1, JS1), dtype=np.int32)
+    for face in (hu,
+                 np.roll(hu, -1, axis=1),
+                 hv,
+                 np.roll(hv, -1, axis=0)):
+        ok = ~np.isclose(face, LAND)
+        tot += np.where(ok, face, 0.0)
+        cnt += ok.astype(np.int32)
+    do = region & wet & (cnt > 0)
+    ht[do] = tot[do] / cnt[do]
+    return ht
+
+
 def build_kt1_final(ht):
     """Authoritative second pass (grid_coupling:317-329)."""
     kt1 = np.zeros((IS1, JS1), dtype=np.int16)
@@ -122,25 +169,30 @@ def build_kt1_final(ht):
     return kt1
 
 
-def build_kk1(kt1_final):
-    """kk1-min (grid_coupling:410-428): min of 4 kt1-final neighbours.
+def build_kk1(kt1_final, ht_raw):
+    """Two-stage kk1 (grid_coupling.f90:238-246 + :410-428).
 
-    NOTE: the kk1 0/1 pre-pass (:238-246) tests RAW kt1==8 AFTER the
-    first-pass conversion already overwrote kt1 with counts — it is
-    semantically muddy BUT harmless: map1 re-checks ht members
-    independently, and :410 overwrites kk1 with min-counts before any
-    other consumer. Only kk1-min is stored (the lasting field).
+    Stage 1 (:238 gate): kk1=1 for interior cells whose FOUR first-pass
+    counts are all != 8. First-pass counts: land -> 8 (stale-block else),
+    wet -> uniform garbage C. Observed model behaviour PROVES C != 8
+    (map1 wet ~10957 cells; C==8 would zero kk1/map1 almost everywhere),
+    hence the gate is exactly the land gate: all four ht_raw neighbours
+    wet (!=8888.0). Documented, not assumed silently.
+    Stage 2 (:410 min): where gate passed, kk1 = min of the 4 FINAL kt1
+    neighbours; borders (i/j edges) forced 0 (:425-428).
     """
+    wet = ~np.isclose(ht_raw, LAND)
+    gate = np.zeros((IS1, JS1), dtype=bool)
+    gate[1:IS1 - 1, 1:JS1 - 1] = (
+        wet[1:IS1 - 1, 1:JS1 - 1] & wet[0:IS1 - 2, 1:JS1 - 1]
+        & wet[1:IS1 - 1, 0:JS1 - 2] & wet[0:IS1 - 2, 0:JS1 - 2])
     kk1 = np.zeros((IS1, JS1), dtype=np.int16)
-    core = np.ones((IS1, JS1), dtype=bool)
-    core[0, :] = core[IS1 - 1, :] = False
-    core[:, 0] = core[:, JS1 - 1] = False
-    kmin = np.minimum(np.minimum(kt1_final.astype(np.int32),
-                                 np.roll(kt1_final, 1, axis=0)),
-                      np.minimum(np.roll(kt1_final, 1, axis=1),
-                                 np.roll(np.roll(kt1_final, 1, axis=0), 1, axis=1)))
-    kk1[core] = kmin[core]
-    return kk1
+    ki = kt1_final.astype(np.int32)
+    kmin = np.minimum(np.minimum(ki, np.roll(ki, 1, axis=0)),
+                      np.minimum(np.roll(ki, 1, axis=1),
+                                 np.roll(np.roll(ki, 1, axis=0), 1, axis=1)))
+    kk1[gate] = kmin[gate]
+    return kk1, gate
 
 
 def main():
@@ -151,9 +203,10 @@ def main():
 
     fi, dl = read_koord(koord)
     kt1_raw = read_hhh(hhh)
-    ht = build_ht(kt1_raw)
+    ht_raw = build_ht_raw(kt1_raw)
+    ht = build_ht_smooth(ht_raw, kt1_raw)
     kt1 = build_kt1_final(ht)
-    kk1 = build_kk1(kt1)
+    kk1, kk1_gate = build_kk1(kt1, ht_raw)
     wet_mask = (kt1 > 0).astype(np.int8)
     land_mask = (kt1 == 0).astype(np.int8)
 
@@ -164,36 +217,36 @@ def main():
         sha = "unknown"
 
     with Dataset(out, "w") as ds:
-        ds.createDimension("x", IS1)
-        ds.createDimension("y", JS1)
-        ds.createDimension("z", KS)
-        v = ds.createVariable("lon", "f8", ("x", "y"))
+        ds.createDimension("i", IS1)
+        ds.createDimension("j", JS1)
+        ds.createDimension("k", KS)
+        v = ds.createVariable("lon", "f8", ("i", "j"))
         v.units, v.long_name = "degrees_east", "longitude (DL, 0-indexed [x=i,y=j])"
         v[:] = dl
-        v = ds.createVariable("lat", "f8", ("x", "y"))
+        v = ds.createVariable("lat", "f8", ("i", "j"))
         v.units, v.long_name = "degrees_north", "latitude (FI, 0-indexed [x=i,y=j])"
         v[:] = fi
-        v = ds.createVariable("kt1_raw", "i2", ("x", "y"))
+        v = ds.createVariable("kt1_raw", "i2", ("i", "j"))
         v.long_name = "hhh.bar integer codes (8=land, 3..600=depth m)"
         v[:] = kt1_raw
-        v = ds.createVariable("kt1_levels", "i1", ("x", "y"))
+        v = ds.createVariable("kt1_levels", "i1", ("i", "j"))
         v.long_name = "final wet vertical-level count (0=land), authoritative 2nd pass"
         v[:] = kt1.astype(np.int8)
-        v = ds.createVariable("kk1", "i1", ("x", "y"))
+        v = ds.createVariable("kk1", "i1", ("i", "j"))
         v.long_name = "velocity-cell active levels = min of 4 kt1 (0 if any land)"
         v[:] = kk1.astype(np.int8)
-        v = ds.createVariable("wet_mask", "i1", ("x", "y"))
+        v = ds.createVariable("wet_mask", "i1", ("i", "j"))
         v.long_name = "1 where kt1_levels>0"
         v[:] = wet_mask
-        v = ds.createVariable("land_mask", "i1", ("x", "y"))
+        v = ds.createVariable("land_mask", "i1", ("i", "j"))
         v.long_name = "1 where kt1_levels==0"
         v[:] = land_mask
-        v = ds.createVariable("z_levels", "f8", ("z",))
+        v = ds.createVariable("z_levels", "f8", ("k",))
         v.units, v.long_name = "cm", "Z-level centers surface->bottom (transcribed param.f90 DATA z)"
         v[:] = Z_CM
         ds.Conventions = "CF-1.10"
         ds.title = "Model grid: coordinates, masks, level counts (Stage 11.7B)"
-        ds.index_mapping = "netCDF x<->Fortran i (133), y<->Fortran j (105); elementwise, NO transpose"
+        ds.index_mapping = "dimensions are MODEL INDICES (CF cell indices, not physical axes): i<->Fortran i (133), j<->Fortran j (105), k<->Fortran k (18); elementwise correspondence, NO transpose. Physical axes: model X runs along j (east), model Y runs along i (north)"
         ds.land_convention = "land = 8888.0 with epsilon abs(x-8888)<1e-8 (never ==); stored masks are authoritative"
         ds.crs = "IBCAO Polar Stereographic, DX=DY=1389000 cm"
         ds.source_koord, ds.source_hhh = koord, hhh

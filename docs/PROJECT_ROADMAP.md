@@ -1,7 +1,7 @@
 # Project Roadmap
 
 **Updated:** 2026-10-11
-**Current scientific stage:** Stage 11.7B Grid & Bathymetry Migration COMPLETE (grid.nc/bathymetry.nc built + 34/34 equivalence incl. 11067/143176 anchors; legacy inputs stay production; EOS-agnostic). NEXT: 11.7C ocean_initial.nc + forcing_era5.nc passthrough (NOT started).
+**Current scientific stage:** Stage 11.7B.1 kk1 Closure COMPLETE (two-stage kk1 + Fortran dump oracle, three-way zero mismatches, anchors 11067/143422, dims i/j/k, GO 11.7C). NEXT: 11.7C ocean_initial.nc + forcing_era5.nc passthrough (NOT started).
 **Stages 3–11.4.1: COMPLETED** (10.x iceberg modernization; 11.1 seasonal characterization; 11.2 CFL audit; 11.4-D21…D33 EN4 stabilization → ERA5-coverage fix → cleanup + Ocean Baseline 11.x; 11.3A execution-graph audit; 11.3B input-architecture audit + NetCDF contracts; 11.3C scheme audit + timestep matrix; 11.3C.1 semantics + CFL distributions; 11.3C.2 time-integration audit; 11.3C.3 loop-bound search (VERDICT D); 11.4 EOS-80 experiment + 11.4.1 impact validation (OPTIONAL, not default)).
 **Current status:** Stages 10.14–11.6.1 committed (see `git log` and `CHANGELOG.md` for history). **Stage 11.6.1 COMPLETE** (this stage: dispatch closure, D-30).
 **Stage 11.5H-RC COMPLETE** (release-candidate gate: self-contained production scheduler, docs synced D-22…D-28). Plan: 11.7 NetCDF+CFL → 11.8A validation → 11.8B audit → 11.9 closure → 12.0 voxel (blocked, D-28).
@@ -187,8 +187,19 @@ MD5-only-byte-identical checksum policy, test-coverage map (3 existing +
 thresholds exist → all TBD with 11.8A-evidence plan), Q1–Q4 open questions,
 11.7B–F staged sequence, EOS-agnostic binding statement.
 Report: `docs/validation/stage11.7A_netcdf_contracts_preflight.md`.
-NEXT: 11.7C (ocean_initial.nc + forcing_era5.nc passthrough builders +
-equivalence + coverage gates). No reader migration yet.
+NEXT: 11.7C.
+
+### Stage 11.7B.1 — kk1 Equivalence Closure & Grid Contract Audit (COMPLETE)
+
+Closes 11.7B kk1 gap: exact :117/:238/:317/:410 re-trace (gate = land-based,
+C!=8 proven; ht smoothing :200-236 precedes kt1-final → runtime sum 143422;
+map1 backward neighbours; i=is1 wet); two-stage kk1 + independent plain-loop
+oracle + Fortran dump harness (anchors 11067/143422); three-way zero
+mismatches, gate 10336; Jan==Apr products identical (143176 = pre-smoothing
+product levels, additional-only); dims Option A (i,j,k); CF grid_mapping
+deferred; python 23/23; GO 11.7C.
+Report: `docs/validation/stage11.7B.1_kk1_equivalence_closure.md`.
+NEXT: 11.7C.
 
 ### Stage 11.7B — Grid & Bathymetry NetCDF Builders + Equivalence (COMPLETE)
 

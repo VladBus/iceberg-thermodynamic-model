@@ -71,11 +71,9 @@ def read_hhh(path):
     return kt1
 
 
-def build_ht(kt1_raw):
+def build_ht_raw(kt1_raw):
+    """ht after the mod loop (grid_coupling.f90:96-114). See build_grid_nc."""
     ht = kt1_raw.astype(np.float64)
-    # Forced-land borders (grid_coupling.f90:82-85): segment i=1..15@j=94,
-    # full j=1 and j=js1 rows, full i=1 column. The i=is1 column is NOT
-    # forced (stays wet per hhh.bar).
     ht[0:15, 93] = LAND
     ht[:, 0] = LAND
     ht[:, JS1 - 1] = LAND
@@ -90,46 +88,70 @@ def build_ht(kt1_raw):
     return ht
 
 
-def build_firstpass_counts(ht):
-    """First-pass kt1 (:117-135, grid_coupling.f90), replicated LITERALLY.
+def build_ht_smooth(ht_raw):
+    """ht smoothing (grid_coupling.f90:143-236). See build_grid_nc.
 
-    The 888800-branch never fires for real ht (land 8888.0, wet<=60000),
-    so land counts z(k)<=8888 -> 10, wet counts its levels. This makes the
-    :238 kk1 gate test counts (not raw codes) — quirk preserved verbatim.
+    hu(i,j)=mean(ht(i,j),ht(i,j-1)) j-adjacent; hv(i,j)=mean(ht(i,j),
+    ht(i-1,j)) i-adjacent; wet-wet pairs only; edges zeroed. Then
+    ht(i,j)=mean of valid faces for 0-indexed i=0..131, j=0..103.
+    The ==8 skip fires on land only (stale-block counts uniform C!=8,
+    proven by map1 wet count). Land keeps 8888.0.
     """
-    fp = np.zeros((IS1, JS1), dtype=np.int32)
-    strange = np.isclose(ht, 888800.0, atol=1e-3)
-    fp[strange] = 0
-    rest = ~strange
-    for k in range(KS):
-        fp[rest & (Z_CM[k] <= ht)] = k + 1
-    return fp
+    wet = ~np.isclose(ht_raw, LAND)
+    hu = np.full((IS1, JS1), LAND)
+    hv = np.full((IS1, JS1), LAND)
+    a = wet[:, 1:] & wet[:, :-1]
+    hu[:, 1:][a] = 0.5 * (ht_raw[:, 1:][a] + ht_raw[:, :-1][a])
+    b = wet[1:, :] & wet[:-1, :]
+    hv[1:, :][b] = 0.5 * (ht_raw[1:, :][b] + ht_raw[:-1, :][b])
+    hu[:, 0] = LAND
+    hu[:, JS1 - 1] = LAND
+    hv[0, :] = LAND
+    hv[IS1 - 1, :] = LAND
+    ht = ht_raw.copy()
+    tot = np.zeros((IS1, JS1))
+    cnt = np.zeros((IS1, JS1), dtype=np.int32)
+    for face in (hu,
+                 np.roll(hu, -1, axis=1),
+                 hv,
+                 np.roll(hv, -1, axis=0)):
+        ok = ~np.isclose(face, LAND)
+        tot += np.where(ok, face, 0.0)
+        cnt += ok.astype(np.int32)
+    do = np.zeros((IS1, JS1), dtype=bool)
+    do[0:IS1 - 1, 0:JS1 - 1] = True
+    do &= wet & (cnt > 0)
+    ht[do] = tot[do] / cnt[do]
+    return ht
 
 
-def build_map1(ht):
+def build_map1(ht, ht_raw):
     """Transcription of grid_coupling.f90:238-288 (float64).
 
-    Gate = kk1 pre-pass (:238: all 4 FIRST-PASS counts != 8, interior
-    0-indexed i=1..131, j=1..103) AND >=1 wet ht member (:252-288).
-    Value = 0.25 * sum of WET members only (no renormalization);
-    8888.0 default (incl. borders and gated-out cells).
-    QUIRK (observed, NOT fixed — out of scope): the :238 gate tests
-    first-pass COUNTS (land=10), so it skips map1 for cells neighbouring
-    count-8 (40-49 m) cells rather than land. Replicated verbatim.
+    ht = SMOOTHED depths (map1 runs after smoothing); ht_raw = pre-
+    smoothing depths for the land gate. Gate = all 4 ht_raw neighbours
+    wet (!=8888.0), interior 0-indexed i=1..131, j=1..103 — this is what
+    the :238 kk1 pre-pass tests (first-pass counts: land=8, wet=uniform
+    C!=8 proven by map1 wet count; see build_grid_nc.build_kk1).
+    Value = 0.25 * sum of WET (smoothed-ht) members only; 8888.0 default.
+    (11.7B's "count-8 skip" reading was WRONG — corrected 11.7B.1 after
+    re-tracing the stale-hht block.)
     """
-    fp = build_firstpass_counts(ht)
-    wet = ~np.isclose(ht, LAND, atol=EPS)
-    n8 = (fp != 8)
+    wet_raw = ~np.isclose(ht_raw, LAND, atol=EPS)
     gate = np.zeros((IS1, JS1), dtype=bool)
     gate[1:IS1 - 1, 1:JS1 - 1] = (
-        n8[1:IS1 - 1, 1:JS1 - 1]
-        & n8[0:IS1 - 2, 1:JS1 - 1]
-        & n8[1:IS1 - 1, 0:JS1 - 2]
-        & n8[0:IS1 - 2, 0:JS1 - 2])
+        wet_raw[1:IS1 - 1, 1:JS1 - 1]
+        & wet_raw[0:IS1 - 2, 1:JS1 - 1]
+        & wet_raw[1:IS1 - 1, 0:JS1 - 2]
+        & wet_raw[0:IS1 - 2, 0:JS1 - 2])
+    wet = ~np.isclose(ht, LAND, atol=EPS)
     m = np.full((IS1, JS1), LAND)
     acc = np.zeros((IS1, JS1))
     cnt = np.zeros((IS1, JS1), dtype=np.int32)
-    for di, dj in ((0, 0), (0, -1), (-1, 0), (-1, -1)):
+    # Members (i,j),(i,j-1),(i-1,j),(i-1,j-1): BACKWARD neighbours, i.e.
+    # +1 rolls (roll(a,+1)[i,j] == a[i-1 or j-1]). Forward rolls here were
+    # the 11.7B map1 defect (caught by the Fortran dump in 11.7B.1).
+    for di, dj in ((0, 0), (0, 1), (1, 0), (1, 1)):
         shifted_wet = np.roll(np.roll(wet, di, axis=0), dj, axis=1)
         shifted_ht = np.roll(np.roll(ht, di, axis=0), dj, axis=1)
         acc += np.where(shifted_wet, shifted_ht, 0.0)
@@ -146,8 +168,9 @@ def main():
     out = os.path.join(OUT_DIR, "bathymetry.nc")
 
     kt1_raw = read_hhh(hhh)
-    ht = build_ht(kt1_raw)
-    map1 = build_map1(ht)
+    ht_raw = build_ht_raw(kt1_raw)
+    ht = build_ht_smooth(ht_raw)
+    map1 = build_map1(ht, ht_raw)
 
     try:
         sha = subprocess.run(["git", "rev-parse", "HEAD"], cwd=PROJECT,
@@ -156,19 +179,25 @@ def main():
         sha = "unknown"
 
     with Dataset(out, "w") as ds:
-        ds.createDimension("x", IS1)
-        ds.createDimension("y", JS1)
-        v = ds.createVariable("ht", "f4", ("x", "y"), fill_value=np.nan)
-        v.units, v.long_name = "cm", "T-point depth (8888.0 = land, epsilon rule)"
+        ds.createDimension("i", IS1)
+        ds.createDimension("j", JS1)
+        v = ds.createVariable("ht_raw", "f4", ("i", "j"), fill_value=np.nan)
+        v.units = "cm"
+        v.long_name = ("pre-smoothing T-point depth (mod-loop output; hu/hv "
+                       "face means derive from this; future readers must "
+                       "replicate hu/hv from ht_raw, not ht)")
+        v[:] = ht_raw.astype(np.float32)
+        v = ds.createVariable("ht", "f4", ("i", "j"), fill_value=np.nan)
+        v.units, v.long_name = "cm", "T-point depth post-smoothing (8888.0 = land, epsilon rule)"
         v[:] = ht.astype(np.float32)
-        v = ds.createVariable("map1", "f4", ("x", "y"), fill_value=np.nan)
+        v = ds.createVariable("map1", "f4", ("i", "j"), fill_value=np.nan)
         v.units = "cm"
         v.long_name = ("mean depth for cells (0.25*sum of WET members only, "
                        "8888.0 default incl. borders)")
         v[:] = map1.astype(np.float32)
         ds.Conventions = "CF-1.10"
         ds.title = "Model bathymetry: physical + derived depths (Stage 11.7B)"
-        ds.index_mapping = "netCDF x<->Fortran i (133), y<->Fortran j (105); elementwise, NO transpose"
+        ds.index_mapping = "dimensions are MODEL INDICES (CF cell indices, not physical axes): i<->Fortran i (133), j<->Fortran j (105), k<->Fortran k (18); elementwise correspondence, NO transpose. Physical axes: model X runs along j (east), model Y runs along i (north)"
         ds.land_convention = "8888.0 with epsilon abs(x-8888)<1e-8 (never ==)"
         ds.source_hhh, ds.source_hhh_md5 = hhh, md5(hhh)
         ds.builder_git_sha, ds.created = sha, time.strftime("%Y-%m-%dT%H:%M:%S")

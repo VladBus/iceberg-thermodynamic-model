@@ -337,6 +337,16 @@ Format: `ID | stage/date | status` + short description. Details — via links.
 - **Limitations:** EOS dimension joins scheduler dimension in the 11.8A sea-ice gate; no EOS-80 production claims until then.
 - **Next:** 11.7 NetCDF (output contract must record EOS_MODE per run); 11.8A gate adjudicates.
 
+## D-30. eos_diag dispatcher rule + interaction correction (Stage 11.6.1, 2026-10-11)
+
+- **Stage:** 11.6.1 | **Status:** DECIDED (fixed + tested; rule explicit)
+- **Problem:** (a) `eos_diag` checked precision switch before EOS switch → EOS80+f64 computed LEGACY density (hidden EOS selection); (b) 11.6 claimed EOS×scheduler factorization, but day-7 interaction is +0.6865e28 heat (15.7% of A) / +375.41 ice (174.6% of A) — dominant; (c) "all 4 stable" mixed full (A/B/D 29 d, JA/JB/JD 30 d) and short (C d8, JC d9) runs.
+- **Decision:** (a) branch reorder EOS80-first with EXPLICIT rule — `eos80_mode` selects formula AND implies f64 in `eos_diag`; `eos_f64_mode` is legacy-precision-only (every resulting path already exercised; legacy combos bit-identical); (b) factorization WITHDRAWN, interaction quantified (nonlinear stratification×coupling: compressible gradients suppress spurious CA mixing, STALE coupling amplifies freezing multiplicatively); (c) stability claims say "stated intervals" (nothing beyond day 8 claimed for C).
+- **Why:** audit table (all sites × 4 combos) showed eos_diag as the sole gap; CA/probe/alpha-beta already dispatch correctly; interaction symmetric both factorizations (937.19−561.78 = +375.41 ✓).
+- **Sources:** `docs/validation/stage11.6.1_dispatch_audit_closure.md` §§0–3, `test/eos_dispatch.f90` (14/14), Jan/Apr OFF bit-identical reruns.
+- **Limitations:** STAGE1021×EOS80 combos beyond eos_diag untested at model scale; interaction mechanism is interpretation.
+- **Next:** 11.7 NetCDF (output contract records EOS_MODE per run).
+
 ## How to add decisions
 
 A new decision is appended with an ID, stage, status, and links to reports.

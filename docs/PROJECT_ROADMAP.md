@@ -1,9 +1,9 @@
 # Project Roadmap
 
 **Updated:** 2026-09-30
-**Current scientific stage:** Stage 11.6 EOS-80 COMPLETE (integration + re-baseline: 28/28 reference tests, probe diagnostic fix, April A/B/C/D all green, D-29 OPTIONAL, legacy default untouched). NEXT: 11.7 NetCDF Migration + Legacy Removal + Permanent CFL (NOT started).
+**Current scientific stage:** Stage 11.6.1 EOS-80 Dispatch Audit Closure COMPLETE (eos_diag EOS80-first reorder per explicit D-30 rule, dispatch test 14/14, interaction quantified +375.41 ice/+0.6865e28 heat — no factorization, full/short wording split, legacy bit-identical). NEXT: 11.7 NetCDF Migration + Legacy Removal + Permanent CFL (NOT started).
 **Stages 3–11.4.1: COMPLETED** (10.x iceberg modernization; 11.1 seasonal characterization; 11.2 CFL audit; 11.4-D21…D33 EN4 stabilization → ERA5-coverage fix → cleanup + Ocean Baseline 11.x; 11.3A execution-graph audit; 11.3B input-architecture audit + NetCDF contracts; 11.3C scheme audit + timestep matrix; 11.3C.1 semantics + CFL distributions; 11.3C.2 time-integration audit; 11.3C.3 loop-bound search (VERDICT D); 11.4 EOS-80 experiment + 11.4.1 impact validation (OPTIONAL, not default)).
-**Current status:** Stages 10.14–11.6 committed (see `git log` and `CHANGELOG.md` for history). **Stage 11.6 EOS-80 COMPLETE** (this stage: integration + re-baseline, D-29 OPTIONAL).
+**Current status:** Stages 10.14–11.6.1 committed (see `git log` and `CHANGELOG.md` for history). **Stage 11.6.1 COMPLETE** (this stage: dispatch closure, D-30).
 **Stage 11.5H-RC COMPLETE** (release-candidate gate: self-contained production scheduler, docs synced D-22…D-28). Plan: 11.7 NetCDF+CFL → 11.8A validation → 11.8B audit → 11.9 closure → 12.0 voxel (blocked, D-28).
 
 ## Completed foundation
@@ -141,6 +141,14 @@ inside `iii` (24×3600 s = coherent day); re-validate full battery + 11.x
 baselines + matrix.
 
 ### Stage 11.6 — EOS-80 Production Integration & Re-baseline (COMPLETE, D-29 OPTIONAL)
+
+### Stage 11.6.1 — EOS-80 Dispatch Audit Closure & Result-Interpretation Correction (COMPLETE, D-30)
+
+Narrow closure of three 11.6 audit findings (no new physics experiments):
+`eos_diag` EOS80-first reorder (explicit rule: EOS80 selects formula + f64,
+f64-switch is legacy-precision-only) + `test/eos_dispatch.f90` 14/14 +
+interaction quantified (heat +0.6865e28 / ice +375.41 — no factorization) +
+full/short run wording split + Jan/Apr OFF bit-identical reruns.
 
 Criterion (D-correction, NOT "improvement vs observations" — EOS-80 is a
 fundamental EOS, not a calibration closure): physical correctness +

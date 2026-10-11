@@ -2,7 +2,7 @@
 
 Frozen (date). EOS-80 pathway validation: independent reference tests +
 integration audit (+1 diagnostic-consistency fix) + 4-config controlled
-matrix (April kill-d8 + Jan regression). No physics changed (CA/B200/B210/
+matrix (April A/B/D full + C short; Jan full + short — see §3/§4). No physics changed (CA/B200/B210/
 B280/shal/advection/ice/thermo/coefficients untouched); no temporal-default
 change (legacy N=1 remains reference, D-22); no NetCDF (11.7); no skt
 closure (D-25); no new freezes; Stage 12 NOT started. EOS-80 stays
@@ -61,7 +61,7 @@ OPTIONAL (decision §8).
 - Deferred (not EOS-80 defects): shal dt1/mm3 (D-26), skt/fw≡0 (D-25),
   CA 0.9e-7/float32 floor (T-01).
 
-## 3. Phase 3 — controlled matrix (April kill-d8, same build; only EOS_MODE + scheduler differ)
+## 3. Phase 3 — controlled matrix (April: A/B/D full 29 d, C kill-d8; Jan: JA full, JB/JD full 30 d, JC kill-d9; same build; only EOS_MODE + scheduler differ)
 
 | Metric (April d7) | A leg×N1 | B eos80×N1 | C leg×STALE | D eos80×STALE |
 |---|---|---|---|---|
@@ -86,16 +86,31 @@ OPTIONAL (decision §8).
   legacy heat!), ice +58% (777→1229), salt 10× better (−1.29e-04→−0.99e-05),
   EUU −4.1%, CA maxiter 1001→20 (guard 0). Same mechanism amplified:
   less spurious mixing → surface cold (more ice) + deep warm (less vented).
-- B-vs-D (scheduler effect, EOS-80): ice 292→1229 (4.2×) — same
-  scheduler-driven amplification as legacy pair A→C (215→777, 3.6×):
-  scheduler and EOS effects FACTORIZE (no interaction surprise).
+- B-vs-D (scheduler effect, EOS-80): ice 292→1229 (4.2×) vs legacy pair
+  A→C (215→777, 3.6×).
+- INTERACTION (11.6.1 correction — replaces the "factorize" claim below):
+  two-factor interaction = (EOS effect at STALE) − (EOS effect at N1).
+  Heat: (+0.7090e28) − (+0.0225e28) = +0.6865e28 (15.7% of A baseline).
+  Ice: (+451.9) − (+76.49) = +375.41 (174.6% of A baseline; symmetric
+  check via scheduler effects: 937.19 − 561.78 = +375.41 ✓).
+  The interaction DWARFS the N1 EOS main effect (30× for heat, 5× for
+  ice) — effects do NOT factorize. Physically plausible cause: EOS-80's
+  compressible stratification vs pressure-blind Eckart interacts
+  NONLINEARLY with the ice-ocean coupling regime — resolvable gradients
+  suppress spurious CA mixing, and under 24×/day-responsive STALE coupling
+  the preserved cold surface amplifies basal freezing multiplicatively
+  (conduction, fw≡0), not additively. (Supersedes: "scheduler and EOS
+  effects FACTORIZE (no interaction surprise)" — withdrawn 11.6.1.)
 - Cost: EOS-80 ≈ free at N=1 (24 s vs 30 s full April); at STALE EOS-80 is
   6.5× FASTER than legacy (35 vs 230 s/day — the CA 1000-iter guard cost
   vanishes when CA converges: maxiter 20 vs 1001).
 
 ## 4. Stability assessment
 
-- All 4 April configs: 0 NaN/Inf (A/B/D full 29 d exit 0; C kill-d8 clean).
+- All configs passed their STATED intervals with 0 NaN/Inf. FULL runs:
+  April A/B/D (29 d, exit 0). SHORT runs: April C (kill-d8) clean. No
+  full-29 d data exist for C — nothing beyond day 8 is claimed for it
+  (11.6.1 wording correction).
 - Conservation: salt d1→d7 O(1e-4) legacy / O(1e-5) EOS-80-STALE — no
   regime-dependent mass error; best conservation under EOS-80.
 - CFL: analytic 11.2 bounds (all ≪1, dt=150 scales advective 24× down);
@@ -105,7 +120,8 @@ OPTIONAL (decision §8).
 - Jan 4-config regression: JA (leg×N1) bit-identical to janOFF (NDIFF=0);
   JB (eos80×N1) full 30 d exit 0, 0 NaN, CA maxiter 23; JC (leg×STALE)
   kill-d9, 0 NaN, CA 1001 (legacy behavior); JD (eos80×STALE) full 30 d
-  exit 0, 0 NaN, CA maxiter 29, EUU d7 1.0956e15. All 4 stable.
+  exit 0, 0 NaN, CA maxiter 29, EUU d7 1.0956e15. FULL runs JA/JB/JD;
+  SHORT run JC (kill-d9). 0 NaN/Inf on all stated intervals (11.6.1).
 
 ## 5. Decision D-29 (EOS-80: OPTIONAL, not default)
 
@@ -137,7 +153,7 @@ Re-decide at 11.8A with gate evidence. Matches 11.4's recommendation.
   probe → dispatcher (diagnostic-only).
 - Docs: this file (NEW); INDEX 11.6 row (this stage); ROADMAP (11.5H-RC
   COMPLETE, 11.6 CURRENT→COMPLETE); physics_status EOS line; D-29;
-  KNOWN_ISSUES (only if new issues — none so far).
+  KNOWN_ISSUES (N-14 added).
 - Verification: eos_test 7/7, eos80_verify 8/8, eos80_reference 28/28;
   A≡legacy (days 0/1/7), C≡ProdApr (days 0/1/7); JA≡janOFF (NDIFF=0);
   JB/JD full-Jan exit 0, JC kill-d9 clean; full fpm battery PASS

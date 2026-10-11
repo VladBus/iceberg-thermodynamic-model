@@ -205,16 +205,20 @@ module equation_of_state
                 do i = 2, is
                     if (kt1(i, j) .eq. 0) cycle  ! Суша — пропуск
                     if (k .gt. kt1(i, j)) cycle   ! Ниже дна — пропуск
-                    if (eos_f64_mode) then
-                        ! Stage 10.21 (scope=all, EXP-C): RO с f64-точностью.
-                        ro(i, j, k) = real(density_anomaly_f64( &
-                            real(t2(i, j, k), real64), real(s2(i, j, k), real64)), &
-                            kind(1.0))
-                    else if (eos80_mode) then
+                    ! Stage 11.6.1 (D-30, явное правило): eos80_mode выбирает
+                    ! ФОРМУЛУ и подразумевает f64-вычисление в eos_diag;
+                    ! eos_f64_mode — переключатель точности ТОЛЬКО legacy-
+                    ! формулы. Порядок веток фиксирует это: EOS80 первой.
+                    if (eos80_mode) then
                         ! Stage 11.4: EOS-80, давление уровня p = z[см]×0.01 [дбар].
                         ro(i, j, k) = real(eos_density_f64( &
                             real(t2(i, j, k), real64), real(s2(i, j, k), real64), &
                             real(z(k)*0.01, real64)), kind(1.0))
+                    else if (eos_f64_mode) then
+                        ! Stage 10.21 (scope=all, EXP-C): RO с f64-точностью.
+                        ro(i, j, k) = real(density_anomaly_f64( &
+                            real(t2(i, j, k), real64), real(s2(i, j, k), real64)), &
+                            kind(1.0))
                     else
                         ro(i, j, k) = density_anomaly(t2(i, j, k), s2(i, j, k))
                     end if

@@ -1,7 +1,7 @@
 # Project Roadmap
 
-**Updated:** 2026-09-30
-**Current scientific stage:** Stage 11.6.1 EOS-80 Dispatch Audit Closure COMPLETE (eos_diag EOS80-first reorder per explicit D-30 rule, dispatch test 14/14, interaction quantified +375.41 ice/+0.6865e28 heat — no factorization, full/short wording split, legacy bit-identical). NEXT: 11.7 NetCDF Migration + Legacy Removal + Permanent CFL (NOT started).
+**Updated:** 2026-10-11
+**Current scientific stage:** Stage 11.7A NetCDF Contracts Preflight COMPLETE (read-only audit: 6-source inventory + migration matrix + equivalence plan + CFL design + Q1–Q4 open; NO migration, NO code change). NEXT: 11.7B grid.nc/bathymetry.nc builders + equivalence (NOT started).
 **Stages 3–11.4.1: COMPLETED** (10.x iceberg modernization; 11.1 seasonal characterization; 11.2 CFL audit; 11.4-D21…D33 EN4 stabilization → ERA5-coverage fix → cleanup + Ocean Baseline 11.x; 11.3A execution-graph audit; 11.3B input-architecture audit + NetCDF contracts; 11.3C scheme audit + timestep matrix; 11.3C.1 semantics + CFL distributions; 11.3C.2 time-integration audit; 11.3C.3 loop-bound search (VERDICT D); 11.4 EOS-80 experiment + 11.4.1 impact validation (OPTIONAL, not default)).
 **Current status:** Stages 10.14–11.6.1 committed (see `git log` and `CHANGELOG.md` for history). **Stage 11.6.1 COMPLETE** (this stage: dispatch closure, D-30).
 **Stage 11.5H-RC COMPLETE** (release-candidate gate: self-contained production scheduler, docs synced D-22…D-28). Plan: 11.7 NetCDF+CFL → 11.8A validation → 11.8B audit → 11.9 closure → 12.0 voxel (blocked, D-28).
@@ -117,7 +117,7 @@ control + B200-gain regression complete.
 11.5F (COMPLETED, commit `547ae16`, coupling cadence isolation): F1 exchange graph + u1-rollover theorem (freezable-without-freezing-ocean = {txic,tyic,ans}); F2 budgets (divergent = basal freezing+export); F3 dt150+frozen-txic/ans ≡ fresh (ice→ocean ruled out); F4 skipped (incoherent); driver = ocean→ice freshness and/or ocean-internal cadence.
 11.5G (COMPLETED, commit `4bdc3f2`, final coupling check + productionization spec): CORRECTS 11.5F (skz write-only for physics, skt write-never in production → fw≡0); B150-SKZ bit-identical to fresh (skz ruled out); NO MORE freezes (mandate); spec 11.5H→11.6→11.7→11.8→12.
 11.5H (COMPLETED, commit `1c59a2c`, production temporal architecture): 115H scheduler (OCEAN_DT=150, 24×24, ICE_DT=3600, STALE day-start freeze, shal 1×/day, `STAGE115H_PRODUCTION_MODE` OFF-default); 71 forensic sites guarded; PROD-STALE bit-identical to F3 (≈fresh, NOT legacy) → legacy N=1 LOCKED as reference (D-22); skt debt (D-25); perf ~230 s/d vs ~1 s/d legacy; EOS-80 criterion corrected.
-11.5H-RC (CURRENT, this stage, release-candidate gate): self-contained scheduler (forces mm2=24, warns+ignores conflicting env, hard-fail, no silent fallback) + documentation synchronization (D-22…D-28, N-11/12/13, T-14) + full re-verification. NEXT MAJOR: 11.6.
+11.5H-RC (COMPLETED, commit `1e3e430`, release-candidate gate): self-contained scheduler (forces mm2=24, warns+ignores conflicting env, hard-fail, no silent fallback) + documentation synchronization (D-22…D-28, N-11/12/13, T-14) + full re-verification. NEXT MAJOR: 11.6.
 
 11.5A (this stage, audit+design, COMPLETED): timeline verified (ice mm2×/day,
 ocean 1×/day); ocean integrates 1 h/day vs ice 24 h/day (dynamically young
@@ -142,6 +142,19 @@ baselines + matrix.
 
 ### Stage 11.6 — EOS-80 Production Integration & Re-baseline (COMPLETE, D-29 OPTIONAL)
 
+Completion criteria (all met): independent UNESCO TP44 reference tests
+28/28 (`test/eos80_reference.f90`); integration audit (5 CA dispatcher
+sites, no bypass except diagnostic probe → fixed); 4-config April matrix
++ Jan regression all 0 NaN/Inf; legacy OFF bit-identical (Jan NDIFF=0,
+April bit-identical).
+Result: EOS-80 coherent but ice-amplifying (+36–96% unvalidated) →
+D-29 keeps EOS-80 OPTIONAL, legacy Eckart DEFAULT. EOS STATUS (binding
+for all later stages): "EOS-80 implemented and validated as OPTIONAL;
+legacy Eckart remains DEFAULT and scientific reference; default decision
+deferred to Stage 11.8A observational validation; legacy EOS is retained
+permanently as regression baseline and is NOT scheduled for removal."
+Report: `docs/validation/stage11.6_eos80_integration_rebaseline.md`.
+
 ### Stage 11.6.1 — EOS-80 Dispatch Audit Closure & Result-Interpretation Correction (COMPLETE, D-30)
 
 Narrow closure of three 11.6 audit findings (no new physics experiments):
@@ -158,6 +171,18 @@ full re-baseline EN4 → EOS80 → density → thermal wind → B200 → B210 �
 B280 → ocean → ice coupling + 11.8 matrix re-run.
 
 ### Stage 11.7 — NetCDF Migration + Legacy Removal + Permanent CFL
+
+### Stage 11.7A — NetCDF Input Contracts & Migration Preflight (COMPLETE)
+
+Read-only audit + testable contracts (NO migration): 6-source inventory
+grounded in current readers/producers/files, field-level .nc contracts,
+vertical-convention note, migration matrix with per-source acceptance,
+MD5-only-byte-identical checksum policy, test-coverage map (3 existing +
+5 missing incl. EOS-duplicated), CFL 6-formula audit (no production
+thresholds exist → all TBD with 11.8A-evidence plan), Q1–Q4 open questions,
+11.7B–F staged sequence, EOS-agnostic binding statement.
+Report: `docs/validation/stage11.7A_netcdf_contracts_preflight.md`.
+NEXT: 11.7B (grid.nc/bathymetry.nc builders + reader-equivalence).
 
 `grid.nc` (replaces KOORD.DAT/hhh.bar), `bathymetry.nc`,
 `ocean_initial.nc`, `forcing_era5.nc`, `seaice_initial.nc` (replaces

@@ -327,6 +327,16 @@ Format: `ID | stage/date | status` + short description. Details — via links.
 - **Limitations:** none (pure gating decision).
 - **Next:** 11.6 → 11.7 → 11.8A → 11.8B → 11.9 → Stage 12.
 
+## D-29. EOS-80 stays OPTIONAL; legacy Eckart remains default (Stage 11.6, 2026-10-10)
+
+- **Stage:** 11.6 | **Status:** DECIDED (re-decide at 11.8A with sea-ice gate evidence)
+- **Problem:** under the corrected criterion (physical correctness + reference tests + numerical stability + impact on model — NOT "improvement vs observations"), should the validated EOS-80 pathway become production default?
+- **Decision:** OPTIONAL (`EOS_MODE=EOS80` opt-in; default LEGACY untouched, OFF bit-identical incl. Jan NDIFF=0).
+- **Why:** FOR — correctness (UNESCO compressibility), 28/28 reference tests, 4/4 April + 4/4 Jan green (0 NaN, CA converges maxiter 20–29/guard 0, salt 10× better at STALE, heat nearer legacy at STALE, 6.5× faster at STALE). AGAINST — ice response large (+36% N1 / +58% STALE d7, +96% d29 N1) and UNVALIDATED vs observations; April EUU process review (11.4) still open; per-cell velocity maps unavailable. Matches 11.4's recommendation.
+- **Sources:** `docs/validation/stage11.6_eos80_integration_rebaseline.md` §§1–5, `test/eos80_reference.f90` (28/28), April A/B/C/D + Jan JA–JD runs.
+- **Limitations:** EOS dimension joins scheduler dimension in the 11.8A sea-ice gate; no EOS-80 production claims until then.
+- **Next:** 11.7 NetCDF (output contract must record EOS_MODE per run); 11.8A gate adjudicates.
+
 ## How to add decisions
 
 A new decision is appended with an ID, stage, status, and links to reports.

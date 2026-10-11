@@ -583,14 +583,21 @@ contains
                     if (ca_f64_mode .and. ca_f64_scope) then
                         ! Stage 10.21 scope=all (EXP-C): плотность через f64,
                         ! чтобы диагностика совпадала с фактическим полем RO.
-                        ro_k = real(density_anomaly_f64( &
-                            real(t2(i, j, k), real64), real(s2(i, j, k), real64)), kind(1.0))
-                        ro_k1 = real(density_anomaly_f64( &
+                        ! Stage 11.6: через диспетчер (при EOS80 — EOS-80 с p
+                        ! уровня; при LEGACY — тот же вызов legacy,
+                        ! бит-идентично).
+                        ro_k = real(eos_density_f64( &
+                            real(t2(i, j, k), real64), real(s2(i, j, k), real64), &
+                            real(z(k)*0.01, real64)), kind(1.0))
+                        ro_k1 = real(eos_density_f64( &
                             real(t2(i, j, k + 1), real64), &
-                            real(s2(i, j, k + 1), real64)), kind(1.0))
+                            real(s2(i, j, k + 1), real64), &
+                            real(z(k + 1)*0.01, real64)), kind(1.0))
                     else
-                        ro_k = density_anomaly(t2(i, j, k), s2(i, j, k))
-                        ro_k1 = density_anomaly(t2(i, j, k + 1), s2(i, j, k + 1))
+                        ! Stage 11.6: через диспетчер (см. выше).
+                        ro_k = eos_density(t2(i, j, k), s2(i, j, k), z(k)*0.01)
+                        ro_k1 = eos_density(t2(i, j, k + 1), s2(i, j, k + 1), &
+                                            z(k + 1)*0.01)
                     end if
                     inv = ro_k - ro_k1
                     if (inv .gt. eps_density) then

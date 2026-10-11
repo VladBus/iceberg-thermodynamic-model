@@ -1,9 +1,10 @@
 # Project Roadmap
 
 **Updated:** 2026-09-30
-**Current scientific stage:** Stage 11.5H-RC — Release-Candidate Gate CURRENT (production scheduler self-contained: forces mm2=24/dt150/24×24, warns+ignores conflicting env, hard-fails instead of silent fallback; docs synchronized: D-22…D-28, KNOWN_ISSUES N-11/12/13 + T-14). NEXT MAJOR: 11.6 EOS-80 Production Integration & Re-baseline (NOT started).
+**Current scientific stage:** Stage 11.6 EOS-80 COMPLETE (integration + re-baseline: 28/28 reference tests, probe diagnostic fix, April A/B/C/D all green, D-29 OPTIONAL, legacy default untouched). NEXT: 11.7 NetCDF Migration + Legacy Removal + Permanent CFL (NOT started).
 **Stages 3–11.4.1: COMPLETED** (10.x iceberg modernization; 11.1 seasonal characterization; 11.2 CFL audit; 11.4-D21…D33 EN4 stabilization → ERA5-coverage fix → cleanup + Ocean Baseline 11.x; 11.3A execution-graph audit; 11.3B input-architecture audit + NetCDF contracts; 11.3C scheme audit + timestep matrix; 11.3C.1 semantics + CFL distributions; 11.3C.2 time-integration audit; 11.3C.3 loop-bound search (VERDICT D); 11.4 EOS-80 experiment + 11.4.1 impact validation (OPTIONAL, not default)).
-**Current status:** Stages 10.14–10.22 committed (`0504853` 10.18A, `d99a4bf` 10.18B, `e99dbdc` 10.18C, `b01c902` 10.18D, `03bb42c` 10.19, `16a4c65` 10.20, `7a17cac` 10.21, `928041a` 10.22); **Stage 10.20 (ocean initialization & numerical stabilization) COMPLETE** (D-18): full-coverage ERA5 data fix resolved CASE C (3-day gate PASS, 36 steps, 0 NaN); residual CA instability characterized, NOT fixed (T-01/T-03 family; 30-day gate `steps executed = 55`, acceptance 360 NOT met); **Stage 10.21 (CA/EOS precision stabilization) COMPLETE** (D-19): float32 2⁻²³ quantization root cause confirmed, no physics change (RULES.md), bit-identical legacy verified; **Stage 10.22 (ocean density / thermal-wind / Block-200 stability audit) COMPLETE** (D-20): replay experiments a0–a4 with diagnostic freeze switches isolate the NaN chain (CA/EOS → Block 200 transmitter → Block 210 amplifier), all switches OFF default bit-identical (a0 ≡ a0_diag daily-diagnostics md5 `1ef13cb4…`); Block 210 Thomas pivots negative by construction; stabilizer levers freeze_ro (a1) / freeze_ts (a3) / freeze_ro_downstream (a4) restore physical validity (worst rel 4.213e-6) but are diagnostic-only; production physics KEEP_CURRENT; fpm battery + Python suites PASS; next = approved physics stage.
+**Current status:** Stages 10.14–11.6 committed (see `git log` and `CHANGELOG.md` for history). **Stage 11.6 EOS-80 COMPLETE** (this stage: integration + re-baseline, D-29 OPTIONAL).
+**Stage 11.5H-RC COMPLETE** (release-candidate gate: self-contained production scheduler, docs synced D-22…D-28). Plan: 11.7 NetCDF+CFL → 11.8A validation → 11.8B audit → 11.9 closure → 12.0 voxel (blocked, D-28).
 
 ## Completed foundation
 
@@ -139,7 +140,7 @@ Minimal fix sketch (NOT approved, NOT executed): relocate the ocean pass
 inside `iii` (24×3600 s = coherent day); re-validate full battery + 11.x
 baselines + matrix.
 
-### Stage 11.6 — EOS-80 Production Integration & Re-baseline (NEXT MAJOR)
+### Stage 11.6 — EOS-80 Production Integration & Re-baseline (COMPLETE, D-29 OPTIONAL)
 
 Criterion (D-correction, NOT "improvement vs observations" — EOS-80 is a
 fundamental EOS, not a calibration closure): physical correctness +

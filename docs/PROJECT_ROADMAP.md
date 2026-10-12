@@ -1,7 +1,7 @@
 # Project Roadmap
 
 **Updated:** 2026-10-11
-**Current scientific stage:** Stage 11.7B.1 kk1 Closure COMPLETE (two-stage kk1 + Fortran dump oracle, three-way zero mismatches, anchors 11067/143422, dims i/j/k, GO 11.7C). NEXT: 11.7C ocean_initial.nc + forcing_era5.nc passthrough (NOT started).
+**Current scientific stage:** Stage 11.7B.2 Grid Reproducibility COMPLETE (hht quirk documented+reproducible, dumps in build/, CI limits honest, GO 11.7C). NEXT: 11.7C ocean_initial.nc + forcing_era5.nc passthrough (NOT started).
 **Stages 3–11.4.1: COMPLETED** (10.x iceberg modernization; 11.1 seasonal characterization; 11.2 CFL audit; 11.4-D21…D33 EN4 stabilization → ERA5-coverage fix → cleanup + Ocean Baseline 11.x; 11.3A execution-graph audit; 11.3B input-architecture audit + NetCDF contracts; 11.3C scheme audit + timestep matrix; 11.3C.1 semantics + CFL distributions; 11.3C.2 time-integration audit; 11.3C.3 loop-bound search (VERDICT D); 11.4 EOS-80 experiment + 11.4.1 impact validation (OPTIONAL, not default)).
 **Current status:** Stages 10.14–11.6.1 committed (see `git log` and `CHANGELOG.md` for history). **Stage 11.6.1 COMPLETE** (this stage: dispatch closure, D-30).
 **Stage 11.5H-RC COMPLETE** (release-candidate gate: self-contained production scheduler, docs synced D-22…D-28). Plan: 11.7 NetCDF+CFL → 11.8A validation → 11.8B audit → 11.9 closure → 12.0 voxel (blocked, D-28).
@@ -210,6 +210,17 @@ i=is1 border asymmetry caught by anchor and fixed pre-test; :238 quirk
 replicated-not-fixed; battery 50/50, strict clean, Jan OFF NDIFF=0;
 legacy KOORD.DAT/hhh.bar stay sole production inputs; EOS-agnostic.
 Report: `docs/validation/stage11.7B_grid_bathymetry_migration.md`.
+NEXT: 11.7C.
+
+### Stage 11.7B.2 — Grid Reproducibility & Test Artifact Hygiene (COMPLETE)
+
+hht uninitialized-at-first-use (:191) but reproducibly benign (uniform
+garbage C!=8; clean-rebuild dumps md5-identical); dump artifacts moved
+root→build/ (self-recreating, .gitignore-covered); 6 root files removed
+by name, symlinks intact; SKIP conventions (Fortran + Python) for inputless
+environments; CI cannot run the grid gate (documented, no synthetic
+substitute); T-12 corrected; GO 11.7C.
+Report: `docs/validation/stage11.7B.2_grid_reproducibility.md`.
 NEXT: 11.7C.
 
 `grid.nc` (replaces KOORD.DAT/hhh.bar), `bathymetry.nc`,

@@ -2,9 +2,11 @@
 """
 Stage 11.7B.1 — grid.nc / bathymetry.nc equivalence with Fortran ground truth.
 
-Prerequisite (produces the oracle files, gitignored *.dat):
+Prerequisite (produces the oracle files under build/, gitignored):
     fpm test grid_dump
 which runs production coup1() and dumps kt1/ht/map1/kk1/FI/DL.
+ Works after `rm -rf build` + clean fpm test: grid_dump recreates
+ build/grid_dump_*.dat itself (mkdir fallback in the harness).
 
 Check layers (in order):
   1. Builders run (grid.nc, bathymetry.nc).
@@ -56,11 +58,19 @@ def check(cond, label, detail=""):
 
 
 def load_dump(name, kind):
-    path = os.path.join(PROJECT, "grid_dump_%s.dat" % name)
+    path = os.path.join(PROJECT, "build", "grid_dump_%s.dat" % name)
     if not os.path.exists(path):
-        print("MISSING ORACLE FILE: %s" % path)
-        print("Run first: fpm test grid_dump")
-        sys.exit(2)
+        # CI-конвенция: без реальных входов (data/* gitignored) — SKIP,
+        # но только если и legacy-входов нет; иначе это забытый
+        # `fpm test grid_dump` → честный FAIL.
+        leg = [os.path.join(PROJECT, "KOORD.DAT"),
+               os.path.join(PROJECT, "hhh.bar")]
+        if all(os.path.exists(p) for p in leg):
+            print("MISSING ORACLE FILE: %s" % path)
+            print("Run first: fpm test grid_dump")
+            sys.exit(2)
+        print("SKIP: no real-grid inputs (data/* gitignored) and no dump files")
+        sys.exit(0)
     with open(path) as f:
         dims = f.readline().split()
         assert (int(dims[0]), int(dims[1])) == (IS1, JS1), dims

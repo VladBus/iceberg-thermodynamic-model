@@ -57,6 +57,22 @@ def check(cond, label, detail=""):
         print("FAIL %s %s" % (label, detail))
 
 
+def _precheck_inputs():
+    """Input gate at main() entry: SKIP if no real-grid inputs, FAIL if
+    inputs exist but `fpm test grid_dump` was forgotten. Same convention
+    as the Fortran harness (SKIP-stop-0) and load_dump() below."""
+    leg = [os.path.join(PROJECT, "KOORD.DAT"),
+           os.path.join(PROJECT, "hhh.bar")]
+    dumps = [os.path.join(PROJECT, "build", "grid_dump_%s.dat" % n)
+             for n in ("kt1", "ht", "map1", "kk1", "fi", "dl")]
+    if not all(os.path.exists(p) for p in leg):
+        print("SKIP: required real-grid inputs not available")
+        sys.exit(0)
+    if not all(os.path.exists(p) for p in dumps):
+        print("FAIL: grid_dump files not found — run fpm test grid_dump first")
+        sys.exit(1)
+
+
 def load_dump(name, kind):
     path = os.path.join(PROJECT, "build", "grid_dump_%s.dat" % name)
     if not os.path.exists(path):
@@ -82,6 +98,8 @@ def load_dump(name, kind):
 
 
 def main():
+    # SKIP pre-check FIRST (11.7B.3): before ANY builder runs.
+    _precheck_inputs()
     grid.main()
     bath.main()
     gpath = os.path.join(grid.OUT_DIR, "grid.nc")

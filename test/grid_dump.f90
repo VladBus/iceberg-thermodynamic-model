@@ -17,7 +17,7 @@ program grid_dump
     implicit none
 
     integer :: i, j, n_errors
-    integer :: nwet, sumkt, nmap1, nkk1
+    integer :: nwet, sumkt, nmap1, nkk1, ngate
     logical :: bdir_exists, fexists
 
     ! CI-конвенция репозитория (как ocean_init_test): без входных файлов —
@@ -82,10 +82,18 @@ program grid_dump
     close (11)
 
     ! Регрессионные якоря сетки (валидированы ocean_init_test + EN4):
+    ! The legacy coup1() contains an uninitialized variable (hht)
+    ! whose value affects the first-pass kt1 calculation. The anchors
+    ! below encode the observed behavior in the project's reference
+    ! build environment. If this test fails after a compiler change,
+    ! the grid may differ from the reference and requires manual review.
+    ! Do NOT 'fix' the Fortran source to make this test pass — the
+    ! legacy behavior is the production reference.
     nwet = 0
     sumkt = 0
     nmap1 = 0
     nkk1 = 0
+    ngate = 0
     do j = 1, js1
         do i = 1, is1
             if (kt1(i, j) .gt. 0) then
@@ -96,8 +104,19 @@ program grid_dump
             if (kk1(i, j) .gt. 0) nkk1 = nkk1 + 1
         end do
     end do
+    ! Gate-cell anchor: interior cells whose four ht neighbours are all
+    ! wet — the :238 activation set recomputed from ht (land-ness is
+    ! preserved through smoothing, so this equals the Fortran gate).
+    do j = 2, js
+        do i = 2, is
+            if (abs(ht(i, j) - 8888.0) .gt. 1e-8 .and. &
+                abs(ht(i - 1, j) - 8888.0) .gt. 1e-8 .and. &
+                abs(ht(i, j - 1) - 8888.0) .gt. 1e-8 .and. &
+                abs(ht(i - 1, j - 1) - 8888.0) .gt. 1e-8) ngate = ngate + 1
+        end do
+    end do
     print *, 'grid_dump: wet cols=', nwet, ' sumkt=', sumkt, &
-             ' map1wet=', nmap1, ' kk1pos=', nkk1
+             ' map1wet=', nmap1, ' kk1pos=', nkk1, ' gate=', ngate
 
     n_errors = 0
     if (nwet .ne. 11067) then
@@ -106,6 +125,10 @@ program grid_dump
     end if
     if (sumkt .ne. 143422) then
         print *, 'FAIL sumkt: ', sumkt, ' expected 143422'
+        n_errors = n_errors + 1
+    end if
+    if (ngate .ne. 10336) then
+        print *, 'FAIL gate cells: ', ngate, ' expected 10336'
         n_errors = n_errors + 1
     end if
     if (n_errors .gt. 0) then

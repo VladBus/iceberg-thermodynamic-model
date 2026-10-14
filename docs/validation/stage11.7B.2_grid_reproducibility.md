@@ -5,7 +5,8 @@ numerics change (coup1/hht untouched), NO EOS/scheduler change (LEGACY
 default, N=1 reference), NO reader migration, NO legacy removal,
 NO CFL thresholds, NO 11.7C/11.8A/B/11.9/12 start.
 
-## 1. hht audit (conclusion: UNINITIALIZED but reproducibly benign)
+## 1. hht audit (conclusion: UNINITIALIZED but observed consistent in the
+   project's reference build environment)
 
 - Trace (`grid_coupling.f90:coup1`, execution order): `hht` declared :45
   (local, no init). FIRST use :191 (`if (hht .lt. z(k)) exit` in the
@@ -16,18 +17,28 @@ NO CFL thresholds, NO 11.7C/11.8A/B/11.9/12 start.
   impossible; the in-code comment (:181-183) already documents it as a
   source bug. No transcription error on our side (we replicate outcomes,
   not the defect).
-- Why benign (proven, not asserted): the stale block writes a UNIFORM
-  garbage count C to all wet cells (same hht) and 8 to land; downstream
-  only tests `==8`. Model behaviour (map1 wet 10336, kk1 gating) PROVES
-  C!=8 across all validated runs. Even a NaN hht degrades gracefully
-  (all comparisons false → same gate outcome as C!=8).
-- Reproducibility (controlled): `rm -rf build` + standard flags
-  (`fpm build --flag "-I/usr/include"`) + `fpm test grid_dump` →
-  all six dumps BIT-IDENTICAL md5 across rebuilds
+- Why observed consistent in the reference environment (not proven
+  portable): the stale block writes a UNIFORM garbage count C to all wet
+  cells (same hht) and 8 to land; downstream only tests `==8`. Model
+  behaviour (map1 wet 10336, kk1 gating) is CONSISTENT WITH C!=8 in the
+  reference environment (gfortran, project flags, x86-64). Even a NaN hht
+  would degrade gracefully (all comparisons false → same gate outcome).
+- The uninitialized hht variable in coup1() constitutes undefined behavior
+  per the Fortran standard. The observed consistency does NOT guarantee
+  portability across compilers, optimization levels, or platforms. The
+  anchor verification in test/grid_dump.f90 serves as the portability
+  guard: if anchors fail in a different build environment, the correct
+  action is to investigate the compiler-specific behavior, NOT to modify
+  the Fortran source or adjust the Python oracle to match a different
+  result.
+- Reproducibility (controlled, reference environment): `rm -rf build` +
+  standard flags (`fpm build --flag "-I/usr/include"`) +
+  `fpm test grid_dump` → all six dumps BIT-IDENTICAL md5 across rebuilds
   (e2321a90/5a364b59/a25f8b7f/b2bf6847/b83a7730/5b4f049e);
   anchors 11067/143422/10336/10336 stable.
-- Verdict: legacy quirk with known behaviour, reproducible. Fortran
-  UNTOUCHED per mandate (no init, no repair). GO (not BLOCKED).
+- Verdict: known legacy quirk, observed consistent in the reference
+  environment. Fortran UNTOUCHED per mandate (no init, no repair).
+  GO (not BLOCKED) for the reference environment.
 
 ## 2. Artifact relocation (root → build/)
 

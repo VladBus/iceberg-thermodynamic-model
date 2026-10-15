@@ -202,10 +202,12 @@ Snowfall variable in merged ERA5 NetCDF: `sf` (not `era5_snowfall_rate`). Merge 
 ## Regeneration
 
 ```bash
-# After fresh clone, regenerate grid inputs from IBCAO bathymetry:
+# After fresh clone, regenerate grid inputs from IBCAO bathymetry
+# (three steps: 0 conditional, then 1 and 2):
 # 0. Prerequisite: data/input/raw/ibcao/ibcao_v5_2_2026_depth_400m.tiff
-#    must exist (downloaded IBCAO V5.2); if
-#    data/input/processed/grid/ibcao_model_grid.nc is missing, build it:
+#    must exist (downloaded IBCAO V5.2). If
+#    data/input/processed/grid/ibcao_model_grid.nc does not exist,
+#    download the tiff first and build it below; otherwise skip to step 1:
 python python/grid/build_ibcao_grid.py
 # 1. Build KOORD.DAT, hhh.bar (+ diagnostic 1_1.ice .. 1_5.ice):
 python python/grid/build_real_grid_inputs.py

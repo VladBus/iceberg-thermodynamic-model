@@ -1,7 +1,7 @@
 # Project Roadmap
 
-**Updated:** 2026-10-11
-**Current scientific stage:** Stage 11.7B.3 hht Guard COMPLETE (FAIL-capable anchors 11067/143422/10336, SKIP-first python contract, T-15, CI limits honest, GO 11.7C). NEXT: 11.7C ocean_initial.nc + forcing_era5.nc passthrough (NOT started).
+**Updated:** 2026-10-15
+**Current scientific stage:** Stage 11.7C EN4/ERA5 Passthrough COMPLETE (rebuilds bit-identical Jan+Apr/ERA5-Apr; contracts verified; Jan NDIFF=0, Apr 0 NaN; planning notes for 11.8A/12; GO 11.7D). NEXT: 11.7D seaice_initial.nc + tides.nc (NOT started).
 **Stages 3–11.4.1: COMPLETED** (10.x iceberg modernization; 11.1 seasonal characterization; 11.2 CFL audit; 11.4-D21…D33 EN4 stabilization → ERA5-coverage fix → cleanup + Ocean Baseline 11.x; 11.3A execution-graph audit; 11.3B input-architecture audit + NetCDF contracts; 11.3C scheme audit + timestep matrix; 11.3C.1 semantics + CFL distributions; 11.3C.2 time-integration audit; 11.3C.3 loop-bound search (VERDICT D); 11.4 EOS-80 experiment + 11.4.1 impact validation (OPTIONAL, not default)).
 **Current status:** Stages 10.14–11.6.1 committed (see `git log` and `CHANGELOG.md` for history). **Stage 11.6.1 COMPLETE** (this stage: dispatch closure, D-30).
 **Stage 11.5H-RC COMPLETE** (release-candidate gate: self-contained production scheduler, docs synced D-22…D-28). Plan: 11.7 NetCDF+CFL → 11.8A validation → 11.8B audit → 11.9 closure → 12.0 voxel (blocked, D-28).
@@ -192,7 +192,7 @@ NEXT: 11.7C.
 ### Stage 11.7B.1 — kk1 Equivalence Closure & Grid Contract Audit (COMPLETE)
 
 Closes 11.7B kk1 gap: exact :117/:238/:317/:410 re-trace (gate = land-based,
-C!=8 proven; ht smoothing :200-236 precedes kt1-final → runtime sum 143422;
+C!=8 observed consistent in the reference build environment; ht smoothing :200-236 precedes kt1-final → runtime sum 143422;
 map1 backward neighbours; i=is1 wet); two-stage kk1 + independent plain-loop
 oracle + Fortran dump harness (anchors 11067/143422); three-way zero
 mismatches, gate 10336; Jan==Apr products identical (143176 = pre-smoothing
@@ -214,8 +214,10 @@ NEXT: 11.7C.
 
 ### Stage 11.7B.2 — Grid Reproducibility & Test Artifact Hygiene (COMPLETE)
 
-hht uninitialized-at-first-use (:191) but reproducibly benign (uniform
-garbage C!=8; clean-rebuild dumps md5-identical); dump artifacts moved
+hht uninitialized-at-first-use (:191) but observed consistent in the
+reference build environment (uniform garbage C!=8 consistent with map1
+count; clean-rebuild dumps md5-identical; portability NOT guaranteed);
+dump artifacts moved
 root→build/ (self-recreating, .gitignore-covered); 6 root files removed
 by name, symlinks intact; SKIP conventions (Fortran + Python) for inputless
 environments; CI cannot run the grid gate (documented, no synthetic
@@ -231,6 +233,17 @@ FAIL exit 1, consistent both languages); 11.7B.2 language softened
 (undefined behavior, non-portable); T-15 added; CI limitation stated.
 Report: `docs/validation/stage11.7B.3_hht_guard_test_fix.md`.
 NEXT: 11.7C.
+
+### Stage 11.7C — EN4 & ERA5 Passthrough Builders + Equivalence Verification (COMPLETE)
+
+Phase-0 doc fixes (README zombie→historical, 11.7B.2 language sync,
+dates/physics/steps); EN4 rebuilds (Jan+Apr) BIT-IDENTICAL to committed
+*_rebuild.nc (0.0 all vars; Aug-30 base files SUPERSEDED, retained for
+11.7E); ERA5 merge BIT-IDENTICAL all 7 vars; contracts verified
+(dims/units/fills/D32/z_model_m); Jan NDIFF=0, April 0 NaN/31 files;
+planning notes (11.8A EOS criteria+gates, D-28 entry).
+Report: `docs/validation/stage11.7C_en4_era5_passthrough.md`.
+NEXT: 11.7D (seaice_initial.nc + tides.nc).
 
 `grid.nc` (replaces KOORD.DAT/hhh.bar), `bathymetry.nc`,
 `ocean_initial.nc`, `forcing_era5.nc`, `seaice_initial.nc` (replaces

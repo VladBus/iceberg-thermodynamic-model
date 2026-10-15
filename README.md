@@ -36,6 +36,8 @@ under atmospheric, oceanic, bathymetric, and sea-ice forcing.
 ## 📑 Project status
 
 - **Current stage:** Stage 11.7B.3 hht Guard COMPLETE (FAIL-capable grid anchors, SKIP-first test contract, GO 11.7C). NEXT: 11.7C ocean_initial.nc + forcing_era5.nc passthrough (NOT started). Production reference: Legacy EOS + N=1 scheduler. EOS-80: optional, not default (D-29).
+  [Historical note from Stage 10.19, SUPERSEDED by Stage 10.20 restoration
+  (full-coverage ERA5: 3-day gate PASS, residual characterized, NOT fixed):
   coupling recovery (completed: the Lagrangian iceberg module is now
   connected to the production executable behind the
   `ICEBERG_PRODUCTION=true` env gate (default OFF → legacy bit-identical);
@@ -72,10 +74,12 @@ fpm build --flag "-I/usr/include -Wall -Wextra -fcheck=all -ffpe-trap=invalid,ze
 # Run
 fpm run --flag "-I/usr/include" -- <run_id> [era5_file]
 
-# After a fresh clone, regenerate the real-grid inputs (two steps):
+# After a fresh clone, regenerate the real-grid inputs (three steps:
+# 0 conditional, then 1 and 2):
 # 0. Prerequisite: data/input/raw/ibcao/ibcao_v5_2_2026_depth_400m.tiff
-#    (IBCAO V5.2, downloaded separately) must exist; if
-#    data/input/processed/grid/ibcao_model_grid.nc is missing, build it:
+#    (IBCAO V5.2, downloaded separately) must exist. If
+#    data/input/processed/grid/ibcao_model_grid.nc does not exist,
+#    download the tiff first and build it below; otherwise skip to step 1:
 python python/grid/build_ibcao_grid.py
 # 1. Build KOORD.DAT, hhh.bar, 1_1.ice..1_5.ice into
 #    data/input/generated/real_grid/:

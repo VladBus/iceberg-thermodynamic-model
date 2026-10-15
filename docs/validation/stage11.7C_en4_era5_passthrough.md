@@ -1,6 +1,6 @@
 # Stage 11.7C — EN4 & ERA5 Passthrough Builders + Equivalence Verification
 
-Frozen (date). Passthrough verification: the ocean_initial.nc and
+Frozen 2026-10-15. Passthrough verification: the ocean_initial.nc and
 forcing_era5.nc pipelines are PROVEN bit-reproducible; contracts verified
 against 11.7A spec and reader expectations. NO reader switch (production
 reads exactly as before), NO legacy removal, NO physics/scheduler/EOS
@@ -77,7 +77,7 @@ change (LEGACY default, N=1 reference, EOS-agnostic), NO seaice/tides
 - Preserved: KOORD.DAT/hhh.bar sole grid inputs; rebuild/merged files
   as-is; no reader switch/removal; EOS LEGACY default; N=1 reference;
   11.6.1 dispatch; all physics/numerics.
-- `git diff --check`: TBD.
+- `git diff --check`: clean (verified pre-commit).
 
 ## 5. Planning notes (11.8A EOS criteria / 11.8A gates / Stage-12 entry)
 
@@ -102,7 +102,8 @@ change (LEGACY default, N=1 reference, EOS-agnostic), NO seaice/tides
   11.7D); physics_status (11.7C); Phase-0 fixes (README/AGENTS/INDEX/
   ROADMAP/11.7B.2-softening already applied above).
 - Verification: builders bit-identical (EN4 Jan+Apr, ERA5 Apr); battery
-  TBD; strict TBD; Jan NDIFF=0; Apr 0 NaN; diff-check TBD; NO physics/
+  PASS (50 SUCCESS, 0 failures); strict clean (-Wall -Wextra -fcheck=all
+  -ffpe-trap); Jan NDIFF=0; Apr 0 NaN; diff-check clean; NO physics/
   reader/EOS changes.
 - GO 11.7D (seaice_initial.nc + tides.nc): passthrough pattern proven
   twice; residual = stale base files (11.7E cleanup), monthly-ice gap

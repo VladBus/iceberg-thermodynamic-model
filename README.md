@@ -35,7 +35,7 @@ under atmospheric, oceanic, bathymetric, and sea-ice forcing.
 
 ## 📑 Project status
 
-- **Current stage:** Stage 11.7B.3 hht Guard COMPLETE (FAIL-capable grid anchors, SKIP-first test contract, GO 11.7C). NEXT: 11.7C ocean_initial.nc + forcing_era5.nc passthrough (NOT started). Production reference: Legacy EOS + N=1 scheduler. EOS-80: optional, not default (D-29).
+- **Current stage:** Stage 11.7C EN4/ERA5 Passthrough COMPLETE (rebuilds bit-identical, contracts verified, Jan NDIFF=0, GO 11.7D). NEXT: 11.7D seaice_initial.nc + tides.nc (NOT started). Production reference: Legacy EOS + N=1 scheduler. EOS-80: optional, not default (D-29).
   [Historical note from Stage 10.19, SUPERSEDED by Stage 10.20 restoration
   (full-coverage ERA5: 3-day gate PASS, residual characterized, NOT fixed):
   coupling recovery (completed: the Lagrangian iceberg module is now

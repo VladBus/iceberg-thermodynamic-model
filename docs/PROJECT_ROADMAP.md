@@ -1,7 +1,7 @@
 # Project Roadmap
 
 **Updated:** 2026-10-15
-**Current scientific stage:** Stage 11.7C EN4/ERA5 Passthrough COMPLETE (rebuilds bit-identical Jan+Apr/ERA5-Apr; contracts verified; Jan NDIFF=0, Apr 0 NaN; planning notes for 11.8A/12; GO 11.7D). NEXT: 11.7D seaice_initial.nc + tides.nc (NOT started).
+**Current scientific stage:** Stage 11.7D Sea-Ice & Tides Passthrough COMPLETE (seaice_initial.nc + tides.nc built + 20/20 equivalence; legacy 1_*.ice / null-tides stay production; EOS-agnostic). NEXT: 11.7E Production Reader Switch (NOT started).
 **Stages 3–11.4.1: COMPLETED** (10.x iceberg modernization; 11.1 seasonal characterization; 11.2 CFL audit; 11.4-D21…D33 EN4 stabilization → ERA5-coverage fix → cleanup + Ocean Baseline 11.x; 11.3A execution-graph audit; 11.3B input-architecture audit + NetCDF contracts; 11.3C scheme audit + timestep matrix; 11.3C.1 semantics + CFL distributions; 11.3C.2 time-integration audit; 11.3C.3 loop-bound search (VERDICT D); 11.4 EOS-80 experiment + 11.4.1 impact validation (OPTIONAL, not default)).
 **Current status:** Stages 10.14–11.6.1 committed (see `git log` and `CHANGELOG.md` for history). **Stage 11.6.1 COMPLETE** (this stage: dispatch closure, D-30).
 **Stage 11.5H-RC COMPLETE** (release-candidate gate: self-contained production scheduler, docs synced D-22…D-28). Plan: 11.7 NetCDF+CFL → 11.8A validation → 11.8B audit → 11.9 closure → 12.0 voxel (blocked, D-28).
@@ -252,7 +252,37 @@ md5-gated, legacy removed after its .nc validates. CFL monitoring becomes
 a permanent production feature (cfl_x/y/z/wave/coriolis/diffusion in
 NetCDF diagnostics; PASS/WARNING/FAIL; WARNING logs only).
 
+### Stage 11.7D — Sea-Ice & Tides Passthrough (THIS STAGE)
+
+Scope: seaice_initial.nc + tides.nc builders and verification.
+Acceptance: equivalence tests pass, regression gates pass.
+Dependency: 11.7C complete.
+Output: verified contracts for sea-ice and tides.
+
+### Stage 11.7E — Production Reader Switch
+
+Scope: switch Fortran readers from legacy files to NetCDF.
+Acceptance: model produces identical results with NetCDF inputs.
+Dependency: 11.7D complete, all equivalence tests pass.
+Rollback: legacy readers preserved, switch via env variable.
+Risk: highest-risk step, requires careful A/B comparison.
+
+### Stage 11.7F — Legacy Removal + Permanent CFL
+
+Scope: remove legacy input files, add permanent CFL monitoring.
+Acceptance: no legacy file references in production path.
+Dependency: 11.7E complete and validated.
+Risk: irreversible, only after full validation.
+
 ### Stage 11.8A — Scientific Validation (gated)
+
+Configuration matrix (EOS × Scheduler × Season):
+  - Configurations: Legacy×N1, Legacy×Prod, EOS80×N1, EOS80×Prod
+  - Seasons: Jan, Apr, Jul, Oct (30 days each)
+  - Metrics: NaN/Inf, T/S/ρ, U/V/W, CA stats, CFL, conservation, ice extent
+  - Gates: no NaN/Inf; drift < 1%/month; OSI-SAF/NSIDC ice bounds
+  - EOS decision (D-29): promote to default OR keep optional, with
+    explicit justification referencing interaction effects.
 
 30-day Jan/Apr/Jul/Oct on the production executable vs N=1 legacy
 baseline (D-22); conservation (salt/heat/volume); CFL active; no NaN/Inf;

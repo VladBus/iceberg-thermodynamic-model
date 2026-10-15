@@ -58,7 +58,7 @@ removed from the active list (their history lives in stage reports and
   (TEST_11 family). Report:
   `docs/validation/stage10.19_production_runtime_coupling_recovery.md`.
 
-- **EN4 initial condition pathology (Stage 11.1)**: EN4 initial T/S fields for
+- **EN4 initial condition pathology (Stage 11.1)** [HISTORICAL — unit error since corrected]: EN4 initial T/S fields for
   April/July/October 2020 contain pre-existing negative density anomaly
   (`ro_min = -20.07 g/cm³`) at surface layers, causing immediate ocean crash
   on Day 1. January EN4 state survives 4 days before the same cascade.
@@ -67,6 +67,10 @@ removed from the active list (their history lives in stage reports and
   Frozen-ocean control confirms atmosphere alone is stable; instability requires
   prognostic ocean evolution. Next: Stage 11.2 — EN4 Initial Condition Stabilization.
   Report: `docs/validation/stage11.1_ocean_stability_seasonal_initial_conditions.md`.
+  NOTE (11.7D): the historical −20.07 value was a unit conversion error in early
+  EN4 preprocessing, identified and corrected in Stage 11.1. Current verified
+  minimum RO anomaly is −0.02007 (= ρ/1000 − 1.02, equivalent to ρ ≈ 999.93
+  kg/m³). Historical entry retained, not deleted.
 - **Eulerian ocean dead state**: 3D ocean fields NaN from day 1 with real
   EN4 init (Stage 8 family, stable 56.5 %, T frozen at 273.15 K) — blocks
   coupled ocean forcing for the iceberg; **Stage 10.19 forensic**: first

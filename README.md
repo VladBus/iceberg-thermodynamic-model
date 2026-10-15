@@ -35,7 +35,7 @@ under atmospheric, oceanic, bathymetric, and sea-ice forcing.
 
 ## 📑 Project status
 
-- **Current stage:** Stage 11.5H-RC — Production Scheduler Release-Candidate Gate (production temporal architecture implemented, legacy N=1 remains scientific reference; next = 11.6 EOS-80)
+- **Current stage:** Stage 11.7B.3 hht Guard COMPLETE (FAIL-capable grid anchors, SKIP-first test contract, GO 11.7C). NEXT: 11.7C ocean_initial.nc + forcing_era5.nc passthrough (NOT started). Production reference: Legacy EOS + N=1 scheduler. EOS-80: optional, not default (D-29).
   coupling recovery (completed: the Lagrangian iceberg module is now
   connected to the production executable behind the
   `ICEBERG_PRODUCTION=true` env gate (default OFF → legacy bit-identical);
@@ -72,8 +72,23 @@ fpm build --flag "-I/usr/include -Wall -Wextra -fcheck=all -ffpe-trap=invalid,ze
 # Run
 fpm run --flag "-I/usr/include" -- <run_id> [era5_file]
 
-# After a fresh clone, regenerate the real-grid inputs:
+# After a fresh clone, regenerate the real-grid inputs (two steps):
+# 0. Prerequisite: data/input/raw/ibcao/ibcao_v5_2_2026_depth_400m.tiff
+#    (IBCAO V5.2, downloaded separately) must exist; if
+#    data/input/processed/grid/ibcao_model_grid.nc is missing, build it:
+python python/grid/build_ibcao_grid.py
+# 1. Build KOORD.DAT, hhh.bar, 1_1.ice..1_5.ice into
+#    data/input/generated/real_grid/:
 python python/grid/build_real_grid_inputs.py
+# 2. Create root-level symlinks (REQUIRED by legacy Fortran readers;
+#    gitignored — must be created manually per checkout):
+ln -sf data/input/generated/real_grid/KOORD.DAT KOORD.DAT
+ln -sf data/input/generated/real_grid/hhh.bar hhh.bar
+ln -sf data/input/generated/real_grid/1_1.ice 1_1.ice
+ln -sf data/input/generated/real_grid/1_2.ice 1_2.ice
+ln -sf data/input/generated/real_grid/1_3.ice 1_3.ice
+ln -sf data/input/generated/real_grid/1_4.ice 1_4.ice
+ln -sf data/input/generated/real_grid/1_5.ice 1_5.ice
 ```
 
 Python: conda environment `iceberg-thermodynamic-model`

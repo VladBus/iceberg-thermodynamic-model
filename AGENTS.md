@@ -203,12 +203,24 @@ Snowfall variable in merged ERA5 NetCDF: `sf` (not `era5_snowfall_rate`). Merge 
 
 ```bash
 # After fresh clone, regenerate grid inputs from IBCAO bathymetry:
+# 0. Prerequisite: data/input/raw/ibcao/ibcao_v5_2_2026_depth_400m.tiff
+#    must exist (downloaded IBCAO V5.2); if
+#    data/input/processed/grid/ibcao_model_grid.nc is missing, build it:
+python python/grid/build_ibcao_grid.py
+# 1. Build KOORD.DAT, hhh.bar (+ diagnostic 1_1.ice .. 1_5.ice):
 python python/grid/build_real_grid_inputs.py
 # Creates: KOORD.DAT, hhh.bar, reconstruction_metadata.json
 #          (+ diagnostic 1_1.ice .. 1_5.ice) → data/input/generated/real_grid/
-# NOTE: root-level KOORD.DAT / hhh.bar are NOT created automatically —
-# create symlinks (or copies) to data/input/generated/real_grid/ before
-# running in grid_mode_real (FATAL STOP without KOORD.DAT).
+# 2. Root-level symlinks REQUIRED by legacy Fortran readers (gitignored —
+#    create manually per checkout):
+ln -sf data/input/generated/real_grid/KOORD.DAT KOORD.DAT
+ln -sf data/input/generated/real_grid/hhh.bar hhh.bar
+ln -sf data/input/generated/real_grid/1_1.ice 1_1.ice
+ln -sf data/input/generated/real_grid/1_2.ice 1_2.ice
+ln -sf data/input/generated/real_grid/1_3.ice 1_3.ice
+ln -sf data/input/generated/real_grid/1_4.ice 1_4.ice
+ln -sf data/input/generated/real_grid/1_5.ice 1_5.ice
+# NOTE: grid_mode_real FATAL STOPs without KOORD.DAT.
 ```
 
 ERA5 download: `conda run -n iceberg-thermodynamic-model python python/era5/download_era5.py --year 2020 --month 1 --include-snowfall`

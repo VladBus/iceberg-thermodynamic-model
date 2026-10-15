@@ -6,13 +6,22 @@ NOT initialized, kk1/map1 logic untouched); NO EOS/scheduler change
 (LEGACY default, N=1 reference); NO reader migration; NO legacy
 removal; NO CFL thresholds; NO 11.7C/11.8A/B/11.9/12 start.
 
-## 1. Anchor verification in grid_dump.f90 (FAIL-capable portability guard)
+## 1. Three aggregate control counters in grid_dump.f90 (FAIL-capable portability guard)
 
-- Added gate-cell anchor: ngate recomputed from ht (land-ness preserved
+- Added gate-cell counter: ngate recomputed from ht (land-ness preserved
   through smoothing ⟹ equals the :238 gate set) — expected 10336.
-  Harness now asserts THREE anchors with actual-vs-expected ERROR lines
-  and non-zero exit on ANY mismatch: wet cols 11067, sum(kt1) 143422,
-  gate cells 10336. Verified: `grid_dump: ... gate= 10336 / GRID DUMP OK`.
+  Harness now asserts THREE aggregate control counters with
+  actual-vs-expected ERROR lines and non-zero exit on ANY mismatch.
+  Explicitly VERIFIED against expected values:
+  nwet (wet column count) == 11067, sumkt (sum of kt1) == 143422,
+  ngate (gate cell count) == 10336.
+  Computed and REPORTED but NOT verified against expected values:
+  map1wet, kk1pos (printed for inspection only).
+  Note: ngate is computed from neighbouring ht values, not directly from
+  the temporary kt1 set used in the :238 gate condition. The equivalence
+  holds under the observed land-classification assumption but is not
+  independently verified within this test.
+  Verified run: `grid_dump: ... gate= 10336 / GRID DUMP OK`.
 - Added the mandated hht comment (uninitialized → anchors encode
   reference-environment behaviour → compiler change needs manual review
   → do NOT 'fix' Fortran to satisfy the test).
@@ -40,7 +49,9 @@ removal; NO CFL thresholds; NO 11.7C/11.8A/B/11.9/12 start.
 
 ## 4. CI limitation statement (verified accurate)
 
-- fpm auto-discovers grid_dump (no `[test.*]` section in fpm.toml) →
+- fpm auto-discovers grid_dump (no explicit `[test.grid_dump]` section
+  in fpm.toml for the harness; other tests have explicit `[test.*]`
+  sections, grid_dump relies on fpm's automatic test discovery) →
   `fpm test` executes it wherever it runs.
 - CI cannot run the grid gate: data/* gitignored + symlinks absent in
   fresh clones → grid_dump SKIP-stop-0 (no inputs), python test SKIP;
@@ -68,6 +79,6 @@ removal; NO CFL thresholds; NO 11.7C/11.8A/B/11.9/12 start.
 
 ## 6. Go/no-go 11.7C
 
-GO: determinism guarded by FAIL-capable anchors, SKIP contracts
+GO: three aggregate control counters guard determinism (FAIL-capable), SKIP contracts
 consistent both languages, CI limits honest, all gates green.
 Residuals unchanged (hht quirk, CF gap) — explicitly deferred.

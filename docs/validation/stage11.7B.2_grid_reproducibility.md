@@ -21,8 +21,11 @@ NO CFL thresholds, NO 11.7C/11.8A/B/11.9/12 start.
   portable): the stale block writes a UNIFORM garbage count C to all wet
   cells (same hht) and 8 to land; downstream only tests `==8`. Model
   behaviour (map1 wet 10336, kk1 gating) is CONSISTENT WITH C!=8 in the
-  reference environment (gfortran, project flags, x86-64). Even a NaN hht
-  would degrade gracefully (all comparisons false → same gate outcome).
+  reference environment (gfortran, project flags, x86-64). Under standard
+  IEEE-754 arithmetic without trap flags, NaN comparisons evaluate to
+  FALSE, which in the observed code path produces the same branch as the
+  uninitialized-value case. This is a hypothesis contingent on IEEE mode
+  and absence of -ffpe-trap flags, not a guaranteed behavior.
 - The uninitialized hht variable in coup1() constitutes undefined behavior
   per the Fortran standard. The observed consistency does NOT guarantee
   portability across compilers, optimization levels, or platforms. The

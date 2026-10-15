@@ -25,6 +25,7 @@ CF-1.10 metadata, provenance, dimension names (cat, j, i).
 import argparse
 import hashlib
 import os
+import subprocess
 import time
 
 import numpy as np
@@ -171,7 +172,6 @@ def main():
 
 if __name__ == "__main__":
     import pathlib
-    import subprocess
     import sys
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     main()

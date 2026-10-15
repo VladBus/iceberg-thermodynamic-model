@@ -1,4 +1,4 @@
-# Stage 11.7D — Sea-Ice & Tides Passthrough Builders + Equivalence Verification
+# Stage 11.7D.1 — Sea-Ice Test Integrity & Scientific Source Closure
 
 Frozen 2026-10-15. Passthrough verification: the seaice_initial.nc and
 tides.nc pipelines are PROVEN bit-reproducible; contracts verified

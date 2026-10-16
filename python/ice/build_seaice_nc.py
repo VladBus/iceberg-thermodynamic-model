@@ -153,6 +153,15 @@ def main():
                             "elementwise correspondence, NO transpose")
         ds.source_files = ", ".join([f"1_{k}.ice" for k in range(1, NGR + 1)])
         ds.builder_git_sha, ds.created = sha, time.strftime("%Y-%m-%dT%H:%M:%S")
+        # Determine source type based on input data
+        sic_all_zero = np.all(sic == 0)
+        sit_all_zero = np.all(sit == 0)
+        if sic_all_zero and sit_all_zero:
+            ds.source = "DIAGNOSTIC_PLACEHOLDER"
+            ds.sea_ice_status = "DIAGNOSTIC"
+        else:
+            ds.source = "OSI-SAF/NSIDC/C3S (to be populated with real data)"
+            ds.sea_ice_status = "SCIENTIFIC"
         ds.history = ("built by python/ice/build_seaice_nc.py (Stage 11.7D); "
                       "legacy 1_1.ice..1_5.ice stay production inputs")
         ds.ice_note = ("Only January data available; other months reuse "

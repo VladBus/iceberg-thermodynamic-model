@@ -1,7 +1,7 @@
 # Project Roadmap
 
 **Updated:** 2026-10-15
-**Current scientific stage:** Stage 11.7D.1 Test Integrity & Source Closure COMPLETE (subprocess fix + source audit + independent oracle, Fortran untouched). NEXT: 11.7E Production Reader Switch (NOT started).
+**Current scientific stage:** Stage 11.7D.2 Actual Code Correction COMPLETE (test genuinely independent with SKIP-first contract, source attr in NetCDF, T-16/T-17, tides dt1=120 documented, GO 11.7E). NEXT: 11.7E Production Reader Switch (NOT started).
 **Stages 3–11.4.1: COMPLETED** (10.x iceberg modernization; 11.1 seasonal characterization; 11.2 CFL audit; 11.4-D21…D33 EN4 stabilization → ERA5-coverage fix → cleanup + Ocean Baseline 11.x; 11.3A execution-graph audit; 11.3B input-architecture audit + NetCDF contracts; 11.3C scheme audit + timestep matrix; 11.3C.1 semantics + CFL distributions; 11.3C.2 time-integration audit; 11.3C.3 loop-bound search (VERDICT D); 11.4 EOS-80 experiment + 11.4.1 impact validation (OPTIONAL, not default)).
 **Current status:** Stages 10.14–11.6.1 committed (see `git log` and `CHANGELOG.md` for history). **Stage 11.6.1 COMPLETE** (this stage: dispatch closure, D-30).
 **Stage 11.5H-RC COMPLETE** (release-candidate gate: self-contained production scheduler, docs synced D-22…D-28). Plan: 11.7 NetCDF+CFL → 11.8A validation → 11.8B audit → 11.9 closure → 12.0 voxel (blocked, D-28).
@@ -252,12 +252,22 @@ md5-gated, legacy removed after its .nc validates. CFL monitoring becomes
 a permanent production feature (cfl_x/y/z/wave/coriolis/diffusion in
 NetCDF diagnostics; PASS/WARNING/FAIL; WARNING logs only).
 
-### Stage 11.7D — Sea-Ice & Tides Passthrough (THIS STAGE)
+### Stage 11.7D — Sea-Ice & Tides Passthrough (COMPLETE)
 
 Scope: seaice_initial.nc + tides.nc builders and verification.
 Acceptance: equivalence tests pass, regression gates pass.
 Dependency: 11.7C complete.
 Output: verified contracts for sea-ice and tides.
+
+### Stage 11.7D.2 — Actual Code Correction & Test Independence Enforcement (COMPLETE)
+
+Closes 11.7D.1 gaps IN CODE (not docs-only): test genuinely independent
+(`_precheck_inputs()` SKIP-first, oracle parses 1_*.ice from scratch, no
+`sea.read_ice_files()` call); NetCDF `source="DIAGNOSTIC_PLACEHOLDER"` +
+`sea_ice_status` attributes verifiable in file; T-16 (diagnostic sea ice)
++ T-17 (HST 0.40 legacy quirk) in KNOWN_ISSUES; tides `reference_dt1_seconds`
++ dt1 comment; python 20/20; GO 11.7E.
+Report: `docs/validation/stage11.7D.2_actual_code_correction.md`.
 
 ### Stage 11.7E — Production Reader Switch
 

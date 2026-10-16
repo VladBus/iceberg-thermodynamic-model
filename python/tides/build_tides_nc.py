@@ -86,8 +86,12 @@ def main():
         v = ds.createVariable("qq_rad_per_step", "f8", ("const",))
         v.units = "radian/step"
         v.long_name = "angular frequency per barotropic step (qq * dt1 / 3600 / 57.2958)"
+        # dt1=120 s is the LEGACY barotropic timestep. If the barotropic
+        # timestep ever changes, this value must be recomputed or treated
+        # as reference-only (11.7D.2).
         dt1 = 120.0  # barotropic step [s]
         v[:] = QQ_DEG_H * (dt1 / 3600.0) / 57.2958
+        ds.setncattr("reference_dt1_seconds", 120.0)
 
         ds.Conventions = "CF-1.10"
         ds.title = "Tidal forcing: amplitudes and phases (null-tides)"

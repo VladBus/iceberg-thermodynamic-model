@@ -50,7 +50,7 @@ def check(cond, label, detail=""):
         print("FAIL %s %s" % (label, detail))
 
 
-def read_ice_files():
+def read_ice_files_independent():
     """Read 1_1.ice .. 1_5.ice from real_grid directory (INDEPENDENT)."""
     REAL_GRID = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(
         os.path.abspath(__file__)))), "data", "input", "generated", "real_grid")
@@ -92,15 +92,47 @@ def build_sic_sit_ref(an1_raw):
     return sic, sit
 
 
+def _precheck_inputs():
+    """Pre-check inputs before running builders (SKIP contract).
+
+    Returns:
+        0 if SKIP (inputs not available)
+        1 if inputs present but dumps missing (should run fpm test first)
+        2 if all ready to proceed
+    """
+    leg = [os.path.join(PROJECT, "KOORD.DAT"),
+           os.path.join(PROJECT, "hhh.bar")]
+    dumps = [os.path.join(PROJECT, "build", "grid_dump_%s.dat" % n)
+             for n in ("kt1", "ht", "map1", "kk1", "fi", "dl")]
+
+    if not all(os.path.exists(p) for p in leg):
+        print("SKIP: required real-grid inputs not available")
+        return 0
+
+    if not all(os.path.exists(p) for p in dumps):
+        print("FAIL: grid_dump files not found — run fpm test grid_dump first")
+        return 1
+
+    return 2
+
+
 def main():
+    # Pre-check inputs FIRST (before any builder runs)
+    precheck = _precheck_inputs()
+    if precheck == 0:
+        sys.exit(0)
+    elif precheck == 1:
+        sys.exit(1)
+    # else precheck == 2, proceed
+
     # Builders first
     import build_seaice_nc as sea
     import build_tides_nc as tid
-    
+
     # Run builders with explicit output paths
     gpath = os.path.join(sea.OUT_DIR, "seaice_initial.nc")
     tpath = os.path.join(tid.OUT_DIR, "tides.nc")
-    
+
     # Run builders with sys.argv simulation
     import sys
     sys.argv = ['build_seaice_nc.py', '--out', gpath]
@@ -135,7 +167,7 @@ def main():
     t.close()
 
     # --- Independent reference (seaice) ---
-    an1_raw = sea.read_ice_files()
+    an1_raw = read_ice_files_independent()
     sic_ref, sit_ref = build_sic_sit_ref(an1_raw)
 
     # Equivalence checks (seaice)

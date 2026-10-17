@@ -153,15 +153,30 @@ def main():
                             "elementwise correspondence, NO transpose")
         ds.source_files = ", ".join([f"1_{k}.ice" for k in range(1, NGR + 1)])
         ds.builder_git_sha, ds.created = sha, time.strftime("%Y-%m-%dT%H:%M:%S")
-        # Determine source type based on input data
-        sic_all_zero = np.all(sic == 0)
-        sit_all_zero = np.all(sit == 0)
-        if sic_all_zero and sit_all_zero:
-            ds.source = "DIAGNOSTIC_PLACEHOLDER"
-            ds.sea_ice_status = "DIAGNOSTIC"
-        else:
-            ds.source = "OSI-SAF/NSIDC/C3S (to be populated with real data)"
-            ds.sea_ice_status = "SCIENTIFIC"
+        # Source from EXPLICIT manifest (11.7E Phase 0.1) — NEVER inferred
+        # from data values. Manifest: python/ice/seaice_source_manifest.json.
+        manifest_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                     "seaice_source_manifest.json")
+        try:
+            import json
+            with open(manifest_path) as mf:
+                manifest = json.load(mf)
+            stype = manifest.get("source_type", "")
+            if stype == "diagnostic_placeholder":
+                ds.source = "DIAGNOSTIC_PLACEHOLDER"
+                ds.sea_ice_status = "DIAGNOSTIC"
+            elif stype == "scientific":
+                ds.source = "%s %s %s" % (manifest.get("dataset_name", "?"),
+                                          manifest.get("version", "?"),
+                                          manifest.get("date", "?"))
+                ds.sea_ice_status = "SCIENTIFIC"
+            else:
+                ds.source = "UNKNOWN"
+                ds.sea_ice_status = "UNKNOWN"
+            ds.source_manifest = str(manifest)
+        except Exception:
+            ds.source = "UNKNOWN"
+            ds.sea_ice_status = "UNKNOWN"
         ds.history = ("built by python/ice/build_seaice_nc.py (Stage 11.7D); "
                       "legacy 1_1.ice..1_5.ice stay production inputs")
         ds.ice_note = ("Only January data available; other months reuse "

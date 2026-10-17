@@ -33,6 +33,7 @@
 
 module grid_coupling
     use param
+    use netcdf_grid_reader
     implicit none
 
 contains
@@ -51,6 +52,12 @@ contains
         ! j1..j2 — диапазон столбцов для текущего блока (j1=1..86, шаг 15).
         ! Каждая запись: read(1,*) — пропуск строки-заголовка блока.
         ! Значения KT1: 8=суша, числа 3..600 = индексы глубин (множитель x100 ниже).
+        ! Stage 11.7E: NetCDF switch replaces ONLY the file-read layer.
+        ! ON: raw KT1 codes from grid.nc; the whole derivation below runs
+        ! unchanged. OFF: legacy hhh.bar path, bit-identical.
+        if (s117e_grid_active()) then
+            call s117e_read_codes()
+        else
         open (1, file='hhh.bar', status='old', iostat=ios)
         if (ios .eq. 0) then
             j1 = 1
@@ -70,6 +77,7 @@ contains
             kt1(:, :) = 8
             kt1(10:120, 10:90) = 600
         end if
+        end if ! Stage 11.7E reader switch (ON: grid.nc codes; OFF: hhh.bar)
 
         ! Инициализация глубин HT на основе KT1
         do j = 1, js1
@@ -476,6 +484,12 @@ contains
         ! долгота линейно растёт с индексом I от 30E до 63E (в пределах ERA5-окна).
         ! Эти координаты НЕ являются реальной областью модели и НЕ должны
         ! использоваться в production-расчётах.
+        ! Stage 11.7E: NetCDF switch replaces ONLY the file-read layer.
+        ! ON: FI/DL from grid.nc (f64->f32); Coriolis + all downstream code
+        ! below runs unchanged. OFF: legacy KOORD.DAT/synthetic path.
+        if (s117e_grid_active()) then
+            call s117e_read_coords()
+        else
         if (grid_mode .eq. grid_mode_real) then
             open (1, file='KOORD.DAT', status='old', iostat=ios)
             if (ios .eq. 0) then
@@ -499,6 +513,7 @@ contains
                 end do
             end do
         end if
+        end if ! Stage 11.7E reader switch (ON: grid.nc FI/DL; OFF: legacy)
 
         ! --- ВЫЧИСЛЕНИЕ ПАРАМЕТРОВ КОРИОЛИСА ---
         ! f = 2*omega*sin(phi), где:

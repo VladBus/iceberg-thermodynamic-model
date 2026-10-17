@@ -1,0 +1,9 @@
+{
+  "_comment": "Stage 11.7E Phase 0.1: explicit source manifest for sea-ice inputs. The builder transfers these fields to NetCDF attributes verbatim; it MUST NOT infer source from data values. If this file is absent or inconsistent with the inputs, the builder writes source=UNKNOWN.",
+  "source_type": "diagnostic_placeholder",
+  "dataset_name": "none (diagnostic zeros from build_real_grid_inputs.py:generate_diagnostic_ice)",
+  "version": "n/a",
+  "date": "2026-08-26",
+  "spatial_extent": "model grid 133x105 (is1 x js1), all-zero concentration",
+  "temporal_coverage": "none (static placeholder; January reuse is a model convention, not data)"
+}

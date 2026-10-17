@@ -1,9 +1,9 @@
 # Project Roadmap
 
-**Updated:** 2026-10-15
-**Current scientific stage:** Stage 11.7D.2 Actual Code Correction COMPLETE (test genuinely independent with SKIP-first contract, source attr in NetCDF, T-16/T-17, tides dt1=120 documented, GO 11.7E). NEXT: 11.7E Production Reader Switch (NOT started).
+**Updated:** 2026-10-17
+**Current scientific stage:** Stage 11.7E Grid/Bathymetry Reader Switch COMPLETE (env-gated `STAGE117E_NETCDF_GRID`, OFF default bit-identical; ON ≡ OFF ≡ baselines Jan+Apr; libnetcdff transpose quirk contained, T-18; battery 50/0; strict clean; GO 11.7E.2). NEXT: 11.7E.2 ocean_initial reader (NOT started).
 **Stages 3–11.4.1: COMPLETED** (10.x iceberg modernization; 11.1 seasonal characterization; 11.2 CFL audit; 11.4-D21…D33 EN4 stabilization → ERA5-coverage fix → cleanup + Ocean Baseline 11.x; 11.3A execution-graph audit; 11.3B input-architecture audit + NetCDF contracts; 11.3C scheme audit + timestep matrix; 11.3C.1 semantics + CFL distributions; 11.3C.2 time-integration audit; 11.3C.3 loop-bound search (VERDICT D); 11.4 EOS-80 experiment + 11.4.1 impact validation (OPTIONAL, not default)).
-**Current status:** Stages 10.14–11.6.1 committed (see `git log` and `CHANGELOG.md` for history). **Stage 11.6.1 COMPLETE** (this stage: dispatch closure, D-30).
+**Current status:** Stages 10.14–11.7E committed (see `git log` and `CHANGELOG.md` for history). **Stage 11.7E COMPLETE** (this stage: grid/bathymetry reader switch + preflight fixes, T-18).
 **Stage 11.5H-RC COMPLETE** (release-candidate gate: self-contained production scheduler, docs synced D-22…D-28). Plan: 11.7 NetCDF+CFL → 11.8A validation → 11.8B audit → 11.9 closure → 12.0 voxel (blocked, D-28).
 
 ## Completed foundation
@@ -269,13 +269,21 @@ Closes 11.7D.1 gaps IN CODE (not docs-only): test genuinely independent
 + dt1 comment; python 20/20; GO 11.7E.
 Report: `docs/validation/stage11.7D.2_actual_code_correction.md`.
 
-### Stage 11.7E — Production Reader Switch
+### Stage 11.7E — Grid/Bathymetry Reader Switch + Preflight Fixes (COMPLETE)
 
-Scope: switch Fortran readers from legacy files to NetCDF.
-Acceptance: model produces identical results with NetCDF inputs.
-Dependency: 11.7D complete, all equivalence tests pass.
-Rollback: legacy readers preserved, switch via env variable.
-Risk: highest-risk step, requires careful A/B comparison.
+First (lowest-risk) reader switch of the NetCDF migration: production
+grid/bathymetry input switchable between legacy KOORD.DAT/hhh.bar
+(default OFF → bit-identical) and NetCDF grid.nc (ON) via
+`STAGE117E_NETCDF_GRID`; ONLY the file-read layer is replaced
+(codes+coords), full derivation chain reused → divergence impossible by
+construction. Preflight fixes: sea-ice source manifest (never
+value-inferred), test 1_*.ice-first precheck + sys fix, three-way
+wording + INDEX-dupe/metric/CI corrections. libnetcdff 2D whole-array
+transpose quirk found and contained (T-18). Gates: Jan/Apr
+ON≡OFF≡baselines bit-identical (32+31 files); battery 50/0; strict
+clean; diff-check clean. Rollback: unset env var (legacy files intact).
+Report: `docs/validation/stage11.7E_grid_bathymetry_reader_switch.md`.
+GO 11.7E.2.
 
 ### Stage 11.7F — Legacy Removal + Permanent CFL
 

@@ -60,7 +60,10 @@ Added to PROJECT_ROADMAP.md:
   - Independent reference (separate Python loops, no shared code)
   - sic/sit bit-exact (0 mismatches); HST/HMAX exact
   - snow_depth all zeros (no snow data yet)
-  - Wet columns: 11067 (matches legacy product); ice levels: 143176 (April)
+  - Sea-ice fields verified bit-exact vs independent reference
+    (sic/sit 0 mismatches; snow all zeros). (11.7D.2 correction: the
+    "11067 wet cols / 143176 levels" figures previously listed here are
+    grid/ocean anchors, not sea-ice metrics — removed.)
   - NOTE: Only January data exists; other months reuse Jan init (known gap)
 - **Known limitation**: January data reused for all months (gap
   documented in 11.7A; future work = seasonal sea-ice obs)

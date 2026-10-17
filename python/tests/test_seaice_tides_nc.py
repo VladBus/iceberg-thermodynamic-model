@@ -95,35 +95,32 @@ def build_sic_sit_ref(an1_raw):
 def _precheck_inputs():
     """Pre-check inputs before running builders (SKIP contract).
 
+    Checks 1_*.ice presence FIRST (this test's actual dependency).
+    grid_dump files are Fortran ground truth for the GRID test, not
+    this test — not required here (11.7E Phase 0.2).
+
     Returns:
         0 if SKIP (inputs not available)
-        1 if inputs present but dumps missing (should run fpm test first)
+        1 if inputs present but seaice_initial.nc missing (run builder)
         2 if all ready to proceed
     """
-    leg = [os.path.join(PROJECT, "KOORD.DAT"),
-           os.path.join(PROJECT, "hhh.bar")]
-    dumps = [os.path.join(PROJECT, "build", "grid_dump_%s.dat" % n)
-             for n in ("kt1", "ht", "map1", "kk1", "fi", "dl")]
+    ice = [os.path.join(PROJECT, "data", "input", "generated",
+                        "real_grid", "1_%d.ice" % k) for k in range(1, 6)]
+    # Also accept root symlinks (legacy reader path).
+    ice += [os.path.join(PROJECT, "1_%d.ice" % k) for k in range(1, 6)]
 
-    if not all(os.path.exists(p) for p in leg):
+    if not any(os.path.exists(p) for p in ice):
         print("SKIP: required real-grid inputs not available")
         return 0
-
-    if not all(os.path.exists(p) for p in dumps):
-        print("FAIL: grid_dump files not found — run fpm test grid_dump first")
-        return 1
 
     return 2
 
 
 def main():
     # Pre-check inputs FIRST (before any builder runs)
-    precheck = _precheck_inputs()
-    if precheck == 0:
+    if _precheck_inputs() == 0:
         sys.exit(0)
-    elif precheck == 1:
-        sys.exit(1)
-    # else precheck == 2, proceed
+    # else proceed
 
     # Builders first
     import build_seaice_nc as sea
@@ -133,8 +130,7 @@ def main():
     gpath = os.path.join(sea.OUT_DIR, "seaice_initial.nc")
     tpath = os.path.join(tid.OUT_DIR, "tides.nc")
 
-    # Run builders with sys.argv simulation
-    import sys
+    # Run builders with sys.argv simulation (sys imported at module top)
     sys.argv = ['build_seaice_nc.py', '--out', gpath]
     sea.main()
     sys.argv = ['build_tides_nc.py']

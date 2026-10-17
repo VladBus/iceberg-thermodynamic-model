@@ -63,6 +63,7 @@ program main
     use stage115c81_attr
     use stage115g_skzfreeze
     use stage115h_production
+    use netcdf_grid_reader
     use iceberg
     use iceberg_types, only: RHO_ICE, RHO_WATER
     use iceberg_forcing, only: get_ocean_profile, get_atmos_forcing, model_coords_to_indices
@@ -468,6 +469,8 @@ program main
 
     ! --- Вызов модулей инициализации сетки и геометрии ---
     print *, "Calling grid_coupling..."
+    ! Stage 11.7E: NetCDF grid switch flag (default OFF → legacy files).
+    call s117e_init()
     call coup1()
 
     print *, "Calling grid_masks (IKUV)..."

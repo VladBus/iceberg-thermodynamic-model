@@ -38,6 +38,10 @@ import fix, docs, and report landed. This stage lands the rest.
   null-tides zero + qq exact + status attr; dims/order/provenance).
 - SKIP/FAIL contract: FULL path executed locally (inputs present);
   SKIP branches code-reviewed (CI has no data/* by construction).
+
+- CI limitation: Python CI job does not run test_seaice_tides_nc.py.
+  Python equivalence tests run locally, not in CI. CI integration is a
+  future enhancement (no real-grid inputs in CI by construction).
 - `fpm test grid_dump`: anchors 11067/143422/10336 (+gate 10336), STOP 0.
 
 ## 4. Regression (actual)
@@ -52,9 +56,11 @@ import fix, docs, and report landed. This stage lands the rest.
 
 - This file (NEW); INDEX +11.7D.2 row; ROADMAP (status + §11.7D.2);
   physics_status (11.7D.2); README already synced (11.7D.2).
-- GO 11.7E: contracts closed in code with Fortran ground truth where
-  applicable; residuals (monthly-ice gap, null tides, hht quirk, CF gap)
-  explicitly deferred with owners. No blocker found.
+- GO 11.7E: contracts closed in code as two-way builder-vs-independent-
+  oracle comparisons (sea-ice/tides have no Fortran dump counterpart;
+  Fortran comparison is done separately via grid_dump anchors in the
+  fpm battery); residuals (monthly-ice gap, null tides, hht quirk,
+  CF gap) explicitly deferred with owners. No blocker found.
 
 ## 6. Files + confirmation
 

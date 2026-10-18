@@ -335,7 +335,7 @@ Format: `ID | stage/date | status` + short description. Details — via links.
 - **Why:** FOR — correctness (UNESCO compressibility), 28/28 reference tests, 4/4 April + 4/4 Jan green (0 NaN, CA converges maxiter 20–29/guard 0, salt 10× better at STALE, heat nearer legacy at STALE, 6.5× faster at STALE). AGAINST — ice response large (+36% N1 / +58% STALE d7, +96% d29 N1) and UNVALIDATED vs observations; April EUU process review (11.4) still open; per-cell velocity maps unavailable. Matches 11.4's recommendation.
 - **Sources:** `docs/validation/stage11.6_eos80_integration_rebaseline.md` §§1–5, `test/eos80_reference.f90` (28/28), April A/B/C/D + Jan JA–JD runs.
 - **Limitations:** EOS dimension joins scheduler dimension in the 11.8A sea-ice gate; no EOS-80 production claims until then.
-- **Next:** 11.7 NetCDF (output contract must record EOS_MODE per run); 11.8A gate adjudicates. **Note (11.7E.2):** 11.7 records `initialization_source` (EN4 vs SYNTHETIC) but NOT `EOS_MODE` (EOS_MODE recording deferred to post-11.7 or 11.8 NetCDF output spec); EOS-80 default decision remains at 11.8A.
+- **Next:** 11.7 NetCDF (output contract records EOS_MODE per run); 11.8A gate adjudicates. **Note (11.7E.2.1):** 11.7 now records `initialization_source` (EN4 vs SYNTHETIC) AND `eos_mode` (LEGACY vs EOS80) as global NetCDF attributes; EOS-80 default decision remains at 11.8A.
 
 ## D-30. eos_diag dispatcher rule + interaction correction (Stage 11.6.1, 2026-10-11)
 

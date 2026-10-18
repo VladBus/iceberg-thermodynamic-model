@@ -47,17 +47,24 @@ contains
         ym1 = 0.0  ! усреднённый уровень моря [см]
         ym2 = 0.0
 
-        ! --- Stage 11.7E.2: режим источника начальных T/S ---------------------
-        ! OCEAN_INIT_MODE=SYNTHETIC — ЯВНЫЙ синтетический fallback (только тесты).
-        ! По умолчанию REAL: при неудаче чтения EN4 — FATAL (stop 1), без
-        ! молчаливого подмешивания синтетики (устранение legacy fallback).
-        init_mode = 'REAL'
+        ! --- Stage 11.7E.2.1: режим источника начальных T/S ---------------------
+        ! OCEAN_INIT_MODE:
+        !   STRICT (default)  — read EN4, FATAL on failure (no fallback)
+        !   ALLOWED           — read EN4, fallback to synthetic on failure
+        !   FORCE_SYNTHETIC   — skip EN4 read entirely, always use synthetic
+        ! По умолчанию STRICT: устранение legacy молчаливого fallback.
+        init_mode = 'STRICT'
         call get_environment_variable('OCEAN_INIT_MODE', init_mode)
-        if (len_trim(init_mode) .eq. 0) init_mode = 'REAL'
+        if (len_trim(init_mode) .eq. 0) init_mode = 'STRICT'
         call upper_ascii(init_mode)
 
         ! --- Stage 7.7: реалистичные начальные T/S из файла (EN4.2.2 2020-01) ---
-        call read_initial_ts(t1, t2, s1, s2, kt1, realistic_ok, errmsg)
+        ! Skip EN4 read entirely if FORCE_SYNTHETIC
+        if (trim(init_mode) .ne. 'FORCE_SYNTHETIC') then
+            call read_initial_ts(t1, t2, s1, s2, kt1, realistic_ok, errmsg)
+        else
+            realistic_ok = .false.
+        end if
         if (realistic_ok) then
             ocean_init_source = 'EN4'
             ! Фоновое течение [см/с]: 0.20 по X и 0.10 по Y (сохранено как в Stage 7.6C.2)
@@ -77,16 +84,21 @@ contains
             return
         end if
 
-        ! --- Stage 11.7E.2: fallback удалён (нет молчаливой подстановки) ------
-        if (trim(init_mode) .eq. 'SYNTHETIC') then
-            print *, ">>> WARNING: OCEAN_INIT_MODE=SYNTHETIC — explicit synthetic initialization"
+        ! --- Stage 11.7E.2.1: fallback поведение ----------------------------------
+        if (trim(init_mode) .eq. 'ALLOWED') then
+            print *, ">>> WARNING: OCEAN_INIT_MODE=ALLOWED — fallback to synthetic on EN4 failure"
+            ocean_init_source = 'SYNTHETIC'
+        else if (trim(init_mode) .eq. 'FORCE_SYNTHETIC') then
+            print *, ">>> WARNING: OCEAN_INIT_MODE=FORCE_SYNTHETIC — forced synthetic initialization"
             ocean_init_source = 'SYNTHETIC'
         else
-            print *, "FATAL init_ocean: EN4 initial T/S failed (OCEAN_INIT_MODE=REAL, default)"
+            ! STRICT (default)
+            print *, "FATAL init_ocean: EN4 initial T/S failed (OCEAN_INIT_MODE=STRICT, default)"
             if (len_trim(errmsg) .gt. 0) print *, "  reason: ", trim(errmsg)
             print *, "  expected file: ", trim(realistic_ocean_file)
             print *, "  override path : ICEBERG_OCEAN_INIT_FILE=<file>"
-            print *, "  synthetic test: OCEAN_INIT_MODE=SYNTHETIC"
+            print *, "  fallback mode : OCEAN_INIT_MODE=ALLOWED (fallback on error)"
+            print *, "  forced synth  : OCEAN_INIT_MODE=FORCE_SYNTHETIC (skip EN4)"
             print *, "  build product : python/ocean/build_initial_ts.py"
             stop 1
         end if

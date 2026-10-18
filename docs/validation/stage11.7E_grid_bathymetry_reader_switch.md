@@ -1,8 +1,11 @@
 # Stage 11.7E — Production Reader Switch: Grid/Bathymetry
 
-Frozen 2026-10-17. FIRST reader switch (lowest risk): grid/bathymetry
-production input switchable between legacy KOORD.DAT/hhh.bar (default
-OFF, bit-identical) and NetCDF grid.nc (ON) via `STAGE117E_NETCDF_GRID`.
+Frozen 2026-10-17. Amended 2026-10-18 (11.7E.1-CP: §2 dimension-order
+record corrected; §5 cross-reference aligned; §6 rollback prerequisite;
+§7 scope note + prerequisites). FIRST reader switch (lowest risk):
+grid/bathymetry production input switchable between legacy
+KOORD.DAT/hhh.bar (default OFF, bit-identical) and NetCDF grid.nc (ON)
+via `STAGE117E_NETCDF_GRID`.
 Ocean/forcing/seaice/tides readers NOT switched (11.7E.2–11.7E.5);
 NO legacy removal; NO physics/scheduler/EOS change (LEGACY default,
 N=1 reference, EOS-agnostic); NO CFL thresholds; NO 11.8A/B/11.9/12.
@@ -45,15 +48,26 @@ N=1 reference, EOS-agnostic); NO CFL thresholds; NO 11.8A/B/11.9/12.
   fallback; KOORD-missing convention).
 - Rationale record: `src/netcdf_grid_reader.f90` header.
 
-## 2. System-library quirk (found, worked around, proven harmless)
+## 2. Dimension-order convention (record corrected in 11.7E.1-CP)
 
-- System libnetcdff (4.6.2) reads 2D vars of python-written NETCDF4
-  files TRANSPOSED through whole-var/hyperslab calls (small slabs and
-  C-library ncdump read fine; affects EN4 files identically — their
-  reader is axis-order-independent by design, which is why production
-  never noticed). Root cause in the library/HDF5 layer is out of scope.
-- Workaround IN the reader (not the files — files stay canonical):
+- Whole-var behavior is the STANDARD netCDF-Fortran convention, not a
+  library bug (11.7E's "system-library quirk / libnetcdff 4.6.2"
+  wording was a mischaracterization; T-18 reclassified VERIFIED): the
+  Fortran API presents dimensions reversed relative to the CDL — a
+  CDL (i,j) variable is seen as (j,i), whole-array `nf90_get_var`
+  fills a (105,133) = (js1,is1) buffer, and `dimids` are reported in
+  Fortran order ((i,j,k) → (k,j,i)). Probes on system libnetcdff
+  4.9.3 (Feb 2026): (105,133) read st=0, (133,105) → EEDGE -57
+  (grid.nc kt1_raw/lon and initial_ts temperature alike); 3D reads
+  succeed only with a (k,j,i) = (18,105,133) buffer; small slabs and
+  C-side ncdump are unaffected; EN4 files follow the same convention —
+  their reader is axis-order-independent, which is why production
+  never noticed.
+- Handling IN the reader (not the files — files stay canonical):
   read into (js1,is1) buffers + transpose back with explicit loops.
+  The reader now also verifies dimensions explicitly
+  (`s117e_check_dims`: ndims/dimids/names/lengths; any deviation →
+  FATAL — no buffer-shape guessing; T-18, 11.7E.1-CP).
 - Proof (not assertion): 0/13965 mismatches vs independent Python read
   of kt1_raw; final OFF-vs-ON model runs bit-identical (§3).
 
@@ -90,13 +104,54 @@ N=1 reference, EOS-agnostic); NO CFL thresholds; NO 11.8A/B/11.9/12.
   50/0; strict clean (0 warnings/errors); diff-check clean; NO
   physics/defaults changes (only additive switch code + Phase-0 fixes).
 - GO 11.7E.2 (ocean_initial reader): switch pattern proven (env-gated
-  IO-layer swap + bit-identical equivalence); residual = the §2 library
-  quirk (contained by transpose-back + gate; revisit if a future reader
-  needs Hyperslabs beyond whole-var reads).
+  IO-layer swap + bit-identical equivalence); residual = the §2
+  dimension-order convention (handled by transpose-back +
+  `s117e_check_dims`; future readers must adopt the same explicit
+  dimension verification, T-18).
 
 ## 6. Rollback procedure
+
+Prerequisite: legacy files present (preparation steps, §7.3); the
+NetCDF path never removes or moves them.
 
 1. `unset STAGE117E_NETCDF_GRID` (or any value other than true/TRUE/1).
 2. Rerun — legacy KOORD.DAT/hhh.bar path engages (verified identical
    this stage: JANOFF/APROFF runs).
-3. No file moves, no rebuild needed (switch is runtime).
+3. No file moves, no rebuild needed (switch is runtime; code paths
+   coexist).
+
+## 7. 11.7E.1-CP amendments (2026-10-18)
+
+### 7.1 Scope clarification (grid/depth codes, not final bathymetry)
+
+The switch changes the SOURCE of grid coordinates (FI/DL) and depth
+codes (KT1): legacy KOORD.DAT/hhh.bar →
+`data/input/processed/grid/grid.nc`. The model still derives ht/map1
+with the existing `coup1()` algorithm. Final bathymetry.nc fields
+(ht/map1) are NOT read by the model at this stage (validated artifact;
+reader header; 11.7B). Canonical sub-stage title: "11.7E.1 —
+Grid/Depth Codes Reader Switch".
+
+### 7.2 Prerequisites for enabling NetCDF mode
+
+- `data/input/processed/grid/grid.nc` must exist — built by
+  `python/grid/build_grid_nc.py` from the (regenerated) legacy
+  KOORD.DAT + hhh.bar. The same build chain also produces
+  `bathymetry.nc` via `python/grid/build_bathymetry_nc.py`; it is NOT
+  read by the model at runtime (artifact for later substages).
+- `STAGE117E_NETCDF_GRID` set to `true`, `TRUE`, or `1` (any other
+  value or unset → legacy path).
+- Missing grid.nc with the switch ON → FATAL STOP with rollback hint
+  (no silent fallback; KOORD-missing convention).
+
+### 7.3 Prerequisites for clean clone
+
+- Legacy files (KOORD.DAT, hhh.bar, 1_1.ice..1_5.ice) are gitignored —
+  a fresh clone has none of them.
+- Run the preparation steps from README/AGENTS.md first:
+  `python/grid/build_ibcao_grid.py` (conditional) →
+  `python/grid/build_real_grid_inputs.py`; then create the root-level
+  symlinks manually (gitignored — per checkout).
+- NetCDF-mode inputs are unversioned as well (`.gitignore: data/*`):
+  build grid.nc (and bathymetry.nc) with the `python/grid/` builders
+  before enabling the switch.

@@ -12,6 +12,7 @@ Check layers:
   3. Monthly sea-ice limitation documented.
   3. Tides null-tides contract verified.
   4. Regression gates (battery, strict, Jan OFF NDIFF=0, etc.).
+  5. Provenance attrs + incomplete-manifest case (11.7E.1-CP Phase 6).
 """
 
 import os
@@ -95,22 +96,32 @@ def build_sic_sit_ref(an1_raw):
 def _precheck_inputs():
     """Pre-check inputs before running builders (SKIP contract).
 
-    Checks 1_*.ice presence FIRST (this test's actual dependency).
+    Requires ALL FIVE 1_1.ice..1_5.ice files in the ACTUAL directory
+    this test and the builder read from
+    (data/input/generated/real_grid/). Root-level symlinks are the
+    legacy Fortran reader path and are NOT read by this test, so they
+    do not satisfy the check (11.7E.1-CP Phase 5 fix: the previous
+    check passed if at least ONE file of a combined real_grid +
+    symlink list existed, so partially missing inputs crashed the
+    builder instead of SKIPping).
+
     grid_dump files are Fortran ground truth for the GRID test, not
     this test — not required here (11.7E Phase 0.2).
 
     Returns:
         0 if SKIP (inputs not available)
-        1 if inputs present but seaice_initial.nc missing (run builder)
         2 if all ready to proceed
     """
-    ice = [os.path.join(PROJECT, "data", "input", "generated",
-                        "real_grid", "1_%d.ice" % k) for k in range(1, 6)]
-    # Also accept root symlinks (legacy reader path).
-    ice += [os.path.join(PROJECT, "1_%d.ice" % k) for k in range(1, 6)]
+    real_grid = os.path.join(PROJECT, "data", "input", "generated",
+                             "real_grid")
+    missing = [os.path.basename("1_%d.ice" % k) for k in range(1, 6)
+               if not os.path.exists(
+                   os.path.join(real_grid, "1_%d.ice" % k))]
 
-    if not any(os.path.exists(p) for p in ice):
-        print("SKIP: required real-grid inputs not available")
+    if missing:
+        print("SKIP: required real-grid inputs not available in %s"
+              % real_grid)
+        print("SKIP: missing files: %s" % ", ".join(missing))
         return 0
 
     return 2
@@ -194,6 +205,65 @@ def main():
     check(tds.getncattr("tidal_status") == "null-tides (GRM2/GRS2/GRK1/GRO1 data unavailable)",
           "tidal_status attr")
     tds.close()
+
+    # --- Provenance attributes (11.7E.1-CP Phase 6.3) ---
+    # Expected values derive from the SAME manifest contract the builder
+    # must apply (schema validation before use).
+    import json as _json
+    import shutil
+    import tempfile
+
+    manifest_path = os.path.join(PROJECT, "python", "ice",
+                                 "seaice_source_manifest.json")
+    with open(manifest_path) as mf:
+        manifest = _json.load(mf)
+    req_fields = ("source_type", "dataset_name", "version", "date",
+                  "spatial_extent", "temporal_coverage")
+    m_missing = [f for f in req_fields
+                 if not str(manifest.get(f, "")).strip()]
+    if m_missing:
+        exp_source, exp_status = "INCOMPLETE_MANIFEST", "INCOMPLETE_MANIFEST"
+    elif manifest.get("source_type") == "diagnostic_placeholder":
+        exp_source, exp_status = "DIAGNOSTIC_PLACEHOLDER", "DIAGNOSTIC"
+    elif manifest.get("source_type") == "scientific":
+        exp_source = "%s %s %s" % (manifest["dataset_name"],
+                                   manifest["version"], manifest["date"])
+        exp_status = "SCIENTIFIC"
+    else:
+        exp_source, exp_status = "UNKNOWN", "UNKNOWN"
+
+    gp = Dataset(os.path.join(sea.OUT_DIR, "seaice_initial.nc"))
+    check(gp.getncattr("source") == exp_source, "provenance source attr",
+          "%r != %r" % (gp.getncattr("source"), exp_source))
+    check(gp.getncattr("sea_ice_status") == exp_status,
+          "provenance sea_ice_status attr",
+          "%r != %r" % (gp.getncattr("sea_ice_status"), exp_status))
+    cnote = (gp.getncattr("checksum_note")
+             if "checksum_note" in gp.ncattrs() else "")
+    check("no input checksums" in cnote or "verified" in cnote,
+          "provenance checksum_note attr", repr(cnote))
+    gp.close()
+
+    # Incomplete-manifest case: builder must report INCOMPLETE_MANIFEST
+    # and must NEVER assign SCIENTIFIC without the full schema.
+    tmpdir = tempfile.mkdtemp(prefix="seaice_manifest_test_")
+    try:
+        inc_manifest = os.path.join(tmpdir, "incomplete_manifest.json")
+        with open(inc_manifest, "w") as f:
+            _json.dump({"source_type": "scientific", "dataset_name": "X"}, f)
+        inc_out = os.path.join(tmpdir, "seaice_initial_incomplete.nc")
+        sys.argv = ['build_seaice_nc.py', '--out', inc_out,
+                    '--manifest', inc_manifest]
+        sea.main()
+        gi = Dataset(inc_out)
+        check(gi.getncattr("source") == "INCOMPLETE_MANIFEST",
+              "incomplete manifest source", str(gi.getncattr("source")))
+        check(gi.getncattr("sea_ice_status") == "INCOMPLETE_MANIFEST",
+              "incomplete manifest status",
+              str(gi.getncattr("sea_ice_status")))
+        gi.close()
+    finally:
+        shutil.rmtree(tmpdir, ignore_errors=True)
 
     # Monthly sea-ice limitation note (documented, not a test failure)
     print("NOTE: Only January sea-ice data exists; other months reuse January init (known gap).")

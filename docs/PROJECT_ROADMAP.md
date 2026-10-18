@@ -1,9 +1,9 @@
 # Project Roadmap
 
 **Updated:** 2026-10-17
-**Current scientific stage:** Stage 11.7E Grid/Bathymetry Reader Switch COMPLETE (env-gated `STAGE117E_NETCDF_GRID`, OFF default bit-identical; ON ≡ OFF ≡ baselines Jan+Apr; libnetcdff transpose quirk contained, T-18; battery 50/0; strict clean; GO 11.7E.2). NEXT: 11.7E.2 ocean_initial reader (NOT started).
+**Current scientific stage:** Stage 11.7E.1 Grid/Depth Codes Reader Switch + 11.7E.1-CP corrections COMPLETE (env-gated `STAGE117E_NETCDF_GRID`, OFF default bit-identical; ON ≡ OFF ≡ baselines Jan+Apr; axis-order convention verified + handled explicitly, T-18 corrected; explicit dimension verification added; battery 50/0; strict clean; GO 11.7E.2). NEXT: 11.7E.2 ocean_initial reader (NOT started).
 **Stages 3–11.4.1: COMPLETED** (10.x iceberg modernization; 11.1 seasonal characterization; 11.2 CFL audit; 11.4-D21…D33 EN4 stabilization → ERA5-coverage fix → cleanup + Ocean Baseline 11.x; 11.3A execution-graph audit; 11.3B input-architecture audit + NetCDF contracts; 11.3C scheme audit + timestep matrix; 11.3C.1 semantics + CFL distributions; 11.3C.2 time-integration audit; 11.3C.3 loop-bound search (VERDICT D); 11.4 EOS-80 experiment + 11.4.1 impact validation (OPTIONAL, not default)).
-**Current status:** Stages 10.14–11.7E committed (see `git log` and `CHANGELOG.md` for history). **Stage 11.7E COMPLETE** (this stage: grid/bathymetry reader switch + preflight fixes, T-18).
+**Current status:** Stages 10.14–11.7E.1-CP committed (see `git log` and `CHANGELOG.md` for history). **Stage 11.7E.1 COMPLETE** (grid/depth codes reader switch; corrected by 11.7E.1-CP: plan/contract corrections, T-18 reclassification, precheck + manifest validation fixes).
 **Stage 11.5H-RC COMPLETE** (release-candidate gate: self-contained production scheduler, docs synced D-22…D-28). Plan: 11.7 NetCDF+CFL → 11.8A validation → 11.8B audit → 11.9 closure → 12.0 voxel (blocked, D-28).
 
 ## Completed foundation
@@ -248,7 +248,7 @@ NEXT: 11.7D (seaice_initial.nc + tides.nc).
 `grid.nc` (replaces KOORD.DAT/hhh.bar), `bathymetry.nc`,
 `ocean_initial.nc`, `forcing_era5.nc`, `seaice_initial.nc` (replaces
 1_1.ice…1_5.ice), `tides.nc` (replaces GRM2 or null tides) — each
-md5-gated, legacy removed after its .nc validates. CFL monitoring becomes
+md5-gated; legacy files stay as rollback inputs — removal only in 11.7F, after ALL 11.7E.1–E.5 sub-stages pass and the production-default decision is made. CFL monitoring becomes
 a permanent production feature (cfl_x/y/z/wave/coriolis/diffusion in
 NetCDF diagnostics; PASS/WARNING/FAIL; WARNING logs only).
 
@@ -269,27 +269,85 @@ Closes 11.7D.1 gaps IN CODE (not docs-only): test genuinely independent
 + dt1 comment; python 20/20; GO 11.7E.
 Report: `docs/validation/stage11.7D.2_actual_code_correction.md`.
 
-### Stage 11.7E — Grid/Bathymetry Reader Switch + Preflight Fixes (COMPLETE)
+### Stage 11.7E.1 — Grid/Depth Codes Reader Switch (COMPLETE)
+
+Scope: switches the source of grid coordinates and depth codes from
+KOORD.DAT/hhh.bar to grid.nc. NOT a "bathymetry reader": final
+bathymetry.nc fields are not read — the model still derives ht/map1
+from the depth codes via the existing algorithm.
 
 First (lowest-risk) reader switch of the NetCDF migration: production
-grid/bathymetry input switchable between legacy KOORD.DAT/hhh.bar
-(default OFF → bit-identical) and NetCDF grid.nc (ON) via
-`STAGE117E_NETCDF_GRID`; ONLY the file-read layer is replaced
-(codes+coords), full derivation chain reused → divergence impossible by
-construction. Preflight fixes: sea-ice source manifest (never
-value-inferred), test 1_*.ice-first precheck + sys fix, three-way
-wording + INDEX-dupe/metric/CI corrections. libnetcdff 2D whole-array
-transpose quirk found and contained (T-18). Gates: Jan/Apr
-ON≡OFF≡baselines bit-identical (32+31 files); battery 50/0; strict
-clean; diff-check clean. Rollback: unset env var (legacy files intact).
+input switchable between legacy KOORD.DAT/hhh.bar (default OFF →
+bit-identical) and NetCDF grid.nc (ON) via `STAGE117E_NETCDF_GRID`;
+ONLY the file-read layer is replaced (codes+coords), full derivation
+chain reused → divergence impossible by construction. Preflight fixes:
+sea-ice source manifest (never value-inferred), test 1_*.ice-first
+precheck + sys fix, three-way wording + INDEX-dupe/metric/CI
+corrections. Gates: Jan/Apr ON≡OFF≡baselines bit-identical (32+31
+files); battery 50/0; strict clean; diff-check clean. Rollback: unset
+env var (legacy files intact). Axis-order convention verified and
+handled explicitly in the reader (T-18 corrected by 11.7E.1-CP).
 Report: `docs/validation/stage11.7E_grid_bathymetry_reader_switch.md`.
+Corrections: `docs/validation/stage11.7E.1-CP_plan_contract_corrections.md`
+(plan/contract corrections; no physics change).
 GO 11.7E.2.
+
+### Stage 11.7E.2 — Ocean Initial Reader (verify if needed)
+
+Scope: ocean-initial T/S source. Per 11.7E.1-CP audit, the reader
+(`src/initial_ocean_reader.f90`) ALREADY reads NetCDF
+(`initial_ts_2020-*.nc`, EN4 passthrough) — no source-format switch;
+verify the variable/dimension contract against 11.7A, add explicit
+dimension verification only if a gap is found.
+Acceptance: contract verified (or gaps closed); Jan/Apr regression
+NDIFF=0; no physics change.
+Dependencies: 11.7E.1 complete and validated.
+Rollback: none applicable (no new behavior path); revert commit if the
+verification changes code.
+
+### Stage 11.7E.3 — ERA5 Forcing Reader (verify if needed)
+
+Scope: ERA5 forcing source. Per 11.7E.1-CP audit, the chain
+(`src/netcdf_input.f90` + `src/wind_forcing.f90`) ALREADY reads NetCDF
+(merged ERA5 files) — no source-format switch; verify the
+variable/dimension/time contract against 11.7A, add explicit dimension
+verification only if a gap is found.
+Acceptance: contract verified (or gaps closed); regression NDIFF=0; no
+physics change.
+Dependencies: 11.7E.2 verified.
+Rollback: none applicable (no new behavior path); revert commit if the
+verification changes code.
+
+### Stage 11.7E.4 — Sea-Ice Reader Switch
+
+Scope: sea-ice initialization source — `1_1.ice`…`1_5.ice` text files
+→ `seaice_initial.nc` (built by `python/ice/build_seaice_nc.py`).
+Real January data exists (`data/input/generated/real_grid/ice_2020-01-01/`;
+OSI-SAF SIC + C3S CS2SMOS SIT provenance — 11.7E.1-CP audit) but is NOT
+connected to production before this sub-stage.
+Acceptance: env-gated switch (default OFF → bit-identical; ON ≡ OFF),
+manifest provenance attributes verified, T-16 status updated.
+Dependencies: 11.7E.1–11.7E.3 verified.
+Rollback: unset env var (legacy files remain in place).
+
+### Stage 11.7E.5 — Tides Reader Switch
+
+Scope: tides source — null-tides/qq constants in production →
+`tides.nc` (11.7D contract: null-tides explicit,
+`reference_dt1_seconds`).
+Acceptance: env-gated switch (default OFF → bit-identical; ON ≡ OFF).
+Dependencies: 11.7E.1–11.7E.4 verified.
+Rollback: unset env var (null-tides path remains).
 
 ### Stage 11.7F — Legacy Removal + Permanent CFL
 
 Scope: remove legacy input files, add permanent CFL monitoring.
 Acceptance: no legacy file references in production path.
-Dependency: 11.7E complete and validated.
+Dependencies: ALL of 11.7E.1–11.7E.5 complete and validated, PLUS an
+explicit production-default decision (which source is the production
+default per input class). Legacy removal is NOT automatic after a
+reader switch — legacy files must remain available for rollback until
+11.7F explicitly removes them after full validation.
 Risk: irreversible, only after full validation.
 
 ### Stage 11.8A — Scientific Validation (gated)

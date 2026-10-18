@@ -44,6 +44,11 @@ PROJECT = os.path.dirname(os.path.dirname(os.path.dirname(
 REAL_GRID = os.path.join(PROJECT, "data", "input", "generated", "real_grid")
 OUT_DIR = os.path.join(PROJECT, "data", "input", "processed", "ice")
 
+# Required manifest fields (11.7E.1-CP Phase 6): any missing/empty field
+# yields source/sea_ice_status = INCOMPLETE_MANIFEST (NEVER SCIENTIFIC).
+REQUIRED_MANIFEST_FIELDS = ("source_type", "dataset_name", "version",
+                            "date", "spatial_extent", "temporal_coverage")
+
 
 def md5(path):
     h = hashlib.md5()
@@ -92,6 +97,10 @@ def main():
                         help="Output seaice_initial.nc path")
     parser.add_argument("--json", type=pathlib.Path,
                         help="Optional JSON stats output")
+    parser.add_argument("--manifest", type=pathlib.Path,
+                        help="Manifest path override (default: bundled "
+                             "python/ice/seaice_source_manifest.json; used "
+                             "by schema-validation tests)")
     args = parser.parse_args()
 
     an1 = read_ice_files()
@@ -154,25 +163,56 @@ def main():
         ds.source_files = ", ".join([f"1_{k}.ice" for k in range(1, NGR + 1)])
         ds.builder_git_sha, ds.created = sha, time.strftime("%Y-%m-%dT%H:%M:%S")
         # Source from EXPLICIT manifest (11.7E Phase 0.1) — NEVER inferred
-        # from data values. Manifest: python/ice/seaice_source_manifest.json.
-        manifest_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                     "seaice_source_manifest.json")
+        # from data values. Manifest: python/ice/seaice_source_manifest.json
+        # (override: --manifest). Schema is validated BEFORE use
+        # (11.7E.1-CP Phase 6): a manifest missing ANY required field
+        # yields INCOMPLETE_MANIFEST; SCIENTIFIC is only assigned when
+        # the full contract is present.
+        manifest_path = args.manifest
+        if manifest_path is None:
+            manifest_path = os.path.join(
+                os.path.dirname(os.path.abspath(__file__)),
+                "seaice_source_manifest.json")
         try:
             import json
             with open(manifest_path) as mf:
                 manifest = json.load(mf)
-            stype = manifest.get("source_type", "")
-            if stype == "diagnostic_placeholder":
-                ds.source = "DIAGNOSTIC_PLACEHOLDER"
-                ds.sea_ice_status = "DIAGNOSTIC"
-            elif stype == "scientific":
-                ds.source = "%s %s %s" % (manifest.get("dataset_name", "?"),
-                                          manifest.get("version", "?"),
-                                          manifest.get("date", "?"))
-                ds.sea_ice_status = "SCIENTIFIC"
+            m_missing = [f for f in REQUIRED_MANIFEST_FIELDS
+                         if not str(manifest.get(f, "")).strip()]
+            if m_missing:
+                ds.source = "INCOMPLETE_MANIFEST"
+                ds.sea_ice_status = "INCOMPLETE_MANIFEST"
+                ds.manifest_missing = ", ".join(m_missing)
             else:
-                ds.source = "UNKNOWN"
-                ds.sea_ice_status = "UNKNOWN"
+                stype = manifest.get("source_type", "")
+                if stype == "diagnostic_placeholder":
+                    ds.source = "DIAGNOSTIC_PLACEHOLDER"
+                    ds.sea_ice_status = "DIAGNOSTIC"
+                elif stype == "scientific":
+                    ds.source = "%s %s %s" % (manifest["dataset_name"],
+                                              manifest["version"],
+                                              manifest["date"])
+                    ds.sea_ice_status = "SCIENTIFIC"
+                else:
+                    ds.source = "UNKNOWN"
+                    ds.sea_ice_status = "UNKNOWN"
+                # 11.7E.1-CP Phase 6.2: optional manifest-to-input
+                # checksum cross-check (per-file md5 over REAL_GRID).
+                checksums = manifest.get("input_checksums") or {}
+                if checksums:
+                    bad = [fname for fname, want in checksums.items()
+                           if not os.path.exists(
+                               os.path.join(REAL_GRID, fname))
+                           or md5(os.path.join(REAL_GRID, fname)) != want]
+                    if bad:
+                        ds.source = "CHECKSUM_MISMATCH"
+                        ds.sea_ice_status = "CHECKSUM_MISMATCH"
+                        ds.manifest_mismatch = ", ".join(sorted(bad))
+                    else:
+                        ds.checksum_note = "manifest input checksums verified"
+                else:
+                    ds.checksum_note = ("no input checksums in manifest; "
+                                        "file integrity not verified")
             ds.source_manifest = str(manifest)
         except Exception:
             ds.source = "UNKNOWN"

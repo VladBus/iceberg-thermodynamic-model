@@ -35,7 +35,7 @@ under atmospheric, oceanic, bathymetric, and sea-ice forcing.
 
 ## 📑 Project status
 
-- **Current stage:** Stage 11.7E Grid/Bathymetry Reader Switch COMPLETE (env-gated `STAGE117E_NETCDF_GRID`, default OFF bit-identical; ON ≡ OFF ≡ baselines, Jan+Apr, battery 50/0; GO 11.7E.2). NEXT: 11.7E.2 ocean_initial reader (NOT started). Production reference: Legacy EOS + N=1 scheduler. EOS-80: optional, not default (D-29).
+- **Current stage:** Stage 11.7E.1 Grid/Depth Codes Reader Switch + plan/contract corrections (11.7E.1-CP) COMPLETE (env-gated `STAGE117E_NETCDF_GRID`, default OFF bit-identical; ON ≡ OFF ≡ baselines, Jan+Apr; battery 50/0, strict clean, python 25/25; T-18 corrected; GO 11.7E.2). NEXT: 11.7E.2 ocean-initial reader — verify-only (reader already NetCDF; NOT started). Production reference: Legacy EOS + N=1 scheduler. EOS-80: optional, not default (D-29).
   [Historical note from Stage 10.19, SUPERSEDED by Stage 10.20 restoration
   (full-coverage ERA5: 3-day gate PASS, residual characterized, NOT fixed):
   coupling recovery (completed: the Lagrangian iceberg module is now

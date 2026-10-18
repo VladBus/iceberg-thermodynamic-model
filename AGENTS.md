@@ -18,7 +18,7 @@ map — in `docs/README.md`.
 | Physics status (A/B/C, switches)   | `docs/model/model_physics_status.md`       |
 | Equations and conventions          | `docs/model/model_equation_ledger.md`      |
 | Stage 10 modernization plan        | `docs/model/stage10_modernization_plan.md` |
-| Stage 11 modernization plan        | `docs/model/stage11_modernization_plan.md` |
+| Stage 11 roadmap                   | `docs/PROJECT_ROADMAP.md`                   |
 | Active validation reports          | `docs/validation/INDEX.md`                 |
 | Historical archive (stages 3–10)   | `docs/wiki/INDEX.md`                       |
 | Key decisions                      | `docs/DECISIONS.md`                        |
@@ -128,8 +128,8 @@ iceberg modules compile as part of `fpm test`. **Always `rm -rf build` before
 `fpm test`** (clean rebuild, protection against stale libraries).
 
 No lint, no formatter beyond VS Code (`fprettify`/`fortls`). CI: GitHub
-Actions (`.github/workflows/ci.yml`) runs the full fpm test battery (59
-targets) and Python validation checks. Python tooling uses conda env
+Actions (`.github/workflows/ci.yml`) runs the full fpm test battery (64
+targets; count as of 2026-10-18) and Python validation checks. Python tooling uses conda env
 `iceberg-thermodynamic-model`.
 
 ## Unit Systems (MIXED — would be missed)

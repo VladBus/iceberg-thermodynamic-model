@@ -183,36 +183,47 @@ def main():
                 ds.source = "INCOMPLETE_MANIFEST"
                 ds.sea_ice_status = "INCOMPLETE_MANIFEST"
                 ds.manifest_missing = ", ".join(m_missing)
+                ds.checksum_note = "no input checksums in manifest; file integrity not verified"
             else:
                 stype = manifest.get("source_type", "")
                 if stype == "diagnostic_placeholder":
                     ds.source = "DIAGNOSTIC_PLACEHOLDER"
                     ds.sea_ice_status = "DIAGNOSTIC"
+                    ds.checksum_note = "no input checksums in manifest; file integrity not verified"
                 elif stype == "scientific":
-                    ds.source = "%s %s %s" % (manifest["dataset_name"],
-                                              manifest["version"],
-                                              manifest["date"])
-                    ds.sea_ice_status = "SCIENTIFIC"
+                    checksums = manifest.get("input_checksums") or {}
+                    req_files = ["1_%d.ice" % k for k in range(1, NGR + 1)]
+                    provided = {k: v for k, v in checksums.items() if k in req_files}
+                    missing = [f for f in req_files if f not in provided]
+                    if not checksums:
+                        ds.source = "%s %s %s (no checksums provided)" % (manifest["dataset_name"],
+                                                                       manifest["version"],
+                                                                       manifest["date"])
+                        ds.sea_ice_status = "SCIENTIFIC_UNVERIFIED_NO_CHECKSUMS"
+                    elif missing:
+                        ds.source = "%s %s %s (partial: %d/%d checksums)" % (manifest["dataset_name"],
+                                                                          manifest["version"],
+                                                                          manifest["date"],
+                                                                          len(provided), len(req_files))
+                        ds.sea_ice_status = "SCIENTIFIC_PARTIAL_CHECKSUMS"
+                    else:
+                        bad = [fname for fname, want in provided.items()
+                               if not os.path.exists(
+                                   os.path.join(REAL_GRID, fname))
+                               or md5(os.path.join(REAL_GRID, fname)) != want]
+                        if bad:
+                            ds.source = "CHECKSUM_MISMATCH"
+                            ds.sea_ice_status = "SCIENTIFIC_CHECKSUM_MISMATCH"
+                            ds.manifest_mismatch = ", ".join(sorted(bad))
+                        else:
+                            ds.source = "%s %s %s" % (manifest["dataset_name"],
+                                                      manifest["version"],
+                                                      manifest["date"])
+                            ds.sea_ice_status = "SCIENTIFIC"
+                            ds.checksum_note = "manifest input checksums verified"
                 else:
                     ds.source = "UNKNOWN"
                     ds.sea_ice_status = "UNKNOWN"
-                # 11.7E.1-CP Phase 6.2: optional manifest-to-input
-                # checksum cross-check (per-file md5 over REAL_GRID).
-                checksums = manifest.get("input_checksums") or {}
-                if checksums:
-                    bad = [fname for fname, want in checksums.items()
-                           if not os.path.exists(
-                               os.path.join(REAL_GRID, fname))
-                           or md5(os.path.join(REAL_GRID, fname)) != want]
-                    if bad:
-                        ds.source = "CHECKSUM_MISMATCH"
-                        ds.sea_ice_status = "CHECKSUM_MISMATCH"
-                        ds.manifest_mismatch = ", ".join(sorted(bad))
-                    else:
-                        ds.checksum_note = "manifest input checksums verified"
-                else:
-                    ds.checksum_note = ("no input checksums in manifest; "
-                                        "file integrity not verified")
             ds.source_manifest = str(manifest)
         except Exception:
             ds.source = "UNKNOWN"

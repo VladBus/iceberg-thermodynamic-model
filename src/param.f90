@@ -300,6 +300,13 @@ module param
     character(len=256) :: run_fig_dir = ''
     character(len=256) :: era5_input_file = 'data/input/processed/era5/2020/2020_Q1/era5_2020_0103_barents_expanded_merged.nc'
 
+    ! --- ИСТОЧНИК НАЧАЛЬНЫХ T/S ОКЕАНА (Stage 11.7E.2) ---------------------
+    ! 'EN4'       — успешно прочитан EN4-файл (initial_ts_*.nc);
+    ! 'SYNTHETIC' — явный OCEAN_INIT_MODE=SYNTHETIC fallback (только тесты);
+    ! 'UNSET'     — до вызова init_ocean().
+    ! Пишется глобальным атрибутом initialization_source в NetCDF-выходы.
+    character(len=16) :: ocean_init_source = 'UNSET'
+
     ! ========================================================================
     !   ИНИЦИАЛИЗАЦИЯ ДАННЫХ (БЛОК DATA)
     ! ========================================================================

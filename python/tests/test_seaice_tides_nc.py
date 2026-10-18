@@ -265,6 +265,109 @@ def main():
     finally:
         shutil.rmtree(tmpdir, ignore_errors=True)
 
+    # --- 4 manifest-strengthening scenarios (11.7E.2 Phase 5) ---
+    # 1. Diagnostic placeholder (current manifest) - explicit check
+    gp = Dataset(os.path.join(sea.OUT_DIR, "seaice_initial.nc"))
+    check(gp.getncattr("source") == "DIAGNOSTIC_PLACEHOLDER",
+          "diagnostic placeholder source attr",
+          str(gp.getncattr("source")))
+    check(gp.getncattr("sea_ice_status") == "DIAGNOSTIC",
+          "diagnostic placeholder status attr",
+          str(gp.getncattr("sea_ice_status")))
+    gp.close()
+
+    # 2. Scientific with NO checksums -> SCIENTIFIC_UNVERIFIED_NO_CHECKSUMS
+    tmpdir = tempfile.mkdtemp(prefix="seaice_sci_nocs_")
+    try:
+        sci_nocs = os.path.join(tmpdir, "sci_nocs.json")
+        with open(sci_nocs, "w") as f:
+            _json.dump({
+                "source_type": "scientific",
+                "dataset_name": "OSI-SAF SIC CDR",
+                "version": "v3.1",
+                "date": "2020-01-01",
+                "spatial_extent": "Barents",
+                "temporal_coverage": "2020-01"
+            }, f)
+        out_nocs = os.path.join(tmpdir, "seaice_sci_nocs.nc")
+        sys.argv = ['build_seaice_nc.py', '--out', out_nocs,
+                    '--manifest', sci_nocs]
+        sea.main()
+        gn = Dataset(out_nocs)
+        check(gn.getncattr("sea_ice_status") == "SCIENTIFIC_UNVERIFIED_NO_CHECKSUMS",
+              "scientific no checksums status",
+              str(gn.getncattr("sea_ice_status")))
+        check("(no checksums provided)" in gn.getncattr("source"),
+              "scientific no checksums source note",
+              str(gn.getncattr("source")))
+        gn.close()
+    finally:
+        shutil.rmtree(tmpdir, ignore_errors=True)
+
+    # 3. Scientific with PARTIAL checksums -> SCIENTIFIC_PARTIAL_CHECKSUMS
+    tmpdir = tempfile.mkdtemp(prefix="seaice_sci_partial_")
+    try:
+        sci_partial = os.path.join(tmpdir, "sci_partial.json")
+        with open(sci_partial, "w") as f:
+            _json.dump({
+                "source_type": "scientific",
+                "dataset_name": "OSI-SAF SIC CDR",
+                "version": "v3.1",
+                "date": "2020-01-01",
+                "spatial_extent": "Barents",
+                "temporal_coverage": "2020-01",
+                "input_checksums": {"1_1.ice": "dummy1", "1_2.ice": "dummy2"}
+            }, f)
+        out_partial = os.path.join(tmpdir, "seaice_sci_partial.nc")
+        sys.argv = ['build_seaice_nc.py', '--out', out_partial,
+                    '--manifest', sci_partial]
+        sea.main()
+        gp2 = Dataset(out_partial)
+        check(gp2.getncattr("sea_ice_status") == "SCIENTIFIC_PARTIAL_CHECKSUMS",
+              "scientific partial checksums status",
+              str(gp2.getncattr("sea_ice_status")))
+        check("(partial: 2/5 checksums)" in gp2.getncattr("source"),
+              "scientific partial checksums source note",
+              str(gp2.getncattr("source")))
+        gp2.close()
+    finally:
+        shutil.rmtree(tmpdir, ignore_errors=True)
+
+    # 4. Scientific with CHECKSUM MISMATCH -> SCIENTIFIC_CHECKSUM_MISMATCH
+    tmpdir = tempfile.mkdtemp(prefix="seaice_sci_mismatch_")
+    try:
+        sci_mismatch = os.path.join(tmpdir, "sci_mismatch.json")
+        with open(sci_mismatch, "w") as f:
+            _json.dump({
+                "source_type": "scientific",
+                "dataset_name": "OSI-SAF SIC CDR",
+                "version": "v3.1",
+                "date": "2020-01-01",
+                "spatial_extent": "Barents",
+                "temporal_coverage": "2020-01",
+                "input_checksums": {"1_1.ice": "WRONG_HASH_1",
+                                    "1_2.ice": "WRONG_HASH_2",
+                                    "1_3.ice": "WRONG_HASH_3",
+                                    "1_4.ice": "WRONG_HASH_4",
+                                    "1_5.ice": "WRONG_HASH_5"}
+            }, f)
+        out_mismatch = os.path.join(tmpdir, "seaice_sci_mismatch.nc")
+        sys.argv = ['build_seaice_nc.py', '--out', out_mismatch,
+                    '--manifest', sci_mismatch]
+        sea.main()
+        gm = Dataset(out_mismatch)
+        check(gm.getncattr("sea_ice_status") == "SCIENTIFIC_CHECKSUM_MISMATCH",
+              "scientific checksum mismatch status",
+              str(gm.getncattr("sea_ice_status")))
+        check(gm.getncattr("source") == "CHECKSUM_MISMATCH",
+              "scientific checksum mismatch source",
+              str(gm.getncattr("source")))
+        check("manifest_mismatch" in gm.ncattrs(),
+              "scientific checksum mismatch has manifest_mismatch attr")
+        gm.close()
+    finally:
+        shutil.rmtree(tmpdir, ignore_errors=True)
+
     # Monthly sea-ice limitation note (documented, not a test failure)
     print("NOTE: Only January sea-ice data exists; other months reuse January init (known gap).")
 

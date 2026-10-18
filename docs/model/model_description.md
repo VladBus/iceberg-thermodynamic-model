@@ -89,11 +89,11 @@ The real-grid experiment chain uses:
 4. OSI-SAF SIC CDR v3.1 for sea-ice concentration initialization;
 5. C3S CS2SMOS sea-ice thickness L4 combined v1.1 for sea-ice thickness initialization.
 
-For 2020-01-01, the current real sea-ice initialization reconstructs concentration and thickness on the model wet mask and produces the legacy category files `1_1.ice`–`1_5.ice`. The initialization uses an area/volume-preserving two-bin reconstruction within the prescribed thickness categories.
+For 2020-01-01, the sea-ice initialization pipeline reconstructs concentration and thickness on the model wet mask and produces the legacy category files `1_1.ice`–`1_5.ice` using an area/volume-preserving two-bin reconstruction within the prescribed thickness categories. The active production input files are currently diagnostic zero placeholders, not scientific sea-ice observations; the real sea-ice data connection is deferred to Stage 11.7E.4 (T-16).
 
 ## 10. Numerical verification
 
-The repository uses FPM/Fortran tests and targeted analytical audits. The current baseline has 54 FPM test targets passing locally, with strict Fortran compilation clean. Real-data tests are separated from synthetic tests where generated forcing/grid files are unavailable in a fresh CI checkout.
+The repository uses FPM/Fortran tests and targeted analytical audits. The current baseline has 64 FPM test targets passing locally (count as of 2026-10-18, verified by `ls test/*.f90 | wc -l`), with strict Fortran compilation clean. Real-data tests are separated from synthetic tests where generated forcing/grid files are unavailable in a fresh CI checkout.
 
 Verification is not treated as validation: passing algebraic and regression tests demonstrates implementation consistency, not agreement with independent observations.
 

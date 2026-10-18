@@ -335,7 +335,7 @@ Format: `ID | stage/date | status` + short description. Details — via links.
 - **Why:** FOR — correctness (UNESCO compressibility), 28/28 reference tests, 4/4 April + 4/4 Jan green (0 NaN, CA converges maxiter 20–29/guard 0, salt 10× better at STALE, heat nearer legacy at STALE, 6.5× faster at STALE). AGAINST — ice response large (+36% N1 / +58% STALE d7, +96% d29 N1) and UNVALIDATED vs observations; April EUU process review (11.4) still open; per-cell velocity maps unavailable. Matches 11.4's recommendation.
 - **Sources:** `docs/validation/stage11.6_eos80_integration_rebaseline.md` §§1–5, `test/eos80_reference.f90` (28/28), April A/B/C/D + Jan JA–JD runs.
 - **Limitations:** EOS dimension joins scheduler dimension in the 11.8A sea-ice gate; no EOS-80 production claims until then.
-- **Next:** 11.7 NetCDF (output contract must record EOS_MODE per run); 11.8A gate adjudicates.
+- **Next:** 11.7 NetCDF (output contract must record EOS_MODE per run); 11.8A gate adjudicates. **Note (11.7E.2):** 11.7 records `initialization_source` (EN4 vs SYNTHETIC) but NOT `EOS_MODE` (EOS_MODE recording deferred to post-11.7 or 11.8 NetCDF output spec); EOS-80 default decision remains at 11.8A.
 
 ## D-30. eos_diag dispatcher rule + interaction correction (Stage 11.6.1, 2026-10-11)
 
@@ -346,6 +346,19 @@ Format: `ID | stage/date | status` + short description. Details — via links.
 - **Sources:** `docs/validation/stage11.6.1_dispatch_audit_closure.md` §§0–3, `test/eos_dispatch.f90` (14/14), Jan/Apr OFF bit-identical reruns.
 - **Limitations:** STAGE1021×EOS80 combos beyond eos_diag untested at model scale; interaction mechanism is interpretation.
 - **Next:** 11.7 NetCDF (output contract records EOS_MODE per run).
+
+## D-31. Silent EN4 synthetic fallback removed; EN4 failure is FATAL by default (Stage 11.7E.2, 2026-10-18)
+
+- **Stage:** 11.7E.2 | **Status:** DECIDED
+- **Problem:** the legacy `init_ocean()` silently fell back to synthetic T/S when the EN4 NetCDF reader failed (file missing, dims mismatch, NaN, out-of-range). This masked initialization problems and produced non-reproducible ocean states.
+- **Decision:** remove the silent fallback entirely. The EN4 reader (`src/initial_ocean_reader.f90::read_initial_ts`) is now attempted FIRST; on failure the behavior is controlled by `OCEAN_INIT_MODE` env var (default `REAL`):
+  - `REAL` (default): FATAL `stop 1` with diagnostic message (reason, expected file, `ICEBERG_OCEAN_INIT_FILE` override path, synthetic test command, build product path).
+  - `SYNTHETIC`: explicit WARNING printed (`>>> WARNING: OCEAN_INIT_MODE=SYNTHETIC — explicit synthetic initialization`), synthetic fill proceeds.
+  - The `initialization_source` global output attribute records the effective source (`EN4` or `SYNTHETIC`).
+- **Why:** the silent fallback violated the principle of explicit initialization; the Stage 11.7E.2 EN4 contract verification (56 checks, 0 errors) proved the reader works for Jan/Apr rebuild products; the synthetic path remains available for testing via explicit opt-in.
+- **Sources:** `docs/validation/stage11.7E.2_en4_contract_verification.md` (this stage), `src/initial_conditions.f90`, `src/initial_ocean_reader.f90`, `src/netcdf_output.f90`.
+- **Limitations:** default `realistic_ocean_file` points to the shipped Jan product (bilinear signature, §11 11.4); rebuild products (Oct 6) satisfy STRICT contract. No production default change to the input file path.
+- **Next:** 11.7E.3 ERA5 forcing reader verification.
 
 ## How to add decisions
 

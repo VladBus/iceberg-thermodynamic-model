@@ -35,7 +35,7 @@ under atmospheric, oceanic, bathymetric, and sea-ice forcing.
 
 ## 📑 Project status
 
-- **Current stage:** Stage 11.7E.1 Grid/Depth Codes Reader Switch + plan/contract corrections (11.7E.1-CP) COMPLETE (env-gated `STAGE117E_NETCDF_GRID`, default OFF bit-identical; ON ≡ OFF ≡ baselines, Jan+Apr; battery 50/0, strict clean, python 25/25; T-18 corrected; GO 11.7E.2). NEXT: 11.7E.2 ocean-initial reader — verify-only (reader already NetCDF; NOT started). Production reference: Legacy EOS + N=1 scheduler. EOS-80: optional, not default (D-29).
+- **Current stage:** Stage 11.7E.2 Ocean Initial Reader COMPLETE (EN4 variable/dimension contract verified vs 11.7A; silent synthetic T/S fallback REMOVED — unusable EN4 is now FATAL in default REAL mode, synthetic only via explicit `OCEAN_INIT_MODE=SYNTHETIC`; `initialization_source` global output attribute added; Jan/Apr regression NDIFF=0 vs 11.7E baselines, only new global attr `initialization_source="EN4"`; battery 50/0; strict clean; GO 11.7E.3). NEXT: 11.7E.3 ERA5 forcing reader — verify-only (already NetCDF; NOT started). Production reference: Legacy EOS + N=1 scheduler. EOS-80: optional, not default (D-29).
   [Historical note from Stage 10.19, SUPERSEDED by Stage 10.20 restoration
   (full-coverage ERA5: 3-day gate PASS, residual characterized, NOT fixed):
   coupling recovery (completed: the Lagrangian iceberg module is now

@@ -102,6 +102,11 @@ status = nf90_put_att(ncid, nf90_global, 'unit_system', 'SI (canonical external 
         if (.not. nc_ok(status, 'write global source')) then
             status = nf90_close(ncid); return
         end if
+        ! Stage 11.7E.2: происхождение начальных T/S океана (EN4 | SYNTHETIC).
+        status = nf90_put_att(ncid, nf90_global, 'initialization_source', trim(ocean_init_source))
+        if (.not. nc_ok(status, 'write global initialization_source')) then
+            status = nf90_close(ncid); return
+        end if
 
         ! --- ОПРЕДЕЛЕНИЕ ИЗМЕРЕНИЙ ---
         status = nf90_def_dim(ncid, 'x', is1, x_dimid)

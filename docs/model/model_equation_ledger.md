@@ -428,7 +428,7 @@ The standard thermodynamic/dynamic production time step is one hour unless an ex
 
 ## 14. Verification versus validation
 
-The FPM suite currently contains 52 test targets. Tests establish implementation identities, numerical regressions and selected analytical properties. They do not constitute independent observational validation.
+The FPM suite currently contains 64 test targets (count as of 2026-10-18, verified by `ls test/*.f90 | wc -l`). Tests establish implementation identities, numerical regressions and selected analytical properties. They do not constitute independent observational validation.
 
 The scientific validation requirement for future stages is: equation/source provenance + independent analytical check + regression coverage + external observation/benchmark where available.
 

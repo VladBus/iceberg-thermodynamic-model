@@ -81,6 +81,7 @@ output → loop. Init sequence matches 11.3B §2 (line numbers drifted).
   NetCDF-output boundary + EOS-80 S×1000 internally).
 - Vertical: file k ↔ model k 1:1 (same 18, z_model_m documents depths);
   contract MUST assert z_model_m ≡ DATA z (cm→m) elementwise.
+- **Amendment (Stage 11.7E.2):** the shipped products `initial_ts_2020-01-01.nc` (Aug 30) and `initial_ts_2020-04-01.nc` (Sep 25) carry a bilinear-producer signature: `z_model_m` = [2.5,5,7.5,12.5,17.5,25,40,50,62.5,75,100,125,175,225,275,350,450,550] (NOT `DATA z`/100). The Jan shipped file also has 52,164 nonzero dry cells. Per `docs/validation/stage11.4_en4_stabilization.md` §11: "shipped products stay untouched and valid"; the reader never reads `z_model_m`/`wet_mask` → runtime contract unaffected. The rebuild products (`*_rebuild.nc`, Oct 6) satisfy the STRICT contract (`z_model_m` = `DATA z`/100 = [2.5,5,10,15,20,25,30,40,50,75,100,150,200,250,300,400,500,600]; dry cells == 0). The default `realistic_ocean_file` points at the stale shipped Jan product — documented as valid, no production default change.
 
 ### forcing_era5.nc ← merged ERA5 (live; D32 fallback)
 - Producer: `download_era5.py` + `merge_snowfall.py` (+ `check_era5.py`).

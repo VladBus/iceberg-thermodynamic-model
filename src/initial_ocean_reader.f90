@@ -8,10 +8,13 @@
 !         Размерности файла: (i=is1, j=js1, k=ks) с ординатой-независимым
 !         ПОРЯДКОМ осей (файл пишется xarray в (k,j,i); читаем универсально
 !         через dimids) — результат всегда канонический (i,j,k)-массив.
-! Переменная окружения: ICEBERG_OCEAN_INIT_FILE — переопределяет путь к файлу
-!         (удобно для чувствительных экспериментов без перекомпиляции).
-! Поведение при ошибке: ok=.false. (вызывающий init_ocean() откатывается на
-! синтетические поля — поведение Stage 7.6C.2 и ранее сохраняется).
+! Переменные окружения: ICEBERG_OCEAN_INIT_FILE — переопределяет путь к файлу
+!         (удобно для чувствительных экспериментов без перекомпиляции);
+!         OCEAN_INIT_MODE — обрабатывается вызывающим init_ocean() (Stage 11.7E.2).
+! Поведение при ошибке (Stage 11.7E.2): ok=.false., массивы НЕ меняются,
+!         errmsg (optional) получает человекочитаемую причину. Синтетический
+!         fallback БОЛЬШЕ НЕ применяется неявно — решение принимает init_ocean()
+!         (REAL → FATAL stop 1; SYNTHETIC → явное заполнение синтетикой).
 ! ==============================================================================
 
 module initial_ocean_reader
@@ -27,11 +30,12 @@ contains
     !> Заполнить t1/t2/s1/s2 реалистичными T/S на влажных ячейках (kt>0, k<=kt).
     !> Если файл недоступен или размерности не совпадают — ok=.false.,
     !> массивы НЕ меняются (вызывающий решает про fallback).
-    subroutine read_initial_ts(t1o, t2o, s1o, s2o, kt, ok)
+    subroutine read_initial_ts(t1o, t2o, s1o, s2o, kt, ok, errmsg)
         real, intent(inout) :: t1o(:, :, :), t2o(:, :, :)
         real, intent(inout) :: s1o(:, :, :), s2o(:, :, :)
         integer, intent(in) :: kt(:, :)
         logical, intent(out) :: ok
+        character(len=*), intent(out), optional :: errmsg
 
         integer :: ncid, dimid
         integer :: dimid_i, dimid_j, dimid_k
@@ -43,44 +47,56 @@ contains
         character(len=512) :: env_path
 
         ok = .false.
+        if (present(errmsg)) errmsg = 'EN4 reader: initialization failed (unspecified reason)'
 
         ! Переменная окружения для переопределения пути к файлу
         call get_environment_variable('ICEBERG_OCEAN_INIT_FILE', env_path)
         if (len_trim(env_path) .gt. 0) then
             if (.not. check(nf90_open(trim(env_path), nf90_nowrite, ncid), "nf90_open env")) then
+                if (present(errmsg)) errmsg = 'nf90_open failed for ICEBERG_OCEAN_INIT_FILE='//trim(env_path)
                 return
             end if
             print *, "INFO initial_ocean_reader: using ICEBERG_OCEAN_INIT_FILE = ", trim(env_path)
         else
             inquire (file=trim(realistic_ocean_file), exist=fexists)
             if (.not. fexists) then
-                print *, "WARN initial_ocean_reader: file not found: ", &
-                    trim(realistic_ocean_file), " (synthetic fallback)"
+                print *, "WARN initial_ocean_reader: file not found: ", trim(realistic_ocean_file)
+                if (present(errmsg)) errmsg = 'EN4 ocean-init file not found: '// &
+                    trim(realistic_ocean_file)//' (build via python/ocean/build_initial_ts.py or set ICEBERG_OCEAN_INIT_FILE)'
                 return
             end if
             if (.not. check(nf90_open(trim(realistic_ocean_file), nf90_nowrite, ncid), &
-                            "nf90_open")) return
+                            "nf90_open")) then
+                if (present(errmsg)) errmsg = 'nf90_open failed for '//trim(realistic_ocean_file)
+                return
+            end if
         end if
 
         ! DEBUG: print kt values for a few cells
         print *, "DEBUG initial_ocean_reader: kt(1,1)=", kt(1,1), " kt(1,17)=", kt(1,17), " kt(60,45)=", kt(60,45), " kt(100,50)=", kt(100,50)
 
         if (.not. check(nf90_inq_dimid(ncid, 'i', dimid_i), "dim i")) then
+            if (present(errmsg)) errmsg = 'EN4 file: dimension ''i'' not found'
             call close_nc(ncid); return
         end if
         if (.not. check(nf90_inquire_dimension(ncid, dimid_i, len=ni_file), "dim i len")) then
+            if (present(errmsg)) errmsg = 'EN4 file: dimension ''i'' length unreadable'
             call close_nc(ncid); return
         end if
         if (.not. check(nf90_inq_dimid(ncid, 'j', dimid_j), "dim j")) then
+            if (present(errmsg)) errmsg = 'EN4 file: dimension ''j'' not found'
             call close_nc(ncid); return
         end if
         if (.not. check(nf90_inquire_dimension(ncid, dimid_j, len=nj_file), "dim j len")) then
+            if (present(errmsg)) errmsg = 'EN4 file: dimension ''j'' length unreadable'
             call close_nc(ncid); return
         end if
         if (.not. check(nf90_inq_dimid(ncid, 'k', dimid_k), "dim k")) then
+            if (present(errmsg)) errmsg = 'EN4 file: dimension ''k'' not found'
             call close_nc(ncid); return
         end if
         if (.not. check(nf90_inquire_dimension(ncid, dimid_k, len=nk_file), "dim k len")) then
+            if (present(errmsg)) errmsg = 'EN4 file: dimension ''k'' length unreadable'
             call close_nc(ncid); return
         end if
 
@@ -89,6 +105,7 @@ contains
             print *, "WARN initial_ocean_reader: dims mismatch file(", &
                 ni_file, ", ", nj_file, ", ", nk_file, ") vs model(", &
                 size(kt, 1), ", ", size(kt, 2), ", ", size(t1o, 3), ")"
+            if (present(errmsg)) errmsg = 'EN4 file dims mismatch: file(i,j,k) vs model(i,j,k)'
             call close_nc(ncid)
             return
         end if
@@ -98,10 +115,12 @@ contains
 
         if (.not. check(get_var(ncid, 'temperature_celsius', dimid_i, dimid_j, &
                                 dimid_k, ni_file, nj_file, nk_file, t_arr), "get t")) then
+            if (present(errmsg)) errmsg = 'EN4 file: variable temperature_celsius not readable'
             call close_nc(ncid); deallocate (t_arr, s_arr); return
         end if
         if (.not. check(get_var(ncid, 'salinity_mass_fraction', dimid_i, dimid_j, &
                                 dimid_k, ni_file, nj_file, nk_file, s_arr), "get s")) then
+            if (present(errmsg)) errmsg = 'EN4 file: variable salinity_mass_fraction not readable'
             call close_nc(ncid); deallocate (t_arr, s_arr); return
         end if
 
@@ -109,15 +128,16 @@ contains
 
         ! Численная эпоха: NaN/Inf в файле недопустимы (NaN /= NaN)
         if (minval(t_arr) .ne. minval(t_arr) .or. minval(s_arr) .ne. minval(s_arr)) then
-            print *, "WARN initial_ocean_reader: NaN in file (synthetic fallback)"
+            print *, "WARN initial_ocean_reader: NaN in file"
+            if (present(errmsg)) errmsg = 'EN4 file contains NaN/Inf in temperature_celsius or salinity_mass_fraction'
             deallocate (t_arr, s_arr)
             return
         end if
         tmin = minval(t_arr); tmax = maxval(t_arr)
         smin = minval(s_arr); smax = maxval(s_arr)
         if (tmin .lt. -10.0 .or. tmax .gt. 40.0 .or. smin .lt. -0.002 .or. smax .gt. 0.1) then
-            print *, "WARN initial_ocean_reader: out-of-range T/S range ", tmin, tmax, &
-                smin, smax, " (synthetic fallback)"
+            print *, "WARN initial_ocean_reader: out-of-range T/S range ", tmin, tmax, smin, smax
+            if (present(errmsg)) errmsg = 'EN4 file T/S outside physical range (T[-10,40] C, S[-0.002,0.1])'
             deallocate (t_arr, s_arr)
             return
         end if

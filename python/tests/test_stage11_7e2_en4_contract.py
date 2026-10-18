@@ -150,9 +150,15 @@ def verify(path, strict, file_index):
                       "%s %s dims == %s" % (base, v, str(expected_dims)),
                       "got %s" % str(ds.variables[v].dimensions))
 
-        # Load T/S data
-        if "temperature_celsius" not in ds.variables:
+        # Load T/S data - check presence of ALL required variables first (robustness)
+        required_core = ("temperature_celsius", "salinity_mass_fraction",
+                         "density_anomaly_gcm3", "wet_mask", "water_column_levels",
+                         "lat", "lon", "z_model_m")
+        missing_core = [v for v in required_core if v not in ds.variables]
+        if missing_core:
+            check(False, "%s missing core variables: %s" % (base, missing_core))
             return
+
         t = np.asarray(ds.variables["temperature_celsius"][:], dtype=np.float64)
         s = np.asarray(ds.variables["salinity_mass_fraction"][:], dtype=np.float64)
 
@@ -179,12 +185,27 @@ def verify(path, strict, file_index):
                         wet_3d[i, j, :min(n_wet, KS)] = True
             total_active = int(wet_3d.sum())
             print("active 3D cells (from water_column_levels) = %d" % total_active)
+            # Assertions for computed metrics (Phase 3.1)
+            check(total_active == 143176,
+                  "%s active 3D cell count == 143176" % base,
+                  "got %d" % total_active)
+            check(wcl.min() >= 0 and wcl.max() <= KS,
+                  "%s water_column_levels in [0, %d]" % (base, KS),
+                  "got min=%d max=%d" % (wcl.min(), wcl.max()))
         elif wet_2d is not None:
             # Fallback: broadcast 2D wet_mask to all levels (legacy behavior)
             wet_3d = np.broadcast_to(wet_2d.astype(bool)[:, :, None], t.shape)
             print("active 3D cells (legacy broadcast wet_mask) = %d" % int(wet_3d.sum()))
         else:
             info("no wet_mask or water_column_levels - cannot count wet cells")
+
+        # Verify water_column_levels consistency with wet_mask (Phase 3.1)
+        if wcl is not None and wet_2d is not None:
+            # wet_mask should be true where water_column_levels > 0
+            wet_mask_from_wcl = (wcl > 0)
+            check(bool((wet_2d.astype(bool) == wet_mask_from_wcl).all()),
+                  "%s wet_mask consistent with water_column_levels" % base)
+            print("wet_mask consistent with water_column_levels: PASS")
 
         # --- HARD clauses (always apply) ---
         if wet_3d is not None:

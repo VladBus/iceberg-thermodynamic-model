@@ -35,7 +35,7 @@ under atmospheric, oceanic, bathymetric, and sea-ice forcing.
 
 ## 📑 Project status
 
-- **Current stage:** Stage 11.7E.2 Ocean Initial Reader COMPLETE (EN4 variable/dimension contract verified vs 11.7A; silent synthetic T/S fallback REMOVED — unusable EN4 is now FATAL in default REAL mode, synthetic only via explicit `OCEAN_INIT_MODE=SYNTHETIC`; `initialization_source` global output attribute added; Jan/Apr regression NDIFF=0 vs 11.7E baselines, only new global attr `initialization_source="EN4"`; battery 50/0; strict clean; GO 11.7E.3). NEXT: 11.7E.3 ERA5 forcing reader — verify-only (already NetCDF; NOT started). Production reference: Legacy EOS + N=1 scheduler. EOS-80: optional, not default (D-29).
+- **Current stage:** Stage 11.7E.2.2 Provenance Integrity & Contract Synchronization COMPLETE (EN4 contract test rewritten: 184 checks; OCEAN_INIT_MODE Option B: STRICT/ALLOWED/FORCE_SYNTHETIC verified; provenance metadata from actual state: initialization_file, initialization_attempted_file, initialization_mode_actual, eos_mode, scheduler_mode; enum validation added; shipped vs rebuild distinction; −20.07 dedup; EOS-80 wording consistent; battery 50/0; strict clean). NEXT: 11.7E.3 ERA5 forcing reader — verify-only (already NetCDF; NOT started). Production reference: Legacy EOS + N=1 scheduler. EOS-80: optional, not default (D-29).
   [Historical note from Stage 10.19, SUPERSEDED by Stage 10.20 restoration
   (full-coverage ERA5: 3-day gate PASS, residual characterized, NOT fixed):
   coupling recovery (completed: the Lagrangian iceberg module is now

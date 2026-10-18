@@ -243,4 +243,14 @@ module equation_of_state
             'EOS [g/cm3] min=', rmin, ' max=', rmax, ' mean=', rmean, ' n=', n
     end subroutine eos_diag
 
+    ! Геттер для фактического режима EOS (для netcdf_output provenance)
+    pure function get_active_eos_mode() result(res)
+        character(len=16) :: res
+        if (eos80_mode) then
+            res = 'EOS80'
+        else
+            res = 'LEGACY'
+        end if
+    end function get_active_eos_mode
+
 end module equation_of_state

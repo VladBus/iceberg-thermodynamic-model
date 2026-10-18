@@ -14,6 +14,7 @@
 module initial_conditions
     use param
     use initial_ocean_reader
+    use provenance
     implicit none
 
 contains
@@ -24,6 +25,7 @@ contains
         logical :: realistic_ok
         character(len=32) :: init_mode
         character(len=256) :: errmsg
+        character(len=512) :: attempted_file
 
         print *, ">>> Initializing ocean conditions..."
 
@@ -58,15 +60,36 @@ contains
         if (len_trim(init_mode) .eq. 0) init_mode = 'STRICT'
         call upper_ascii(init_mode)
 
+        ! --- Enum validation for OCEAN_INIT_MODE ---
+        if (trim(init_mode) .ne. 'STRICT' .and. &
+            trim(init_mode) .ne. 'ALLOWED' .and. &
+            trim(init_mode) .ne. 'FORCE_SYNTHETIC') then
+            print *, "FATAL init_ocean: invalid OCEAN_INIT_MODE=", trim(init_mode)
+            print *, "  Valid values: STRICT (default), ALLOWED, FORCE_SYNTHETIC"
+            stop 1
+        end if
+
         ! --- Stage 7.7: реалистичные начальные T/S из файла (EN4.2.2 2020-01) ---
         ! Skip EN4 read entirely if FORCE_SYNTHETIC
         if (trim(init_mode) .ne. 'FORCE_SYNTHETIC') then
+            attempted_file = trim(realistic_ocean_file)
+            call get_environment_variable('ICEBERG_OCEAN_INIT_FILE', attempted_file)
+            if (len_trim(attempted_file) .eq. 0) then
+                attempted_file = trim(realistic_ocean_file)
+            end if
             call read_initial_ts(t1, t2, s1, s2, kt1, realistic_ok, errmsg)
         else
             realistic_ok = .false.
+            attempted_file = 'SKIPPED_BY_MODE'
         end if
+
+        ! --- Record provenance based on actual outcome ---
         if (realistic_ok) then
             ocean_init_source = 'EN4'
+            call prov_set_initialization('EN4', &
+                trim(realistic_ocean_file), &
+                trim(attempted_file), &
+                'EN4_REAL')
             ! Фоновое течение [см/с]: 0.20 по X и 0.10 по Y (сохранено как в Stage 7.6C.2)
             do k = 1, ks
                 do j = 1, js1
@@ -88,9 +111,17 @@ contains
         if (trim(init_mode) .eq. 'ALLOWED') then
             print *, ">>> WARNING: OCEAN_INIT_MODE=ALLOWED — fallback to synthetic on EN4 failure"
             ocean_init_source = 'SYNTHETIC'
+            call prov_set_initialization('SYNTHETIC', &
+                'NONE', &
+                trim(attempted_file), &
+                'EN4_FALLBACK_SYNTHETIC')
         else if (trim(init_mode) .eq. 'FORCE_SYNTHETIC') then
             print *, ">>> WARNING: OCEAN_INIT_MODE=FORCE_SYNTHETIC — forced synthetic initialization"
             ocean_init_source = 'SYNTHETIC'
+            call prov_set_initialization('SYNTHETIC', &
+                'NONE', &
+                'SKIPPED_BY_MODE', &
+                'SYNTHETIC')
         else
             ! STRICT (default)
             print *, "FATAL init_ocean: EN4 initial T/S failed (OCEAN_INIT_MODE=STRICT, default)"
@@ -100,6 +131,10 @@ contains
             print *, "  fallback mode : OCEAN_INIT_MODE=ALLOWED (fallback on error)"
             print *, "  forced synth  : OCEAN_INIT_MODE=FORCE_SYNTHETIC (skip EN4)"
             print *, "  build product : python/ocean/build_initial_ts.py"
+            call prov_set_initialization('EN4', &
+                'NONE', &
+                trim(attempted_file), &
+                'EN4_FAILED_FATAL')
             stop 1
         end if
 

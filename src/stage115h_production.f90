@@ -94,4 +94,14 @@ contains
         end if
     end subroutine s115h_gate_entry
 
+    ! Геттер для фактического режима планировщика (для netcdf_output provenance)
+    pure function get_active_scheduler_mode() result(res)
+        character(len=16) :: res
+        if (s115h_prod) then
+            res = 'PRODUCTION_STALE'
+        else
+            res = 'N1_LEGACY'
+        end if
+    end function get_active_scheduler_mode
+
 end module stage115h_production

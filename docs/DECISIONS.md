@@ -347,17 +347,25 @@ Format: `ID | stage/date | status` + short description. Details — via links.
 - **Limitations:** STAGE1021×EOS80 combos beyond eos_diag untested at model scale; interaction mechanism is interpretation.
 - **Next:** 11.7 NetCDF (output contract records EOS_MODE per run).
 
-## D-31. Silent EN4 synthetic fallback removed; EN4 failure is FATAL by default (Stage 11.7E.2, 2026-10-18)
+## D-31. Silent EN4 synthetic fallback removed; EN4 failure is FATAL by default (Stage 11.7E.2/11.7E.2.2, 2026-10-18)
 
-- **Stage:** 11.7E.2 | **Status:** DECIDED
-- **Problem:** the legacy `init_ocean()` silently fell back to synthetic T/S when the EN4 NetCDF reader failed (file missing, dims mismatch, NaN, out-of-range). This masked initialization problems and produced non-reproducible ocean states.
-- **Decision:** remove the silent fallback entirely. The EN4 reader (`src/initial_ocean_reader.f90::read_initial_ts`) is now attempted FIRST; on failure the behavior is controlled by `OCEAN_INIT_MODE` env var (default `REAL`):
-  - `REAL` (default): FATAL `stop 1` with diagnostic message (reason, expected file, `ICEBERG_OCEAN_INIT_FILE` override path, synthetic test command, build product path).
-  - `SYNTHETIC`: explicit WARNING printed (`>>> WARNING: OCEAN_INIT_MODE=SYNTHETIC — explicit synthetic initialization`), synthetic fill proceeds.
-  - The `initialization_source` global output attribute records the effective source (`EN4` or `SYNTHETIC`).
-- **Why:** the silent fallback violated the principle of explicit initialization; the Stage 11.7E.2 EN4 contract verification (56 checks, 0 errors) proved the reader works for Jan/Apr rebuild products; the synthetic path remains available for testing via explicit opt-in.
-- **Sources:** `docs/validation/stage11.7E.2_en4_contract_verification.md` (this stage), `src/initial_conditions.f90`, `src/initial_ocean_reader.f90`, `src/netcdf_output.f90`.
-- **Limitations:** default `realistic_ocean_file` points to the shipped Jan product (bilinear signature, §11 11.4); rebuild products (Oct 6) satisfy STRICT contract. No production default change to the input file path.
+- **Stage:** 11.7E.2/11.7E.2.2 | **Status:** DECIDED
+- **Problem:** the legacy `init_ocean()` silently fell back to synthetic T/S when the EN4 NetCDF reader failed (file missing, dims mismatch, NaN, out-of-range). This masked initialization problems and produced non-reproducible ocean states. Additionally, the provenance metadata recorded incorrect/ misleading values ("available"/"unavailable" for date/checksum, re-parsed env vars).
+- **Decision:** remove the silent fallback entirely and fix provenance integrity. The EN4 reader (`src/initial_ocean_reader.f90::read_initial_ts`) is now attempted FIRST; on failure the behavior is controlled by `OCEAN_INIT_MODE` env var (default `STRICT`):
+  - `STRICT` (default): read EN4, FATAL `stop 1` on failure (no fallback).
+  - `ALLOWED`: read EN4, fallback to synthetic on failure with explicit WARNING.
+  - `FORCE_SYNTHETIC`: skip EN4 read entirely, always use synthetic with explicit WARNING.
+  - Enum validation: invalid `OCEAN_INIT_MODE` values cause FATAL with clear error message listing valid values.
+  - Provenance metadata now records ACTUAL model state:
+    - `initialization_file`: path of file SUCCESSFULLY read, or "NONE"
+    - `initialization_attempted_file`: path that was attempted (for debugging)
+    - `initialization_mode_actual`: what actually happened (`EN4_REAL`, `EN4_FALLBACK_SYNTHETIC`, `SYNTHETIC`, `EN4_FAILED_FATAL`)
+    - `eos_mode`: `LEGACY` or `EOS80` (from actual EOS module state, not re-parsed env)
+    - `scheduler_mode`: `N1_LEGACY` or `PRODUCTION_STALE` (from actual scheduler state)
+    - Removed misleading `initialization_date`/`initialization_checksum` (were "available"/"unavailable")
+- **Why:** the silent fallback violated the principle of explicit initialization; provenance metadata must reflect actual model state, not re-parsed environment variables; enum validation prevents silent misconfiguration.
+- **Sources:** `docs/validation/stage11.7E.2.2_provenance_integrity.md`, `src/initial_conditions.f90`, `src/initial_ocean_reader.f90`, `src/netcdf_output.f90`, `src/provenance.f90`.
+- **Limitations:** default `realistic_ocean_file` points to the shipped Jan product (bilinear signature); rebuild products satisfy STRICT contract. No production default change to the input file path.
 - **Next:** 11.7E.3 ERA5 forcing reader verification.
 
 ## How to add decisions

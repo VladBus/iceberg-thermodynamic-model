@@ -35,7 +35,7 @@ under atmospheric, oceanic, bathymetric, and sea-ice forcing.
 
 ## 📑 Project status
 
-- **Current stage:** Stage 11.7E.2.2 Provenance Integrity & Contract Synchronization COMPLETE (EN4 contract test rewritten: 184 checks; OCEAN_INIT_MODE Option B: STRICT/ALLOWED/FORCE_SYNTHETIC verified; provenance metadata from actual state: initialization_file, initialization_attempted_file, initialization_mode_actual, eos_mode, scheduler_mode; enum validation added; shipped vs rebuild distinction; −20.07 dedup; EOS-80 wording consistent; battery 50/0; strict clean). NEXT: 11.7E.3 ERA5 forcing reader — verify-only (already NetCDF; NOT started). Production reference: Legacy EOS + N=1 scheduler. EOS-80: optional, not default (D-29).
+- **Current stage:** Stage 11.7E.3.1 ERA5 Test Strengthening & Snowfall Verification COMPLETE (ERA5 test strengthened: 108 checks with exact dims/coords/shapes/time/units/fill; snowfall verified non-zero (~1.17e-7 m/s max); CI integration added; documentation synced). NEXT: 11.7E.4 Sea-ice reader with REAL data connection (OSI-SAF SIC + C3S SIT). Production reference: Legacy EOS + N=1 scheduler. EOS-80: optional, not default (D-29).
   [Historical note from Stage 10.19, SUPERSEDED by Stage 10.20 restoration
   (full-coverage ERA5: 3-day gate PASS, residual characterized, NOT fixed):
   coupling recovery (completed: the Lagrangian iceberg module is now

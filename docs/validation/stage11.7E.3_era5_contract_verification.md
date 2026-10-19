@@ -1,10 +1,12 @@
 # Stage 11.7E.3 — ERA5 Forcing Contract Verification (with 11.7E.2.3 micro-fixes)
 
 **Date:** 2026-10-19
-**Status:** COMPLETE
+**Status:** COMPLETE (superseded by 11.7E.3.1)
 **Scope:** Verify-only contract check of the ERA5 forcing reader against the Stage 11.7A specification. The ERA5 chain (`src/netcdf_input.f90` + `src/wind_forcing.f90`) already reads merged NetCDF; no new reader written. Includes micro-fixes from 11.7E.2.3 audit.
 **Dependencies:** 11.7E.2.3 complete and validated.
 **Rollback:** revert commit (no physics change).
+
+**Note:** This stage was strengthened in 11.7E.3.1 (see `stage11.7E.3.1_era5_test_strengthening.md`). The test was strengthened from 58 to 108 exact checks, snowfall verified non-zero, D32 clamping corrected, CI integration added.
 
 ---
 

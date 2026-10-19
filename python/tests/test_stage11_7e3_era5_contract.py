@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Stage 11.7E.3 — ERA5 Forcing Contract Verification (verify-only)
+Stage 11.7E.3.1 — ERA5 Forcing Contract Verification (Strengthened)
 
-Verifies the merged ERA5 NetCDF product consumed by src/netcdf_input.f90
-and src/wind_forcing.f90 against the Stage 11.7A contract specification.
+Verifies the merged ERA5 NetCDF product against the Stage 11.7A contract
+with EXACT assertions (not just > 0 checks).
 
 The ERA5 chain already reads merged NetCDF; this is a VERIFY-ONLY stage.
 Do NOT write a new reader.
@@ -16,7 +16,7 @@ Exit codes:
 import os
 import sys
 from pathlib import Path
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 try:
     import numpy as np
@@ -30,13 +30,39 @@ PROJECT = Path(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(_
 # ERA5 merged product path (standard location per 11.7A)
 ERA5_MERGED_PATH = PROJECT / "data/input/processed/era5/2020/2020_04/era5_2020_04_merged.nc"
 
-# Expected coordinate ranges for Barents domain (per 11.7A)
-LAT_MIN, LAT_MAX = 65.0, 90.0  # ERA5 coverage: 90 to 65 N (decreasing order)
-LON_MIN, LON_MAX = -180.0, 180.0  # Full longitude coverage
+# Expected EXACT dimensions for April 2020 merged product (per 11.7A contract)
+EXPECTED_NTIME = 120      # 30 days × 4 steps/day (6-hourly)
+EXPECTED_NLAT = 101       # 90 to 65 N at 0.25° = 101 points
+EXPECTED_NLON = 1440      # -180 to 179.75 at 0.25° = 1440 points
 
-# Expected ERA5 native resolution
-EXPECTED_LAT_RES = 0.25  # degrees
-EXPECTED_LON_RES = 0.25  # degrees
+# Expected coordinate bounds (exact)
+EXPECTED_LAT_FIRST = 90.0
+EXPECTED_LAT_LAST = 65.0
+EXPECTED_LON_FIRST = -180.0
+EXPECTED_LON_LAST = 179.75
+
+# Expected resolution
+EXPECTED_LAT_RES = -0.25  # decreasing
+EXPECTED_LON_RES = 0.25
+
+# Expected time axis
+EXPECTED_TIME_UNITS = "seconds since 1970-01-01"
+EXPECTED_CALENDAR = "proleptic_gregorian"
+EXPECTED_TIME_INTERVAL = 21600  # 6 hours = 21600 seconds
+
+# Expected variable dimension order: (valid_time, latitude, longitude)
+EXPECTED_VAR_DIMS = ("valid_time", "latitude", "longitude")
+
+# Expected data variable names and their expected units
+REQUIRED_VARS = {
+    "u10": {"units": ("m s-1", "m s**-1", "m/s"), "dtype": np.float32, "expected_dims": ("valid_time", "latitude", "longitude")},
+    "v10": {"units": ("m s-1", "m s**-1", "m/s"), "dtype": np.float32, "expected_dims": ("valid_time", "latitude", "longitude")},
+    "t2m": {"units": ("K",), "dtype": np.float32, "expected_dims": ("valid_time", "latitude", "longitude")},
+    "d2m": {"units": ("K",), "dtype": np.float32, "expected_dims": ("valid_time", "latitude", "longitude")},
+    "msl": {"units": ("Pa",), "dtype": np.float32, "expected_dims": ("valid_time", "latitude", "longitude")},
+    "tcc": {"units": ("1", "(0 - 1)", "-", "dimensionless"), "dtype": np.float32, "expected_dims": ("valid_time", "latitude", "longitude")},
+    "sf":  {"units": ("m s-1", "m s**-1", "m/s"), "dtype": np.float32, "expected_dims": ("valid_time", "latitude", "longitude")},
+}
 
 CHECKS = 0
 ERRORS = 0
@@ -59,11 +85,18 @@ def info(label):
     print(f"INFO {label}")
 
 
+def units_match(actual, expected):
+    """Check if actual units string matches expected (accepting common variations)."""
+    if isinstance(expected, (list, tuple)):
+        return actual in expected
+    return actual == expected
+
+
 def main():
     global CHECKS, ERRORS, INFOS
 
     print("=" * 72)
-    print("Stage 11.7E.3 — ERA5 Forcing Contract Verification (verify-only)")
+    print("Stage 11.7E.3.1 — ERA5 Forcing Contract Verification (Strengthened)")
     print("=" * 72)
 
     if not ERA5_MERGED_PATH.exists():
@@ -78,9 +111,11 @@ def main():
     print()
 
     with Dataset(ERA5_MERGED_PATH) as ds:
-        # --- 1. Dimensions ---
+        # =========================================================================
+        # 1. Dimensions — EXACT values required
+        # =========================================================================
         dims = {n: len(ds.dimensions[n]) for n in ds.dimensions}
-        print("--- Dimensions ---")
+        print("--- Dimensions (EXACT) ---")
         print(f"dims = {dims}")
 
         check("valid_time" in ds.dimensions, "dimension 'valid_time' exists")
@@ -93,110 +128,165 @@ def main():
 
         info(f"ntime = {ntime}, nlat = {nlat}, nlon = {nlon}")
 
-        # April should have ~120 hourly slices (30 days * 4? Actually 24*30=720, but merged may be 3-hourly? Let's check)
-        # 11.7A says "valid_time=120" for Apr merged — that's 3-hourly? Or 120 hourly = 5 days?
-        # Actually 120 could be 30 days * 4 (6-hourly). Let's not hardcode exact count.
-        check(ntime > 0, "valid_time dimension > 0")
-        check(nlat > 0, "latitude dimension > 0")
-        check(nlon > 0, "longitude dimension > 0")
+        # EXACT dimension values
+        check(ntime == EXPECTED_NTIME, f"valid_time dimension == {EXPECTED_NTIME}", f"got {ntime}")
+        check(nlat == EXPECTED_NLAT, f"latitude dimension == {EXPECTED_NLAT}", f"got {nlat}")
+        check(nlon == EXPECTED_NLON, f"longitude dimension == {EXPECTED_NLON}", f"got {nlon}")
 
-        # --- 2. Required variables ---
-        print("\n--- Variables ---")
-        required_vars = {
-            "u10": ("m s-1", "float32"),           # zonal wind at 10m
-            "v10": ("m s-1", "float32"),           # meridional wind at 10m
-            "t2m": ("K", "float32"),               # 2m temperature
-            "d2m": ("K", "float32"),               # 2m dewpoint temperature
-            "msl": ("Pa", "float32"),              # mean sea level pressure
-            "tcc": ("1", "float32"),               # total cloud cover [0-1]
-            "sf": ("m s-1", "float32"),            # snowfall rate (merged)
-        }
+        # =========================================================================
+        # 2. Required variables — exact shape, dims, dtype, units
+        # =========================================================================
+        print("\n--- Variables (EXACT shape, dims, dtype, units) ---")
 
-        for varname, (expected_units, expected_dtype) in required_vars.items():
+        for varname, spec in REQUIRED_VARS.items():
             check(varname in ds.variables, f"variable '{varname}' exists")
-            if varname in ds.variables:
-                var = ds.variables[varname]
-                check(var.dtype == np.dtype(expected_dtype),
-                      f"'{varname}' dtype == {expected_dtype}",
-                      f"got {var.dtype}")
-                # Check units attribute (accept common NetCDF format variations)
-                if "units" in var.ncattrs():
-                    actual_units = var.getncattr("units")
-                    # Accept both 'm s-1' and 'm s**-1' for velocity
-                    # Accept both '1' and '(0 - 1)' for dimensionless
-                    def units_match(actual, expected):
-                        if expected == "m s-1":
-                            return actual in ("m s-1", "m s**-1", "m/s")
-                        if expected == "1":
-                            return actual in ("1", "(0 - 1)", "-", "dimensionless")
-                        return actual == expected
-                    check(units_match(actual_units, expected_units),
-                          f"'{varname}' units == '{expected_units}'",
-                          f"got '{actual_units}'")
-                else:
-                    check(False, f"'{varname}' has 'units' attribute", "missing")
+            if varname not in ds.variables:
+                continue
 
-        # --- 3. Coordinate variables ---
-        print("\n--- Coordinates ---")
+            var = ds.variables[varname]
+
+            # Check dtype
+            check(var.dtype == spec["dtype"],
+                  f"'{varname}' dtype == {spec['dtype']}",
+                  f"got {var.dtype}")
+
+            # Check dimensions (exact order and names)
+            actual_dims = var.dimensions
+            check(actual_dims == spec["expected_dims"],
+                  f"'{varname}' dims == {spec['expected_dims']}",
+                  f"got {actual_dims}")
+
+            # Check shape matches dimension sizes
+            expected_shape = (EXPECTED_NTIME, EXPECTED_NLAT, EXPECTED_NLON)
+            check(var.shape == expected_shape,
+                  f"'{varname}' shape == {expected_shape}",
+                  f"got {var.shape}")
+
+            # Check units attribute EXISTS and matches (mandatory)
+            check("units" in var.ncattrs(), f"'{varname}' has 'units' attribute", "missing")
+            if "units" in var.ncattrs():
+                actual_units = var.getncattr("units")
+                check(units_match(actual_units, spec["units"]),
+                      f"'{varname}' units in {spec['units']}",
+                      f"got '{actual_units}'")
+
+            # Check _FillValue attribute EXISTS (mandatory)
+            check("_FillValue" in var.ncattrs(), f"'{varname}' has '_FillValue' attribute", "missing")
+            if "_FillValue" in var.ncattrs():
+                fv = var.getncattr("_FillValue")
+                check(np.isnan(fv) or fv == 9.96921e36,
+                      f"'{varname}' _FillValue is NaN or standard",
+                      f"got {fv}")
+
+        # =========================================================================
+        # 3. Coordinate variables — EXACT bounds and resolution
+        # =========================================================================
+        print("\n--- Coordinates (EXACT bounds, order, resolution) ---")
 
         # Latitude
         lat = ds.variables["latitude"][:]
-        check(lat.shape == (nlat,), "latitude shape == (nlat,)")
-        check(lat[0] > lat[-1], "latitude is DECREASING (90 -> 65)", f"first={lat[0]}, last={lat[-1]}")
-        check(lat[0] <= LAT_MAX + 0.1 and lat[-1] >= LAT_MIN - 0.1,
-              f"latitude range covers [{LAT_MIN}, {LAT_MAX}]",
-              f"got [{lat[-1]:.2f}, {lat[0]:.2f}]")
-        # Check resolution is ~0.25°
+        check(lat.shape == (EXPECTED_NLAT,), "latitude shape == (nlat,)")
+        check(lat[0] == EXPECTED_LAT_FIRST, f"latitude first == {EXPECTED_LAT_FIRST}", f"got {lat[0]}")
+        check(lat[-1] == EXPECTED_LAT_LAST, f"latitude last == {EXPECTED_LAT_LAST}", f"got {lat[-1]}")
+        check(np.all(lat[:-1] > lat[1:]), "latitude is strictly DECREASING", f"first={lat[0]}, last={lat[-1]}")
+
+        # Check resolution is exactly 0.25° (decreasing)
         lat_diffs = np.diff(lat)
-        check(np.allclose(lat_diffs, -EXPECTED_LAT_RES, atol=1e-6),
-              f"latitude resolution == {EXPECTED_LAT_RES}°",
-              f"diffs: min={lat_diffs.min():.6f}, max={lat_diffs.max():.6f}")
-        info(f"latitude range: {lat[-1]:.2f} to {lat[0]:.2f} (decreasing)")
+        check(np.allclose(lat_diffs, -0.25, atol=1e-10),
+              f"latitude resolution == 0.25° (decreasing)",
+              f"diffs: min={lat_diffs.min():.10f}, max={lat_diffs.max():.10f}")
+        info(f"latitude: {lat[0]} .. {lat[-1]} (decreasing, step={lat_diffs[0]:.6f}°)")
 
         # Longitude
         lon = ds.variables["longitude"][:]
-        check(lon.shape == (nlon,), "longitude shape == (nlon,)")
-        check(lon[0] < lon[-1], "longitude is INCREASING (-180 -> 180)")
-        check(lon[0] >= LON_MIN - 0.1 and lon[-1] <= LON_MAX + 0.1,
-              f"longitude range covers [{LON_MIN}, {LON_MAX}]",
-              f"got [{lon[0]:.2f}, {lon[-1]:.2f}]")
-        lon_diffs = np.diff(lon)
-        check(np.allclose(lon_diffs, EXPECTED_LON_RES, atol=1e-6),
-              f"longitude resolution == {EXPECTED_LON_RES}°",
-              f"diffs: min={lon_diffs.min():.6f}, max={lon_diffs.max():.6f}")
-        info(f"longitude range: {lon[0]:.2f} to {lon[-1]:.2f} (increasing)")
+        check(lon[0] == EXPECTED_LON_FIRST, f"longitude first == {EXPECTED_LON_FIRST}", f"got {lon[0]}")
+        check(lon[-1] == EXPECTED_LON_LAST, f"longitude last == {EXPECTED_LON_LAST}", f"got {lon[-1]}")
+        check(np.all(lon[:-1] < lon[1:]), "longitude is strictly INCREASING")
 
-        # Time coordinate
+        lon_diffs = np.diff(lon)
+        check(np.allclose(lon_diffs, 0.25, atol=1e-10),
+              f"longitude resolution == 0.25° (increasing)",
+              f"diffs: min={lon_diffs.min():.10f}, max={lon_diffs.max():.10f}")
+        info(f"longitude: {lon[0]} .. {lon[-1]} (increasing, step={lon_diffs[0]:.6f}°)")
+
+        # =========================================================================
+        # 4. Time coordinate — EXACT units, calendar, interval, range
+        # =========================================================================
+        print("\n--- Time Coordinate (EXACT units, calendar, interval, range) ---")
+
         time_var = ds.variables["valid_time"]
         time_vals = time_var[:]
-        check(time_vals.shape == (ntime,), "valid_time shape == (ntime,)")
-        # Check units attribute
-        if "units" in time_var.ncattrs():
-            time_units = time_var.getncattr("units")
-            check("seconds since 1970" in time_units.lower() or "since 1970" in time_units.lower(),
-                  "time units reference 1970 epoch",
-                  f"got '{time_units}'")
-            info(f"time units: {time_units}")
-        if "calendar" in time_var.ncattrs():
-            cal = time_var.getncattr("calendar")
-            check(cal.lower() == "proleptic_gregorian",
-                  "time calendar == proleptic_gregorian",
-                  f"got '{cal}'")
-            info(f"time calendar: {cal}")
+        check(time_vals.shape == (EXPECTED_NTIME,), f"valid_time shape == ({EXPECTED_NTIME},)")
 
-        # --- 4. Fill values ---
-        print("\n--- Fill Values ---")
-        for varname in required_vars.keys():
+        # Units attribute MANDATORY
+        check("units" in time_var.ncattrs(), "'valid_time' has 'units' attribute", "missing")
+        time_units = time_var.getncattr("units")
+        check("seconds since 1970-01-01" in time_units.lower(),
+              f"time units reference 1970 epoch",
+              f"got '{time_units}'")
+        info(f"time units: {time_units}")
+
+        # Calendar attribute MANDATORY
+        check("calendar" in time_var.ncattrs(), "'valid_time' has 'calendar' attribute", "missing")
+        cal = time_var.getncattr("calendar")
+        check(cal.lower() == EXPECTED_CALENDAR.lower(),
+              f"time calendar == {EXPECTED_CALENDAR}",
+              f"got '{cal}'")
+        info(f"time calendar: {cal}")
+
+        # Convert to datetime for range checks
+        time_dates = num2date(time_vals, units=time_units, calendar=cal)
+
+        # Check time interval is exactly 6 hours (21600 seconds)
+        time_diffs = np.diff(time_vals)
+        check(np.all(time_diffs == EXPECTED_TIME_INTERVAL),
+              f"time interval == {EXPECTED_TIME_INTERVAL} seconds (6 hours)",
+              f"diffs: min={time_diffs.min()}, max={time_diffs.max()}")
+
+        # Check total time steps match expected (120 for April)
+        check(len(time_vals) == EXPECTED_NTIME,
+              f"time steps == {EXPECTED_NTIME}",
+              f"got {len(time_vals)}")
+
+        # Check time range covers full April 2020 (6-hourly from 2020-04-01 00:00 to 2020-04-30 18:00)
+        # Use cftime datetime comparison (no tzinfo for cftime objects)
+        expected_start = datetime(2020, 4, 1, 0, 0, 0)
+        expected_end = datetime(2020, 4, 30, 18, 0, 0)
+
+        actual_start = time_dates[0]
+        actual_end = time_dates[-1]
+
+        # Compare year, month, day, hour, minute, second
+        check((actual_start.year, actual_start.month, actual_start.day, actual_start.hour, actual_start.minute, actual_start.second) ==
+              (expected_start.year, expected_start.month, expected_start.day, expected_start.hour, expected_start.minute, expected_start.second),
+              f"time start == {expected_start}",
+              f"got {actual_start}")
+        check((actual_end.year, actual_end.month, actual_end.day, actual_end.hour, actual_end.minute, actual_end.second) ==
+              (expected_end.year, expected_end.month, expected_end.day, expected_end.hour, expected_end.minute, expected_end.second),
+              f"time end == {expected_end}",
+              f"got {actual_end}")
+
+        info(f"time range: {actual_start} to {actual_end}")
+        info(f"time interval: {time_diffs[0]} seconds ({time_diffs[0]/3600:.1f} hours)")
+
+        # =========================================================================
+        # 5. Fill values — MANDATORY for all data variables
+        # =========================================================================
+        print("\n--- Fill Values (MANDATORY) ---")
+        for varname in REQUIRED_VARS.keys():
             if varname in ds.variables:
                 var = ds.variables[varname]
+                check("_FillValue" in var.ncattrs(), f"'{varname}' has '_FillValue' attribute", "missing")
                 if "_FillValue" in var.ncattrs():
                     fv = var.getncattr("_FillValue")
                     check(np.isnan(fv) or fv == 9.96921e36,
                           f"'{varname}' _FillValue is NaN or standard",
                           f"got {fv}")
 
-        # --- 5. Data ranges (sanity checks) ---
-        print("\n--- Data Ranges ---")
+        # =========================================================================
+        # 6. Data ranges (sanity checks)
+        # =========================================================================
+        print("\n--- Data Ranges (sanity) ---")
 
         # Wind
         u10 = ds.variables["u10"][:]
@@ -211,14 +301,10 @@ def main():
         d2m = ds.variables["d2m"][:]
         check(np.isfinite(t2m).all(), "t2m all finite")
         check(np.isfinite(d2m).all(), "d2m all finite")
-        # K ranges: typical Arctic 220-280 K
         check(np.nanmin(t2m) >= 180 and np.nanmax(t2m) <= 320,
-              "t2m in plausible K range",
-              f"got [{np.nanmin(t2m):.1f}, {np.nanmax(t2m):.1f}]")
+              "t2m in plausible K range", f"got [{np.nanmin(t2m):.1f}, {np.nanmax(t2m):.1f}]")
         check(np.nanmin(d2m) >= 180 and np.nanmax(d2m) <= 320,
-              "d2m in plausible K range",
-              f"got [{np.nanmin(d2m):.1f}, {np.nanmax(d2m):.1f}]")
-        # d2m should generally be <= t2m (dewpoint <= temperature)
+              "d2m in plausible K range", f"got [{np.nanmin(d2m):.1f}, {np.nanmax(d2m):.1f}]")
         check(np.nanmean(d2m) <= np.nanmean(t2m) + 5,
               "d2m <= t2m on average (dewpoint <= temperature)",
               f"mean d2m={np.nanmean(d2m):.1f}, mean t2m={np.nanmean(t2m):.1f}")
@@ -226,63 +312,58 @@ def main():
         # Pressure
         msl = ds.variables["msl"][:]
         check(np.isfinite(msl).all(), "msl all finite")
-        # Pa: typical 95000-105000
         check(np.nanmin(msl) >= 80000 and np.nanmax(msl) <= 110000,
-              "msl in plausible Pa range",
-              f"got [{np.nanmin(msl):.0f}, {np.nanmax(msl):.0f}]")
+              "msl in plausible Pa range", f"got [{np.nanmin(msl):.0f}, {np.nanmax(msl):.0f}]")
         info(f"msl range [Pa]: {np.nanmin(msl):.0f} .. {np.nanmax(msl):.0f}")
 
         # Cloud cover
         tcc = ds.variables["tcc"][:]
         check(np.isfinite(tcc).all(), "tcc all finite")
         check(np.nanmin(tcc) >= 0.0 and np.nanmax(tcc) <= 1.0,
-              "tcc in [0, 1]",
-              f"got [{np.nanmin(tcc):.3f}, {np.nanmax(tcc):.3f}]")
+              "tcc in [0, 1]", f"got [{np.nanmin(tcc):.3f}, {np.nanmax(tcc):.3f}]")
 
-        # Snowfall
+        # Snowfall — verify non-zero values exist (very small but present)
         sf = ds.variables["sf"][:]
         check(np.isfinite(sf).all(), "sf all finite")
-        check(np.nanmin(sf) >= 0.0,
-              "sf >= 0 (snowfall rate non-negative)",
-              f"min={np.nanmin(sf):.6f}")
-        info(f"sf range [m/s]: {np.nanmin(sf):.6f} .. {np.nanmax(sf):.6f}")
+        check(np.nanmin(sf) >= 0.0, "sf >= 0 (snowfall rate non-negative)")
+        # Verify non-zero snowfall exists (values are ~1e-7 m/s max, not zero)
+        check(np.nanmax(sf) > 0.0, "sf has non-zero values (max > 0)", f"max={np.nanmax(sf):.2e}")
+        info(f"sf range [m/s]: {np.nanmin(sf):.2e} .. {np.nanmax(sf):.2e}")
+        info(f"sf non-zero count: {np.count_nonzero(sf)}")
 
-        # --- 6. D32 Edge-clamping behavior documentation ---
-        print("\n--- D32 Edge-Clamping (code behavior) ---")
-        info("ERA5 reader (netcdf_input.f90) flips latitude to increasing order")
-        info("wind_forcing.f90:era5_wind() implements nearest-edge fallback (D32):")
-        info("  if model lat > era5_lat(1) or lat < era5_lat(nlat):")
-        info("    lat_use = min(max(lat, era5_lat(1)), era5_lat(nlat))")
-        info("  This is a CODE behavior, not file metadata — verified in source.")
+        # =========================================================================
+        # 7. Code behavior documentation (verified by grep)
+        # =========================================================================
+        print("\n--- Code Behavior (verified in source) ---")
 
-        # --- 7. Conversions documentation ---
-        print("\n--- Unit Conversions (code behavior) ---")
-        info("era5_wind() applies the following conversions:")
-        info("  u10/v10 [m/s] -> windx1/windy1 [cm/s]: ×100")
-        info("  wind [m/s] (module): passed to heat()")
-        info("  tx1/ty1 [dyn/cm2]: quadratic drag law cof = (1.1 + 0.04*spd*1e-2) * spd^2 * 1.29e-6")
-        info("  msl [Pa] -> p1/patm [hPa]: ×0.01")
-        info("  t2m [K] -> tatm [°C]: -273.15")
-        info("  d2m/t2m [K] -> humid [0..1]: e_sat(d2m)/e_sat(t2m) (Clausius-Clapeyron)")
-        info("  tcc [0..1] -> cloud [0..1]: direct copy")
-        info("  sf [m water eq] -> era5_snowfall_rate [m/s]: (merged already divided by 43200)")
-        info("  These are CODE behaviors in wind_forcing.f90:era5_wind() — verified in source.")
+        # D32 Edge-clamping: check actual code behavior
+        info("D32 edge-clamping (src/wind_forcing.f90:era5_wind() lines 270-280):")
+        info("  Code clamps lat_use to file edges WITHOUT warning:")
+        info("    lat_use = min(max(lat, era5_lat(1)), era5_lat(era5_nlat))")
+        info("  No warning printed for clamping (test doc corrected)")
 
-        # --- 8. Temporal interpolation ---
-        print("\n--- Temporal Interpolation (code behavior) ---")
-        info("netcdf_input.f90:era5_find_time_index() uses NEAREST-time (binary search)")
-        info("  Model seconds (proleptic Gregorian, since 1970-01-01) -> nearest ERA5 index")
-        info("  Out-of-range: idx clamped to 1 or ntime, warning printed once")
-        info("  No linear interpolation in time — nearest neighbor only (documented assumption)")
+        # Unit conversions
+        info("Unit conversions (src/wind_forcing.f90:era5_wind()):")
+        info("  u10/v10 [m/s] -> windx1/windy1 [cm/s]: ×100 (lines 298-299)")
+        info("  msl [Pa] -> p1/patm [hPa]: ×0.01 (lines 320, 322)")
+        info("  t2m [K] -> tatm [°C]: -273.15 (line 321)")
+        info("  sf [m/s]: already rate from merge (divided by 43200)")
 
-        # --- 9. Spatial interpolation ---
-        print("\n--- Spatial Interpolation (code behavior) ---")
-        info("netcdf_input.f90:era5_bilinear2d() implements BILINEAR interpolation")
-        info("  Input: field(nlat, nlon) slice at fixed time, model (lat, lon)")
-        info("  Longitude: cyclic wrapping (±180°)")
-        info("  Latitude: NOT wrapped (out-of-range -> ok=false, D32 fallback in era5_wind)")
-        info("  Binary search for cell indices, weights wlat/wlon in [0,1]")
-        info("  Formula: (1-wlat)(1-wlon)f00 + wlat(1-wlon)f10 + (1-wlat)wlon f01 + wlat wlon f11")
+        # Temporal interpolation
+        info("Temporal interpolation (src/netcdf_input.f90:era5_find_time_index() lines 360-385):")
+        info("  Method: NEAREST-time (binary search)")
+        info("  Out-of-range: idx clamped to 1 or ntime, NO warning (test doc corrected)")
+        info("  No linear time interpolation — nearest neighbor only")
+
+        # Spatial interpolation
+        info("Spatial interpolation (src/netcdf_input.f90:era5_bilinear2d() lines 407-489):")
+        info("  Method: BILINEAR on regular lat/lon grid")
+        info("  Longitude: cyclic wrapping (±180°) (lines 441-462)")
+        info("  Latitude: NOT wrapped, out-of-range -> ok=false (line 421)")
+        info("  D32 fallback in era5_wind() clamps lat to file edges (lines 270-280)")
+
+        # Lon-wrap
+        info("Longitude cyclic wrapping verified in era5_bilinear2d() (lines 441-462)")
 
     print("\n" + "=" * 72)
     print(f"TOTAL CHECKS: {CHECKS}  PASSED: {CHECKS - ERRORS}  FAILED: {ERRORS}  INFO: {INFOS}")

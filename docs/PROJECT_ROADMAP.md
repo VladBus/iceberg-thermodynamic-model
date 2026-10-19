@@ -1,9 +1,9 @@
 # Project Roadmap
 
 **Updated:** 2026-10-18
-**Current scientific stage:** Stage 11.7E.2.2 Provenance Integrity & Contract Synchronization COMPLETE (EN4 contract test rewritten: 184 checks; OCEAN_INIT_MODE Option B: STRICT/ALLOWED/FORCE_SYNTHETIC verified; provenance metadata from actual state: initialization_file, initialization_attempted_file, initialization_mode_actual, eos_mode, scheduler_mode; enum validation added; shipped vs rebuild distinction; −20.07 dedup; EOS-80 wording consistent; battery 50/0; strict clean). NEXT: 11.7E.3 ERA5 forcing reader (verify-only — already NetCDF; NOT started).
+**Current scientific stage:** Stage 11.7E.2.3 Provenance Path Fix, CI Error Propagation & Final Sync COMPLETE (initialization_file records actual override path; CI error masking removed; provenance attribute tests added; documentation synchronized). NEXT: 11.7E.3 ERA5 forcing reader (verify-only — already NetCDF; NOT started).
 **Stages 3–11.4.1: COMPLETED** (10.x iceberg modernization; 11.1 seasonal characterization; 11.2 CFL audit; 11.4-D21…D33 EN4 stabilization → ERA5-coverage fix → cleanup + Ocean Baseline 11.x; 11.3A execution-graph audit; 11.3B input-architecture audit + NetCDF contracts; 11.3C scheme audit + timestep matrix; 11.3C.1 semantics + CFL distributions; 11.3C.2 time-integration audit; 11.3C.3 loop-bound search (VERDICT D); 11.4 EOS-80 experiment + 11.4.1 impact validation (OPTIONAL, not default)).
-**Current status:** Stages 10.14–11.7E.2 committed (see `git log` and `CHANGELOG.md` for history). **Stage 11.7E.2 COMPLETE** (EN4 ocean-initialization contract verification; synthetic-fallback elimination behind `OCEAN_INIT_MODE`; `initialization_source` output metadata).
+**Current status:** Stages 10.14–11.7E.2.3 committed (see `git log` and `CHANGELOG.md` for history). **Stage 11.7E.2.3 COMPLETE** (provenance path fix, CI error propagation fixed, automated provenance attribute tests, documentation sync).
 **Stage 11.5H-RC COMPLETE** (release-candidate gate: self-contained production scheduler, docs synced D-22…D-28). Plan: 11.7 NetCDF+CFL → 11.8A validation → 11.8B audit → 11.9 closure → 12.0 voxel (blocked, D-28).
 
 ## Completed foundation
@@ -387,12 +387,20 @@ NetCDF I/O contracts verified for every input class, legacy inputs removed
 executable + input contract reproduces the run (11.8B). Only then does the
 Stage-12 gate open (D-28).
 
+**Remediation note:** If 11.8A stability criteria are not met, a remediation
+iteration is required before closing 11.9. This may involve addressing the
+known production ocean instability (55/360 steps) or other identified
+issues. Stage 12 (voxel iceberg) remains blocked until all Stage 11.9
+criteria are satisfied.
+
 ### Stage 12.0 — Voxel Iceberg Thermodynamics (BLOCKED until Stage 11 complete)
 
 3D internal iceberg model (explicitly out of scope until 11.9 lands and
 the D-28 entry gate opens).
 
 ### Stage 11.2 — EN4 Initial Condition Stabilization (SUPERSEDED — archive)
+
+> **HISTORICAL — SUPERSEDED:** The following text reflects initial observations from early Stage 11. The −20.07 g/cm³ value was identified as a unit conversion error in Stage 11.1. The seasonal EN4 defect was resolved in Stage 11.2 preprocessing fixes. This section is retained for historical reference only.
 
 Stage 11.1 established that the ocean instability is general to prognostic ocean evolution, but its timing depends critically on the initial EN4 state:
 

@@ -111,7 +111,4 @@ jobs:
         shell: bash -l {0}
         run: |
           conda activate iceberg-thermodynamic-model
-          python python/tests/test_stage11_7e2_en4_contract.py || (
-            echo "EN4 contract test SKIPPED (products not available in CI)";
-            exit 0
-          )
+          python python/tests/test_stage11_7e2_en4_contract.py

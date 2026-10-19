@@ -24,6 +24,9 @@ module initial_ocean_reader
 
     character(len=*), parameter :: realistic_ocean_file = &
                                    "data/input/processed/ocean/initial_ts_2020-01-01.nc"
+    ! Actual file path that was successfully opened and read.
+    ! Set to the opened path on successful nf90_open; 'NONE' otherwise.
+    character(len=512), save :: actual_file_read = 'NONE'
 
 contains
 
@@ -47,6 +50,7 @@ contains
         character(len=512) :: env_path
 
         ok = .false.
+        actual_file_read = 'NONE'
         if (present(errmsg)) errmsg = 'EN4 reader: initialization failed (unspecified reason)'
 
         ! Переменная окружения для переопределения пути к файлу
@@ -56,6 +60,7 @@ contains
                 if (present(errmsg)) errmsg = 'nf90_open failed for ICEBERG_OCEAN_INIT_FILE='//trim(env_path)
                 return
             end if
+            actual_file_read = trim(env_path)
             print *, "INFO initial_ocean_reader: using ICEBERG_OCEAN_INIT_FILE = ", trim(env_path)
         else
             inquire (file=trim(realistic_ocean_file), exist=fexists)
@@ -70,6 +75,7 @@ contains
                 if (present(errmsg)) errmsg = 'nf90_open failed for '//trim(realistic_ocean_file)
                 return
             end if
+            actual_file_read = trim(realistic_ocean_file)
         end if
 
         ! DEBUG: print kt values for a few cells
@@ -171,7 +177,7 @@ contains
             end do
         end do
         print '("INFO initial_ocean_reader: read ", I0, " wet T/S cells from ", A)', &
-            nloaded, trim(realistic_ocean_file)
+            nloaded, trim(actual_file_read)
         print '("     T range [C]   : ", F9.4, " .. ", F9.4)', tmin, tmax
         print '("     S range [frac] : ", F9.6, " .. ", F9.6)', smin, smax
 
@@ -203,7 +209,7 @@ contains
             end do
         end do
         print '("INFO initial_ocean_reader: прочитано ", I0, " мокрых T/S ячеек из ", A)', &
-            nloaded, trim(realistic_ocean_file)
+            nloaded, trim(actual_file_read)
         print '("     T диапазон [C]   : ", F9.4, " .. ", F9.4)', tmin, tmax
         print '("     S диапазон [доля] : ", F9.6, " .. ", F9.6)', smin, smax
 

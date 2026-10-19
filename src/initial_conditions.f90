@@ -87,7 +87,7 @@ contains
         if (realistic_ok) then
             ocean_init_source = 'EN4'
             call prov_set_initialization('EN4', &
-                trim(realistic_ocean_file), &
+                trim(actual_file_read), &
                 trim(attempted_file), &
                 'EN4_REAL')
             ! Фоновое течение [см/с]: 0.20 по X и 0.10 по Y (сохранено как в Stage 7.6C.2)

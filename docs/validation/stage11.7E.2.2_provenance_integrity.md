@@ -10,7 +10,7 @@
 
 ## 1. Summary of Changes
 
-### 1.1 Code Changes (6 files + 1 new)
+### 1.1 Code Changes (4 modified + 1 new)
 
 | File | Change |
 |------|--------|
@@ -19,7 +19,6 @@
 | `src/netcdf_output.f90` | Reads provenance from `provenance` module (not re-parsed env). Uses `equation_of_state:get_active_eos_mode()` and `stage115h_production:get_active_scheduler_mode()`. Removed `get_file_info` and `upper_ascii`. New attributes: `initialization_file`, `initialization_attempted_file`, `initialization_mode_actual`, `eos_mode`, `scheduler_mode`. |
 | `src/equation_of_state.f90` | Added `get_active_eos_mode()` pure function returning `LEGACY` or `EOS80` from actual `eos80_mode` state. |
 | `src/stage115h_production.f90` | Added `get_active_scheduler_mode()` pure function returning `N1_LEGACY` or `PRODUCTION_STALE` from actual `s115h_prod` state. |
-| `src/provenance.f90` | **NEW** Shared provenance module (see above). |
 
 ### 1.2 Provenance Attributes — Before vs After
 
@@ -91,7 +90,7 @@
 
 ---
 
-## 5. Regression Verification
+## 6. Regression Verification
 
 | Check | Result |
 |-------|--------|
@@ -104,7 +103,7 @@
 
 ---
 
-## 6. Files Changed
+## 7. Files Changed
 
 **Modified (11):**
 - `.github/workflows/ci.yml`
@@ -125,7 +124,7 @@
 
 ---
 
-## 7. Acceptance Criteria Check
+## 8. Acceptance Criteria Check
 
 | Criterion | Status |
 |-----------|--------|
@@ -145,13 +144,13 @@
 
 ---
 
-## 8. Decisions Recorded
+## 9. Decisions Recorded
 
 - **D-31 (updated):** Silent EN4 synthetic fallback removed; OCEAN_INIT_MODE = STRICT/ALLOWED/FORCE_SYNTHETIC; provenance metadata records actual state; enum validation added; provenance module created.
 
 ---
 
-## 9. GO / NO-GO for 11.7E.3
+## 10. GO / NO-GO for 11.7E.3
 
 **GO** — All acceptance criteria met. Provenance metadata now accurately reflects actual model state, OCEAN_INIT_MODE behavior is explicit and verified, test coverage is comprehensive, documentation is synchronized.
 
@@ -161,7 +160,7 @@
 
 ---
 
-## 9. Confirmation
+## 11. Confirmation
 
 - ✅ NO physics or EOS defaults modified
 - ✅ Legacy Eckart EOS remains DEFAULT (`EOS_MODE=LEGACY`)

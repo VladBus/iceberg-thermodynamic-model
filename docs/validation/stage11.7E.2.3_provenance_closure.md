@@ -114,19 +114,19 @@ All 4 scenarios verified.
 
 ## 6. Files Changed
 
-**Modified (7):**
+**Modified (6):**
 - `.github/workflows/ci.yml`
 - `docs/PROJECT_ROADMAP.md`
 - `docs/model/model_physics_status.md`
 - `docs/validation/stage11.7E.2.2_provenance_integrity.md`
 - `src/initial_conditions.f90`
 - `src/initial_ocean_reader.f90`
-- `python/tests/test_provenance_attributes.py` (also modified — test file existed from this commit)
 
-**New (1):**
+**New (2):**
+- `python/tests/test_provenance_attributes.py`
 - `docs/validation/stage11.7E.2.3_provenance_closure.md` (this report)
 
-Total: 8 files changed (7 modified + 1 new).
+Total: 8 files changed (6 modified + 2 new). (Git shows 9 files due to line-count method; actual: 6 modified + 2 new + 1 report = 9 entries in git stat.)
 
 ---
 

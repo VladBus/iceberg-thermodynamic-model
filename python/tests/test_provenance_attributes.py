@@ -122,15 +122,21 @@ def run_model(binary, run_id, env_overrides, timeout_sec=90):
         bufsize=1,
     )
 
-    # Poll for day_00 output
+    # Poll for day_00 output with readability check
     start = time.time()
     day00_found = False
+    max_wait = min(timeout_sec, 10)  # Cap at 10s for day_00 readiness
     while time.time() - start < timeout_sec:
         if day00_path.exists():
-            # Give it a moment to finish writing
-            time.sleep(0.5)
-            day00_found = True
-            break
+            # Verify file is readable by netCDF4
+            try:
+                with Dataset(day00_path, 'r') as _:
+                    pass
+                day00_found = True
+                break
+            except Exception:
+                # File exists but not ready yet
+                pass
         if proc.poll() is not None:
             # Process exited early
             stdout, _ = proc.communicate(timeout=2)
@@ -139,6 +145,14 @@ def run_model(binary, run_id, env_overrides, timeout_sec=90):
                 print(f"    {line}")
             break
         time.sleep(0.25)
+        # After max_wait, if file exists but unreadable, treat as failure
+        if time.time() - start > max_wait and day00_path.exists():
+            try:
+                with Dataset(day00_path, 'r') as _:
+                    day00_found = True
+                    break
+            except Exception:
+                pass
 
     if not day00_found:
         # Timeout - kill and check if file appeared
@@ -307,7 +321,10 @@ def main():
     for name, func in scenarios:
         print(f"\n>>> Running {name}...")
         try:
-            func(binary)
+            ok = func(binary)
+            if not ok:
+                ERRORS += 1
+                print(f"FAIL {name}: scenario returned False (likely day_00.nc missing or unreadable)")
         except Exception as e:
             ERRORS += 1
             print(f"FAIL {name}: exception {type(e).__name__}: {e}")

@@ -112,3 +112,9 @@ jobs:
         run: |
           conda activate iceberg-thermodynamic-model
           python python/tests/test_stage11_7e2_en4_contract.py
+
+      - name: Run Stage 11.7E.2.3 Provenance attributes verification
+        shell: bash -l {0}
+        run: |
+          conda activate iceberg-thermodynamic-model
+          python python/tests/test_provenance_attributes.py

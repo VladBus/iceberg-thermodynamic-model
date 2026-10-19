@@ -1,9 +1,10 @@
 # Project Roadmap
 
-**Updated:** 2026-10-18
-**Current scientific stage:** Stage 11.7E.2.3 Provenance Path Fix, CI Error Propagation & Final Sync COMPLETE (initialization_file records actual override path; CI error masking removed; provenance attribute tests added; documentation synchronized). NEXT: 11.7E.3 ERA5 forcing reader (verify-only — already NetCDF; NOT started).
+**Updated:** 2026-10-19
+**Current scientific stage:** Stage 11.7E.3 ERA5 Forcing Contract Verification COMPLETE (verify-only, 58 checks). NEXT: 11.7E.4 sea-ice reader (real data connection).
 **Stages 3–11.4.1: COMPLETED** (10.x iceberg modernization; 11.1 seasonal characterization; 11.2 CFL audit; 11.4-D21…D33 EN4 stabilization → ERA5-coverage fix → cleanup + Ocean Baseline 11.x; 11.3A execution-graph audit; 11.3B input-architecture audit + NetCDF contracts; 11.3C scheme audit + timestep matrix; 11.3C.1 semantics + CFL distributions; 11.3C.2 time-integration audit; 11.3C.3 loop-bound search (VERDICT D); 11.4 EOS-80 experiment + 11.4.1 impact validation (OPTIONAL, not default)).
-**Current status:** Stages 10.14–11.7E.2.3 committed (see `git log` and `CHANGELOG.md` for history). **Stage 11.7E.2.3 COMPLETE** (provenance path fix, CI error propagation fixed, automated provenance attribute tests, documentation sync).
+**Current status:** Stages 10.14–11.7E.3 committed (see `git log` and `CHANGELOG.md` for history). **Stage 11.7E.3 COMPLETE** (ERA5 forcing contract verified vs 11.7A: all 7 variables, dims/units/fill, coordinates, D32/clamping, conversions, interpolation; test 58 checks; battery 50/0; strict clean).
+**Test suite:** 64 Fortran test source files (`ls test/*.f90 | wc -l`); 59 auto-discovered FPM targets (executable programs). The count differs because some source files are modules/helpers without a top-level `program`.
 **Stage 11.5H-RC COMPLETE** (release-candidate gate: self-contained production scheduler, docs synced D-22…D-28). Plan: 11.7 NetCDF+CFL → 11.8A validation → 11.8B audit → 11.9 closure → 12.0 voxel (blocked, D-28).
 
 ## Completed foundation

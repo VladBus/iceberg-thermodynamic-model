@@ -1,9 +1,9 @@
 # Project Roadmap
 
 **Updated:** 2026-10-20
-**Current scientific stage:** Stage 11.7E.3.1 ERA5 Test Strengthening & Snowfall Verification COMPLETE (ERA5 test strengthened: 108 checks with exact dims/coords/shapes/time/units/fill; snowfall verified non-zero (~1.17e-7 m/s max); CI integration added; documentation synced). NEXT: 11.7E.4 sea-ice reader (real data connection).
+**Current scientific stage:** Stage 11.7E.3.2 CI Fixture, E.4 Criteria Clarification & Snowfall Protection COMPLETE (ERA5 contract test is now fixture-aware: REAL → FIXTURE → SKIP with 113 checks in both modes; snowfall conversion protected by 5 checks; 11.7E.4 criteria clarified as A/B/C; real sea-ice manifest template prepared; documentation corrected). NEXT: 11.7E.4 sea-ice reader (real data connection).
 **Stages 3–11.4.1: COMPLETED** (10.x iceberg modernization; 11.1 seasonal characterization; 11.2 CFL audit; 11.4-D21…D33 EN4 stabilization → ERA5-coverage fix → cleanup + Ocean Baseline 11.x; 11.3A execution-graph audit; 11.3B input-architecture audit + NetCDF contracts; 11.3C scheme audit + timestep matrix; 11.3C.1 semantics + CFL distributions; 11.3C.2 time-integration audit; 11.3C.3 loop-bound search (VERDICT D); 11.4 EOS-80 experiment + 11.4.1 impact validation (OPTIONAL, not default)).
-**Current status:** Stages 10.14–11.7E.3.1 committed (see `git log` and `CHANGELOG.md` for history). **Stage 11.7E.3.1 COMPLETE** (ERA5 test strengthened: 108 exact checks; snowfall verified non-zero (~1.17e-7 m/s max); CI integration added; documentation synced).
+**Current status:** Stages 10.14–11.7E.3.2 committed (see `git log` and `CHANGELOG.md` for history). **Stage 11.7E.3.2 COMPLETE** (CI fixture + fixture-aware test, 113 checks in both modes; snowfall conversion protected; 11.7E.4 criteria clarified as A/B/C; real sea-ice manifest template; documentation corrected).
 **Test suite:** 64 Fortran test source files (`ls test/*.f90 | wc -l`); 59 auto-discovered FPM targets (executable programs). The count differs because some source files are modules/helpers without a top-level `program`.
 **Stage 11.5H-RC COMPLETE** (release-candidate gate: self-contained production scheduler, docs synced D-22…D-28). Plan: 11.7 NetCDF+CFL → 11.8A validation → 11.8B audit → 11.9 closure → 12.0 voxel (blocked, D-28).
 
@@ -319,6 +319,26 @@ Dependencies: 11.7E.2 verified.
 Rollback: none applicable (no new behavior path); revert commit if the
 verification changes code.
 
+### Stage 11.7E.3.2 — CI Fixture, E.4 Criteria Clarification & Snowfall Protection (COMPLETE)
+
+Scope: close five audit gaps before 11.7E.4 — (1) committed minimal ERA5
+fixture (`python/tests/fixtures/era5_synthetic.nc`) so the contract test runs
+in a clean CI clone with REAL → FIXTURE → SKIP selection; (2) replace the
+contradictory 11.7E.4 "ON ≡ OFF" criterion with three distinct criteria
+(A baseline reproduction / B reader equivalence / C scientific migration);
+(3) real sea-ice source-manifest template
+(`python/ice/seaice_source_manifest_real_template.json`) + preparation
+process (template only; production manifest untouched); (4) snowfall
+accumulation→rate conversion protection (5 checks); (5) documentation
+corrections (11.7E.3.1 file counts, 11.7E.3 superseded claims, CI
+target-vs-source comment, dates).
+Acceptance: fixture runs in CI without SKIP; fixture valid; REAL/FIXTURE
+selection works; criteria A/B/C documented; template present; snowfall
+conversion protected; docs corrected; regression green; diff-check clean.
+Dependencies: 11.7E.3.1 verified.
+Rollback: revert commit (test/documentation only; no physics path).
+Report: `docs/validation/stage11.7E.3.2_ci_fixture_criteria_clarification.md`.
+
 ### Stage 11.7E.4 — Sea-Ice Reader Switch
 
 Scope: sea-ice initialization source — `1_1.ice`…`1_5.ice` text files
@@ -326,9 +346,23 @@ Scope: sea-ice initialization source — `1_1.ice`…`1_5.ice` text files
 Real January data exists (`data/input/generated/real_grid/ice_2020-01-01/`;
 OSI-SAF SIC + C3S CS2SMOS SIT provenance — 11.7E.1-CP audit) but is NOT
 connected to production before this sub-stage.
-Acceptance: env-gated switch (default OFF → bit-identical; ON ≡ OFF),
-manifest provenance attributes verified, T-16 status updated.
-Dependencies: 11.7E.1–11.7E.3 verified.
+Acceptance (three distinct criteria — clarified in Stage 11.7E.3.2; the
+previous "ON ≡ OFF" requirement was contradictory, because connecting real
+data must change the result):
+- **A. Baseline reproduction (switch OFF):** default OFF → diagnostic-zero
+  path reproduces the legacy baseline bit-identically (the reader is not
+  invoked on the legacy path).
+- **B. Reader equivalence (NetCDF vs Legacy, same real source):** with the
+  env-gated switch ON, the new NetCDF reader must reproduce the legacy
+  `1_*.ice` reader given the SAME real source data (X ≡ Y within a documented
+  tolerance; no physics change).
+- **C. Scientific migration (real data connection):** connecting the real
+  OSI-SAF SIC + C3S SIT product to production is a scientific change relative
+  to the diagnostic-zero baseline; document expected differences and validate
+  — do NOT require identity with the baseline.
+
+Manifest provenance attributes verified, T-16 status updated.
+Dependencies: 11.7E.1–11.7E.3.2 verified.
 Rollback: unset env var (legacy files remain in place).
 
 ### Stage 11.7E.5 — Tides Reader Switch

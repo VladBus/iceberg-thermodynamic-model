@@ -144,19 +144,19 @@ if (sec .ge. era5_time(era5_ntime)) then; idx = era5_ntime; return
 
 ## 6. Files Changed
 
-**Modified (6):**
+**Modified (7):**
 - `.github/workflows/ci.yml` — added ERA5 test to CI
+- `README.md` — current-stage status line
 - `docs/PROJECT_ROADMAP.md` — stage 11.7E.3.1, test count note
 - `docs/model/model_physics_status.md` — stage 11.7E.3.1
 - `docs/validation/INDEX.md` — added 11.7E.3.1 entry
 - `docs/validation/stage11.7E.3_era5_contract_verification.md` — noted strengthening
-- `python/tests/test_provenance_attributes.py` — already updated in 11.7E.2.3
-
-**New (2):**
 - `python/tests/test_stage11_7e3_era5_contract.py` — strengthened (108 checks)
+
+**New (1):**
 - `docs/validation/stage11.7E.3.1_era5_test_strengthening.md` (this report)
 
-**Total:** 8 files changed (6 modified + 2 new)
+**Total:** 8 files changed (7 modified + 1 new) — matches `git show 0d6d103 --stat`.
 
 ---
 

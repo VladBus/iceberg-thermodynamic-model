@@ -1,9 +1,18 @@
 #!/usr/bin/env python3
 """
-Stage 11.7E.3.1 — ERA5 Forcing Contract Verification (Strengthened)
+Stage 11.7E.3.2 — ERA5 Forcing Contract Verification (fixture-aware)
 
 Verifies the merged ERA5 NetCDF product against the Stage 11.7A contract
 with EXACT assertions (not just > 0 checks).
+
+Data selection (in order):
+  1. REAL    — data/input/processed/era5/2020/2020_04/era5_2020_04_merged.nc
+  2. FIXTURE — python/tests/fixtures/era5_synthetic.nc (committed; CI clone)
+  3. SKIP    — neither present (exit 0 with a clear message)
+
+The fixture is a minimal synthetic ERA5-like file (4 x 5 x 10) that exercises
+the full structural contract. When the real product is present it takes
+precedence; the fixture is never silently substituted for real verification.
 
 The ERA5 chain already reads merged NetCDF; this is a VERIFY-ONLY stage.
 Do NOT write a new reader.
@@ -16,7 +25,7 @@ Exit codes:
 import os
 import sys
 from pathlib import Path
-from datetime import datetime, timezone, timedelta
+from datetime import datetime
 
 try:
     import numpy as np
@@ -27,41 +36,64 @@ except ImportError:
 
 PROJECT = Path(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-# ERA5 merged product path (standard location per 11.7A)
+# Real merged product (standard location per 11.7A)
 ERA5_MERGED_PATH = PROJECT / "data/input/processed/era5/2020/2020_04/era5_2020_04_merged.nc"
 
-# Expected EXACT dimensions for April 2020 merged product (per 11.7A contract)
-EXPECTED_NTIME = 120      # 30 days × 4 steps/day (6-hourly)
-EXPECTED_NLAT = 101       # 90 to 65 N at 0.25° = 101 points
-EXPECTED_NLON = 1440      # -180 to 179.75 at 0.25° = 1440 points
+# Minimal committed fixture for clean CI clones (Stage 11.7E.3.2)
+ERA5_FIXTURE_PATH = PROJECT / "python/tests/fixtures/era5_synthetic.nc"
 
-# Expected coordinate bounds (exact)
-EXPECTED_LAT_FIRST = 90.0
-EXPECTED_LAT_LAST = 65.0
-EXPECTED_LON_FIRST = -180.0
-EXPECTED_LON_LAST = 179.75
+# Raw snowfall (12-hourly accumulation) — available locally, absent in CI
+ERA5_RAW_SNOWFALL_PATH = PROJECT / "data/input/raw/era5/2020/2020_04/snowfall_2020_04.nc"
 
-# Expected resolution
-EXPECTED_LAT_RES = -0.25  # decreasing
-EXPECTED_LON_RES = 0.25
+# Snowfall merge script (conversion factor protection)
+MERGE_SNOWFALL_SCRIPT = PROJECT / "python/era5/merge_snowfall.py"
 
-# Expected time axis
-EXPECTED_TIME_UNITS = "seconds since 1970-01-01"
-EXPECTED_CALENDAR = "proleptic_gregorian"
-EXPECTED_TIME_INTERVAL = 21600  # 6 hours = 21600 seconds
+# Expected structure for the REAL April 2020 merged product (per 11.7A contract)
+REAL_EXPECTED = {
+    "ntime": 120,          # 30 days × 4 steps/day (6-hourly)
+    "nlat": 101,           # 90 to 65 N at 0.25° = 101 points
+    "nlon": 1440,          # -180 to 179.75 at 0.25° = 1440 points
+    "lat_first": 90.0,
+    "lat_last": 65.0,
+    "lat_step": -0.25,     # decreasing
+    "lon_first": -180.0,
+    "lon_last": 179.75,
+    "lon_step": 0.25,      # increasing
+    "time_start": (2020, 4, 1, 0, 0, 0),
+    "time_end": (2020, 4, 30, 18, 0, 0),
+    "time_interval_s": 21600,  # 6 hours
+    "sf_nonzero_min": 1,
+}
+
+# Expected structure for the FIXTURE (must match generate_era5_fixture.py)
+FIXTURE_EXPECTED = {
+    "ntime": 4,
+    "nlat": 5,
+    "nlon": 10,
+    "lat_first": 70.0,
+    "lat_last": 69.0,
+    "lat_step": -0.25,
+    "lon_first": 0.0,
+    "lon_last": 2.25,
+    "lon_step": 0.25,
+    "time_start": (2020, 4, 1, 0, 0, 0),
+    "time_end": (2020, 4, 1, 18, 0, 0),
+    "time_interval_s": 21600,
+    "sf_nonzero_min": 1,
+}
 
 # Expected variable dimension order: (valid_time, latitude, longitude)
 EXPECTED_VAR_DIMS = ("valid_time", "latitude", "longitude")
 
 # Expected data variable names and their expected units
 REQUIRED_VARS = {
-    "u10": {"units": ("m s-1", "m s**-1", "m/s"), "dtype": np.float32, "expected_dims": ("valid_time", "latitude", "longitude")},
-    "v10": {"units": ("m s-1", "m s**-1", "m/s"), "dtype": np.float32, "expected_dims": ("valid_time", "latitude", "longitude")},
-    "t2m": {"units": ("K",), "dtype": np.float32, "expected_dims": ("valid_time", "latitude", "longitude")},
-    "d2m": {"units": ("K",), "dtype": np.float32, "expected_dims": ("valid_time", "latitude", "longitude")},
-    "msl": {"units": ("Pa",), "dtype": np.float32, "expected_dims": ("valid_time", "latitude", "longitude")},
-    "tcc": {"units": ("1", "(0 - 1)", "-", "dimensionless"), "dtype": np.float32, "expected_dims": ("valid_time", "latitude", "longitude")},
-    "sf":  {"units": ("m s-1", "m s**-1", "m/s"), "dtype": np.float32, "expected_dims": ("valid_time", "latitude", "longitude")},
+    "u10": {"units": ("m s-1", "m s**-1", "m/s"), "dtype": np.float32},
+    "v10": {"units": ("m s-1", "m s**-1", "m/s"), "dtype": np.float32},
+    "t2m": {"units": ("K",), "dtype": np.float32},
+    "d2m": {"units": ("K",), "dtype": np.float32},
+    "msl": {"units": ("Pa",), "dtype": np.float32},
+    "tcc": {"units": ("1", "(0 - 1)", "-", "dimensionless"), "dtype": np.float32},
+    "sf":  {"units": ("m s-1", "m s**-1", "m/s"), "dtype": np.float32},
 }
 
 CHECKS = 0
@@ -92,25 +124,110 @@ def units_match(actual, expected):
     return actual == expected
 
 
+def check_snowfall_conversion(ds, mode, sf):
+    """Protect the accumulation -> rate conversion from silent regression.
+
+    Real mode with raw file: verify raw units, 12-h period, and that the
+    merged rate equals raw accumulation / 43200.
+    Real mode without raw file: verify the merged metadata documents the
+    12-hour conversion and the output range is a plausible rate.
+    Fixture mode: verify the fixture's known accumulation -> rate values.
+    """
+    merge_src = MERGE_SNOWFALL_SCRIPT.read_text() if MERGE_SNOWFALL_SCRIPT.exists() else ""
+    check("43200" in merge_src,
+          "merge_snowfall.py uses 43200 s (12 h) accumulation period",
+          f"checked {MERGE_SNOWFALL_SCRIPT}")
+
+    if mode == "fixture":
+        accum = float(ds.getncattr("fixture_snowfall_accumulation_m"))
+        period = float(ds.getncattr("fixture_snowfall_accumulation_period_s"))
+        units = ds.getncattr("fixture_snowfall_accumulation_units")
+
+        check(period == 43200.0,
+              "fixture snowfall accumulation period == 43200 s (12 h)",
+              f"got {period}")
+        check(units == "m of water equivalent",
+              "fixture snowfall accumulation units == 'm of water equivalent'",
+              f"got '{units}'")
+
+        expected_rate = accum / period
+        actual_rate = float(np.nanmax(sf))
+        check(abs(actual_rate - expected_rate) <= 1e-12,
+              "fixture sf rate == accumulation / 43200",
+              f"expected {expected_rate:.6e}, got {actual_rate:.6e}")
+
+        expected_nz = int(ds.getncattr("fixture_sf_nonzero_count"))
+        check(np.count_nonzero(sf) == expected_nz,
+              f"fixture sf non-zero cells == {expected_nz}",
+              f"got {np.count_nonzero(sf)}")
+        return
+
+    # REAL mode
+    if ERA5_RAW_SNOWFALL_PATH.exists():
+        with Dataset(ERA5_RAW_SNOWFALL_PATH) as raw:
+            raw_sf_var = raw.variables["sf"]
+            raw_units = raw_sf_var.getncattr("units") if "units" in raw_sf_var.ncattrs() else ""
+            raw_time = raw.variables["valid_time"][:]
+            raw_dt = np.diff(raw_time)
+            raw_max = float(np.nanmax(raw_sf_var[:]))
+
+        check("water equivalent" in raw_units.lower(),
+              "raw ERA5 sf units are 'm of water equivalent'",
+              f"got '{raw_units}'")
+        check(raw_dt.size > 0 and np.all(raw_dt == 43200),
+              "raw ERA5 sf accumulation period == 12 h (43200 s)",
+              f"got diffs {np.unique(raw_dt)[:5]}")
+        check(abs(float(np.nanmax(sf)) - raw_max / 43200.0) <= 1e-12,
+              "merged sf max == raw accumulation / 43200",
+              f"raw_max/43200={raw_max/43200.0:.6e}, merged={float(np.nanmax(sf)):.6e}")
+        check(np.count_nonzero(sf) >= 1000,
+              "merged sf has many non-zero cells (>= 1000)",
+              f"got {np.count_nonzero(sf)}")
+        info(f"raw snowfall: {ERA5_RAW_SNOWFALL_PATH}")
+    else:
+        sf_var = ds.variables["sf"]
+        sf_comment = sf_var.getncattr("comment") if "comment" in sf_var.ncattrs() else ""
+        check(("12" in sf_comment) or ("43200" in sf_comment),
+              "merged sf metadata documents 12-hour accumulation conversion",
+              f"comment: '{sf_comment[:80]}'")
+        check(np.nanmax(sf) < 1e-4,
+              "merged sf max is a plausible rate (< 1e-4 m/s)",
+              f"got {float(np.nanmax(sf)):.3e}")
+        check(np.count_nonzero(sf) > 0,
+              "merged sf has non-zero cells",
+              f"got {np.count_nonzero(sf)}")
+        info("raw ERA5 snowfall unavailable — raw-vs-merged conversion check skipped")
+
+
 def main():
     global CHECKS, ERRORS, INFOS
 
     print("=" * 72)
-    print("Stage 11.7E.3.1 — ERA5 Forcing Contract Verification (Strengthened)")
+    print("Stage 11.7E.3.2 — ERA5 Forcing Contract Verification (fixture-aware)")
     print("=" * 72)
 
-    if not ERA5_MERGED_PATH.exists():
-        print(f"SKIP: ERA5 merged file not found at {ERA5_MERGED_PATH}")
-        print("      Build via: python python/era5/merge_snowfall.py ...")
+    if ERA5_MERGED_PATH.exists():
+        mode = "real"
+        data_path = ERA5_MERGED_PATH
+        expected = REAL_EXPECTED
+    elif ERA5_FIXTURE_PATH.exists():
+        mode = "fixture"
+        data_path = ERA5_FIXTURE_PATH
+        expected = FIXTURE_EXPECTED
+    else:
+        print("SKIP: no ERA5 product and no fixture found")
+        print(f"      real:    {ERA5_MERGED_PATH}")
+        print(f"      fixture: {ERA5_FIXTURE_PATH}")
         print("=" * 72)
         print(f"TOTAL CHECKS: {CHECKS}  PASSED: {CHECKS - ERRORS}  FAILED: {ERRORS}  INFO: {INFOS}")
         print("=" * 72)
         return 0  # SKIP = exit 0
 
-    print(f"Verifying: {ERA5_MERGED_PATH}")
+    print(f"MODE: {mode.upper()}")
+    print(f"Verifying: {data_path}")
     print()
 
-    with Dataset(ERA5_MERGED_PATH) as ds:
+    with Dataset(data_path) as ds:
         # =========================================================================
         # 1. Dimensions — EXACT values required
         # =========================================================================
@@ -128,10 +245,10 @@ def main():
 
         info(f"ntime = {ntime}, nlat = {nlat}, nlon = {nlon}")
 
-        # EXACT dimension values
-        check(ntime == EXPECTED_NTIME, f"valid_time dimension == {EXPECTED_NTIME}", f"got {ntime}")
-        check(nlat == EXPECTED_NLAT, f"latitude dimension == {EXPECTED_NLAT}", f"got {nlat}")
-        check(nlon == EXPECTED_NLON, f"longitude dimension == {EXPECTED_NLON}", f"got {nlon}")
+        # EXACT dimension values (mode-dependent)
+        check(ntime == expected["ntime"], f"valid_time dimension == {expected['ntime']}", f"got {ntime}")
+        check(nlat == expected["nlat"], f"latitude dimension == {expected['nlat']}", f"got {nlat}")
+        check(nlon == expected["nlon"], f"longitude dimension == {expected['nlon']}", f"got {nlon}")
 
         # =========================================================================
         # 2. Required variables — exact shape, dims, dtype, units
@@ -152,12 +269,12 @@ def main():
 
             # Check dimensions (exact order and names)
             actual_dims = var.dimensions
-            check(actual_dims == spec["expected_dims"],
-                  f"'{varname}' dims == {spec['expected_dims']}",
+            check(actual_dims == EXPECTED_VAR_DIMS,
+                  f"'{varname}' dims == {EXPECTED_VAR_DIMS}",
                   f"got {actual_dims}")
 
             # Check shape matches dimension sizes
-            expected_shape = (EXPECTED_NTIME, EXPECTED_NLAT, EXPECTED_NLON)
+            expected_shape = (expected["ntime"], expected["nlat"], expected["nlon"])
             check(var.shape == expected_shape,
                   f"'{varname}' shape == {expected_shape}",
                   f"got {var.shape}")
@@ -185,27 +302,27 @@ def main():
 
         # Latitude
         lat = ds.variables["latitude"][:]
-        check(lat.shape == (EXPECTED_NLAT,), "latitude shape == (nlat,)")
-        check(lat[0] == EXPECTED_LAT_FIRST, f"latitude first == {EXPECTED_LAT_FIRST}", f"got {lat[0]}")
-        check(lat[-1] == EXPECTED_LAT_LAST, f"latitude last == {EXPECTED_LAT_LAST}", f"got {lat[-1]}")
+        check(lat.shape == (expected["nlat"],), "latitude shape == (nlat,)")
+        check(lat[0] == expected["lat_first"], f"latitude first == {expected['lat_first']}", f"got {lat[0]}")
+        check(lat[-1] == expected["lat_last"], f"latitude last == {expected['lat_last']}", f"got {lat[-1]}")
         check(np.all(lat[:-1] > lat[1:]), "latitude is strictly DECREASING", f"first={lat[0]}, last={lat[-1]}")
 
         # Check resolution is exactly 0.25° (decreasing)
         lat_diffs = np.diff(lat)
-        check(np.allclose(lat_diffs, -0.25, atol=1e-10),
-              f"latitude resolution == 0.25° (decreasing)",
+        check(np.allclose(lat_diffs, expected["lat_step"], atol=1e-10),
+              "latitude resolution == 0.25° (decreasing)",
               f"diffs: min={lat_diffs.min():.10f}, max={lat_diffs.max():.10f}")
         info(f"latitude: {lat[0]} .. {lat[-1]} (decreasing, step={lat_diffs[0]:.6f}°)")
 
         # Longitude
         lon = ds.variables["longitude"][:]
-        check(lon[0] == EXPECTED_LON_FIRST, f"longitude first == {EXPECTED_LON_FIRST}", f"got {lon[0]}")
-        check(lon[-1] == EXPECTED_LON_LAST, f"longitude last == {EXPECTED_LON_LAST}", f"got {lon[-1]}")
+        check(lon[0] == expected["lon_first"], f"longitude first == {expected['lon_first']}", f"got {lon[0]}")
+        check(lon[-1] == expected["lon_last"], f"longitude last == {expected['lon_last']}", f"got {lon[-1]}")
         check(np.all(lon[:-1] < lon[1:]), "longitude is strictly INCREASING")
 
         lon_diffs = np.diff(lon)
-        check(np.allclose(lon_diffs, 0.25, atol=1e-10),
-              f"longitude resolution == 0.25° (increasing)",
+        check(np.allclose(lon_diffs, expected["lon_step"], atol=1e-10),
+              "longitude resolution == 0.25° (increasing)",
               f"diffs: min={lon_diffs.min():.10f}, max={lon_diffs.max():.10f}")
         info(f"longitude: {lon[0]} .. {lon[-1]} (increasing, step={lon_diffs[0]:.6f}°)")
 
@@ -216,21 +333,21 @@ def main():
 
         time_var = ds.variables["valid_time"]
         time_vals = time_var[:]
-        check(time_vals.shape == (EXPECTED_NTIME,), f"valid_time shape == ({EXPECTED_NTIME},)")
+        check(time_vals.shape == (expected["ntime"],), f"valid_time shape == ({expected['ntime']},)")
 
         # Units attribute MANDATORY
         check("units" in time_var.ncattrs(), "'valid_time' has 'units' attribute", "missing")
         time_units = time_var.getncattr("units")
         check("seconds since 1970-01-01" in time_units.lower(),
-              f"time units reference 1970 epoch",
+              "time units reference 1970 epoch",
               f"got '{time_units}'")
         info(f"time units: {time_units}")
 
         # Calendar attribute MANDATORY
         check("calendar" in time_var.ncattrs(), "'valid_time' has 'calendar' attribute", "missing")
         cal = time_var.getncattr("calendar")
-        check(cal.lower() == EXPECTED_CALENDAR.lower(),
-              f"time calendar == {EXPECTED_CALENDAR}",
+        check(cal.lower() == "proleptic_gregorian",
+              "time calendar == proleptic_gregorian",
               f"got '{cal}'")
         info(f"time calendar: {cal}")
 
@@ -239,31 +356,29 @@ def main():
 
         # Check time interval is exactly 6 hours (21600 seconds)
         time_diffs = np.diff(time_vals)
-        check(np.all(time_diffs == EXPECTED_TIME_INTERVAL),
-              f"time interval == {EXPECTED_TIME_INTERVAL} seconds (6 hours)",
+        check(np.all(time_diffs == expected["time_interval_s"]),
+              f"time interval == {expected['time_interval_s']} seconds (6 hours)",
               f"diffs: min={time_diffs.min()}, max={time_diffs.max()}")
 
-        # Check total time steps match expected (120 for April)
-        check(len(time_vals) == EXPECTED_NTIME,
-              f"time steps == {EXPECTED_NTIME}",
+        # Check total time steps match expected
+        check(len(time_vals) == expected["ntime"],
+              f"time steps == {expected['ntime']}",
               f"got {len(time_vals)}")
 
-        # Check time range covers full April 2020 (6-hourly from 2020-04-01 00:00 to 2020-04-30 18:00)
-        # Use cftime datetime comparison (no tzinfo for cftime objects)
-        expected_start = datetime(2020, 4, 1, 0, 0, 0)
-        expected_end = datetime(2020, 4, 30, 18, 0, 0)
-
+        # Check time range (start/end are mode-dependent)
+        start = expected["time_start"]
+        end = expected["time_end"]
         actual_start = time_dates[0]
         actual_end = time_dates[-1]
 
-        # Compare year, month, day, hour, minute, second
-        check((actual_start.year, actual_start.month, actual_start.day, actual_start.hour, actual_start.minute, actual_start.second) ==
-              (expected_start.year, expected_start.month, expected_start.day, expected_start.hour, expected_start.minute, expected_start.second),
-              f"time start == {expected_start}",
+        # Compare year, month, day, hour, minute, second (cftime has no tzinfo)
+        check((actual_start.year, actual_start.month, actual_start.day,
+               actual_start.hour, actual_start.minute, actual_start.second) == start,
+              f"time start == {datetime(*start)}",
               f"got {actual_start}")
-        check((actual_end.year, actual_end.month, actual_end.day, actual_end.hour, actual_end.minute, actual_end.second) ==
-              (expected_end.year, expected_end.month, expected_end.day, expected_end.hour, expected_end.minute, expected_end.second),
-              f"time end == {expected_end}",
+        check((actual_end.year, actual_end.month, actual_end.day,
+               actual_end.hour, actual_end.minute, actual_end.second) == end,
+              f"time end == {datetime(*end)}",
               f"got {actual_end}")
 
         info(f"time range: {actual_start} to {actual_end}")
@@ -326,13 +441,18 @@ def main():
         sf = ds.variables["sf"][:]
         check(np.isfinite(sf).all(), "sf all finite")
         check(np.nanmin(sf) >= 0.0, "sf >= 0 (snowfall rate non-negative)")
-        # Verify non-zero snowfall exists (values are ~1e-7 m/s max, not zero)
         check(np.nanmax(sf) > 0.0, "sf has non-zero values (max > 0)", f"max={np.nanmax(sf):.2e}")
         info(f"sf range [m/s]: {np.nanmin(sf):.2e} .. {np.nanmax(sf):.2e}")
         info(f"sf non-zero count: {np.count_nonzero(sf)}")
 
         # =========================================================================
-        # 7. Code behavior documentation (verified by grep)
+        # 7. Snowfall conversion protection (Stage 11.7E.3.2)
+        # =========================================================================
+        print("\n--- Snowfall Conversion Protection ---")
+        check_snowfall_conversion(ds, mode, sf)
+
+        # =========================================================================
+        # 8. Code behavior documentation (verified by grep in src/)
         # =========================================================================
         print("\n--- Code Behavior (verified in source) ---")
 

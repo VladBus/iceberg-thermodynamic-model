@@ -35,7 +35,7 @@ under atmospheric, oceanic, bathymetric, and sea-ice forcing.
 
 ## 📑 Project status
 
-- **Current stage:** Stage 11.7E.3.1 ERA5 Test Strengthening & Snowfall Verification COMPLETE (ERA5 test strengthened: 108 checks with exact dims/coords/shapes/time/units/fill; snowfall verified non-zero (~1.17e-7 m/s max); CI integration added; documentation synced). NEXT: 11.7E.4 Sea-ice reader with REAL data connection (OSI-SAF SIC + C3S SIT). Production reference: Legacy EOS + N=1 scheduler. EOS-80: optional, not default (D-29).
+- **Current stage:** Stage 11.7E.3.2 CI Fixture, E.4 Criteria Clarification & Snowfall Protection COMPLETE (ERA5 contract test fixture-aware: REAL → FIXTURE → SKIP, 113 checks in both modes; snowfall conversion protected; 11.7E.4 criteria clarified as A/B/C; real sea-ice manifest template prepared; documentation corrected). NEXT: 11.7E.4 Sea-ice reader with REAL data connection (OSI-SAF SIC + C3S SIT). Production reference: Legacy EOS + N=1 scheduler. EOS-80: optional, not default (D-29).
   [Historical note from Stage 10.19, SUPERSEDED by Stage 10.20 restoration
   (full-coverage ERA5: 3-day gate PASS, residual characterized, NOT fixed):
   coupling recovery (completed: the Lagrangian iceberg module is now

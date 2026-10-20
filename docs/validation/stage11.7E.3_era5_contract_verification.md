@@ -75,7 +75,7 @@ All 7 variables have `_FillValue = NaN` (or standard 9.96921e36) ✅
 | d2m | plausible K, d2m ≤ t2m on avg | ✅ |
 | msl | 96056 .. 106824 Pa | ✅ |
 | tcc | 0.0 .. 1.0 | ✅ |
-| sf | ≥ 0 (all zeros in April) | ✅ |
+| sf | ≥ 0; non-zero values present (max ≈ 1.17e-7 m/s, 15,053,341 non-zero cells) — INCORRECT earlier claim "all zeros in April"; see 11.7E.3.1 | ✅ |
 
 ---
 
@@ -85,7 +85,8 @@ All 7 variables have `_FillValue = NaN` (or standard 9.96921e36) ✅
 ```fortran
 if (model lat outside ERA5 range) then
     lat_use = min(max(lat, era5_lat(1)), era5_lat(era5_nlat))
-    ! nearest-edge fallback, warning printed once
+    ! nearest-edge fallback — INCORRECT: no warning is printed
+    ! (corrected by 11.7E.3.1; see src/wind_forcing.f90:era5_wind() lines 270-280)
 ```
 Model points outside ERA5 latitude coverage reuse file-edge value instead of zero.
 
@@ -105,7 +106,7 @@ Model points outside ERA5 latitude coverage reuse file-edge value instead of zer
 - **Method:** NEAREST-time (binary search)
 - **Input:** model seconds (proleptic Gregorian, since 1970-01-01)
 - **Output:** nearest ERA5 time index
-- **Out-of-range:** idx clamped to 1 or ntime, warning printed once
+- **Out-of-range:** idx clamped to 1 or ntime, NO warning printed — INCORRECT earlier "warning printed once" claim (corrected by 11.7E.3.1; see `era5_find_time_index()` lines 360-385)
 - **No linear interpolation** — nearest neighbor only (documented assumption)
 
 ### 3.4 Spatial Interpolation (`netcdf_input.f90:era5_bilinear2d()`)

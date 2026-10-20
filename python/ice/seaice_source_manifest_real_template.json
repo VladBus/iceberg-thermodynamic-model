@@ -1,0 +1,53 @@
+{
+  "_comment": [
+    "Stage 11.7E.3.2 — TEMPLATE ONLY. Not consumed by production code.",
+    "Production reads python/ice/seaice_source_manifest.json (currently the",
+    "diagnostic placeholder). A filled copy of this template is intended to be",
+    "promoted to that path only in Stage 11.7E.4, together with the sea-ice",
+    "reader switch and its approval. Do NOT point production at this file.",
+    "Preparation process:",
+    "  1. Obtain raw SIC (OSI-SAF OSI-450-b / CDR v3.1, EASE2-250) and raw SIT",
+    "     (C3S CS2SMOS SIT L4 v1.1, EASE2-125) NetCDF files from the official",
+    "     portals into data/input/raw/ice/osisaf/ and data/input/raw/ice/c3s_sit/.",
+    "  2. Verify the downloads with `md5sum` and record the digests below.",
+    "  3. Run the preprocessing (python/ice/build_initial_ice.py; the 11.7E.4",
+    "     NetCDF builder is python/ice/build_seaice_nc.py) to generate the five",
+    "     category files 1_1.ice..1_5.ice for the target date.",
+    "  4. Replace every <...> placeholder with the real values/digests.",
+    "  5. In 11.7E.4 only: copy the filled file to",
+    "     python/ice/seaice_source_manifest.json and verify the attributes",
+    "     written into seaice_initial.nc."
+  ],
+  "source_type": "scientific",
+  "dataset_name": "OSI-SAF SIC + C3S SIT",
+  "version": "OSI-450-b / CS2SMOS v1.1",
+  "date": "2026-10-20",
+  "spatial_extent": "Arctic (model grid 133x105, is1 x js1)",
+  "temporal_coverage": "2020-01-01",
+  "processing": {
+    "sic_source": "OSI-SAF OSI-450-b (ice_conc, EASE2-250, % concentration)",
+    "sit_source": "C3S CS2SMOS SIT L4 v1.1 (sea_ice_thickness, EASE2-125, m)",
+    "regridding": "bilinear to model grid",
+    "categories": "5 thickness bins (0.2, 0.4, 0.95, 1.6, 2.5 m)",
+    "category_conservation": "sum(A_k) = SIC; sum(A_k*H_k) = SIC*SIT",
+    "ans_min_gate": 0.005
+  },
+  "source_files": {
+    "raw_sic_file": "data/input/raw/ice/osisaf/ice_conc_nh_ease2-250_cdr-v3p1_202001011200.nc",
+    "raw_sit_file": "data/input/raw/ice/c3s_sit/ice_thickness_nh_ease2-125_cs3smos-v1p1_20200101.nc",
+    "processed_1_1_ice": "data/input/generated/real_grid/ice_2020-01-01/1_1.ice",
+    "processed_1_2_ice": "data/input/generated/real_grid/ice_2020-01-01/1_2.ice",
+    "processed_1_3_ice": "data/input/generated/real_grid/ice_2020-01-01/1_3.ice",
+    "processed_1_4_ice": "data/input/generated/real_grid/ice_2020-01-01/1_4.ice",
+    "processed_1_5_ice": "data/input/generated/real_grid/ice_2020-01-01/1_5.ice"
+  },
+  "checksums": {
+    "raw_sic_file": "<md5 of raw OSI-SAF SIC NetCDF>",
+    "raw_sit_file": "<md5 of raw C3S SIT NetCDF>",
+    "processed_1_1_ice": "<md5 of processed 1_1.ice>",
+    "processed_1_2_ice": "<md5 of processed 1_2.ice>",
+    "processed_1_3_ice": "<md5 of processed 1_3.ice>",
+    "processed_1_4_ice": "<md5 of processed 1_4.ice>",
+    "processed_1_5_ice": "<md5 of processed 1_5.ice>"
+  }
+}

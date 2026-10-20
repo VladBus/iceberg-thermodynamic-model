@@ -78,6 +78,8 @@ Stage 10 reports have been archived to `docs/wiki/stages/stage10/`. See the arch
 - Decisions: `../DECISIONS.md`
 - Archived completed stages: `../wiki/INDEX.md`
 
+| `stage11.7E.4_real_seaice_connection.md` (env-gated NetCDF sea-ice reader; real Jan-2020 OSI-SAF/C3S; A/B/C 7-day; builder transpose fix; ocean gate) | 11.7E.4 | COMPLETE (default OFF; B bit-identical after fix; no physics/EOS change) | Switch `STAGE117E_NETCDF_SEAICE` default OFF; real manifest + checksums; A 0 diffs vs JANOFF days 0–7; B 0 diffs ON vs legacy-real days 0–7; C expected real-data change; fixed builder text layout `(IS1,JS1)` (transpose had caused 15,477-cell B mismatch); test writes temp output, no production clobber; 33 + 120 checks; GO 11.7E.5 with ocean 55/360 and Jan-only gaps | `docs/validation/stage11.7E.4_real_seaice_connection.md` |
+
 ## Rules
 
 - Reports here are not rewritten after stage completion (exception: technical navigational fixes).

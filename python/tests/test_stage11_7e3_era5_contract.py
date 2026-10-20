@@ -8,7 +8,7 @@ with EXACT assertions (not just > 0 checks).
 Data selection (in order):
   1. REAL    — data/input/processed/era5/2020/2020_04/era5_2020_04_merged.nc
   2. FIXTURE — python/tests/fixtures/era5_synthetic.nc (committed; CI clone)
-  3. SKIP    — neither present (exit 0 with a clear message)
+  3. FAIL    — both missing (fixture is committed; this is a CI error)
 
 The fixture is a minimal synthetic ERA5-like file (4 x 5 x 10) that exercises
 the full structural contract. When the real product is present it takes
@@ -65,22 +65,33 @@ REAL_EXPECTED = {
     "sf_nonzero_min": 1,
 }
 
-# Expected structure for the FIXTURE (must match generate_era5_fixture.py)
-FIXTURE_EXPECTED = {
-    "ntime": 4,
-    "nlat": 5,
-    "nlon": 10,
-    "lat_first": 70.0,
-    "lat_last": 69.0,
-    "lat_step": -0.25,
-    "lon_first": 0.0,
-    "lon_last": 2.25,
-    "lon_step": 0.25,
-    "time_start": (2020, 4, 1, 0, 0, 0),
-    "time_end": (2020, 4, 1, 18, 0, 0),
-    "time_interval_s": 21600,
-    "sf_nonzero_min": 1,
-}
+# Fixture expectations are read from the fixture's own ``fixture_*`` global
+# attributes (single source of truth; Stage 11.7E.4 Phase 0.5).  No duplicate
+# magic numbers live in this test.
+def fixture_expected(ds):
+    """Build the expected contract from the fixture's own attributes."""
+    start = datetime.strptime(
+        str(ds.getncattr("fixture_time_start")), "%Y-%m-%d %H:%M:%S")
+    end = datetime.strptime(
+        str(ds.getncattr("fixture_time_end")), "%Y-%m-%d %H:%M:%S")
+    return {
+        "ntime": int(ds.getncattr("fixture_expected_ntime")),
+        "nlat": int(ds.getncattr("fixture_expected_nlat")),
+        "nlon": int(ds.getncattr("fixture_expected_nlon")),
+        "lat_first": float(ds.getncattr("fixture_lat_first")),
+        "lat_last": float(ds.getncattr("fixture_lat_last")),
+        "lat_step": float(ds.getncattr("fixture_lat_step")),
+        "lon_first": float(ds.getncattr("fixture_lon_first")),
+        "lon_last": float(ds.getncattr("fixture_lon_last")),
+        "lon_step": float(ds.getncattr("fixture_lon_step")),
+        "time_start": (start.year, start.month, start.day,
+                       start.hour, start.minute, start.second),
+        "time_end": (end.year, end.month, end.day,
+                     end.hour, end.minute, end.second),
+        "time_interval_s": int(ds.getncattr("fixture_time_interval_s")),
+        "sf_nonzero_min": 1,
+    }
+
 
 # Expected variable dimension order: (valid_time, latitude, longitude)
 EXPECTED_VAR_DIMS = ("valid_time", "latitude", "longitude")
@@ -199,6 +210,65 @@ def check_snowfall_conversion(ds, mode, sf):
         info("raw ERA5 snowfall unavailable — raw-vs-merged conversion check skipped")
 
 
+def check_snowfall_conversion_function():
+    """Call the production conversion function on a synthetic 2x2x4 array.
+
+    This is deliberately a FUNCTION call (not a source-code grep): it protects
+    the accumulation -> rate factor and the metadata written by the merge.
+    """
+    import tempfile
+    import xarray as xr
+
+    sys.path.insert(0, str(PROJECT / "python" / "era5"))
+    import merge_snowfall as ms
+
+    accum = (np.arange(16, dtype=np.float64).reshape(2, 2, 4) * 0.001)
+    rate = ms.accumulation_to_rate(accum)
+    check(rate.shape == accum.shape,
+          "snowfall conversion preserves shape",
+          f"got {rate.shape}")
+    check(np.array_equal(rate, accum / 43200.0),
+          "snowfall conversion == accumulation / 43200",
+          f"max diff {np.max(np.abs(rate - accum / 43200.0)):.3e}")
+    check(not np.array_equal(rate, accum / 3600.0),
+          "snowfall conversion is not accumulation / 3600")
+    check(not np.array_equal(rate, accum / 86400.0),
+          "snowfall conversion is not accumulation / 86400")
+
+    lat = np.array([70.0, 69.75])
+    lon = np.array([0.0, 0.25])
+    target_times = np.array(
+        ["2020-04-01T00:00:00", "2020-04-01T06:00:00",
+         "2020-04-01T12:00:00", "2020-04-01T18:00:00"], dtype="datetime64[ns]")
+    snow_times = np.array(
+        ["2020-04-01T00:00:00", "2020-04-01T12:00:00"], dtype="datetime64[ns]")
+    inst = xr.Dataset(
+        {"dummy": (("valid_time", "latitude", "longitude"),
+                   np.zeros((4, 2, 2), dtype="f4"))},
+        coords={"valid_time": target_times, "latitude": lat, "longitude": lon})
+    snow = xr.Dataset(
+        {"sf": (("valid_time", "latitude", "longitude"),
+                np.full((2, 2, 2), 0.00432, dtype="f4"))},
+        coords={"valid_time": snow_times, "latitude": lat, "longitude": lon})
+
+    with tempfile.TemporaryDirectory(prefix="snowfall_unit_") as td:
+        inst_path = os.path.join(td, "inst.nc")
+        snow_path = os.path.join(td, "snow.nc")
+        out_path = os.path.join(td, "merged.nc")
+        inst.to_netcdf(inst_path)
+        snow.to_netcdf(snow_path)
+        ms.merge_snowfall(inst_path, snow_path, out_path)
+        with Dataset(out_path) as merged:
+            check("sf" in merged.variables, "merged output has sf")
+            check(merged.variables["sf"].units == "m s-1",
+                  "merged sf units == m s-1",
+                  f"got {merged.variables['sf'].units!r}")
+            merged_max = float(np.nanmax(merged.variables["sf"][:]))
+            check(abs(merged_max - 0.00432 / 43200.0) <= 1e-12,
+                  "merged sf uses /43200 conversion",
+                  f"got {merged_max:.6e}")
+
+
 def main():
     global CHECKS, ERRORS, INFOS
 
@@ -206,28 +276,29 @@ def main():
     print("Stage 11.7E.3.2 — ERA5 Forcing Contract Verification (fixture-aware)")
     print("=" * 72)
 
+    check_snowfall_conversion_function()
+
     if ERA5_MERGED_PATH.exists():
         mode = "real"
         data_path = ERA5_MERGED_PATH
-        expected = REAL_EXPECTED
     elif ERA5_FIXTURE_PATH.exists():
         mode = "fixture"
         data_path = ERA5_FIXTURE_PATH
-        expected = FIXTURE_EXPECTED
     else:
-        print("SKIP: no ERA5 product and no fixture found")
+        print("FAIL: Fixture missing from repository — this should not happen")
         print(f"      real:    {ERA5_MERGED_PATH}")
         print(f"      fixture: {ERA5_FIXTURE_PATH}")
         print("=" * 72)
         print(f"TOTAL CHECKS: {CHECKS}  PASSED: {CHECKS - ERRORS}  FAILED: {ERRORS}  INFO: {INFOS}")
         print("=" * 72)
-        return 0  # SKIP = exit 0
+        return 1
 
     print(f"MODE: {mode.upper()}")
     print(f"Verifying: {data_path}")
     print()
 
     with Dataset(data_path) as ds:
+        expected = REAL_EXPECTED if mode == "real" else fixture_expected(ds)
         # =========================================================================
         # 1. Dimensions — EXACT values required
         # =========================================================================

@@ -368,6 +368,13 @@ Format: `ID | stage/date | status` + short description. Details — via links.
 - **Limitations:** default `realistic_ocean_file` points to the shipped Jan product (bilinear signature); rebuild products satisfy STRICT contract. No production default change to the input file path.
 - **Next:** 11.7E.3 ERA5 forcing reader verification.
 
+## D-30 — Keep the sea-ice reader switch OFF by default
+
+Stage 11.7E.4 connects real January 2020 sea ice behind
+`STAGE117E_NETCDF_SEAICE`, but leaves the switch OFF by default and keeps the
+legacy files for rollback. ON and legacy-real are bit-identical; the default
+remains unchanged until the production-default decision in 11.7F.
+
 ## How to add decisions
 
 A new decision is appended with an ID, stage, status, and links to reports.

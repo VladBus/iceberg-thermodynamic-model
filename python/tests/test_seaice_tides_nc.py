@@ -17,6 +17,7 @@ Check layers:
 
 import os
 import sys
+import tempfile
 
 import numpy as np
 
@@ -137,6 +138,12 @@ def main():
     import build_seaice_nc as sea
     import build_tides_nc as tid
 
+    _tmp = tempfile.mkdtemp(prefix="seaice_tides_test_")
+    sea.OUT_DIR = os.path.join(_tmp, "ice")
+    tid.OUT_DIR = os.path.join(_tmp, "tides")
+    os.makedirs(sea.OUT_DIR, exist_ok=True)
+    os.makedirs(tid.OUT_DIR, exist_ok=True)
+
     # Run builders with explicit output paths
     gpath = os.path.join(sea.OUT_DIR, "seaice_initial.nc")
     tpath = os.path.join(tid.OUT_DIR, "tides.nc")
@@ -211,7 +218,6 @@ def main():
     # must apply (schema validation before use).
     import json as _json
     import shutil
-    import tempfile
 
     manifest_path = os.path.join(PROJECT, "python", "ice",
                                  "seaice_source_manifest.json")
@@ -333,7 +339,6 @@ def main():
     finally:
         shutil.rmtree(tmpdir, ignore_errors=True)
 
-    # 4. Scientific with CHECKSUM MISMATCH -> SCIENTIFIC_CHECKSUM_MISMATCH
     tmpdir = tempfile.mkdtemp(prefix="seaice_sci_mismatch_")
     try:
         sci_mismatch = os.path.join(tmpdir, "sci_mismatch.json")
@@ -354,17 +359,15 @@ def main():
         out_mismatch = os.path.join(tmpdir, "seaice_sci_mismatch.nc")
         sys.argv = ['build_seaice_nc.py', '--out', out_mismatch,
                     '--manifest', sci_mismatch]
-        sea.main()
-        gm = Dataset(out_mismatch)
-        check(gm.getncattr("sea_ice_status") == "SCIENTIFIC_CHECKSUM_MISMATCH",
-              "scientific checksum mismatch status",
-              str(gm.getncattr("sea_ice_status")))
-        check(gm.getncattr("source") == "CHECKSUM_MISMATCH",
-              "scientific checksum mismatch source",
-              str(gm.getncattr("source")))
-        check("manifest_mismatch" in gm.ncattrs(),
-              "scientific checksum mismatch has manifest_mismatch attr")
-        gm.close()
+        try:
+            sea.main()
+            check(False, "checksum mismatch fails fast",
+                  "builder returned without SystemExit")
+        except SystemExit as exc:
+            check(exc.code == 1, "checksum mismatch exit code",
+                  str(exc.code))
+        check(not os.path.exists(out_mismatch),
+              "checksum mismatch writes no output file")
     finally:
         shutil.rmtree(tmpdir, ignore_errors=True)
 

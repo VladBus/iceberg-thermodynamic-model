@@ -1,0 +1,31 @@
+{
+  "_comment": "REAL January 2020 sea-ice manifest for Stage 11.7E.4; canonical scientific provenance. Do not use for synthetic/diagnostic tests.",
+  "source_type": "scientific",
+  "dataset_name": "OSI-SAF SIC CDR + C3S SIT",
+  "version": "OSI-450-b CDR v3.1 / CS2SMOS v1.1",
+  "date": "2020-01-01",
+  "manifest_created_date": "2026-10-21",
+  "spatial_extent": "Barents Sea / Svalbard / Franz Josef Land model domain (64.21-85.04 N, 8.33-76.32 E)",
+  "temporal_coverage": "2020-01-01",
+  "processing": "Legacy init generator python/ice/build_initial_ice.py (nearest-neighbour remap to model grid; 5 thickness categories with sum(A)=SIC and sum(A*H)=SIC*SIT); NetCDF builder python/ice/build_seaice_nc.py preserves values.",
+  "source_files": {
+    "raw_sic_file": "data/input/raw/ice/osisaf/ice_conc_nh_ease2-250_cdr-v3p1_202001011200.nc",
+    "raw_sit_file": "data/input/raw/ice/c3s_sit/ice_thickness_nh_ease2-125_cs3smos-v1p1_20200101.nc",
+    "processed_1_1_ice": "data/input/generated/real_grid/ice_2020-01-01/1_1.ice",
+    "processed_1_2_ice": "data/input/generated/real_grid/ice_2020-01-01/1_2.ice",
+    "processed_1_3_ice": "data/input/generated/real_grid/ice_2020-01-01/1_3.ice",
+    "processed_1_4_ice": "data/input/generated/real_grid/ice_2020-01-01/1_4.ice",
+    "processed_1_5_ice": "data/input/generated/real_grid/ice_2020-01-01/1_5.ice"
+  },
+  "checksums": {
+    "raw_sic_file": "9fbd6812b6caf12865508c5fdb394688",
+    "raw_sit_file": "e8eec96c2841185ee972f205201f0abd",
+    "processed_1_1_ice": "8e84752c68820b9a1023d817b3474fab",
+    "processed_1_2_ice": "8763034a24dee8fe223051576b774618",
+    "processed_1_3_ice": "f78d35fe43518a25df74c216ce1be7c3",
+    "processed_1_4_ice": "b224f2e14b28ad5f1efbc6204f7c6142",
+    "processed_1_5_ice": "bed22ff354bc6ea12ec58718d40950f1"
+  },
+  "grid_fingerprint": "58229d66635eee7b556ea8abbc2098bc",
+  "processing_code_version": "61d85aba0120fff46f55da1fc1d5dc749e41ae27"
+}

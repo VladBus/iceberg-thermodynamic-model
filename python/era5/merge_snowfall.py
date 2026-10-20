@@ -29,6 +29,15 @@ import xarray as xr
 
 from scipy import interpolate
 
+SNOWFALL_ACCUMULATION_PERIOD_S = 43200.0
+
+
+def accumulation_to_rate(accumulation, period_s=SNOWFALL_ACCUMULATION_PERIOD_S):
+    """Convert accumulated snowfall [m water equivalent] to rate [m s-1]."""
+    if period_s <= 0:
+        raise ValueError("accumulation period must be positive")
+    return np.asarray(accumulation) / float(period_s)
+
 
 def merge_snowfall(instantaneous_nc, snowfall_nc, output_nc):
     """Merge snowfall into instantaneous variables file.
@@ -77,7 +86,7 @@ def merge_snowfall(instantaneous_nc, snowfall_nc, output_nc):
     # Convert snowfall accumulations to rates [m/s]
     # Each accumulation is over 12 hours = 43200 seconds
     snow_accum = ds_snow["sf"].values  # [time, lat, lon] in m water equivalent
-    snow_rate = snow_accum / 43200.0  # m/s
+    snow_rate = accumulation_to_rate(snow_accum)  # m/s
 
     # Interpolate snowfall rate to target times
     nlat, nlon = snow_accum.shape[1], snow_accum.shape[2]

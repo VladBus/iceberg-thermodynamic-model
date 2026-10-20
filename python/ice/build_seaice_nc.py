@@ -24,6 +24,7 @@ CF-1.10 metadata, provenance, dimension names (cat, j, i).
 
 import argparse
 import hashlib
+import json
 import os
 import subprocess
 import time
@@ -57,18 +58,47 @@ def md5(path):
     return h.hexdigest()
 
 
-def read_ice_files():
-    """Read 1_1.ice .. 1_5.ice from real_grid directory."""
+def resolve_ice_dir(manifest, explicit=None):
+    """Resolve the directory holding 1_1.ice..1_5.ice."""
+    if explicit is not None:
+        return str(explicit)
+    source_files = manifest.get("source_files") or {}
+    first = source_files.get("processed_1_1_ice")
+    if first and not str(first).startswith("<"):
+        p = str(first)
+        if not os.path.isabs(p):
+            p = os.path.join(PROJECT, p)
+        return os.path.dirname(p)
+    return REAL_GRID
+
+
+def manifest_checksums(manifest):
+    """Return {1_k.ice: md5} from the template or legacy schema."""
+    required = {f"1_{k}.ice" for k in range(1, NGR + 1)}
+    checks = {}
+    for k in range(1, NGR + 1):
+        value = (manifest.get("checksums") or {}).get(
+            f"processed_1_{k}_ice")
+        if value and not str(value).startswith("<"):
+            checks[f"1_{k}.ice"] = str(value)
+    for name, value in (manifest.get("input_checksums") or {}).items():
+        if name in required and value and not str(value).startswith("<"):
+            checks[name] = str(value)
+    return checks
+
+
+def read_ice_files(ice_dir=REAL_GRID):
+    """Read 1_1.ice .. 1_5.ice from the selected source directory."""
     an1 = np.zeros((NGR + 1, IS1, JS1), dtype=np.float64)  # k=0..5
     for k in range(1, NGR + 1):
-        fpath = os.path.join(REAL_GRID, f"1_{k}.ice")
+        fpath = os.path.join(ice_dir, f"1_{k}.ice")
         if not os.path.exists(fpath):
             raise FileNotFoundError(f"Missing ice file: {fpath}")
         with open(fpath) as f:
             vals = f.read().split()
         if len(vals) != IS1 * JS1:
             raise ValueError(f"1_{k}.ice: expected {IS1*JS1} values, got {len(vals)}")
-        arr = np.array(vals, dtype=np.float64).reshape((JS1, IS1)).T.copy()  # [i,j]
+        arr = np.array(vals, dtype=np.float64).reshape((IS1, JS1)).copy()  # [i,j]
         an1[k, :, :] = arr
     return an1
 
@@ -95,6 +125,9 @@ def main():
         description="Build seaice_initial.nc from 1_1.ice..1_5.ice")
     parser.add_argument("--out", type=pathlib.Path, required=True,
                         help="Output seaice_initial.nc path")
+    parser.add_argument("--ice-dir", type=pathlib.Path,
+                        help="Directory with 1_1.ice..1_5.ice (default: "
+                             "manifest source_files, else real_grid)")
     parser.add_argument("--json", type=pathlib.Path,
                         help="Optional JSON stats output")
     parser.add_argument("--manifest", type=pathlib.Path,
@@ -103,7 +136,21 @@ def main():
                              "by schema-validation tests)")
     args = parser.parse_args()
 
-    an1 = read_ice_files()
+    manifest_path = args.manifest
+    if manifest_path is None:
+        manifest_path = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            "seaice_source_manifest.json")
+    try:
+        with open(manifest_path) as mf:
+            manifest = json.load(mf)
+    except Exception as exc:
+        print(f"WARNING: cannot read manifest {manifest_path}: {exc}")
+        manifest = {}
+
+    ice_dir = resolve_ice_dir(manifest, args.ice_dir)
+    print(f"ice source directory: {ice_dir}")
+    an1 = read_ice_files(ice_dir)
     sic, sit = build_sic_sit(an1)
     snow = build_snow_depth()
 
@@ -120,6 +167,19 @@ def main():
                              capture_output=True, text=True).stdout.strip()
     except Exception:
         sha = "unknown"
+
+    checksums = manifest_checksums(manifest)
+    req_files = ["1_%d.ice" % k for k in range(1, NGR + 1)]
+    provided = {k: v for k, v in checksums.items() if k in req_files}
+    if (manifest.get("source_type") == "scientific"
+            and len(provided) == len(req_files)):
+        bad = [fname for fname, want in provided.items()
+               if not os.path.exists(os.path.join(ice_dir, fname))
+               or md5(os.path.join(ice_dir, fname)) != want]
+        if bad:
+            print("FAIL: manifest checksum mismatch: "
+                  + ", ".join(sorted(bad)))
+            raise SystemExit(1)
 
     with Dataset(args.out, "w") as ds:
         ds.createDimension("cat", NGR)
@@ -162,72 +222,57 @@ def main():
                             "elementwise correspondence, NO transpose")
         ds.source_files = ", ".join([f"1_{k}.ice" for k in range(1, NGR + 1)])
         ds.builder_git_sha, ds.created = sha, time.strftime("%Y-%m-%dT%H:%M:%S")
-        # Source from EXPLICIT manifest (11.7E Phase 0.1) — NEVER inferred
-        # from data values. Manifest: python/ice/seaice_source_manifest.json
-        # (override: --manifest). Schema is validated BEFORE use
-        # (11.7E.1-CP Phase 6): a manifest missing ANY required field
-        # yields INCOMPLETE_MANIFEST; SCIENTIFIC is only assigned when
-        # the full contract is present.
-        manifest_path = args.manifest
-        if manifest_path is None:
-            manifest_path = os.path.join(
-                os.path.dirname(os.path.abspath(__file__)),
-                "seaice_source_manifest.json")
-        try:
-            import json
-            with open(manifest_path) as mf:
-                manifest = json.load(mf)
-            m_missing = [f for f in REQUIRED_MANIFEST_FIELDS
-                         if not str(manifest.get(f, "")).strip()]
-            if m_missing:
-                ds.source = "INCOMPLETE_MANIFEST"
-                ds.sea_ice_status = "INCOMPLETE_MANIFEST"
-                ds.manifest_missing = ", ".join(m_missing)
+        # Provenance comes ONLY from the explicit manifest (never inferred).
+        m_missing = [f for f in REQUIRED_MANIFEST_FIELDS
+                     if not str(manifest.get(f, "")).strip()]
+        if m_missing:
+            ds.source = "INCOMPLETE_MANIFEST"
+            ds.sea_ice_status = "INCOMPLETE_MANIFEST"
+            ds.manifest_missing = ", ".join(m_missing)
+            ds.checksum_note = "no input checksums in manifest; file integrity not verified"
+        else:
+            stype = manifest.get("source_type", "")
+            if stype == "diagnostic_placeholder":
+                ds.source = "DIAGNOSTIC_PLACEHOLDER"
+                ds.sea_ice_status = "DIAGNOSTIC"
                 ds.checksum_note = "no input checksums in manifest; file integrity not verified"
-            else:
-                stype = manifest.get("source_type", "")
-                if stype == "diagnostic_placeholder":
-                    ds.source = "DIAGNOSTIC_PLACEHOLDER"
-                    ds.sea_ice_status = "DIAGNOSTIC"
-                    ds.checksum_note = "no input checksums in manifest; file integrity not verified"
-                elif stype == "scientific":
-                    checksums = manifest.get("input_checksums") or {}
-                    req_files = ["1_%d.ice" % k for k in range(1, NGR + 1)]
-                    provided = {k: v for k, v in checksums.items() if k in req_files}
-                    missing = [f for f in req_files if f not in provided]
-                    if not checksums:
-                        ds.source = "%s %s %s (no checksums provided)" % (manifest["dataset_name"],
-                                                                       manifest["version"],
-                                                                       manifest["date"])
-                        ds.sea_ice_status = "SCIENTIFIC_UNVERIFIED_NO_CHECKSUMS"
-                    elif missing:
-                        ds.source = "%s %s %s (partial: %d/%d checksums)" % (manifest["dataset_name"],
-                                                                          manifest["version"],
-                                                                          manifest["date"],
-                                                                          len(provided), len(req_files))
-                        ds.sea_ice_status = "SCIENTIFIC_PARTIAL_CHECKSUMS"
-                    else:
-                        bad = [fname for fname, want in provided.items()
-                               if not os.path.exists(
-                                   os.path.join(REAL_GRID, fname))
-                               or md5(os.path.join(REAL_GRID, fname)) != want]
-                        if bad:
-                            ds.source = "CHECKSUM_MISMATCH"
-                            ds.sea_ice_status = "SCIENTIFIC_CHECKSUM_MISMATCH"
-                            ds.manifest_mismatch = ", ".join(sorted(bad))
-                        else:
-                            ds.source = "%s %s %s" % (manifest["dataset_name"],
-                                                      manifest["version"],
-                                                      manifest["date"])
-                            ds.sea_ice_status = "SCIENTIFIC"
-                            ds.checksum_note = "manifest input checksums verified"
+            elif stype == "scientific":
+                checksums = manifest_checksums(manifest)
+                req_files = ["1_%d.ice" % k for k in range(1, NGR + 1)]
+                provided = {k: v for k, v in checksums.items()
+                            if k in req_files}
+                missing = [f for f in req_files if f not in provided]
+                if not checksums:
+                    ds.source = "%s %s %s (no checksums provided)" % (
+                        manifest["dataset_name"], manifest["version"],
+                        manifest["date"])
+                    ds.sea_ice_status = "SCIENTIFIC_UNVERIFIED_NO_CHECKSUMS"
+                elif missing:
+                    ds.source = "%s %s %s (partial: %d/%d checksums)" % (
+                        manifest["dataset_name"], manifest["version"],
+                        manifest["date"], len(provided), len(req_files))
+                    ds.sea_ice_status = "SCIENTIFIC_PARTIAL_CHECKSUMS"
                 else:
-                    ds.source = "UNKNOWN"
-                    ds.sea_ice_status = "UNKNOWN"
-            ds.source_manifest = str(manifest)
-        except Exception:
-            ds.source = "UNKNOWN"
-            ds.sea_ice_status = "UNKNOWN"
+                    ds.source = "%s %s %s" % (
+                        manifest["dataset_name"], manifest["version"],
+                        manifest["date"])
+                    ds.sea_ice_status = "SCIENTIFIC"
+                    ds.checksum_note = "manifest input checksums verified"
+            else:
+                ds.source = "UNKNOWN"
+                ds.sea_ice_status = "UNKNOWN"
+        ds.source_manifest = str(manifest_path)
+        ds.source_type = str(manifest.get("source_type", "UNKNOWN"))
+        ds.dataset_name = str(manifest.get("dataset_name", ""))
+        ds.dataset_version = str(manifest.get("version", ""))
+        ds.data_date = str(manifest.get("date", ""))
+        ds.manifest_created_date = str(
+            manifest.get("manifest_created_date", ""))
+        ds.grid_fingerprint = str(manifest.get("grid_fingerprint", ""))
+        ds.processing_code_version = str(
+            manifest.get("processing_code_version", ""))
+        ds.input_checksums = json.dumps(
+            manifest_checksums(manifest), sort_keys=True)
         ds.history = ("built by python/ice/build_seaice_nc.py (Stage 11.7D); "
                       "legacy 1_1.ice..1_5.ice stay production inputs")
         ds.ice_note = ("Only January data available; other months reuse "
@@ -236,7 +281,6 @@ def main():
     print("seaice_initial.nc written:", args.out)
 
     if args.json:
-        import json
         stats = {
             "wet_cells": int(np.sum(sic > 0)),
             "total_ice_volume_m3": float(np.sum(sit)),

@@ -101,6 +101,12 @@ This is a **flat-plate forced-convection approximation**, not a geometry-specifi
 
 Internal tests establish implementation and conservation identities. They do not establish observational validity. Each future physical modernization must provide: literature basis, equation/parameter provenance, independent analytical tests, regression tests, and an external validation target where applicable.
 
+## Stage 11.7E.4 — sea ice
+
+`STAGE117E_NETCDF_SEAICE` (default OFF) selects the NetCDF sea-ice reader;
+OFF is bit-identical to legacy. Real Jan-2020 OSI-SAF/C3S is connected and
+B (ON vs legacy-real) is bit-identical for 7 days. No physics or EOS change.
+
 ## References
 
 See `docs/references/references.bib` and `docs/references/literature_matrix.md`. The private `work_references.bib` is a PDF-location aid and is intentionally not committed.

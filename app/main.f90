@@ -64,6 +64,7 @@ program main
     use stage115g_skzfreeze
     use stage115h_production
     use netcdf_grid_reader
+    use netcdf_seaice_reader
     use iceberg
     use iceberg_types, only: RHO_ICE, RHO_WATER
     use iceberg_forcing, only: get_ocean_profile, get_atmos_forcing, model_coords_to_indices
@@ -471,6 +472,7 @@ program main
     print *, "Calling grid_coupling..."
     ! Stage 11.7E: NetCDF grid switch flag (default OFF → legacy files).
     call s117e_init()
+    call s117e_seaice_init()
     call coup1()
 
     print *, "Calling grid_masks (IKUV)..."
@@ -505,16 +507,20 @@ program main
     sxx = 0.0
     syy = 0.0
     sxy = 0.0
-    do k = 2, 6
-        write (nam_file, '(A,I1,A)') '1_', k - 1, '.ice'
-        open (1, file=trim(nam_file), status='old', iostat=ios)
-        if (ios .eq. 0) then
-            do i = 1, is1
-                read (1, *) (an1(i, j, k), j=1, js1)
-            end do
-            close (1)
-        end if
-    end do
+    if (s117e_seaice_active()) then
+        call s117e_read_seaice()
+    else
+        do k = 2, 6
+            write (nam_file, '(A,I1,A)') '1_', k - 1, '.ice'
+            open (1, file=trim(nam_file), status='old', iostat=ios)
+            if (ios .eq. 0) then
+                do i = 1, is1
+                    read (1, *) (an1(i, j, k), j=1, js1)
+                end do
+                close (1)
+            end if
+        end do
+    end if
 
     ! Первичная очистка и нормировка ледовых массивов
     do j = 1, js1

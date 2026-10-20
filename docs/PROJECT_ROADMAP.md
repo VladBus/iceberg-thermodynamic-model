@@ -364,6 +364,7 @@ data must change the result):
 Manifest provenance attributes verified, T-16 status updated.
 Dependencies: 11.7E.1–11.7E.3.2 verified.
 Rollback: unset env var (legacy files remain in place).
+Status: **COMPLETE** — real Jan-2020 data connected; A/B bit-identical for 7 days; C documented; builder transpose defect fixed. Report: `docs/validation/stage11.7E.4_real_seaice_connection.md`.
 
 ### Stage 11.7E.5 — Tides Reader Switch
 

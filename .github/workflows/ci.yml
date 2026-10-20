@@ -119,6 +119,12 @@ jobs:
           conda activate iceberg-thermodynamic-model
           python python/tests/test_provenance_attributes.py
 
+      - name: Enforce ERA5 fixture presence
+        shell: bash -l {0}
+        run: |
+          test -f python/tests/fixtures/era5_synthetic.nc || {
+            echo "FAIL: fixture missing from repository"; exit 1; }
+
       - name: Run Stage 11.7E.3 ERA5 contract verification
         shell: bash -l {0}
         run: |

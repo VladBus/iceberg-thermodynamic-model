@@ -29,7 +29,11 @@ module netcdf_output
     use provenance, only: get_prov_initialization_source, &
         get_prov_initialization_file, &
         get_prov_initialization_attempted_file, &
-        get_prov_initialization_mode_actual
+        get_prov_initialization_mode_actual, &
+        get_prov_seaice_reader_mode, &
+        get_prov_seaice_source_file, &
+        get_prov_seaice_manifest_version, &
+        get_prov_seaice_manifest_checksum
     use, intrinsic :: iso_fortran_env, only: real64
     implicit none
 
@@ -147,6 +151,27 @@ status = nf90_put_att(ncid, nf90_global, 'unit_system', 'SI (canonical external 
         status = nf90_put_att(ncid, nf90_global, 'scheduler_mode', &
             trim(get_active_scheduler_mode()))
         if (.not. nc_ok(status, 'write global scheduler_mode')) then
+            status = nf90_close(ncid); return
+        end if
+        ! Stage 11.7E.4.1: Sea-ice provenance metadata
+        status = nf90_put_att(ncid, nf90_global, 'seaice_reader_mode', &
+            trim(get_prov_seaice_reader_mode()))
+        if (.not. nc_ok(status, 'write global seaice_reader_mode')) then
+            status = nf90_close(ncid); return
+        end if
+        status = nf90_put_att(ncid, nf90_global, 'seaice_source_file', &
+            trim(get_prov_seaice_source_file()))
+        if (.not. nc_ok(status, 'write global seaice_source_file')) then
+            status = nf90_close(ncid); return
+        end if
+        status = nf90_put_att(ncid, nf90_global, 'seaice_manifest_version', &
+            trim(get_prov_seaice_manifest_version()))
+        if (.not. nc_ok(status, 'write global seaice_manifest_version')) then
+            status = nf90_close(ncid); return
+        end if
+        status = nf90_put_att(ncid, nf90_global, 'seaice_manifest_checksum', &
+            trim(get_prov_seaice_manifest_checksum()))
+        if (.not. nc_ok(status, 'write global seaice_manifest_checksum')) then
             status = nf90_close(ncid); return
         end if
 

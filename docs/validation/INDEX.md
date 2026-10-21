@@ -80,6 +80,8 @@ Stage 10 reports have been archived to `docs/wiki/stages/stage10/`. See the arch
 
 | `stage11.7E.4_real_seaice_connection.md` (env-gated NetCDF sea-ice reader; real Jan-2020 OSI-SAF/C3S; A/B/C 7-day; builder transpose fix; ocean gate) | 11.7E.4 | COMPLETE (default OFF; B bit-identical after fix; no physics/EOS change) | Switch `STAGE117E_NETCDF_SEAICE` default OFF; real manifest + checksums; A 0 diffs vs JANOFF days 0–7; B 0 diffs ON vs legacy-real days 0–7; C expected real-data change; fixed builder text layout `(IS1,JS1)` (transpose had caused 15,477-cell B mismatch); test writes temp output, no production clobber; 33 + 120 checks; GO 11.7E.5 with ocean 55/360 and Jan-only gaps | `docs/validation/stage11.7E.4_real_seaice_connection.md` |
 
+| `stage11.7E.4.1_audit_closure_diagnostic_foundation.md` (Phase 0 doc/metrics fixes, 6 red tests created, ocean diagnostic plan for 11.8; no physics change) | 11.7E.4.1 | COMPLETE (audit closure + red tests kickoff; 11.7E.5 deferred) | Phase 0: 6 doc/metrics fixes (sea-ice units, 25.72m investigation, docs sync, D-32 decision, sea-ice provenance, env FATAL); Phase 1: homogeneous column red test (FAIL expected — CA defect); Phase 2: ice coverage test (PASS — real ice connected); Phase 3: snowfall period test (MISMATCH: 6h vs 12h divisor); Phase 4: ocean diagnostic plan for 11.8 (T0–T6 ladder); regression: 177 checks PASS, strict build clean, diff-check clean; 11.7E.5 deferred; GO 11.8.0 | `docs/validation/stage11.7E.4.1_audit_closure_diagnostic_foundation.md` |
+
 ## Rules
 
 - Reports here are not rewritten after stage completion (exception: technical navigational fixes).

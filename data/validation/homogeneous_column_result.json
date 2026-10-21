@@ -1,0 +1,16 @@
+{
+  "LEGACY": {
+    "eos_mode": "LEGACY",
+    "max_dt": "NOT_COMPUTED",
+    "max_ds": "NOT_COMPUTED",
+    "note": "This test requires Fortran compilation. Run with fpm test.",
+    "expected": "FAIL - convective adjustment modifies homogeneous column due to EOS quantization"
+  },
+  "EOS80": {
+    "eos_mode": "EOS80",
+    "max_dt": "NOT_COMPUTED",
+    "max_ds": "NOT_COMPUTED",
+    "note": "This test requires Fortran compilation. Run with fpm test.",
+    "expected": "FAIL - convective adjustment modifies homogeneous column due to EOS quantization"
+  }
+}

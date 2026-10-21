@@ -35,7 +35,7 @@ under atmospheric, oceanic, bathymetric, and sea-ice forcing.
 
 ## 📑 Project status
 
-- **Current stage:** Stage 11.7E.3.2 CI Fixture, E.4 Criteria Clarification & Snowfall Protection COMPLETE (ERA5 contract test fixture-aware: REAL → FIXTURE → SKIP, 113 checks in both modes; snowfall conversion protected; 11.7E.4 criteria clarified as A/B/C; real sea-ice manifest template prepared; documentation corrected). NEXT: 11.7E.4 Sea-ice reader with REAL data connection (OSI-SAF SIC + C3S SIT). Production reference: Legacy EOS + N=1 scheduler. EOS-80: optional, not default (D-29).
+- **Current stage:** Stage 11.7E.4.1 — Audit Closure + Ocean Diagnostic Foundation (Red Tests Kickoff) COMPLETE. Stage 11.7E.4 (sea-ice reader with real data) COMPLETE. NEXT: 11.8.0 ocean diagnostic ladder (11.7E.5 tides reader deferred — null-tides provides no scientific value).
   [Historical note from Stage 10.19, SUPERSEDED by Stage 10.20 restoration
   (full-coverage ERA5: 3-day gate PASS, residual characterized, NOT fixed):
   coupling recovery (completed: the Lagrangian iceberg module is now

@@ -40,6 +40,11 @@ HST = np.array([0.20, 0.40, 0.95, 1.60, 2.50], dtype=np.float64)
 # HMAX — upper thickness boundaries for category transition [m]
 HMAX = np.array([0.3, 0.7, 1.2, 2.0, 50.0], dtype=np.float64)
 
+# Grid cell area (DX = DY = 13.89 km = 13890 m)
+DX_M = 13890.0  # meters
+DY_M = 13890.0  # meters
+CELL_AREA_M2 = DX_M * DY_M  # m^2 per grid cell
+
 PROJECT = os.path.dirname(os.path.dirname(os.path.dirname(
     os.path.abspath(__file__))))
 REAL_GRID = os.path.join(PROJECT, "data", "input", "generated", "real_grid")
@@ -158,9 +163,12 @@ def main():
     out = args.out
 
     # Validation stats
-    wet = (np.sum(an1[1:, :, :], axis=0) > 0).sum()
-    total_ice_vol = np.sum(sit).item()
-    print(f"wet cells: {wet}; total ice volume: {total_ice_vol:.3e} m^3")
+    # cells_with_ice = cells where total concentration (sum of categories) > 0
+    total_concentration = np.sum(an1[1:, :, :], axis=0)
+    cells_with_ice = int(np.sum(total_concentration > 0))
+    # Actual ice volume = Σ(sit × cell_area) over all categories and cells [m³]
+    total_ice_vol_m3 = float(np.sum(sit) * CELL_AREA_M2)
+    print(f"cells with ice: {cells_with_ice}; total ice volume: {total_ice_vol_m3:.3e} m^3")
 
     try:
         sha = subprocess.run(["git", "rev-parse", "HEAD"], cwd=PROJECT,
@@ -282,8 +290,8 @@ def main():
 
     if args.json:
         stats = {
-            "wet_cells": int(np.sum(sic > 0)),
-            "total_ice_volume_m3": float(np.sum(sit)),
+            "cells_with_ice": int(cells_with_ice),
+            "total_ice_volume_m3": total_ice_vol_m3,
         }
         with open(args.json, "w") as f:
             json.dump(stats, f, indent=2)

@@ -1,0 +1,36 @@
+{
+  "test_name": "snowfall_period",
+  "phase": "Phase 3 - Snowfall Period Red Test",
+  "purpose": "Verify snowfall accumulation period divisor (43200) matches ERA5 metadata",
+  "file_examined": "data/input/processed/era5/2020/2020_01/era5_2020_01_fullcoverage_merged.nc",
+  "sf_variable_found": true,
+  "sf_dims": [
+    124,
+    109,
+    283
+  ],
+  "sf_units": "m s-1",
+  "sf_attributes": {
+    "_FillValue": NaN,
+    "units": "m s-1",
+    "long_name": "Snowfall rate",
+    "standard_name": "snowfall_flux",
+    "comment": "Interpolated from ERA5 12-hourly accumulated snowfall (sf) at 00/12 UTC analyses. Original units: m water equivalent per 12 hours. Converted to m/s rate.",
+    "coordinates": "expver number"
+  },
+  "time_steps": 124,
+  "time_spacing_seconds": [
+    21600
+  ],
+  "time_spacing_hours": [
+    6.0
+  ],
+  "accumulation_period_hours": 6.0,
+  "divisor_consistency": "MISMATCH",
+  "grib_related_attributes": {},
+  "divisor_used_in_code": 43200,
+  "expected_accumulation_hours": 12.0,
+  "finding": "MISMATCH: ERA5 accumulation period (6.0h) != divisor (12h)",
+  "severity": "MISMATCH",
+  "recommendation": "ERA5 snowfall is 6-hour accumulation; divisor should be 21600"
+}

@@ -1,7 +1,7 @@
 # Model Physics Block Status
 
-**Date:** 2026-10-20
-**Current repository stage:** Stage 11.7E.3.2 CI Fixture, E.4 Criteria Clarification & Snowfall Protection COMPLETE (ERA5 contract test fixture-aware: REAL → FIXTURE → SKIP, 113 checks in both modes; snowfall accumulation→rate conversion protected; 11.7E.4 criteria clarified as A/B/C; real sea-ice manifest template prepared; documentation corrected). NEXT: 11.7E.4 sea-ice reader (real data connection). EOS STATUS (binding, unchanged): EOS-80 OPTIONAL; legacy Eckart DEFAULT and scientific reference; default decision deferred to 11.8A; legacy EOS retained permanently as regression baseline, NOT scheduled for removal.
+**Date:** 2026-10-21
+**Current repository stage:** Stage 11.7E.4.1 — Audit Closure + Ocean Diagnostic Foundation (Red Tests Kickoff) COMPLETE. Stage 11.7E.4 (sea-ice reader with real data) COMPLETE. NEXT: 11.8.0 ocean diagnostic ladder (11.7E.5 tides reader deferred — null-tides provides no scientific value). EOS STATUS (binding, unchanged): EOS-80 OPTIONAL; legacy Eckart DEFAULT and scientific reference; default decision deferred to 11.8A; legacy EOS retained permanently as regression baseline, NOT scheduled for removal.
 **Ocean EOS statement:** the prognostic ocean uses legacy Eckart (Dmitrev–Nesterov) density in float32 (`src/equation_of_state.f90`) by default; UNESCO EOS-80 is implemented opt-in (`src/eos80_unesco.f90`, `EOS_MODE=EOS80`, validated in 11.4/11.4.1, recommendation: optional). Iceberg side uses freezing-point only (table row "Full seawater EOS" below refers to the iceberg module).
 **Production baseline:** Stage 10.13 (low-flow closure behind `low_flow_closure_enabled`; OFF = Stage 10.12/10.10 legacy unchanged); Stage 10.19 adds the env-gated production iceberg connection (inert by default); Stage 10.20 adopts the full-coverage ERA5 Jan file for production gates (`src/param.f90` default path NOT changed); Stage 10.21 adds CA/EOS f32-precision research switches (`STAGE1021_CA_F64`, `STAGE1021_CA_MIX`, `STAGE1021_CA_SCOPE`, `STAGE1021_CA_EPS`) — all OFF by default, production bit-identical (KEEP_CURRENT); Stage 10.22 adds Block-200 stability-audit diagnostic switches (`STAGE1022_DIAG`, `STAGE1022_FREEZE_RO`, `STAGE1022_FREEZE_THERMAL_WIND`, `STAGE1022_FREEZE_TS`, `STAGE1022_FREEZE_RO_DOWNSTREAM`; env names `_FREEZE_RO`/`_FREEZE_TS`/`_FREEZE_RO_DOWNSTREAM`/`_FREEZE_THERMAL_WIND` + `_DIAG`) — all OFF by default, production bit-identical (KEEP_CURRENT); Stage 11.4-D32 adds the ERA5 nearest-edge coverage fallback in `era5_wind()` (loader-only production fix, Jan bit-identical); Stage 11.4-D33 fixes Ocean Baseline 11.x (Jan30/Apr29/Jul30/Oct30, 0 NaN); Stage 11.3C adds `STAGE113_DT/DT1` measurement-only timestep override (defaults = legacy 3600/120); Stage 11.3C.1 adds mm2/mm3 scaling (active only with override) + `s112_cfl_dist` percentiles (DIAG-gated)
 **FPM test targets:** 59 (fpm auto-discovery of `test/*.f90` with a top-level `program`, incl. `check.f90`, `iceberg_test_10p17_melt_budget`, `iceberg_test_10p17_90day`, `drift_scaling_*`)
@@ -106,6 +106,15 @@ Internal tests establish implementation and conservation identities. They do not
 `STAGE117E_NETCDF_SEAICE` (default OFF) selects the NetCDF sea-ice reader;
 OFF is bit-identical to legacy. Real Jan-2020 OSI-SAF/C3S is connected and
 B (ON vs legacy-real) is bit-identical for 7 days. No physics or EOS change.
+
+## Stage 11.7E.4.1 — audit closure + diagnostic foundation
+
+Phase 0: 6 documentation/metrics corrections applied (sea-ice units, 25.72 m
+thickness investigation, documentation sync, decision D-32, sea-ice provenance,
+env-gated reader FATAL). Phase 1–3: three red tests created (homogeneous
+column FAIL expected, ice coverage PASS, snowfall period MISMATCH 6h vs 12h).
+Phase 4: ocean diagnostic plan for 11.8 (T0–T6 ladder). 11.7E.5 deferred.
+No physics/EOS change. Regression: targeted tests PASS, strict build clean.
 
 ## References
 

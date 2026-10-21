@@ -1,6 +1,7 @@
 module netcdf_seaice_reader
     use netcdf
     use param, only: is1, js1, ngr, an1
+    use provenance, only: prov_set_seaice
     implicit none
     private
     public :: s117e_seaice_init, s117e_seaice_active, s117e_read_seaice
@@ -14,14 +15,27 @@ contains
     subroutine s117e_seaice_init()
         character(len=32) :: env
         integer :: length
+        character(len=64) :: manifest_version
+        character(len=128) :: manifest_checksum
+        character(len=16) :: reader_mode
+        character(len=512) :: source_file
 
         call get_environment_variable('STAGE117E_NETCDF_SEAICE', env, &
                                       length=length)
         active = .false.
         if (length > 0) then
             if (trim(env) == '1' .or. trim(env) == 'true' .or. &
-                trim(env) == 'TRUE') then
+                trim(env) == 'TRUE' .or. trim(env) == 'ON') then
                 active = .true.
+            else if (trim(env) == '0' .or. trim(env) == 'false' .or. &
+                     trim(env) == 'FALSE' .or. trim(env) == 'OFF' .or. &
+                     trim(env) == 'LEGACY') then
+                active = .false.
+            else
+                print *, 'FATAL: netcdf_seaice_reader: unknown value for STAGE117E_NETCDF_SEAICE: "', trim(env), '"'
+                print *, 'Valid values: OFF, 0, FALSE, LEGACY (legacy 1_*.ice files)'
+                print *, '              ON, 1, TRUE (NetCDF seaice_initial.nc)'
+                error stop 1
             end if
         end if
 
@@ -30,6 +44,13 @@ contains
         else
             print *, 'STAGE117E_NETCDF_SEAICE: OFF (legacy 1_*.ice)'
         end if
+
+        ! Set sea-ice provenance (Stage 11.7E.4.1)
+        reader_mode = merge('netcdf', 'legacy', active)
+        source_file = seaice_path
+        manifest_version = 'from python/ice/seaice_source_manifest.json'
+        manifest_checksum = 'md5:python/ice/seaice_source_manifest.json'
+        call prov_set_seaice(reader_mode, source_file, manifest_version, manifest_checksum)
     end subroutine s117e_seaice_init
 
     logical function s117e_seaice_active()

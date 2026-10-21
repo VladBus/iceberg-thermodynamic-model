@@ -1,0 +1,25 @@
+{
+  "test_name": "ice_coverage",
+  "phase": "Phase 2 - Ice Coverage Red Test",
+  "expected": "PASS (real ice connected in 11.7E.4)",
+  "netcdf": {
+    "file": "data/input/processed/ice/seaice_initial.nc",
+    "max_concentration": 1.0,
+    "cells_with_ice": 4402,
+    "max_thickness_m": 1.5875200033187866,
+    "total_volume_m3": 450236164734.2285,
+    "categories": 5,
+    "grid_shape": [
+      105,
+      133
+    ]
+  },
+  "legacy": {
+    "directory": "data/input/generated/real_grid/ice_2020-01-01",
+    "files_found": 5,
+    "max_cells_with_ice": 3595,
+    "max_concentration": 0.9923
+  },
+  "pass": true,
+  "summary": "NetCDF: PASS, Legacy: PASS"
+}

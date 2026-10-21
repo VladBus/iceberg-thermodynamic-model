@@ -1,9 +1,9 @@
 # Project Roadmap
 
-**Updated:** 2026-10-20
-**Current scientific stage:** Stage 11.7E.3.2 CI Fixture, E.4 Criteria Clarification & Snowfall Protection COMPLETE (ERA5 contract test is now fixture-aware: REAL → FIXTURE → SKIP with 113 checks in both modes; snowfall conversion protected by 5 checks; 11.7E.4 criteria clarified as A/B/C; real sea-ice manifest template prepared; documentation corrected). NEXT: 11.7E.4 sea-ice reader (real data connection).
+**Updated:** 2026-10-21
+**Current scientific stage:** Stage 11.7E.4.1 — Audit Closure + Ocean Diagnostic Foundation (Red Tests Kickoff) COMPLETE. Stage 11.7E.4 (sea-ice reader with real data) COMPLETE. NEXT: 11.8.0 ocean diagnostic ladder (11.7E.5 tides reader deferred — null-tides provides no scientific value).
 **Stages 3–11.4.1: COMPLETED** (10.x iceberg modernization; 11.1 seasonal characterization; 11.2 CFL audit; 11.4-D21…D33 EN4 stabilization → ERA5-coverage fix → cleanup + Ocean Baseline 11.x; 11.3A execution-graph audit; 11.3B input-architecture audit + NetCDF contracts; 11.3C scheme audit + timestep matrix; 11.3C.1 semantics + CFL distributions; 11.3C.2 time-integration audit; 11.3C.3 loop-bound search (VERDICT D); 11.4 EOS-80 experiment + 11.4.1 impact validation (OPTIONAL, not default)).
-**Current status:** Stages 10.14–11.7E.3.2 committed (see `git log` and `CHANGELOG.md` for history). **Stage 11.7E.3.2 COMPLETE** (CI fixture + fixture-aware test, 113 checks in both modes; snowfall conversion protected; 11.7E.4 criteria clarified as A/B/C; real sea-ice manifest template; documentation corrected).
+**Current status:** Stages 10.14–11.7E.4 committed (see `git log` and `CHANGELOG.md` for history). **Stage 11.7E.4 COMPLETE** (sea-ice reader with real data connection; A/B bit-identical for 7 days; C documented; builder transpose defect fixed). **Stage 11.7E.4.1 COMPLETE** (audit closure + ocean diagnostic foundation).
 **Test suite:** 64 Fortran test source files (`ls test/*.f90 | wc -l`); 59 auto-discovered FPM targets (executable programs). The count differs because some source files are modules/helpers without a top-level `program`.
 **Stage 11.5H-RC COMPLETE** (release-candidate gate: self-contained production scheduler, docs synced D-22…D-28). Plan: 11.7 NetCDF+CFL → 11.8A validation → 11.8B audit → 11.9 closure → 12.0 voxel (blocked, D-28).
 
@@ -11,7 +11,7 @@
 
 - Legacy iceberg dynamics and thermodynamics integrated into the modern repository structure.
 - Real model grid reconstructed from IBCAO V5.2: 133×105 nodes, 132×104 active cells, DX=DY=13.89 km.
-- Sea-ice initialization pipeline exists for 2020-01-01 (OSI-SAF SIC CDR v3.1 + C3S CS2SMOS SIT L4 combined v1.1 — `python/ice/build_seaice_nc.py`), but the active production input files are currently diagnostic zero placeholders; the real sea-ice data connection is deferred to Stage 11.7E.4 (T-16).
+- Sea-ice initialization pipeline exists for 2020-01-01 (OSI-SAF SIC CDR v3.1 + C3S CS2SMOS SIT L4 combined v1.1 — `python/ice/build_seaice_nc.py`); real Jan-2020 data connected in Stage 11.7E.4; Apr/Jul/Oct remain missing (T-16 seasonal gap).
 - ERA5 atmospheric forcing and EN4 ocean forcing integrated into the real-grid workflow.
 - Stage 9 moving-iceberg and forcing audits completed.
 - Stage 10.1–10.6 modernization blocks implemented and audited.
@@ -366,7 +366,7 @@ Dependencies: 11.7E.1–11.7E.3.2 verified.
 Rollback: unset env var (legacy files remain in place).
 Status: **COMPLETE** — real Jan-2020 data connected; A/B bit-identical for 7 days; C documented; builder transpose defect fixed. Report: `docs/validation/stage11.7E.4_real_seaice_connection.md`.
 
-### Stage 11.7E.5 — Tides Reader Switch
+### Stage 11.7E.5 — Tides Reader Switch (DEFERRED)
 
 Scope: tides source — null-tides/qq constants in production →
 `tides.nc` (11.7D contract: null-tides explicit,
@@ -374,6 +374,7 @@ Scope: tides source — null-tides/qq constants in production →
 Acceptance: env-gated switch (default OFF → bit-identical; ON ≡ OFF).
 Dependencies: 11.7E.1–11.7E.4 verified.
 Rollback: unset env var (null-tides path remains).
+**Status: DEFERRED** — null-tides provides no scientific value; proceeding to 11.8 ocean diagnostics per 11.7E.4.1 audit closure.
 
 ### Stage 11.8A — Scientific Validation (gated)
 

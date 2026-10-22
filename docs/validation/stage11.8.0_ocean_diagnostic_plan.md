@@ -101,10 +101,20 @@ Ordered by causal priority (fix upstream first):
   - Compare Fortran interpolator vs independent Python (xarray) on all wet cells.
   - Check lon-wrap clamping vs wrapping.
 
-### 11.8.0.3 — T2 Homogeneous Column Test (Red Test)
-- **Already created in 11.7E.4.1 Phase 1:** `python/tests/ocean/test_homogeneous_column.py`
-- Run with both EOS modes; document FAIL as defect proof.
-- This is the FIRST red test that must be converted to PASS by intervention #2.
+### 11.8.0.3 — T2 Homogeneous Column SMOKE Test
+- **Created in 11.7E.4.1, made real in 11.8.0.0.1:**
+  `test/test_homogeneous_column.f90` + `python/tests/ocean/test_homogeneous_column.py`
+- Classification (11.8.0.0.1 correction): SMOKE control — a homogeneous column
+  is stable under both EOS modes, so PASS is the expected result; the test must
+  FAIL (non-zero exit) only if CA spuriously mixes a stable column.
+- **Not** the CA-defect red test: that role belongs to 11.8.0.3b.
+
+### 11.8.0.3b — T2 Weak-Inversion Core Test (CREATED in 11.8.0.0.1)
+- `test/test_weak_inversion.f90`: one localized inversion at interface 2/3;
+  verifies heat/salt conservation (<1e-5 rel), stability, confinement of mixing.
+  LEGACY: must mix levels 2-3; EOS80: in-situ pressure term masks the
+  inversion (documented 11.8 finding — potential-density criterion is a
+  candidate fix under intervention #2).
 
 ### 11.8.0.4 — T2 Analytical Mixing Solution
 - Create `python/tests/ocean/test_analytical_mixing.py`:

@@ -10,5 +10,6 @@
   "guard_hit": false,
   "nmix": 0,
   "status": "PASS",
+  "test_kind": "smoke_control",
   "exit_code": 0
 }

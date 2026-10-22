@@ -1,6 +1,7 @@
 {
   "test": "homogeneous_column",
-  "executed": true,
+  "kind": "smoke_control",
+  "tolerance": 1e-06,
   "modes": {
     "LEGACY": {
       "eos_mode": "LEGACY",
@@ -90,9 +91,11 @@
       "guard_hit": false,
       "nmix": 0,
       "status": "PASS",
+      "test_kind": "smoke_control",
       "exit_code": 0,
       "executed": true,
-      "process_exit_code": 0
+      "process_exit_code": 0,
+      "driver_ok": true
     },
     "EOS80": {
       "eos_mode": "EOS80",
@@ -182,9 +185,12 @@
       "guard_hit": false,
       "nmix": 0,
       "status": "PASS",
+      "test_kind": "smoke_control",
       "exit_code": 0,
       "executed": true,
-      "process_exit_code": 0
+      "process_exit_code": 0,
+      "driver_ok": true
     }
-  }
+  },
+  "status": "PASS"
 }

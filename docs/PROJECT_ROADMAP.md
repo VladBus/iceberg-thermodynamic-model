@@ -1,9 +1,9 @@
 # Project Roadmap
 
 **Updated:** 2026-10-22
-**Current scientific stage:** Stage 11.8.0.0 — Diagnostic Contract Correction (Real Red Tests) COMPLETE. Stage 11.7E.4 (sea-ice reader with real data) COMPLETE. Stage 11.7E.5 (tides reader) DEFERRED — null-tides provides no scientific value; not blocked by 11.7F. NEXT: 11.8.0 ocean diagnostic ladder (T0–T6 implementation).
+**Current scientific stage:** Stage 11.8.0.0.1 — CI Fix, Real Tests, Snowfall Re-examination COMPLETE. Stages 11.8.0.0 / 11.7E.4 COMPLETE. Stage 11.7E.5 (tides reader) DEFERRED — null-tides provides no scientific value; not blocked by 11.7F. NEXT: 11.8.0 T0 (data and units verification; includes manual snowfall-accumulation-period verification, T-19).
 **Stages 3–11.4.1: COMPLETED** (10.x iceberg modernization; 11.1 seasonal characterization; 11.2 CFL audit; 11.4-D21…D33 EN4 stabilization → ERA5-coverage fix → cleanup + Ocean Baseline 11.x; 11.3A execution-graph audit; 11.3B input-architecture audit + NetCDF contracts; 11.3C scheme audit + timestep matrix; 11.3C.1 semantics + CFL distributions; 11.3C.2 time-integration audit; 11.3C.3 loop-bound search (VERDICT D); 11.4 EOS-80 experiment + 11.4.1 impact validation (OPTIONAL, not default)).
-**Current status:** Stages 10.14–11.7E.4.1 committed (see `git log` and `CHANGELOG.md` for history). **Stage 11.7E.4.1 COMPLETE** (audit closure + red tests + diagnostic plan). **Stage 11.8.0.0 COMPLETE** (diagnostic contract correction: real red tests, fixed provenance, corrected docs).
+**Current status:** Stages 10.14–11.8.0.0 committed (see `git log` and `CHANGELOG.md` for history). **Stage 11.8.0.0 COMPLETE** (diagnostic contract correction). **Stage 11.8.0.0.1 COMPLETE** (CI green; T2 smoke + weak-inversion tests fail genuinely; snowfall re-examined → INFERRED_12H + T-19; divisor unchanged).
 **Test suite:** 64 Fortran test source files (`ls test/*.f90 | wc -l`); 59 auto-discovered FPM targets (executable programs). The count differs because some source files are modules/helpers without a top-level `program`.
 **Stage 11.5H-RC COMPLETE** (release-candidate gate: self-contained production scheduler, docs synced D-22…D-28). Plan: 11.8.0 diagnostic ladder (T0–T6) → 11.8A validation → 11.8B audit → 11.9 closure → 12.0 voxel (blocked, D-28).
 
@@ -376,8 +376,6 @@ Dependencies: 11.7E.1–11.7E.4 verified.
 Rollback: unset env var (null-tides path remains).
 **Status: DEFERRED** — null-tides provides no scientific value; proceeding to 11.8 ocean diagnostics per 11.7E.4.1 audit closure. 11.7F (legacy removal + permanent CFL) is NOT a prerequisite for 11.8; 11.7F dependency is "all readers switched OR explicitly deferred with justification" — 11.7E.5 is explicitly deferred with justification (null-tides no scientific value).
 
-**Status: DEFERRED** — null-tides provides no scientific value; proceeding to 11.8 ocean diagnostics per 11.7E.4.1 audit closure. 11.7F (legacy removal + permanent CFL) is NOT a prerequisite for 11.8; 11.7F dependency is "all readers switched OR explicitly deferred with justification" — 11.7E.5 is explicitly deferred with justification (null-tides no scientific value).
-
 ### Stage 11.8.0.0 — Diagnostic Contract Correction (Real Red Tests)
 
 Scope: Correct the fake/stub tests and false provenance created in 11.7E.4.1. Establish REAL diagnostic tests that actually execute and produce measurable results. This is the FOUNDATION for Stage 11.8 ocean stabilization work.
@@ -395,6 +393,27 @@ Acceptance: Real red tests execute and produce evidence; provenance fixed; docs 
 Dependencies: 11.7E.1–11.7E.4.1 verified.
 Rollback: none (diagnostic only).
 Status: **COMPLETE** — real red tests execute, provenance fixed, diagnostic plan established. Report: `docs/validation/stage11.8.0.0_diagnostic_contract_correction.md`.
+
+### Stage 11.8.0.0.1 — CI Fix, Real Tests, Snowfall Re-examination
+
+Scope: correct the CI breakage introduced in 11.8.0.0 (fpm unavailable in the
+Python job; named-target silently exiting 0 on a wrong name); make the T2
+Fortran tests GENUINELY fail on invariant violation; add the weak-inversion
+core test (LEGACY mixes the inversion, EOS-80 in-situ density masks it —
+documented 11.8 finding); re-examine the snowfall accumulation period from
+source metadata (CONFIRMED_12H downgraded to INFERRED_12H with explicit
+uncertainty: step-range attributes absent, script requests hourly steps yet
+artifacts carry two 12-hourly records/day); documentation/data hygiene
+(dedupe, relative paths, populated checks).
+
+Acceptance: CI green on the pushed commit; failure-path probe demonstrated
+(exit 1 + FAIL JSON); weak inversion conserves heat/salt with confined mixing
+(LEGACY) and zero spurious mixing (EOS80); divisor UNCHANGED; T-19 recorded.
+
+Dependencies: 11.8.0.0.
+Status: **COMPLETE** — CI green; smoke/core tests authoritative; snowfall
+INFERRED_12H pending manual CDS verification. Report:
+`docs/validation/stage11.8.0.0.1_ci_test_correction.md`.
 
 ### Stage 11.8 Prerequisite: Ocean Stabilization (MANDATORY GATE)
 

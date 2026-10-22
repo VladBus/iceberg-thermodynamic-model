@@ -1,7 +1,88 @@
 {
   "test": "ice_coverage",
-  "checks": [],
-  "file": "/home/vlad/Programing_work/vscode_work/iceberg-thermodynamic-model/data/input/processed/ice/seaice_initial.nc",
+  "checks": [
+    {
+      "label": "max concentration in [0,1] (f32 tol)",
+      "passed": true,
+      "detail": 1.0000000298023224
+    },
+    {
+      "label": "0 < cells with ice < total cells",
+      "passed": true,
+      "detail": "4402/13965"
+    },
+    {
+      "label": "max sit contribution <= HST_max",
+      "passed": true,
+      "detail": 1.5875200033187866
+    },
+    {
+      "label": "max sit contribution < 10 m",
+      "passed": true,
+      "detail": 1.5875200033187866
+    },
+    {
+      "label": "total ice volume > 0",
+      "passed": true,
+      "detail": 450236189281.3557
+    },
+    {
+      "label": "category 1 sit max <= HST[1]",
+      "passed": true,
+      "detail": "0.15488000214099884 vs 0.2"
+    },
+    {
+      "label": "category 1 sit == HST*sic",
+      "passed": true,
+      "detail": "max diff 5.960464483090178e-09"
+    },
+    {
+      "label": "category 2 sit max <= HST[2]",
+      "passed": true,
+      "detail": "0.38791999220848083 vs 0.4"
+    },
+    {
+      "label": "category 2 sit == HST*sic",
+      "passed": true,
+      "detail": "max diff 1.1920928966180355e-08"
+    },
+    {
+      "label": "category 3 sit max <= HST[3]",
+      "passed": true,
+      "detail": "0.9426849484443665 vs 0.95"
+    },
+    {
+      "label": "category 3 sit == HST*sic",
+      "passed": true,
+      "detail": "max diff 2.9802322387695312e-08"
+    },
+    {
+      "label": "category 4 sit max <= HST[4]",
+      "passed": true,
+      "detail": "1.5875200033187866 vs 1.6"
+    },
+    {
+      "label": "category 4 sit == HST*sic",
+      "passed": true,
+      "detail": "max diff 4.768371586472142e-08"
+    },
+    {
+      "label": "category 5 sit max <= HST[5]",
+      "passed": true,
+      "detail": "0.8200000524520874 vs 2.5"
+    },
+    {
+      "label": "category 5 sit == HST*sic",
+      "passed": true,
+      "detail": "max diff 2.9802322387695312e-08"
+    },
+    {
+      "label": "legacy source has non-zero concentration",
+      "passed": true,
+      "detail": 0.9923
+    }
+  ],
+  "file": "data/input/processed/ice/seaice_initial.nc",
   "max_concentration": 1.0000000298023224,
   "cells_with_ice": 4402,
   "total_cells": 13965,
@@ -37,13 +118,13 @@
   ],
   "sit_semantics": "area-weighted thickness contribution HST*sic; sum over categories = column-equivalent thickness",
   "legacy": {
-    "directory": "/home/vlad/Programing_work/vscode_work/iceberg-thermodynamic-model/data/input/generated/real_grid/ice_2020-01-01",
+    "directory": "data/input/generated/real_grid/ice_2020-01-01",
     "files_found": 5,
     "max_cells_with_ice": 3595,
     "max_concentration": 0.9923
   },
   "model_day01_ice_thickness": {
-    "file": "/home/vlad/Programing_work/vscode_work/iceberg-thermodynamic-model/data/runs/stage11.7E4_C7/output/nc/results_day_01.nc",
+    "file": "data/runs/stage11.7E4_C7/output/nc/results_day_01.nc",
     "per_category_max_m": [
       4.026772975921631,
       0.6944255828857422,

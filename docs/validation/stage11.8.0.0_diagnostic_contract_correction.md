@@ -86,8 +86,10 @@ Evidence:
   NetCDF output; the 12 h period is established from the source time spacing
   and the accumulated-forecast type.
 
-**Verdict: `CONFIRMED_12H`.** The divisor `43200` in
-`python/era5/merge_snowfall.py` is correct and was **not changed**.
+**Verdict: `CONFIRMED_12H` (SUPERSEDED by Stage 11.8.0.0.1 → INFERRED_12H;
+step-range attributes are absent and the download script's hourly-step request
+conflicts with the 12-hourly artifacts — see KNOWN_ISSUES T-19).** The divisor
+`43200` in `python/era5/merge_snowfall.py` was **not changed**.
 
 The processed merged file has 6-hourly spacing because `merge_snowfall.py`
 interpolates onto the instantaneous ERA5 grid; that spacing is **not** the

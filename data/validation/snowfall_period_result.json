@@ -1,28 +1,33 @@
 {
   "test": "snowfall_period",
-  "phase": "Phase 2 \u2014 source metadata verification",
+  "phase": "Phase 2 \u2014 source metadata re-examination (11.8.0.0.1)",
   "claimed_divisor_seconds": 43200,
   "source_metadata_available": true,
   "source": {
-    "file": "/home/vlad/Programing_work/vscode_work/iceberg-thermodynamic-model/data/input/raw/era5/2020/2020_01/snowfall_2020_01_fullcoverage.nc",
+    "file": "data/input/raw/era5/2020/2020_01/snowfall_2020_01_fullcoverage.nc",
+    "GRIB_dataType": "fc",
     "GRIB_stepType": "accum",
     "GRIB_stepUnits": 1,
     "GRIB_startStep": "NOT_PRESENT",
     "GRIB_endStep": "NOT_PRESENT",
     "GRIB_stepRange": "NOT_PRESENT",
     "units": "m of water equivalent",
-    "GRIB_units": "m of water equivalent",
     "n_times": 62,
     "valid_time_spacing_s": [
       43200
     ],
-    "sf_max_m": 0.003964900970458984
+    "sf_max_m": 0.003964900970458984,
+    "history": "2026-09-22T14:44 GRIB to CDM+CF via cfgrib-0.9.15.1/ecCodes-2.48.2 with {\"source\": \"tmpgt9l95si/data.grib\", \"filter_by_keys\": {\"stream\": [\"oper\"], \"stepType\": [\"accum\"]}, \"encode_cf\": [\"parameter\", \"time\", \"geography\", \"vertical\"]}"
   },
+  "status": "INFERRED_12H",
   "determined_period_hours": 12.0,
-  "status": "CONFIRMED_12H",
-  "recommendation": "keep_divisor (43200 is correct)",
-  "processed_time_spacing_hours": [
-    6.0
-  ],
-  "processed_note": "Processed spacing reflects merge_snowfall interpolation, NOT the source accumulation period."
+  "uncertainty": "Step-range attributes (GRIB_startStep/endStep/stepRange) are NOT present: cfgrib folded the single accumulation step per record into valid_time and dropped the step coordinate. The download script requests hourly steps 1..24 at 00/12 UTC, yet the delivered files carry exactly two 12-hourly records per day \u2014 an unresolved script/data discrepancy. If records were 1-hour accumulations, the 43200 divisor would understate snowfall by 12x; 2-records-per-day coverage of the full day is only self-consistent with 12-hour windows. Manual verification against CDS request logs or a fresh small CDS download is required before any divisor change.",
+  "recommendation": "keep_divisor_pending_manual_verification (divisor NOT changed in this stage; flag recorded in KNOWN_ISSUES and 11.8 T0)",
+  "processed_file": {
+    "file": "data/input/processed/era5/2020/2020_01/era5_2020_01_fullcoverage_merged.nc",
+    "time_spacing_hours": [
+      6.0
+    ],
+    "note": "processed spacing is merge interpolation; used ONLY as a cross-check, NOT for period inference"
+  }
 }

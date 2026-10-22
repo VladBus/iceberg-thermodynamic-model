@@ -1,0 +1,114 @@
+{
+  "test": "era5_coverage_verification",
+  "stage": "11.8.0 T0 Phase 3",
+  "model_domain": {
+    "lat": [
+      64.8469009399414,
+      84.9635009765625
+    ],
+    "lon": [
+      8.723199844360352,
+      76.2208023071289
+    ]
+  },
+  "era5_products": {
+    "jan_fullcoverage": {
+      "file": "data/input/processed/era5/2020/2020_01/era5_2020_01_fullcoverage_merged.nc",
+      "lat": [
+        63.0,
+        90.0
+      ],
+      "lon": [
+        7.0,
+        77.5
+      ],
+      "n_times": 124,
+      "time_spacing_s": [
+        21600
+      ]
+    },
+    "apr_merged": {
+      "file": "data/input/processed/era5/2020/2020_04/era5_2020_04_merged.nc",
+      "lat": [
+        65.0,
+        90.0
+      ],
+      "lon": [
+        -180.0,
+        179.75
+      ],
+      "n_times": 120,
+      "time_spacing_s": [
+        21600
+      ]
+    }
+  },
+  "overall": "ISSUES_FOUND",
+  "checks": [
+    {
+      "name": "jan_fullcoverage: coverage margin >= 1.0 deg",
+      "status": "PASS",
+      "detail": "margins_deg {'south': 1.847, 'north': 5.036, 'west': 1.723, 'east': 1.279} (global lon: False); negative = file edge inside model domain (cells beyond it rely on the D32 nearest-edge clamp)"
+    },
+    {
+      "name": "jan_fullcoverage: model cells outside file latitude range",
+      "status": "PASS",
+      "detail": "0 cells -> rely on D32 nearest-edge clamp"
+    },
+    {
+      "name": "jan_fullcoverage: model cells outside file longitude range",
+      "status": "PASS",
+      "detail": "0 cells -> rely on +-360 wrap (none expected; domain 8-77E)"
+    },
+    {
+      "name": "jan_fullcoverage: uniform time axis (no forcing gaps)",
+      "status": "PASS",
+      "detail": "spacing [21600] s over 124 steps"
+    },
+    {
+      "name": "apr_merged: coverage margin >= 1.0 deg",
+      "status": "WARNING",
+      "detail": "margins_deg {'south': -0.153, 'north': 5.036, 'west': inf, 'east': inf} (global lon: True); negative = file edge inside model domain (cells beyond it rely on the D32 nearest-edge clamp)"
+    },
+    {
+      "name": "apr_merged: model cells outside file latitude range",
+      "status": "WARNING",
+      "detail": "8 cells -> rely on D32 nearest-edge clamp"
+    },
+    {
+      "name": "apr_merged: model cells outside file longitude range",
+      "status": "PASS",
+      "detail": "0 cells -> rely on +-360 wrap (none expected; domain 8-77E)"
+    },
+    {
+      "name": "apr_merged: uniform time axis (no forcing gaps)",
+      "status": "PASS",
+      "detail": "spacing [21600] s over 120 steps"
+    },
+    {
+      "name": "netcdf_input: cyclic-longitude handling present",
+      "status": "PASS",
+      "detail": "+-360 normalization + dateline neighbour node"
+    },
+    {
+      "name": "netcdf_input: out-of-range latitude returns not-ok",
+      "status": "PASS",
+      "detail": "no extrapolation; handled by D32 clamp in era5_wind"
+    },
+    {
+      "name": "wind_forcing: D32 nearest-edge clamp documented",
+      "status": "PASS",
+      "detail": "Stage 11.4-D32"
+    },
+    {
+      "name": "time selection: nearest-time (era5_find_time_index)",
+      "status": "PASS",
+      "detail": "documented assumption; no temporal interpolation between 6-hourly analyses (H-4 note for T1/T5)"
+    },
+    {
+      "name": "H-2 wind rotation PRELIMINARY (ERA5 path)",
+      "status": "WARNING",
+      "detail": "era5_wind copies u10/v10 (x100) into windx1/windy1 as grid components WITHOUT geographic->grid (EPSG:3996) rotation; legacy path used observed-angle sin/cos (different basis). Documented for T4; NOT fixed in T0"
+    }
+  ]
+}

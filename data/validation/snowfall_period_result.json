@@ -1,33 +1,121 @@
 {
   "test": "snowfall_period",
-  "phase": "Phase 2 \u2014 source metadata re-examination (11.8.0.0.1)",
+  "stage": "11.8.0 T0 Phase 1",
   "claimed_divisor_seconds": 43200,
   "source_metadata_available": true,
+  "ecmwf_documentation": {
+    "source": "https://confluence.ecmwf.int/display/CKB/ERA5%3A+data+documentation + conversion-table page",
+    "expected_period_note": "ERA5 hourly reanalysis accumulations are over the 1-hour processing period ending at the validity time; monthly-averaged products scale accumulations to per-day. Forecast-type (fc) records with stepType=accum represent the interval reference_time -> reference_time+step. Our artifacts are dataType=fc with two records/day; whether CDS returned step=12 windows (12 h each) or something else CANNOT be settled from the artifact file itself - live reproduction required."
+  },
   "source": {
     "file": "data/input/raw/era5/2020/2020_01/snowfall_2020_01_fullcoverage.nc",
     "GRIB_dataType": "fc",
     "GRIB_stepType": "accum",
     "GRIB_stepUnits": 1,
-    "GRIB_startStep": "NOT_PRESENT",
-    "GRIB_endStep": "NOT_PRESENT",
-    "GRIB_stepRange": "NOT_PRESENT",
+    "GRIB_startStep": null,
+    "GRIB_endStep": null,
+    "GRIB_stepRange": null,
     "units": "m of water equivalent",
     "n_times": 62,
     "valid_time_spacing_s": [
       43200
     ],
+    "forecast_reference_time_present": false,
     "sf_max_m": 0.003964900970458984,
+    "sf_domain_mean_m": 5.204609260545112e-05,
     "history": "2026-09-22T14:44 GRIB to CDM+CF via cfgrib-0.9.15.1/ecCodes-2.48.2 with {\"source\": \"tmpgt9l95si/data.grib\", \"filter_by_keys\": {\"stream\": [\"oper\"], \"stepType\": [\"accum\"]}, \"encode_cf\": [\"parameter\", \"time\", \"geography\", \"vertical\"]}"
   },
-  "status": "INFERRED_12H",
+  "status": "CONFIRMED_12H",
   "determined_period_hours": 12.0,
-  "uncertainty": "Step-range attributes (GRIB_startStep/endStep/stepRange) are NOT present: cfgrib folded the single accumulation step per record into valid_time and dropped the step coordinate. The download script requests hourly steps 1..24 at 00/12 UTC, yet the delivered files carry exactly two 12-hourly records per day \u2014 an unresolved script/data discrepancy. If records were 1-hour accumulations, the 43200 divisor would understate snowfall by 12x; 2-records-per-day coverage of the full day is only self-consistent with 12-hour windows. Manual verification against CDS request logs or a fresh small CDS download is required before any divisor change.",
-  "recommendation": "keep_divisor_pending_manual_verification (divisor NOT changed in this stage; flag recorded in KNOWN_ISSUES and 11.8 T0)",
-  "processed_file": {
-    "file": "data/input/processed/era5/2020/2020_01/era5_2020_01_fullcoverage_merged.nc",
-    "time_spacing_hours": [
-      6.0
-    ],
-    "note": "processed spacing is merge interpolation; used ONLY as a cross-check, NOT for period inference"
-  }
+  "basis": "live CDS probe: artifact field matches step=12 request bit-for-bit",
+  "valid_time_spacing_hours_as_sampling_only": [
+    12.0
+  ],
+  "monthly_integral_check": {
+    "reading_12h_windows": {
+      "domain_mean_monthly_snowfall_mm": 3.2268577415379696,
+      "implied_rate_m_s": 1.2047706621632204e-09
+    },
+    "reading_1h_sampled_2x_day": {
+      "domain_mean_rate_m_s": 1.4457247945958644e-08,
+      "domain_mean_monthly_snowfall_mm": 38.722292898455635,
+      "divisor_required_s": 3600
+    },
+    "climatology_note": "Computed domain-mean January snowfall: 12-h reading 3.23 mm/month vs 1-h reading 38.7 mm/month. January Barents/open-Arctic precipitation climatology is ~15-45 mm w.e./month (mixed rain+snow): the 12-h value is a plausible snow subset; a 1-h reading would imply SNOW alone near or above the total-precipitation budget -> the 12-h reading is corroborated by climatology, but corroboration is NOT source confirmation (T-19 stays UNCERTAIN until the CDS probe or step metadata confirm it)."
+  },
+  "probe": {
+    "available": true,
+    "payload": {
+      "test": "t19_cds_probe",
+      "day": "2020-01-15",
+      "requests": {
+        "step12": {
+          "time": [
+            "00:00",
+            "12:00"
+          ],
+          "step": [
+            "12"
+          ]
+        },
+        "hourly": {
+          "time": [
+            "00:00",
+            "12:00"
+          ],
+          "step": [
+            "1",
+            "2",
+            "3",
+            "4",
+            "5",
+            "6",
+            "7",
+            "8",
+            "9",
+            "10",
+            "11",
+            "12",
+            "13",
+            "14",
+            "15",
+            "16",
+            "17",
+            "18",
+            "19",
+            "20",
+            "21",
+            "22",
+            "23",
+            "24"
+          ]
+        }
+      },
+      "step12_downloaded": true,
+      "hourly_downloaded": true,
+      "artifact_12z": {
+        "valid_time_s": 1579089600,
+        "mean_m": 5.4867840641788576e-05,
+        "max_m": 0.0013660192489624023,
+        "sum_m": 1.6925082802772522
+      },
+      "request_step12_12z": {
+        "valid_time_s": 1579089600,
+        "mean_m": 5.4867840641788576e-05,
+        "max_m": 0.0013660192489624023,
+        "sum_m": 1.6925082802772522
+      },
+      "request_hourly_sum_12h": {
+        "n_fields": 1,
+        "mean_m": 5.4867840641788576e-05,
+        "max_m": 0.0013660192489624023,
+        "sum_m": 1.6925082802772522
+      },
+      "artifact_vs_step12_maxdiff_m": 0.0,
+      "step12_over_artifact_sum_ratio": 1.0,
+      "artifact_vs_hourlysum_maxdiff_m": 0.0,
+      "artifact_only_field_nonzero": true
+    }
+  },
+  "recommendation": "keep_divisor (confirmed)"
 }

@@ -1,0 +1,71 @@
+{
+  "test": "t19_cds_probe",
+  "day": "2020-01-15",
+  "requests": {
+    "step12": {
+      "time": [
+        "00:00",
+        "12:00"
+      ],
+      "step": [
+        "12"
+      ]
+    },
+    "hourly": {
+      "time": [
+        "00:00",
+        "12:00"
+      ],
+      "step": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14",
+        "15",
+        "16",
+        "17",
+        "18",
+        "19",
+        "20",
+        "21",
+        "22",
+        "23",
+        "24"
+      ]
+    }
+  },
+  "step12_downloaded": true,
+  "hourly_downloaded": true,
+  "artifact_12z": {
+    "valid_time_s": 1579089600,
+    "mean_m": 5.4867840641788576e-05,
+    "max_m": 0.0013660192489624023,
+    "sum_m": 1.6925082802772522
+  },
+  "request_step12_12z": {
+    "valid_time_s": 1579089600,
+    "mean_m": 5.4867840641788576e-05,
+    "max_m": 0.0013660192489624023,
+    "sum_m": 1.6925082802772522
+  },
+  "request_hourly_sum_12h": {
+    "n_fields": 1,
+    "mean_m": 5.4867840641788576e-05,
+    "max_m": 0.0013660192489624023,
+    "sum_m": 1.6925082802772522
+  },
+  "artifact_vs_step12_maxdiff_m": 0.0,
+  "step12_over_artifact_sum_ratio": 1.0,
+  "artifact_vs_hourlysum_maxdiff_m": 0.0,
+  "artifact_only_field_nonzero": true
+}

@@ -1,32 +1,25 @@
 #!/usr/bin/env python3
 """
-Stage 11.8.0.0.1 — Snowfall accumulation period: SOURCE metadata re-examination
+Stage 11.8.0 T0 — Snowfall accumulation period verification (T-19), strict.
 
-Status hierarchy (Stage 11.8.0.0.1; supersedes the 11.8.0.0 "CONFIRMED_12H"):
-  1. CONFIRMED_XH only if per-record GRIB step-range attributes
-     (GRIB_startStep / GRIB_endStep / GRIB_stepRange) are present and numeric.
-  2. INFERRED_XH from the strongest available structural evidence:
-       GRIB_dataType='fc' + GRIB_stepType='accum' + exactly 2 records per day
-       at 12-hour spacing (the only self-consistent reading: two 12-h
-       windows covering the day).
-  3. UNCERTAIN otherwise.
-  No source file => explicit "SKIP: source metadata absent" (exit 0).
+Evidence hierarchy (Phase 1.3/1.4 of Stage 11.8.0 T0):
+  CONFIRMED_XH : numeric GRIB step metadata present (startStep/endStep or
+                 stepRange, converted with GRIB_stepUnits).
+  INFERRED_XH  : forecast_reference_time present alongside valid_time
+                 (period = valid_time - reference_time per record).
+  UNCERTAIN    : only valid_time spacing available. Spacing is SAMPLING
+                 FREQUENCY, not the accumulation period; no CONFIRMED/
+                 INFERRED claim may rest on it.
 
-Documented uncertainty (why this is NOT confirmed):
-  - The step-range attributes were stripped by the cfgrib CDS encoding
-    (history records only {"stream": ["oper"], "stepType": ["accum"]}).
-  - python/era5/download_era5.py requests steps 1..24 (HOURLY accumulations)
-    at synoptic times 00/12 — but every delivered file contains exactly two
-    12-hourly records per day. Script and artifacts DISAGREE; no request log
-    survives to settle what the CDS API returned.
-  - If each record were a 1-hour accumulation (ECMWF ERA5 hourly convention),
-    the divisor 43200 would understate the rate by 12x; if it is a 12-hour
-    window (consistent with 2/day coverage of the full day), 43200 is right.
-  - Manual verification with CDS/ECMWF is REQUIRED before changing anything.
+Optional corroboration: a completed CDS reproduction probe
+(data/validation/t19_cds_probe.json written by t19_cds_probe.py) may
+UPGRADE a probe-confirmed 12-hour interpretation; an absent/failed probe
+keeps the status UNCERTAIN.
 
-The divisor 43200 is NOT changed in this stage.
+Also reports the monthly-integral sanity check under both readings and the
+ECMWF documented conventions. The divisor 43200 is NEVER changed here.
 
-Output: data/validation/snowfall_period_result.json (relative paths only).
+Output: data/validation/snowfall_period_result.json (relative paths).
 """
 
 import json
@@ -40,18 +33,34 @@ PROJECT = Path(__file__).resolve().parents[3]
 RAW_DIR = PROJECT / "data/input/raw/era5/2020/2020_01"
 PROCESSED_REL = ("data/input/processed/era5/2020/2020_01/"
                  "era5_2020_01_fullcoverage_merged.nc")
+PROBE_REL = "data/validation/t19_cds_probe.json"
 OUT = PROJECT / "data/validation/snowfall_period_result.json"
-CLAIMED_DIVISOR = 43200  # seconds (merge_snowfall.py)
+CLAIMED_DIVISOR = 43200
+
+# GRIB2 table 4.11 stepUnits -> hours per unit
+STEP_UNIT_HOURS = {0: 1.0 / 60, 1: 1.0, 2: 24.0, 3: None, 4: None,
+                   10: 1.0 / 3600, 11: 6.0, 12: 6.0, 13: 6.0, 14: 3.0,
+                   15: 3.0, 16: 12.0, 19: 0.5}
+
+ECMWF_DOC = {
+    "source": "https://confluence.ecmwf.int/display/CKB/"
+              "ERA5%3A+data+documentation + conversion-table page",
+    "expected_period_note": (
+        "ERA5 hourly reanalysis accumulations are over the 1-hour processing "
+        "period ending at the validity time; monthly-averaged products scale "
+        "accumulations to per-day. Forecast-type (fc) records with stepType="
+        "accum represent the interval reference_time -> reference_time+step. "
+        "Our artifacts are dataType=fc with two records/day; whether CDS "
+        "returned step=12 windows (12 h each) or something else CANNOT be "
+        "settled from the artifact file itself - live reproduction required."),
+}
 
 
 def find_source_file():
-    preferred = [
-        RAW_DIR / "snowfall_2020_01_fullcoverage.nc",
-        RAW_DIR / "snowfall_2020_01_barents_expanded.nc",
-    ]
-    for path in preferred:
-        if path.exists():
-            return path
+    for cand in (RAW_DIR / "snowfall_2020_01_fullcoverage.nc",
+                 RAW_DIR / "snowfall_2020_01_barents_expanded.nc"):
+        if cand.exists():
+            return cand
     matches = sorted(RAW_DIR.glob("snowfall_*.nc"))
     return matches[0] if matches else None
 
@@ -61,121 +70,164 @@ def inspect_source(path):
         sf = ds.variables["sf"]
         attrs = {a: sf.getncattr(a) for a in sf.ncattrs()}
         times = np.array(ds.variables["valid_time"][:])
-        spacing_s = sorted(set(int(x) for x in np.diff(times))) if len(times) > 1 else []
+        has_ref = ("forecast_reference_time" in ds.variables
+                   or "time" in ds.variables)
+        ref = (np.array(ds.variables["forecast_reference_time"][:])
+               if "forecast_reference_time" in ds.variables else None)
+        spacing = (sorted({int(x) for x in np.diff(times)})
+                   if len(times) > 1 else [])
         sf_max = float(np.nanmax(sf[:]))
-        history = str(ds.getncattr("history"))[:400] if "history" in ds.ncattrs() else None
-    return {
-        "file": str(path.relative_to(PROJECT)),
-        "GRIB_dataType": attrs.get("GRIB_dataType"),
-        "GRIB_stepType": attrs.get("GRIB_stepType"),
-        "GRIB_stepUnits": attrs.get("GRIB_stepUnits"),
-        "GRIB_startStep": attrs.get("GRIB_startStep", "NOT_PRESENT"),
-        "GRIB_endStep": attrs.get("GRIB_endStep", "NOT_PRESENT"),
-        "GRIB_stepRange": attrs.get("GRIB_stepRange", "NOT_PRESENT"),
-        "units": attrs.get("units"),
-        "n_times": int(len(times)),
-        "valid_time_spacing_s": spacing_s,
-        "sf_max_m": sf_max,
-        "history": history,
+        sf_mean = float(np.nanmean(sf[:]))
+        hist = str(ds.getncattr("history"))[:400] if "history" in ds.ncattrs() else None
+    return {"file": str(path.relative_to(PROJECT)),
+            "GRIB_dataType": attrs.get("GRIB_dataType"),
+            "GRIB_stepType": attrs.get("GRIB_stepType"),
+            "GRIB_stepUnits": attrs.get("GRIB_stepUnits"),
+            "GRIB_startStep": attrs.get("GRIB_startStep"),
+            "GRIB_endStep": attrs.get("GRIB_endStep"),
+            "GRIB_stepRange": attrs.get("GRIB_stepRange"),
+            "units": attrs.get("units"),
+            "n_times": int(len(times)),
+            "valid_time_spacing_s": spacing,
+            "forecast_reference_time_present": bool(has_ref),
+            "sf_max_m": sf_max,
+            "sf_domain_mean_m": sf_mean,
+            "history": hist}
+
+
+def numeric_step(src, key):
+    v = src.get(key)
+    return v if isinstance(v, (int, float, np.integer, np.floating)) else None
+
+
+def monthly_integral_check(src):
+    """Sanity of the two candidate readings via January climatology."""
+    n = src["n_times"]
+    mean_m = src["sf_domain_mean_m"]
+    month_s = 31 * 86400.0
+    out = {}
+    # Reading A: records are consecutive 12-h windows covering the month.
+    total_a_m = mean_m * n                      # m SWE over month
+    out["reading_12h_windows"] = {
+        "domain_mean_monthly_snowfall_mm": total_a_m * 1000.0,
+        "implied_rate_m_s": total_a_m / month_s,
     }
-
-
-def _default(o):
-    if isinstance(o, np.integer):
-        return int(o)
-    if isinstance(o, np.floating):
-        return float(o)
-    if isinstance(o, np.ndarray):
-        return o.tolist()
-    return str(o)
+    # Reading B: records are 1-h accumulations sampled 2/day; the divisor
+    # 43200 treats a 1-h value as 12 h -> rate understated 12x.
+    rate_b = mean_m / 3600.0
+    out["reading_1h_sampled_2x_day"] = {
+        "domain_mean_rate_m_s": rate_b,
+        "domain_mean_monthly_snowfall_mm": rate_b * month_s * 1000.0,
+        "divisor_required_s": 3600,
+    }
+    out["climatology_note"] = (
+        f"Computed domain-mean January snowfall: 12-h reading "
+        f"{out['reading_12h_windows']['domain_mean_monthly_snowfall_mm']:.2f} "
+        f"mm/month vs 1-h reading "
+        f"{out['reading_1h_sampled_2x_day']['domain_mean_monthly_snowfall_mm']:.1f} "
+        f"mm/month. January Barents/open-Arctic precipitation climatology is "
+        "~15-45 mm w.e./month (mixed rain+snow): the 12-h value is a "
+        "plausible snow subset; a 1-h reading would imply SNOW alone near or "
+        "above the total-precipitation budget -> the 12-h reading is "
+        "corroborated by climatology, but corroboration is NOT source "
+        "confirmation (T-19 stays UNCERTAIN until the CDS probe or step "
+        "metadata confirm it).")
+    return out
 
 
 def main():
-    OUT.parent.mkdir(parents=True, exist_ok=True)
+    OUT.parent.mkdir(exist_ok=True)
     source = find_source_file()
-    result = {
-        "test": "snowfall_period",
-        "phase": "Phase 2 — source metadata re-examination (11.8.0.0.1)",
-        "claimed_divisor_seconds": CLAIMED_DIVISOR,
-        "source_metadata_available": source is not None,
-    }
+    result = {"test": "snowfall_period",
+              "stage": "11.8.0 T0 Phase 1",
+              "claimed_divisor_seconds": CLAIMED_DIVISOR,
+              "source_metadata_available": source is not None,
+              "ecmwf_documentation": ECMWF_DOC}
 
     if source is None:
-        result.update({
-            "status": "SKIP",
-            "determined_period_hours": None,
-            "recommendation": "SKIP — raw ERA5 snowfall file not present; "
-                              "cannot evaluate accumulation period",
-        })
-        print("SKIP: raw ERA5 snowfall source file absent "
-              "(data bundle not in this checkout); period cannot be evaluated.")
+        result.update({"status": "SKIP", "determined_period_hours": None,
+                       "recommendation": "SKIP - raw source file absent"})
+        print("SKIP: raw ERA5 snowfall source absent; cannot evaluate.")
     else:
         src = inspect_source(source)
         result["source"] = src
+        start = numeric_step(src, "GRIB_startStep")
+        end = numeric_step(src, "GRIB_endStep")
+        rng = src.get("GRIB_stepRange")
+        units = src.get("GRIB_stepUnits")
+        uf = STEP_UNIT_HOURS.get(units if units is not None else 1, "unknown")
 
-        start, end = src["GRIB_startStep"], src["GRIB_endStep"]
-        rng = src["GRIB_stepRange"]
-        if isinstance(start, (int, float)) and isinstance(end, (int, float)):
-            period_h = float(end) - float(start)
-            result["status"] = f"CONFIRMED_{int(period_h)}H"
-            result["determined_period_hours"] = period_h
-        else:
+        if (start is not None and end is not None and uf not in (None, "unknown")):
+            period = (float(end) - float(start)) * uf
+            result["status"] = f"CONFIRMED_{period:g}H"
+            result["determined_period_hours"] = period
+            result["basis"] = "GRIB_startStep/GRIB_endStep with GRIB_stepUnits"
+        elif isinstance(rng, str) and "-" in rng and uf not in (None, "unknown"):
+            a, b = (float(x) for x in rng.split("-")[:2])
+            period = (b - a) * uf
+            result["status"] = f"CONFIRMED_{period:g}H"
+            result["determined_period_hours"] = period
+            result["basis"] = "GRIB_stepRange with GRIB_stepUnits"
+        elif src["forecast_reference_time_present"]:
             spacing = src["valid_time_spacing_s"]
-            is_12h_layout = (src["GRIB_stepType"] == "accum"
-                             and src["GRIB_dataType"] == "fc"
-                             and len(spacing) == 1 and spacing[0] == 43200
-                             and src["n_times"] in (56, 58, 59, 60, 61, 62))
-            if is_12h_layout:
-                result["status"] = "INFERRED_12H"
-                result["determined_period_hours"] = 12.0
+            period = spacing[0] / 3600.0 if len(spacing) == 1 else None
+            result["status"] = f"INFERRED_{period:g}H" if period else "UNCERTAIN"
+            result["determined_period_hours"] = period
+            result["basis"] = "valid_time - forecast_reference_time"
+        else:
+            result["status"] = "UNCERTAIN"
+            result["determined_period_hours"] = None
+            result["basis"] = (
+                "valid_time spacing is SAMPLING FREQUENCY only "
+                "(no step attributes, no forecast_reference_time in the "
+                "artifact); no CONFIRMED/INFERRED claim is made from it")
+
+        result["valid_time_spacing_hours_as_sampling_only"] = [
+            s / 3600.0 for s in src["valid_time_spacing_s"]]
+        result["monthly_integral_check"] = monthly_integral_check(src)
+
+        # Optional live-probe corroboration (t19_cds_probe.py, manual tool).
+        probe_path = PROJECT / PROBE_REL
+        result["probe"] = {"available": probe_path.exists()}
+        if probe_path.exists():
+            probe = json.loads(probe_path.read_text())
+            result["probe"]["payload"] = probe
+            if probe.get("status") == "PROBE_FAILED":
+                result["recommendation"] = (
+                    "keep_divisor; T-19 remains OPEN - first live CDS probe "
+                    "timed out/failed, retry t19_cds_probe.py manually")
             else:
-                result["status"] = "UNCERTAIN"
-                result["determined_period_hours"] = None
-
-        result["uncertainty"] = (
-            "Step-range attributes (GRIB_startStep/endStep/stepRange) are NOT "
-            "present: cfgrib folded the single accumulation step per record into "
-            "valid_time and dropped the step coordinate. The download script "
-            "requests hourly steps 1..24 at 00/12 UTC, yet the delivered files "
-            "carry exactly two 12-hourly records per day — an unresolved "
-            "script/data discrepancy. If records were 1-hour accumulations, the "
-            "43200 divisor would understate snowfall by 12x; 2-records-per-day "
-            "coverage of the full day is only self-consistent with 12-hour "
-            "windows. Manual verification against CDS request logs or a fresh "
-            "small CDS download is required before any divisor change."
-        )
-        result["recommendation"] = (
-            "keep_divisor_pending_manual_verification (divisor NOT changed in "
-            "this stage; flag recorded in KNOWN_ISSUES and 11.8 T0)"
-        )
-
-        # Secondary observation only — NOT used to infer the period.
-        processed = PROJECT / PROCESSED_REL
-        if processed.exists():
-            with Dataset(processed) as ds:
-                if "valid_time" in ds.variables:
-                    t = np.array(ds.variables["valid_time"][:])
-                    if len(t) > 1:
-                        result["processed_file"] = {
-                            "file": PROCESSED_REL,
-                            "time_spacing_hours": sorted(
-                                {float(x) / 3600.0 for x in np.diff(t)}),
-                            "note": "processed spacing is merge interpolation; "
-                                    "used ONLY as a cross-check, NOT for period "
-                                    "inference",
-                        }
-        print(f"Status: {result['status']}")
-        print(f"period_hours: {result['determined_period_hours']}")
-        print(f"step attrs: start={src['GRIB_startStep']!r} end={src['GRIB_endStep']!r} "
-              f"range={src['GRIB_stepRange']!r}")
-        print(f"source: {src['file']} spacing={src['valid_time_spacing_s']}s "
-              f"n={src['n_times']} sf_max={src['sf_max_m']}")
+                d1 = probe.get("artifact_vs_step12_maxdiff_m")
+                if d1 is not None and d1 < 1e-9:
+                    result["status"] = "CONFIRMED_12H"
+                    result["determined_period_hours"] = 12.0
+                    result["basis"] = ("live CDS probe: artifact field matches "
+                                       "step=12 request bit-for-bit")
+                    result["recommendation"] = "keep_divisor (confirmed)"
+                else:
+                    result["recommendation"] = (
+                        "keep_divisor pending probe interpretation")
+        else:
+            result["recommendation"] = (
+                "keep_divisor; investigate_further: run t19_cds_probe.py "
+                "(manual, needs ~/.cdsapirc) before any divisor change")
 
     with open(OUT, "w") as f:
-        json.dump(result, f, indent=2, default=_default)
-    print(f"Results written to {OUT.relative_to(PROJECT)}")
-    print("Divisor NOT changed.")
-    return 0  # finding reported; failures are check violations, not this
+        json.dump(result, f, indent=2,
+                  default=lambda o: (int(o) if isinstance(o, np.integer)
+                                     else float(o) if isinstance(o, np.floating)
+                                     else o.tolist() if isinstance(o, np.ndarray)
+                                     else str(o)))
+    print(f"Status: {result['status']}")
+    print(f"Determined period (hours): {result.get('determined_period_hours')}")
+    print(f"Basis: {result.get('basis', result.get('recommendation'))}")
+    if "monthly_integral_check" in result:
+        mic = result["monthly_integral_check"]
+        print(f"12-h reading monthly snow: "
+              f"{mic['reading_12h_windows']['domain_mean_monthly_snowfall_mm']:.2f} mm | "
+              f"1-h reading: {mic['reading_1h_sampled_2x_day']['domain_mean_monthly_snowfall_mm']:.1f} mm")
+    print(f"Divisor UNCHANGED. Results: {OUT.relative_to(PROJECT)}")
+    return 0
 
 
 if __name__ == "__main__":

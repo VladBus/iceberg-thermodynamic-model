@@ -42,7 +42,7 @@ Ordered by causal priority (fix upstream first):
 
 | # | Intervention | Target | Rationale |
 |---|-------------|--------|-----------|
-| **1. Data (T0/T1)** | Rebuild init T/S from smoothed grid with QC; θ→T, T≥Tf; ERA5 by domain bbox + margin ≥1°; clamp longitude instead of wrap; snowfall divisor 3600s and 24 timesteps | T0, T1 | Eliminates pre-existing ρ<0 (Apr/Jul/Oct), fixes snowfall divisor, removes longitude wrap artifacts |
+| **1. Data (T0/T1)** | Rebuild init T/S from smoothed grid with QC; θ→T, T≥Tf; ERA5 by domain bbox + margin ≥1°; clamp longitude instead of wrap; snowfall divisor change ONLY after T-19 confirms the accumulation period from source GRIB metadata or the CDS probe (`t19_cds_probe.py`) | T0, T1 | Eliminates pre-existing ρ<0 (Apr/Jul/Oct) if real, resolves the snowfall divisor on evidence, removes longitude wrap artifacts |
 | **2. Core (T2)** | CA and EOS in float64; criterion on potential density; freezing point UNESCO everywhere | T2 | Eliminates float32 quantization floor (2⁻²³); potential density criterion is physically correct |
 | **3. Geometry (T0)** | Remove ring/hack 73×94; unified axis order ('k','j','i'); field angle(i,j) | T0 | Removes axis-order confusion (T-13/T-18 legacy); consistent NetCDF-Fortran mapping |
 | **4. Wind (T4)** | Rotation to grid (model coords) | T4 | Fixes wind forcing direction (T-13 resolved but verify in new geometry) |
@@ -67,7 +67,11 @@ Ordered by causal priority (fix upstream first):
 | **Reproducibility** | Repeated run with same config file gives same output hash manifest | MD5 of daily_diagnostics.csv identical |
 
 **Milestone gates:**
-- **T2 gate:** Homogeneous column PASS (CA does not modify stable column)
+- **T2 gate (ALL THREE required, 11.8.0 T0 correction):**
+  (a) homogeneous-column SMOKE test PASS (CA does not modify a stable column);
+  (b) weak-inversion CORE test PASS (inversion mixed, confinement, stability);
+  (c) analytical mixing solution PASS to 1e-12 (known two-/three-layer
+  volume-weighted mixing, float64 reference).
 - **T3 gate:** 30-day rest run stable (no NaN, |ΔT|<1e-6)
 - **T6 gate:** 30-day full run stable → 90-day → 365-day
 

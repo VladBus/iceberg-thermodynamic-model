@@ -1,7 +1,7 @@
 # Model Physics Block Status
 
 **Date:** 2026-10-22
-**Current repository stage:** Stage 11.8.0.0.1 — CI Fix, Real Tests, Snowfall Re-examination COMPLETE. Stage 11.8.0.0 COMPLETE. Stage 11.7E.4 COMPLETE. Stage 11.7E.5 (tides reader) DEFERRED — null-tides provides no scientific value. NEXT: 11.8.0 T0 (data/units verification incl. snowfall accumulation-period manual check, T-19). EOS STATUS (binding, unchanged): EOS-80 OPTIONAL; legacy Eckart DEFAULT and scientific reference; default decision deferred to 11.8A; legacy EOS retained permanently as regression baseline, NOT scheduled for removal.
+**Current repository stage:** Stage 11.8.0 T0 — Data and Units Verification COMPLETE. Stages 11.8.0.0/11.8.0.0.1/11.7E.4 COMPLETE. Stage 11.7E.5 (tides reader) DEFERRED — null-tides provides no scientific value. NEXT: 11.8.0 T1 (forcing contract). Snowfall divisor 43200 CONFIRMED correct from source (T-19 closed via live CDS probe: artifact == step=12 request, bit-identical); EN4 initial data findings T-20/T-22 and ERA5 T-21/H-2 open for later tiers. EOS STATUS (binding, unchanged): EOS-80 OPTIONAL; legacy Eckart DEFAULT and scientific reference; default decision deferred to 11.8A; legacy EOS retained permanently as regression baseline, NOT scheduled for removal.
 **Ocean EOS statement:** the prognostic ocean uses legacy Eckart (Dmitrev–Nesterov) density in float32 (`src/equation_of_state.f90`) by default; UNESCO EOS-80 is implemented opt-in (`src/eos80_unesco.f90`, `EOS_MODE=EOS80`, validated in 11.4/11.4.1, recommendation: optional). Iceberg side uses freezing-point only (table row "Full seawater EOS" below refers to the iceberg module).
 **Production baseline:** Stage 10.13 (low-flow closure behind `low_flow_closure_enabled`; OFF = Stage 10.12/10.10 legacy unchanged); Stage 10.19 adds the env-gated production iceberg connection (inert by default); Stage 10.20 adopts the full-coverage ERA5 Jan file for production gates (`src/param.f90` default path NOT changed); Stage 10.21 adds CA/EOS f32-precision research switches (`STAGE1021_CA_F64`, `STAGE1021_CA_MIX`, `STAGE1021_CA_SCOPE`, `STAGE1021_CA_EPS`) — all OFF by default, production bit-identical (KEEP_CURRENT); Stage 10.22 adds Block-200 stability-audit diagnostic switches (`STAGE1022_DIAG`, `STAGE1022_FREEZE_RO`, `STAGE1022_FREEZE_THERMAL_WIND`, `STAGE1022_FREEZE_TS`, `STAGE1022_FREEZE_RO_DOWNSTREAM`; env names `_FREEZE_RO`/`_FREEZE_TS`/`_FREEZE_RO_DOWNSTREAM`/`_FREEZE_THERMAL_WIND` + `_DIAG`) — all OFF by default, production bit-identical (KEEP_CURRENT); Stage 11.4-D32 adds the ERA5 nearest-edge coverage fallback in `era5_wind()` (loader-only production fix, Jan bit-identical); Stage 11.4-D33 fixes Ocean Baseline 11.x (Jan30/Apr29/Jul30/Oct30, 0 NaN); Stage 11.3C adds `STAGE113_DT/DT1` measurement-only timestep override (defaults = legacy 3600/120); Stage 11.3C.1 adds mm2/mm3 scaling (active only with override) + `s112_cfl_dist` percentiles (DIAG-gated)
 **FPM test targets:** 59 (fpm auto-discovery of `test/*.f90` with a top-level `program`, incl. `check.f90`, `iceberg_test_10p17_melt_budget`, `iceberg_test_10p17_90day`, `drift_scaling_*`)
@@ -122,7 +122,9 @@ strict build clean.
 Real Fortran homogeneous-column test executes production `convect_column`:
 LEGACY and EOS80 both PASS with ΔT = ΔS = 0, 1 iteration, exit 0. The prior
 "FAIL expected" premise was false — a perfectly homogeneous column is stable;
-the CA defect requires a weak inversion. Snowfall source metadata confirms
+the CA defect requires a weak inversion. Snowfall source metadata confirms (SUPERSEDED by Stage 11.8.0.0.1: status downgraded to INFERRED_12H, then to
+UNCERTAIN in 11.8.0 T0 - valid_time spacing is sampling frequency, not
+accumulation period; see T-19)
 12-h accumulation (`GRIB_stepType=accum`, 43200 s spacing); divisor 43200 is
 correct and unchanged (processed 6-h spacing is interpolation). Sea-ice
 provenance now records the actual source: ON = netcdf + manifest version/MD5;
@@ -135,6 +137,20 @@ documented. No physics/EOS/snowfall-divisor change.
 ## Stage 11.8.0.0.1 — T2 tests + snowfall status correction
 
 T2 diagnostics now GENUINELY fail (non-zero exit) on invariant violation; the homogeneous-column test is reclassified as a SMOKE control (stable in both EOS modes: dT=dS=0, 1 iteration). The weak-inversion core test (`convect_column`, production) verifies heat/salt conservation (0.0 rel error), confined mixing (LEGACY: exactly levels 2-3 -> 3.95) and stability; under EOS-80 the in-situ density criterion masks the inversion (nmix = 0) — a documented 11.8 finding, not fixed here. Snowfall period downgraded CONFIRMED_12H -> INFERRED_12H (T-19: step-range attributes absent; script/artifact contradiction; divisor 43200 UNCHANGED, manual CDS verification required). CI restructured (Fortran steps in the fpm job; Python-job data-dependent tests self-SKIP explicitly). No physics/EOS/snowfall-divisor change.
+
+## Stage 11.8.0 T0 — data & units verification (no changes)
+
+Snowfall: T-19 RESOLVED — each raw record is a 12-hour window ending at its
+valid_time (live CDS `step=12` reproduction bit-identical to the artifact);
+divisor 43200 stays. EN4: shipped seasonal products carry a legacy shadowed
+z metadata grid (values read by index; actual depths are the model's) ->
+T-20; Jan rebuild contains sub-freezing cells -> T-22; initial-state density
+inversions (up to ~1e-3 g/cm3-anomaly scale) quantified as T2-tier load.
+ERA5: Jan product covers the model with >=1.28 deg margins; April lacks
+0.15 deg to the south (8 cells D32-clamped) -> T-21; nearest-time selection
+and cyclic-longitude behaviour documented; H-2: ERA5 wind unrotated to the
+EPSG:3996-rotated grid flagged for T4. Full report:
+`docs/validation/stage11.8.0_T0_data_units_verification.md`.
 
 ## References
 

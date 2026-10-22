@@ -3,8 +3,8 @@
 **Updated:** 2026-10-22
 **Current scientific stage:** Stage 11.8.0.0.1 — CI Fix, Real Tests, Snowfall Re-examination COMPLETE. Stages 11.8.0.0 / 11.7E.4 COMPLETE. Stage 11.7E.5 (tides reader) DEFERRED — null-tides provides no scientific value; not blocked by 11.7F. NEXT: 11.8.0 T0 (data and units verification; includes manual snowfall-accumulation-period verification, T-19).
 **Stages 3–11.4.1: COMPLETED** (10.x iceberg modernization; 11.1 seasonal characterization; 11.2 CFL audit; 11.4-D21…D33 EN4 stabilization → ERA5-coverage fix → cleanup + Ocean Baseline 11.x; 11.3A execution-graph audit; 11.3B input-architecture audit + NetCDF contracts; 11.3C scheme audit + timestep matrix; 11.3C.1 semantics + CFL distributions; 11.3C.2 time-integration audit; 11.3C.3 loop-bound search (VERDICT D); 11.4 EOS-80 experiment + 11.4.1 impact validation (OPTIONAL, not default)).
-**Current status:** Stages 10.14–11.8.0.0 committed (see `git log` and `CHANGELOG.md` for history). **Stage 11.8.0.0 COMPLETE** (diagnostic contract correction). **Stage 11.8.0.0.1 COMPLETE** (CI green; T2 smoke + weak-inversion tests fail genuinely; snowfall re-examined → INFERRED_12H + T-19; divisor unchanged).
-**Test suite:** 64 Fortran test source files (`ls test/*.f90 | wc -l`); 59 auto-discovered FPM targets (executable programs). The count differs because some source files are modules/helpers without a top-level `program`.
+**Current status:** Stages 10.14–11.8.0.0.1 committed (last: `ba447c7` Stage 11.8.0.0.1; see `git log` and `CHANGELOG.md` for history). **Stage 11.8.0.0 COMPLETE**. **Stage 11.8.0.0.1 COMPLETE** (CI green; T2 smoke + weak-inversion tests fail genuinely; snowfall re-examined → INFERRED_12H + T-19; divisor unchanged). **Stage 11.8.0 T0 COMPLETE** (data and units verification: snowfall T-19 RESOLVED via live CDS probe (divisor 43200 confirmed, unchanged); EN4 verification -> T-20/T-22; ERA5 coverage -> T-21 + H-2 documented). NEXT: 11.8.0 T1 (forcing contract verification).
+**Test suite:** 66 Fortran test source files (`ls test/*.f90 | wc -l`); 66 auto-discovered FPM test targets (`fpm test --list | grep -vcE '^\s*$|Matched'`). Counting method (Stage 11.8.0 T0): every current `test/*.f90` contains a top-level `program`, so file count == target count; the historical 64/59 split existed because older helper modules without `program` were present then. Counts verified 2026-10-22.
 **Stage 11.5H-RC COMPLETE** (release-candidate gate: self-contained production scheduler, docs synced D-22…D-28). Plan: 11.8.0 diagnostic ladder (T0–T6) → 11.8A validation → 11.8B audit → 11.9 closure → 12.0 voxel (blocked, D-28).
 
 ## Completed foundation
@@ -430,6 +430,22 @@ INFERRED_12H pending manual CDS verification. Report:
   criteria (AC-1). N=1 stability does **not** prove production viability.
 - **Tracking:** `KNOWN_ISSUES.md` N-15; EOS-80 promotion additionally requires
   this gate (D-29).
+
+### Stage 11.8.0 T0 — Data and Units Verification
+
+Scope: first ladder rung (T0) per `stage11.8.0_ocean_diagnostic_plan.md`:
+snowfall accumulation period, EN4 initial T/S, ERA5 coverage/edges/time,
+wind-rotation preliminary. Verification only; no data or physics changes.
+Findings: T-19 CLOSED (CONFIRMED_12H via bit-identical live `step=12` CDS
+reproduction; divisor 43200 correct); new T-20 (shipped EN4 z_model_m legacy
+grid; Jul/Oct rebuilds missing; reader index-reads), T-21 (April south margin
+-0.15 deg, 8 D32-clamped cells), T-22 (Jan rebuild sub-Tf cells), H-2 wind
+rotation documented for T4.
+Acceptance: strict evidence hierarchy tests in CI; regression green; CI green.
+Dependencies: 11.8.0.0.1.
+Status: **COMPLETE**. Report:
+`docs/validation/stage11.8.0_T0_data_units_verification.md`.
+NEXT: 11.8.0 T1 (forcing contract verification).
 
 ### Stage 11.8A — Scientific Validation (gated)
 

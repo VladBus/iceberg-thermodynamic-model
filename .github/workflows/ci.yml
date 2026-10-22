@@ -153,6 +153,18 @@ jobs:
           conda activate iceberg-thermodynamic-model
           python python/tests/ocean/test_snowfall_period.py
 
+      - name: Run T0 EN4 initial verification (explicit SKIP without data)
+        shell: bash -l {0}
+        run: |
+          conda activate iceberg-thermodynamic-model
+          python python/tests/ocean/test_en4_initial_verification.py
+
+      - name: Run T0 ERA5 coverage verification (explicit SKIP without data)
+        shell: bash -l {0}
+        run: |
+          conda activate iceberg-thermodynamic-model
+          python python/tests/ocean/test_era5_coverage_verification.py
+
       - name: Run ice-coverage diagnostic (explicit SKIP without data bundle)
         shell: bash -l {0}
         run: |

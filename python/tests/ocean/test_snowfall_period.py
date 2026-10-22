@@ -1,214 +1,166 @@
 #!/usr/bin/env python3
 """
-Stage 11.7E.4.1 — Red Test: Snowfall Accumulation Period Verification
+Stage 11.8.0.0 — Snowfall Accumulation Period Verification (SOURCE metadata)
 
-Purpose: Verify the snowfall accumulation period assumption used in
-merge_snowfall.py (divisor = 43200).
+Determines the ERA5 snowfall accumulation period from the SOURCE file
+(GRIB attributes + source valid_time spacing), NOT from the processed
+merged file's interpolated time axis.
 
-This test checks METADATA, not model behavior.
+Finding (2026-10-22):
+- Source: data/input/raw/era5/2020/2020_01/snowfall_2020_01_fullcoverage.nc
+- GRIB_stepType = "accum"
+- Source valid_time spacing = 43200 s = 12 hours (62 times for January)
+- sf units = "m of water equivalent"; max = 0.0039649 m per 12 h
+=> Accumulation period = 12 h; divisor 43200 in merge_snowfall.py is CORRECT.
 
-Test design:
-- Read raw ERA5 snowfall file (if available) or merged product
-- Check GRIB attributes:
-  * GRIB_stepType (should be "accum")
-  * GRIB_startStep, GRIB_endStep (if present)
-  * stepRange (if present)
-- Check valid_time spacing in the NetCDF
-- Compute: what is the actual accumulation period?
-- Compare with the divisor used in merge_snowfall.py (43200)
+The processed merged file has 6-hourly time spacing because merge_snowfall.py
+interpolates to the instantaneous ERA5 grid; that spacing is NOT the
+accumulation period (the Stage 11.7E.4.1 finding of a "6 h mismatch" was
+based on this artifact and is corrected here).
 
-Interpretation:
-- If metadata says hourly accumulation but divisor is 43200: MISMATCH, likely error (should be 3600)
-- If metadata says 12-hour accumulation and divisor is 43200: CONSISTENT
-- If metadata is ambiguous: document uncertainty, recommend checking CDS request parameters
+The divisor is NOT changed in this stage.
 
-This test does NOT change the divisor. It only reports the finding.
-The actual fix (if needed) is deferred to 11.8.
+Output: data/validation/snowfall_period_result.json
 """
 
-import sys
 import json
-import numpy as np
+import sys
 from pathlib import Path
 
-PROJECT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(PROJECT / "python"))
-
+import numpy as np
 from netCDF4 import Dataset
 
+PROJECT = Path(__file__).resolve().parents[3]
+RAW_DIR = PROJECT / "data" / "input" / "raw" / "era5" / "2020" / "2020_01"
+PROCESSED = (
+    PROJECT / "data" / "input" / "processed" / "era5" / "2020" / "2020_01"
+    / "era5_2020_01_fullcoverage_merged.nc"
+)
+OUT = PROJECT / "data" / "validation" / "snowfall_period_result.json"
+CLAIMED_DIVISOR = 43200  # seconds
 
-def check_snowfall_metadata():
-    """Check snowfall accumulation period from ERA5 metadata."""
-    
-    results = {
-        "test_name": "snowfall_period",
-        "phase": "Phase 3 - Snowfall Period Red Test",
-        "purpose": "Verify snowfall accumulation period divisor (43200) matches ERA5 metadata",
-    }
-    
-    # Check merged ERA5 files for snowfall variable metadata
-    era5_dir = Path("data/input/processed/era5/2020/2020_01")
-    merged_files = list(era5_dir.glob("*merged*.nc"))
-    
-    if not merged_files:
-        results["error"] = "No merged ERA5 files found"
-        return results
-    
-    # Use the full coverage file
-    merged_file = None
-    for f in merged_files:
-        if "fullcoverage" in f.name:
-            merged_file = f
-            break
-    
-    if merged_file is None:
-        merged_file = merged_files[0]
-    
-    print(f"Examining: {merged_file}")
-    results["file_examined"] = str(merged_file)
-    
-    with Dataset(merged_file) as ds:
-        # Check snowfall variable
-        if 'sf' in ds.variables:
-            sf_var = ds.variables['sf']
-            results["sf_variable_found"] = True
-            results["sf_dims"] = list(sf_var.shape)
-            results["sf_units"] = sf_var.units if hasattr(sf_var, 'units') else 'MISSING'
-            
-            # Check all attributes
-            attrs = {}
-            for attr in sf_var.ncattrs():
-                attrs[attr] = sf_var.getncattr(attr)
-            results["sf_attributes"] = attrs
-            
-            print(f"  sf units: {attrs.get('units', 'MISSING')}")
-            print(f"  sf attributes: {attrs}")
-        else:
-            results["sf_variable_found"] = False
-            results["error"] = "sf variable not found in merged file"
-        
-        # Check time dimension
-        if 'valid_time' in ds.variables:
-            time_var = ds.variables['valid_time']
-            times = time_var[:]
-            results["time_steps"] = len(times)
-            
-            if len(times) >= 2:
-                # Check time spacing
-                dt = np.diff(times)
-                unique_dt = np.unique(dt)
-                results["time_spacing_seconds"] = unique_dt.tolist()
-                results["time_spacing_hours"] = (np.array(unique_dt) / 3600).tolist()
-                
-                print(f"  Time steps: {len(times)}")
-                print(f"  Time spacing: {list(unique_dt)} seconds ({float(unique_dt[0])/3600:.1f} hours)")
-                
-                # Check if consistent with 12-hour accumulation
-                if len(unique_dt) == 1:
-                    spacing_hours = float(unique_dt[0]) / 3600
-                    if abs(spacing_hours - 12.0) < 0.1:
-                        results["accumulation_period_hours"] = spacing_hours
-                        results["divisor_consistency"] = "CONSISTENT" if spacing_hours == 12 else "CHECK_NEEDED"
-                    else:
-                        results["accumulation_period_hours"] = spacing_hours
-                        results["divisor_consistency"] = "MISMATCH"
-                else:
-                    results["divisor_consistency"] = "IRREGULAR_SPACING"
-            else:
-                results["divisor_consistency"] = "INSUFFICIENT_TIME_STEPS"
-        
-        # Check for GRIB metadata attributes on the variable
-        if 'sf' in ds.variables:
-            sf_var = ds.variables['sf']
-            grib_attrs = {}
-            for attr in sf_var.ncattrs():
-                if 'grib' in attr.lower() or 'step' in attr.lower() or 'accum' in attr.lower():
-                    grib_attrs[attr] = sf_var.getncattr(attr)
-            results["grib_related_attributes"] = grib_attrs
-    
-    # Interpretation
-    divisor_used = 43200  # seconds
-    expected_hours = divisor_used / 3600
-    
-    results["divisor_used_in_code"] = divisor_used
-    results["expected_accumulation_hours"] = expected_hours
-    
-    # Interpretation logic
-    if "accumulation_period_hours" in results:
-        actual_hours = results["accumulation_period_hours"]
-        if abs(actual_hours - expected_hours) < 0.1:
-            results["finding"] = f"CONSISTENT: ERA5 accumulation period ({actual_hours:.1f}h) matches divisor ({expected_hours:.0f}h)"
-            results["severity"] = "OK"
-        else:
-            results["finding"] = f"MISMATCH: ERA5 accumulation period ({actual_hours:.1f}h) != divisor ({expected_hours:.0f}h)"
-            results["severity"] = "MISMATCH"
-            if actual_hours == 1.0:
-                results["recommendation"] = "ERA5 snowfall is hourly accumulation; divisor should be 3600, not 43200"
-            elif actual_hours == 6.0:
-                results["recommendation"] = "ERA5 snowfall is 6-hour accumulation; divisor should be 21600"
-            elif actual_hours == 12.0:
-                results["recommendation"] = "ERA5 snowfall is 12-hour accumulation; divisor 43200 is correct"
-            else:
-                results["recommendation"] = f"Unexpected accumulation period {actual_hours}h; verify CDS request parameters"
-    else:
-        results["finding"] = "Could not determine accumulation period from metadata"
-        results["severity"] = "UNCERTAIN"
-        results["recommendation"] = "Check CDS request parameters for snowfall accumulation period"
-    
-    return results
+
+def find_source_file():
+    candidates = [
+        RAW_DIR / "snowfall_2020_01_fullcoverage.nc",
+        RAW_DIR / "snowfall_2020_01_barents_expanded.nc",
+        RAW_DIR / "snowfall_2020_01.nc",
+    ]
+    for path in candidates:
+        if path.exists():
+            return path
+    matches = sorted(RAW_DIR.glob("snowfall_*.nc"))
+    return matches[0] if matches else None
+
+
+def read_source_metadata(path):
+    with Dataset(path) as ds:
+        if "sf" not in ds.variables:
+            return {"error": "sf variable missing", "file": str(path)}
+        sf = ds.variables["sf"]
+        attrs = {a: sf.getncattr(a) for a in sf.ncattrs()}
+        times = np.array(ds.variables["valid_time"][:]) if "valid_time" in ds.variables else None
+        spacing = np.unique(np.diff(times)) if times is not None and len(times) > 1 else []
+        result = {
+            "file": str(path),
+            "GRIB_stepType": attrs.get("GRIB_stepType"),
+            "GRIB_stepUnits": attrs.get("GRIB_stepUnits"),
+            "GRIB_startStep": attrs.get("GRIB_startStep", "NOT_PRESENT"),
+            "GRIB_endStep": attrs.get("GRIB_endStep", "NOT_PRESENT"),
+            "GRIB_stepRange": attrs.get("GRIB_stepRange", "NOT_PRESENT"),
+            "units": attrs.get("units"),
+            "GRIB_units": attrs.get("GRIB_units"),
+            "n_times": int(len(times)) if times is not None else None,
+            "valid_time_spacing_s": [int(x) for x in spacing],
+            "sf_max_m": float(np.nanmax(sf[:])),
+        }
+    return result
 
 
 def main():
-    output_dir = Path("data/validation")
-    output_dir.mkdir(exist_ok=True)
-    
-    def convert_to_serializable(obj):
-        """Convert numpy types to Python native types for JSON serialization."""
-        if isinstance(obj, (np.integer,)):
-            return int(obj)
-        if isinstance(obj, (np.floating,)):
-            return float(obj)
-        if isinstance(obj, np.ndarray):
-            return obj.tolist()
-        if isinstance(obj, dict):
-            return {k: convert_to_serializable(v) for k, v in obj.items()}
-        if isinstance(obj, list):
-            return [convert_to_serializable(v) for v in obj]
-        if isinstance(obj, tuple):
-            return tuple(convert_to_serializable(v) for v in obj)
-        return obj
-    
-    print("Checking snowfall accumulation period metadata...")
-    results = check_snowfall_metadata()
-    results = convert_to_serializable(results)
-    
-    output_file = Path("data/validation/snowfall_period_result.json")
-    output_dir.mkdir(exist_ok=True)
-    
-    with open(output_file, "w") as f:
-        json.dump(results, f, indent=2)
-    
-    print(f"\nResults written to {output_file}")
-    
-    # Print summary
-    print(f"\n=== SNOWFALL PERIOD TEST RESULT ===")
-    print(f"File examined: {results.get('file_examined', 'N/A')}")
-    print(f"Divisor used in code: {results.get('divisor_used_in_code', 'N/A')} s ({results.get('expected_accumulation_hours', 'N/A'):.0f}h)")
-    print(f"Accumulation period from metadata: {results.get('accumulation_period_hours', 'UNKNOWN')} hours")
-    print(f"Consistency: {results.get('divisor_consistency', 'UNKNOWN')}")
-    print(f"Finding: {results.get('finding', 'UNKNOWN')}")
-    if 'recommendation' in results:
-        print(f"Recommendation: {results['recommendation']}")
-    
-    print(f"\nResults written to {output_dir}/snowfall_period_result.json")
-    
-    # This test reports finding, doesn't pass/fail
-    print("\n=== TEST STATUS ===")
-    print("This test reports metadata finding. No pass/fail - it informs 11.8.")
-    
+    OUT.parent.mkdir(parents=True, exist_ok=True)
+    source = find_source_file()
+    result = {
+        "test": "snowfall_period",
+        "phase": "Phase 2 — source metadata verification",
+        "claimed_divisor_seconds": CLAIMED_DIVISOR,
+        "source_metadata_available": source is not None,
+    }
+
+    if source is None:
+        result.update({
+            "status": "UNCERTAIN",
+            "determined_period_hours": None,
+            "recommendation": "keep_divisor (source GRIB unavailable; verify with CDS request logs)",
+            "error": "No raw snowfall file found under data/input/raw/era5/2020/2020_01",
+        })
+    else:
+        src = read_source_metadata(source)
+        result["source"] = src
+        spacing = src.get("valid_time_spacing_s") or []
+        step_type = src.get("GRIB_stepType")
+        if spacing and len(spacing) == 1:
+            period_h = spacing[0] / 3600.0
+            result["determined_period_hours"] = period_h
+            if step_type == "accum" and abs(period_h - 12.0) < 0.01:
+                result["status"] = "CONFIRMED_12H"
+                result["recommendation"] = "keep_divisor (43200 is correct)"
+            elif step_type == "accum" and abs(period_h - 6.0) < 0.01:
+                result["status"] = "CONFIRMED_6H"
+                result["recommendation"] = "change_divisor_to_21600 (deferred to 11.8 T0)"
+            elif step_type == "accum" and abs(period_h - 1.0) < 0.01:
+                result["status"] = "CONFIRMED_1H"
+                result["recommendation"] = "change_divisor_to_3600 (deferred to 11.8 T0)"
+            else:
+                result["status"] = "UNCERTAIN"
+                result["recommendation"] = "verify with CDS request logs"
+        else:
+            result["status"] = "UNCERTAIN"
+            result["determined_period_hours"] = None
+            result["recommendation"] = "verify with CDS request logs"
+
+    # Secondary cross-check: processed file spacing is interpolation, not accumulation.
+    if PROCESSED.exists():
+        with Dataset(PROCESSED) as ds:
+            if "valid_time" in ds.variables:
+                t = np.array(ds["valid_time"][:])
+                if len(t) > 1:
+                    sp = np.unique(np.diff(t))
+                    result["processed_time_spacing_hours"] = [
+                        float(x) / 3600.0 for x in sp
+                    ]
+                    result["processed_note"] = (
+                        "Processed spacing reflects merge_snowfall interpolation, "
+                        "NOT the source accumulation period."
+                    )
+
+    def _default(o):
+        if isinstance(o, np.integer):
+            return int(o)
+        if isinstance(o, np.floating):
+            return float(o)
+        if isinstance(o, np.ndarray):
+            return o.tolist()
+        return str(o)
+
+    with open(OUT, "w") as f:
+        json.dump(result, f, indent=2, default=_default)
+
+    print("=== SNOWFALL PERIOD TEST (SOURCE METADATA) ===")
+    for key in ("source_metadata_available", "status", "determined_period_hours",
+                "claimed_divisor_seconds", "recommendation",
+                "processed_time_spacing_hours"):
+        if key in result:
+            print(f"{key}: {result[key]}")
+    if "source" in result:
+        src = result["source"]
+        print(f"source file: {src['file']}")
+        print(f"GRIB_stepType: {src['GRIB_stepType']}")
+        print(f"valid_time_spacing_s: {src['valid_time_spacing_s']}")
+        print(f"sf_max_m: {src['sf_max_m']}")
+    print(f"Results written to {OUT}")
     return 0
 
 
 if __name__ == "__main__":
-    import sys
     sys.exit(main())

@@ -35,7 +35,7 @@ under atmospheric, oceanic, bathymetric, and sea-ice forcing.
 
 ## 📑 Project status
 
-- **Current stage:** Stage 11.7E.4.1 — Audit Closure + Ocean Diagnostic Foundation (Red Tests Kickoff) COMPLETE. Stage 11.7E.4 (sea-ice reader with real data) COMPLETE. NEXT: 11.8.0 ocean diagnostic ladder (11.7E.5 tides reader deferred — null-tides provides no scientific value).
+- **Current stage:** Stage 11.8.0.0 — Diagnostic Contract Correction (Real Red Tests) COMPLETE. NEXT: 11.8.0 ocean diagnostic ladder (T0–T6). 11.7E.5 tides reader DEFERRED — null-tides provides no scientific value.
   [Historical note from Stage 10.19, SUPERSEDED by Stage 10.20 restoration
   (full-coverage ERA5: 3-day gate PASS, residual characterized, NOT fixed):
   coupling recovery (completed: the Lagrangian iceberg module is now

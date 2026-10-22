@@ -335,6 +335,10 @@ Format: `ID | stage/date | status` + short description. Details — via links.
 - **Why:** FOR — correctness (UNESCO compressibility), 28/28 reference tests, 4/4 April + 4/4 Jan green (0 NaN, CA converges maxiter 20–29/guard 0, salt 10× better at STALE, heat nearer legacy at STALE, 6.5× faster at STALE). AGAINST — ice response large (+36% N1 / +58% STALE d7, +96% d29 N1) and UNVALIDATED vs observations; April EUU process review (11.4) still open; per-cell velocity maps unavailable. Matches 11.4's recommendation.
 - **Sources:** `docs/validation/stage11.6_eos80_integration_rebaseline.md` §§1–5, `test/eos80_reference.f90` (28/28), April A/B/C/D + Jan JA–JD runs.
 - **Limitations:** EOS dimension joins scheduler dimension in the 11.8A sea-ice gate; no EOS-80 production claims until then.
+- **EOS-80 promotion requires:**
+  - (a) Ocean stabilization gate passed (365-day run without NaN, per `docs/validation/stage11.8.0_ocean_diagnostic_plan.md`)
+  - (b) 11.8A seasonal matrix completed (Jan/Apr/Jul/Oct 30-day runs)
+  - (c) Physical validation against observations (sea-ice gate D-27, observational melt validation 10.18)
 - **Next:** 11.7 NetCDF (output contract records EOS_MODE per run); 11.8A gate adjudicates. **Note (11.7E.2.1):** 11.7 now records `initialization_source` (EN4 vs SYNTHETIC) AND `eos_mode` (LEGACY vs EOS80) as global NetCDF attributes; EOS-80 default decision remains at 11.8A.
 
 ## D-30. eos_diag dispatcher rule + interaction correction (Stage 11.6.1, 2026-10-11)
@@ -374,6 +378,18 @@ Stage 11.7E.4 connects real January 2020 sea ice behind
 `STAGE117E_NETCDF_SEAICE`, but leaves the switch OFF by default and keeps the
 legacy files for rollback. ON and legacy-real are bit-identical; the default
 remains unchanged until the production-default decision in 11.7F.
+
+## D-33 — Physics change policy: two-branch model with decision gate (Stage 11.8.0)
+
+- **Stage:** 11.8.0 | **Status:** DECIDED
+- **Problem:** Stage 11.8 introduces physics changes (float64 EOS/CA, potential density criterion, unified axis order, etc.) that cannot be validated by bit-for-bit comparison with the legacy-frozen branch. A formal policy is needed to separate maintenance from sanctioned physics evolution.
+- **Decision:** Adopt a two-branch model with explicit decision gate D-33:
+  - **legacy-frozen** (default, protected): all physics switches OFF; bit-identical to commit `8d4343d` (Stage 11.7E.4.1). Changes ONLY for regression protection (typos, CI, documentation). NO physics/EOS/scheduler changes.
+  - **stage11-physics** (opt-in): sanctioned physics changes with new reference state and criteria AC-1 (365-day no-NaN, conservation, stratification, rest stability, physical plausibility, reproducibility). Results compared by PHYSICAL METRICS (AC-1), NOT bit-for-bit.
+  - **Gate D-33:** Before any physics change lands on `stage11-physics`, Decision D-33 must be recorded in DECISIONS.md with explicit justification referencing AC-1 criteria. Legacy-frozen branch is preserved as regression baseline ONLY.
+- **Why:** prevents accidental physics changes on legacy branch; provides clear upgrade path for sanctioned physics evolution; preserves bit-identical regression baseline for rollback protection.
+- **Sources:** `docs/validation/stage11.8.0_ocean_diagnostic_plan.md` (AC-5), `docs/validation/stage11.8.0.0_diagnostic_contract_correction.md` (Phase 5).
+- **Next:** D-33 gate must be passed before any physics change lands on stage11-physics branch.
 
 ## How to add decisions
 

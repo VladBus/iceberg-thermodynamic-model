@@ -200,10 +200,14 @@ def main():
         v.long_name = "sea ice concentration per category"
         v[:] = sic
 
-        # sit: sea ice thickness per category
+        # sit: area-weighted thickness contribution per category (HST * sic)
         v = ds.createVariable("sit", "f4", ("cat", "j", "i"), fill_value=np.nan)
         v.units = "m"
-        v.long_name = "sea ice thickness per category"
+        v.long_name = ("Sea ice thickness contribution per category "
+                       "(thickness x concentration)")
+        v.comment = ("Area-weighted thickness contribution HST*sic, NOT "
+                     "single-category thickness; sum over categories is the "
+                     "column-equivalent ice thickness [m].")
         v[:] = sit
 
         # snow_depth: snow thickness per category
@@ -270,6 +274,10 @@ def main():
                 ds.source = "UNKNOWN"
                 ds.sea_ice_status = "UNKNOWN"
         ds.source_manifest = str(manifest_path)
+        ds.manifest_version = str(manifest.get("version", "NONE"))
+        ds.source_manifest_checksum = (
+            md5(str(manifest_path)) if os.path.exists(str(manifest_path))
+            else "NONE")
         ds.source_type = str(manifest.get("source_type", "UNKNOWN"))
         ds.dataset_name = str(manifest.get("dataset_name", ""))
         ds.dataset_version = str(manifest.get("version", ""))

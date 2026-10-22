@@ -45,11 +45,21 @@ contains
             print *, 'STAGE117E_NETCDF_SEAICE: OFF (legacy 1_*.ice)'
         end if
 
-        ! Set sea-ice provenance (Stage 11.7E.4.1)
-        reader_mode = merge('netcdf', 'legacy', active)
-        source_file = seaice_path
-        manifest_version = 'from python/ice/seaice_source_manifest.json'
-        manifest_checksum = 'md5:python/ice/seaice_source_manifest.json'
+        ! Set sea-ice provenance (Stage 11.8.0.0): ACTUAL source, not hardcoded.
+        ! ON: provisional netcdf/path; s117e_read_seaice() replaces the manifest
+        !     fields with the values read from the actual NetCDF file.
+        ! OFF: legacy text files; no manifest applies.
+        if (active) then
+            reader_mode = 'netcdf'
+            source_file = seaice_path
+            manifest_version = 'PENDING'
+            manifest_checksum = 'PENDING'
+        else
+            reader_mode = 'legacy'
+            source_file = 'legacy_1_*.ice'
+            manifest_version = 'NONE'
+            manifest_checksum = 'NONE'
+        end if
         call prov_set_seaice(reader_mode, source_file, manifest_version, manifest_checksum)
     end subroutine s117e_seaice_init
 
@@ -58,8 +68,10 @@ contains
     end function s117e_seaice_active
 
     subroutine s117e_read_seaice()
-        integer :: ncid, varid, stat
+        integer :: ncid, varid, stat, att_stat
         real(kind=4), allocatable :: buf(:, :, :)
+        character(len=64) :: version
+        character(len=128) :: checksum
 
         if (.not. active) return
 
@@ -69,6 +81,18 @@ contains
         call check_dim(ncid, 'i', is1)
         call check_dim(ncid, 'j', js1)
         call check_dim(ncid, 'cat', ngr)
+
+        ! Stage 11.8.0.0: read ACTUAL provenance from the file, not hardcoded.
+        version = 'NONE'
+        checksum = 'NONE'
+        att_stat = nf90_get_att(ncid, NF90_GLOBAL, 'manifest_version', version)
+        if (att_stat /= NF90_NOERR) then
+            att_stat = nf90_get_att(ncid, NF90_GLOBAL, 'dataset_version', version)
+            if (att_stat /= NF90_NOERR) version = 'NONE'
+        end if
+        att_stat = nf90_get_att(ncid, NF90_GLOBAL, 'source_manifest_checksum', checksum)
+        if (att_stat /= NF90_NOERR) checksum = 'NONE'
+        call prov_set_seaice('netcdf', seaice_path, trim(version), trim(checksum))
 
         allocate (buf(is1, js1, ngr))
         stat = nf90_inq_varid(ncid, 'sic', varid)

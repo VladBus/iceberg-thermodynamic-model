@@ -1,11 +1,11 @@
 # Project Roadmap
 
-**Updated:** 2026-10-21
-**Current scientific stage:** Stage 11.7E.4.1 — Audit Closure + Ocean Diagnostic Foundation (Red Tests Kickoff) COMPLETE. Stage 11.7E.4 (sea-ice reader with real data) COMPLETE. NEXT: 11.8.0 ocean diagnostic ladder (11.7E.5 tides reader deferred — null-tides provides no scientific value).
+**Updated:** 2026-10-22
+**Current scientific stage:** Stage 11.8.0.0 — Diagnostic Contract Correction (Real Red Tests) COMPLETE. Stage 11.7E.4 (sea-ice reader with real data) COMPLETE. Stage 11.7E.5 (tides reader) DEFERRED — null-tides provides no scientific value; not blocked by 11.7F. NEXT: 11.8.0 ocean diagnostic ladder (T0–T6 implementation).
 **Stages 3–11.4.1: COMPLETED** (10.x iceberg modernization; 11.1 seasonal characterization; 11.2 CFL audit; 11.4-D21…D33 EN4 stabilization → ERA5-coverage fix → cleanup + Ocean Baseline 11.x; 11.3A execution-graph audit; 11.3B input-architecture audit + NetCDF contracts; 11.3C scheme audit + timestep matrix; 11.3C.1 semantics + CFL distributions; 11.3C.2 time-integration audit; 11.3C.3 loop-bound search (VERDICT D); 11.4 EOS-80 experiment + 11.4.1 impact validation (OPTIONAL, not default)).
-**Current status:** Stages 10.14–11.7E.4 committed (see `git log` and `CHANGELOG.md` for history). **Stage 11.7E.4 COMPLETE** (sea-ice reader with real data connection; A/B bit-identical for 7 days; C documented; builder transpose defect fixed). **Stage 11.7E.4.1 COMPLETE** (audit closure + ocean diagnostic foundation).
+**Current status:** Stages 10.14–11.7E.4.1 committed (see `git log` and `CHANGELOG.md` for history). **Stage 11.7E.4.1 COMPLETE** (audit closure + red tests + diagnostic plan). **Stage 11.8.0.0 COMPLETE** (diagnostic contract correction: real red tests, fixed provenance, corrected docs).
 **Test suite:** 64 Fortran test source files (`ls test/*.f90 | wc -l`); 59 auto-discovered FPM targets (executable programs). The count differs because some source files are modules/helpers without a top-level `program`.
-**Stage 11.5H-RC COMPLETE** (release-candidate gate: self-contained production scheduler, docs synced D-22…D-28). Plan: 11.7 NetCDF+CFL → 11.8A validation → 11.8B audit → 11.9 closure → 12.0 voxel (blocked, D-28).
+**Stage 11.5H-RC COMPLETE** (release-candidate gate: self-contained production scheduler, docs synced D-22…D-28). Plan: 11.8.0 diagnostic ladder (T0–T6) → 11.8A validation → 11.8B audit → 11.9 closure → 12.0 voxel (blocked, D-28).
 
 ## Completed foundation
 
@@ -374,7 +374,43 @@ Scope: tides source — null-tides/qq constants in production →
 Acceptance: env-gated switch (default OFF → bit-identical; ON ≡ OFF).
 Dependencies: 11.7E.1–11.7E.4 verified.
 Rollback: unset env var (null-tides path remains).
-**Status: DEFERRED** — null-tides provides no scientific value; proceeding to 11.8 ocean diagnostics per 11.7E.4.1 audit closure.
+**Status: DEFERRED** — null-tides provides no scientific value; proceeding to 11.8 ocean diagnostics per 11.7E.4.1 audit closure. 11.7F (legacy removal + permanent CFL) is NOT a prerequisite for 11.8; 11.7F dependency is "all readers switched OR explicitly deferred with justification" — 11.7E.5 is explicitly deferred with justification (null-tides no scientific value).
+
+**Status: DEFERRED** — null-tides provides no scientific value; proceeding to 11.8 ocean diagnostics per 11.7E.4.1 audit closure. 11.7F (legacy removal + permanent CFL) is NOT a prerequisite for 11.8; 11.7F dependency is "all readers switched OR explicitly deferred with justification" — 11.7E.5 is explicitly deferred with justification (null-tides no scientific value).
+
+### Stage 11.8.0.0 — Diagnostic Contract Correction (Real Red Tests)
+
+Scope: Correct the fake/stub tests and false provenance created in 11.7E.4.1. Establish REAL diagnostic tests that actually execute and produce measurable results. This is the FOUNDATION for Stage 11.8 ocean stabilization work.
+
+Key deliverables:
+- Real Fortran homogeneous column test (test_homogeneous_column.f90) that calls production convective_adjustment
+- Snowfall period verification from source GRIB metadata (not processed file time spacing)
+- Sea-ice provenance correction (actual source, not hardcoded strings)
+- sit semantics clarification (area-weighted contribution vs thickness)
+- 25.72 m ice thickness investigation
+- Ocean stabilization gate documentation
+
+Acceptance: Real red tests execute and produce evidence; provenance fixed; docs corrected; CI integration.
+
+Dependencies: 11.7E.1–11.7E.4.1 verified.
+Rollback: none (diagnostic only).
+Status: **COMPLETE** — real red tests execute, provenance fixed, diagnostic plan established. Report: `docs/validation/stage11.8.0.0_diagnostic_contract_correction.md`.
+
+### Stage 11.8 Prerequisite: Ocean Stabilization (MANDATORY GATE)
+
+- **Current state:** production ocean passes **55/360** steps before NaN
+  (density-first divergence; Stages 10.20/10.22).
+- **Requirement:** a full **360-step** production run (12 steps/day × 30 days)
+  without NaN, without guard saturation, without fallback substitutions.
+  This is **mandatory** before the 11.8A seasonal matrix — not optional
+  remediation.
+- **Method:** diagnostic ladder T0–T6 in
+  `docs/validation/stage11.8.0_ocean_diagnostic_plan.md`.
+- **Final acceptance:** 365-day run without NaN, with conservation,
+  stratification, rest-stability, physical-plausibility and reproducibility
+  criteria (AC-1). N=1 stability does **not** prove production viability.
+- **Tracking:** `KNOWN_ISSUES.md` N-15; EOS-80 promotion additionally requires
+  this gate (D-29).
 
 ### Stage 11.8A — Scientific Validation (gated)
 

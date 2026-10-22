@@ -130,3 +130,41 @@ jobs:
         run: |
           conda activate iceberg-thermodynamic-model
           python python/tests/test_stage11_7e3_era5_contract.py
+
+      - name: Run homogeneous-column Fortran diagnostic
+        shell: bash -l {0}
+        run: |
+          conda activate iceberg-thermodynamic-model
+          fpm test --flag "-I/usr/include" --target test_homogeneous_column
+
+      - name: Run homogeneous-column driver (both EOS modes)
+        shell: bash -l {0}
+        run: |
+          conda activate iceberg-thermodynamic-model
+          python python/tests/ocean/test_homogeneous_column.py
+
+      - name: Run snowfall-period source-metadata check
+        shell: bash -l {0}
+        run: |
+          conda activate iceberg-thermodynamic-model
+          python python/tests/ocean/test_snowfall_period.py
+
+      - name: Run ice-coverage diagnostic (requires sea-ice input)
+        shell: bash -l {0}
+        run: |
+          conda activate iceberg-thermodynamic-model
+          if [ -f data/input/processed/ice/seaice_initial.nc ]; then
+            python python/tests/ocean/test_ice_coverage.py
+          else
+            echo "SKIP: data/input/processed/ice/seaice_initial.nc absent (data bundle not in CI)"
+          fi
+
+      - name: Run sea-ice provenance diagnostic (requires model inputs)
+        shell: bash -l {0}
+        run: |
+          conda activate iceberg-thermodynamic-model
+          if [ -f data/input/processed/ice/seaice_initial.nc ] && [ -f data/input/processed/ocean/initial_ts_2020-01-01.nc ]; then
+            python python/tests/ocean/test_seaice_provenance.py
+          else
+            echo "SKIP: model inputs absent (data bundle not in CI)"
+          fi

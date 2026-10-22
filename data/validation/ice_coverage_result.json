@@ -1,25 +1,60 @@
 {
-  "test_name": "ice_coverage",
-  "phase": "Phase 2 - Ice Coverage Red Test",
-  "expected": "PASS (real ice connected in 11.7E.4)",
-  "netcdf": {
-    "file": "data/input/processed/ice/seaice_initial.nc",
-    "max_concentration": 1.0,
-    "cells_with_ice": 4402,
-    "max_thickness_m": 1.5875200033187866,
-    "total_volume_m3": 450236164734.2285,
-    "categories": 5,
-    "grid_shape": [
-      105,
-      133
-    ]
-  },
+  "test": "ice_coverage",
+  "checks": [],
+  "file": "/home/vlad/Programing_work/vscode_work/iceberg-thermodynamic-model/data/input/processed/ice/seaice_initial.nc",
+  "max_concentration": 1.0000000298023224,
+  "cells_with_ice": 4402,
+  "total_cells": 13965,
+  "max_sit_contribution_m": 1.5875200033187866,
+  "total_ice_volume_m3": 450236189281.3557,
+  "category_sit_max_m": [
+    0.15488000214099884,
+    0.38791999220848083,
+    0.9426849484443665,
+    1.5875200033187866,
+    0.8200000524520874
+  ],
+  "category_conc_max": [
+    0.774399995803833,
+    0.9697999954223633,
+    0.9922999739646912,
+    0.9922000169754028,
+    0.328000009059906
+  ],
+  "hst_m": [
+    0.2,
+    0.4,
+    0.95,
+    1.6,
+    2.5
+  ],
+  "hmax_m": [
+    0.3,
+    0.7,
+    1.2,
+    2.0,
+    50.0
+  ],
+  "sit_semantics": "area-weighted thickness contribution HST*sic; sum over categories = column-equivalent thickness",
   "legacy": {
-    "directory": "data/input/generated/real_grid/ice_2020-01-01",
+    "directory": "/home/vlad/Programing_work/vscode_work/iceberg-thermodynamic-model/data/input/generated/real_grid/ice_2020-01-01",
     "files_found": 5,
     "max_cells_with_ice": 3595,
     "max_concentration": 0.9923
   },
+  "model_day01_ice_thickness": {
+    "file": "/home/vlad/Programing_work/vscode_work/iceberg-thermodynamic-model/data/runs/stage11.7E4_C7/output/nc/results_day_01.nc",
+    "per_category_max_m": [
+      4.026772975921631,
+      0.6944255828857422,
+      1.011811375617981,
+      1.6951932907104492,
+      25.724620819091797
+    ],
+    "overall_max_m": 25.724620819091797,
+    "max_concentration": 1.0,
+    "interpretation": "ice_thickness is per-category hice = wice1/anp, NOT sit. A 25.72 m maximum is a thermodynamic-growth defect (physically implausible Arctic sea ice), not a sit unit/aggregation artifact. Initial sit max is 1.5875 m."
+  },
   "pass": true,
-  "summary": "NetCDF: PASS, Legacy: PASS"
+  "summary": "16/16 checks passed"
 }

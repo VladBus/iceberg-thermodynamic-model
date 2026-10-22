@@ -1,7 +1,7 @@
 # Model Physics Block Status
 
-**Date:** 2026-10-21
-**Current repository stage:** Stage 11.7E.4.1 — Audit Closure + Ocean Diagnostic Foundation (Red Tests Kickoff) COMPLETE. Stage 11.7E.4 (sea-ice reader with real data) COMPLETE. NEXT: 11.8.0 ocean diagnostic ladder (11.7E.5 tides reader deferred — null-tides provides no scientific value). EOS STATUS (binding, unchanged): EOS-80 OPTIONAL; legacy Eckart DEFAULT and scientific reference; default decision deferred to 11.8A; legacy EOS retained permanently as regression baseline, NOT scheduled for removal.
+**Date:** 2026-10-22
+**Current repository stage:** Stage 11.8.0.0 — Diagnostic Contract Correction (Real Red Tests) COMPLETE. Stage 11.7E.4 (sea-ice reader with real data) COMPLETE. Stage 11.7E.5 (tides reader) DEFERRED — null-tides provides no scientific value. NEXT: 11.8.0 ocean diagnostic ladder (T0–T6). EOS STATUS (binding, unchanged): EOS-80 OPTIONAL; legacy Eckart DEFAULT and scientific reference; default decision deferred to 11.8A; legacy EOS retained permanently as regression baseline, NOT scheduled for removal.
 **Ocean EOS statement:** the prognostic ocean uses legacy Eckart (Dmitrev–Nesterov) density in float32 (`src/equation_of_state.f90`) by default; UNESCO EOS-80 is implemented opt-in (`src/eos80_unesco.f90`, `EOS_MODE=EOS80`, validated in 11.4/11.4.1, recommendation: optional). Iceberg side uses freezing-point only (table row "Full seawater EOS" below refers to the iceberg module).
 **Production baseline:** Stage 10.13 (low-flow closure behind `low_flow_closure_enabled`; OFF = Stage 10.12/10.10 legacy unchanged); Stage 10.19 adds the env-gated production iceberg connection (inert by default); Stage 10.20 adopts the full-coverage ERA5 Jan file for production gates (`src/param.f90` default path NOT changed); Stage 10.21 adds CA/EOS f32-precision research switches (`STAGE1021_CA_F64`, `STAGE1021_CA_MIX`, `STAGE1021_CA_SCOPE`, `STAGE1021_CA_EPS`) — all OFF by default, production bit-identical (KEEP_CURRENT); Stage 10.22 adds Block-200 stability-audit diagnostic switches (`STAGE1022_DIAG`, `STAGE1022_FREEZE_RO`, `STAGE1022_FREEZE_THERMAL_WIND`, `STAGE1022_FREEZE_TS`, `STAGE1022_FREEZE_RO_DOWNSTREAM`; env names `_FREEZE_RO`/`_FREEZE_TS`/`_FREEZE_RO_DOWNSTREAM`/`_FREEZE_THERMAL_WIND` + `_DIAG`) — all OFF by default, production bit-identical (KEEP_CURRENT); Stage 11.4-D32 adds the ERA5 nearest-edge coverage fallback in `era5_wind()` (loader-only production fix, Jan bit-identical); Stage 11.4-D33 fixes Ocean Baseline 11.x (Jan30/Apr29/Jul30/Oct30, 0 NaN); Stage 11.3C adds `STAGE113_DT/DT1` measurement-only timestep override (defaults = legacy 3600/120); Stage 11.3C.1 adds mm2/mm3 scaling (active only with override) + `s112_cfl_dist` percentiles (DIAG-gated)
 **FPM test targets:** 59 (fpm auto-discovery of `test/*.f90` with a top-level `program`, incl. `check.f90`, `iceberg_test_10p17_melt_budget`, `iceberg_test_10p17_90day`, `drift_scaling_*`)
@@ -111,10 +111,26 @@ B (ON vs legacy-real) is bit-identical for 7 days. No physics or EOS change.
 
 Phase 0: 6 documentation/metrics corrections applied (sea-ice units, 25.72 m
 thickness investigation, documentation sync, decision D-32, sea-ice provenance,
-env-gated reader FATAL). Phase 1–3: three red tests created (homogeneous
-column FAIL expected, ice coverage PASS, snowfall period MISMATCH 6h vs 12h).
-Phase 4: ocean diagnostic plan for 11.8 (T0–T6 ladder). 11.7E.5 deferred.
-No physics/EOS change. Regression: targeted tests PASS, strict build clean.
+env-gated reader FATAL). Phase 1–3 were STUBS (superseded by 11.8.0.0:
+homogeneous column returned NOT_COMPUTED; snowfall used the processed 6-h
+spacing, a misread). Phase 4: ocean diagnostic plan for 11.8 (T0–T6 ladder).
+11.7E.5 deferred. No physics/EOS change. Regression: targeted tests PASS,
+strict build clean.
+
+## Stage 11.8.0.0 — diagnostic contract correction (real red tests)
+
+Real Fortran homogeneous-column test executes production `convect_column`:
+LEGACY and EOS80 both PASS with ΔT = ΔS = 0, 1 iteration, exit 0. The prior
+"FAIL expected" premise was false — a perfectly homogeneous column is stable;
+the CA defect requires a weak inversion. Snowfall source metadata confirms
+12-h accumulation (`GRIB_stepType=accum`, 43200 s spacing); divisor 43200 is
+correct and unchanged (processed 6-h spacing is interpolation). Sea-ice
+provenance now records the actual source: ON = netcdf + manifest version/MD5;
+OFF = legacy_1_*.ice + NONE. `sit` is clarified as HST*sic (area-weighted
+contribution). The 25.72 m day-1 max is per-category `hice`, not `sit`; it is
+a thermodynamic-growth defect (category 1 reaches 4.03 m vs HMAX 0.3 m), not
+a unit/aggregation error. Ocean stabilization gate N-15 / D-29 / D-33
+documented. No physics/EOS/snowfall-divisor change.
 
 ## References
 

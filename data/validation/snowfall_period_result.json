@@ -1,36 +1,28 @@
 {
-  "test_name": "snowfall_period",
-  "phase": "Phase 3 - Snowfall Period Red Test",
-  "purpose": "Verify snowfall accumulation period divisor (43200) matches ERA5 metadata",
-  "file_examined": "data/input/processed/era5/2020/2020_01/era5_2020_01_fullcoverage_merged.nc",
-  "sf_variable_found": true,
-  "sf_dims": [
-    124,
-    109,
-    283
-  ],
-  "sf_units": "m s-1",
-  "sf_attributes": {
-    "_FillValue": NaN,
-    "units": "m s-1",
-    "long_name": "Snowfall rate",
-    "standard_name": "snowfall_flux",
-    "comment": "Interpolated from ERA5 12-hourly accumulated snowfall (sf) at 00/12 UTC analyses. Original units: m water equivalent per 12 hours. Converted to m/s rate.",
-    "coordinates": "expver number"
+  "test": "snowfall_period",
+  "phase": "Phase 2 \u2014 source metadata verification",
+  "claimed_divisor_seconds": 43200,
+  "source_metadata_available": true,
+  "source": {
+    "file": "/home/vlad/Programing_work/vscode_work/iceberg-thermodynamic-model/data/input/raw/era5/2020/2020_01/snowfall_2020_01_fullcoverage.nc",
+    "GRIB_stepType": "accum",
+    "GRIB_stepUnits": 1,
+    "GRIB_startStep": "NOT_PRESENT",
+    "GRIB_endStep": "NOT_PRESENT",
+    "GRIB_stepRange": "NOT_PRESENT",
+    "units": "m of water equivalent",
+    "GRIB_units": "m of water equivalent",
+    "n_times": 62,
+    "valid_time_spacing_s": [
+      43200
+    ],
+    "sf_max_m": 0.003964900970458984
   },
-  "time_steps": 124,
-  "time_spacing_seconds": [
-    21600
-  ],
-  "time_spacing_hours": [
+  "determined_period_hours": 12.0,
+  "status": "CONFIRMED_12H",
+  "recommendation": "keep_divisor (43200 is correct)",
+  "processed_time_spacing_hours": [
     6.0
   ],
-  "accumulation_period_hours": 6.0,
-  "divisor_consistency": "MISMATCH",
-  "grib_related_attributes": {},
-  "divisor_used_in_code": 43200,
-  "expected_accumulation_hours": 12.0,
-  "finding": "MISMATCH: ERA5 accumulation period (6.0h) != divisor (12h)",
-  "severity": "MISMATCH",
-  "recommendation": "ERA5 snowfall is 6-hour accumulation; divisor should be 21600"
+  "processed_note": "Processed spacing reflects merge_snowfall interpolation, NOT the source accumulation period."
 }

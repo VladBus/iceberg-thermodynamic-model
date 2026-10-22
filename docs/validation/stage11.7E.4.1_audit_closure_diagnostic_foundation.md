@@ -41,8 +41,8 @@ This is a TRANSITION stage: from infrastructure contracts (11.7) to ocean diagno
 - **11.7E.4 report:** Corrected units and labels; clarified 4402 = cells with ice, 11067 = ocean wet cells
 
 ### 0.4 Decision Number Duplication ✓ FIXED
-- **DECISIONS.md:** D-30 was used twice (EN4 fallback + sea-ice switch)
-- **Fix:** Renumbered sea-ice decision to **D-32** (D-30 = EN4 fallback, D-31 = eos_diag dispatcher, D-32 = sea-ice switch OFF default)
+- **DECISIONS.md:** D-30 and D-31 were correctly assigned (D-30 = eos_diag dispatcher, D-31 = EN4 fallback); sea-ice decision was D-30 in report but actually D-32 in DECISIONS.md
+- **Fix:** Corrected report attribution: **D-30 = eos_diag dispatcher**, **D-31 = EN4 fallback**, sea-ice decision = **D-32**; added **D-33** for physics change policy
 - **Cross-references updated** throughout
 
 ### 0.6 Sea-ice Reader Env Handling ✓ FIXED
@@ -133,7 +133,7 @@ This is a TRANSITION stage: from infrastructure contracts (11.7) to ocean diagno
 - Diagnostic ladder (T0–T6) from Audit AC-3
 - Intervention order (1–7) from Audit AC-4
 - Acceptance criteria (AC-1): 365-day run, conservation, stratification, rest stability, physical plausibility, reproducibility
-- Decision policy (AC-5): Two branches (legacy-frozen / stage11-physics) with D-31 gate
+- Decision policy (AC-5): Two branches (legacy-frozen / stage11-physics) with D-33 gate
 - Immediate next steps: T0–T3 test implementations
 
 **Deliverable:** `docs/validation/stage11.8.0_ocean_diagnostic_plan.md`
@@ -184,7 +184,7 @@ This is a TRANSITION stage: from infrastructure contracts (11.7) to ocean diagno
 | `docs/README.md` | Current stage updated to 11.7E.4.1 |
 | `docs/PROJECT_ROADMAP.md` | Status updates, 11.7E.5 deferred, 11.8.0 next |
 | `docs/model/model_physics_status.md` | Stage reference updated |
-| `docs/DECISIONS.md` | D-30 duplication fixed (sea-ice → D-32) |
+| `docs/DECISIONS.md` | D-30/D-31 attribution corrected; sea-ice = D-32; D-33 physics policy added |
 | `docs/validation/stage11.7E.4_real_seaice_connection.md` | Units/labels corrected |
 | `docs/validation/stage11.8.0_ocean_diagnostic_plan.md` | **NEW** |
 | `python/tests/ocean/test_homogeneous_column.py` | **NEW** (Phase 1 red test) |
@@ -226,5 +226,5 @@ This is a TRANSITION stage: from infrastructure contracts (11.7) to ocean diagno
 ---
 
 **Commit SHA:** <to be filled after commit>
-**Files changed:** 14 files changed, 479 insertions(+), 116 deletions(-)
+**Files changed:** 17 files changed, 1174 insertions(+), 16 deletions(-)
 **New files:** 7 (4 test files, 1 plan doc, 2 result files)

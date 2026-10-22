@@ -208,6 +208,10 @@ def scenario_default_strict(binary):
         'initialization_mode_actual': 'EN4_REAL',
         'eos_mode': 'LEGACY',
         'scheduler_mode': 'N1_LEGACY',
+        'seaice_reader_mode': 'legacy',
+        'seaice_source_file': 'legacy_1_*.ice',
+        'seaice_manifest_version': 'NONE',
+        'seaice_manifest_checksum': 'NONE',
     }
     verify_attributes(day00, expected, "scenario_1_default_strict")
     return True

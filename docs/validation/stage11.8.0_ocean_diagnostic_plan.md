@@ -12,7 +12,7 @@ The production ocean model remains unstable:
 - **Failure mode:** Density-first divergence → NaN cascade → zombie state (all cells NaN)
 - **Current limit:** 55/360 steps before NaN (Stage 10.20, 10.22)
 - **Root cause chain (D-20):** CA/EOS float32 quantization (2⁻²³ = 1.1921E-07) → density inversions (ρ < 0) → thermal wind → Block 200 (transmitter) → Block 210 (amplifier) → NaN cascade
-- **Seasonal dependence (D-21):** All seasons crash; Jan survives 4 days, Apr/Jul/Oct crash Day 1 with pre-existing ρ < 0 (−20.07 g/cm³)
+- **Seasonal dependence (D-21):** All seasons crash; Jan survives 4 days, Apr/Jul/Oct crash Day 1 with pre-existing ρ < 0 (historical −20.07 g/cm³ was a unit/sentinel artifact of overwritten runs, corrected in Stage 11.1/11.4; **current Day-0 files do not exhibit −20.07**). Actual cause of seasonal collapse requires verification of current seasonal files.
 - **Frozen-ocean control:** 30 days stable (ro 0.0075–0.0082 g/cm³) → atmosphere alone is stable
 - **EOS-80 (D-29):** OPTIONAL, not default; ice amplification unvalidated; decision deferred to 11.8A
 
@@ -80,7 +80,7 @@ Ordered by causal priority (fix upstream first):
 | **legacy-frozen** | Current code with all switches OFF | Bit-identity preserved ONLY as protection against accidental refactoring. NO physics changes. |
 | **stage11-physics** | Sanctioned physics changes with new reference | New reference + criteria AC-1. Results compared by PHYSICAL METRICS (not bit-for-bit). |
 
-**Decision gate D-31 (or next available):** Fix this policy in DECISIONS.md before any physics changes land on stage11-physics branch.
+**Decision gate D-33:** Fix this policy in DECISIONS.md before any physics changes land on stage11-physics branch.
 
 **Comparison protocol:** Results of (b) are NOT compared bit-for-bit with (a). Comparison is by physical metrics (AC-1). Bit-for-bit equivalence is ONLY required within legacy-frozen branch.
 
@@ -91,6 +91,7 @@ Ordered by causal priority (fix upstream first):
 ### 11.8.0.1 — T0 Data Scan Implementation
 - Create `python/tests/ocean/test_data_scan.py`:
   - Scan all input NetCDF (ERA5, EN4, ice, bathymetry) for: zeros, NaN, T<Tf(S,p), static inversions (∂ρ/∂z > 0), axis order (i/j/k vs j/i/k), coverage gaps, units.
+  - **Verify actual T/S fields and units in current seasonal initial files (2020-01, 2020-04, 2020-07, 2020-10)** — confirm no −20.07 sentinel artifacts remain.
   - Output: `data/validation/data_scan_report.json`
 - Run on all seasonal EN4 products (Jan/Apr/Jul/Oct) and ERA5 fullcoverage.
 

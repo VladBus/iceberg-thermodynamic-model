@@ -1,7 +1,7 @@
 # Model Physics Block Status
 
 **Date:** 2026-10-22
-**Current repository stage:** Stage 11.8.0 T0 — Data and Units Verification COMPLETE. Stages 11.8.0.0/11.8.0.0.1/11.7E.4 COMPLETE. Stage 11.7E.5 (tides reader) DEFERRED — null-tides provides no scientific value. NEXT: 11.8.0 T1 (forcing contract). Snowfall divisor 43200 CONFIRMED correct from source (T-19 closed via live CDS probe: artifact == step=12 request, bit-identical); EN4 initial data findings T-20/T-22 and ERA5 T-21/H-2 open for later tiers. EOS STATUS (binding, unchanged): EOS-80 OPTIONAL; legacy Eckart DEFAULT and scientific reference; default decision deferred to 11.8A; legacy EOS retained permanently as regression baseline, NOT scheduled for removal.
+**Current repository stage:** Stage 11.8.0 T1 — Forcing Contract Verification COMPLETE (T0 also COMPLETE). Stages 11.8.0.0/11.8.0.0.1/11.7E.4 COMPLETE. Stage 11.7E.5 (tides reader) DEFERRED — null-tides provides no scientific value. NEXT: 11.8.0 T2 (CA/EOS core). Snowfall divisor 43200 CONFIRMED correct from source (T-19 closed via live CDS probe: artifact == step=12 request, bit-identical); EN4 initial data findings T-20/T-22 and ERA5 T-21/H-2 open for later tiers. EOS STATUS (binding, unchanged): EOS-80 OPTIONAL; legacy Eckart DEFAULT and scientific reference; default decision deferred to 11.8A; legacy EOS retained permanently as regression baseline, NOT scheduled for removal.
 **Ocean EOS statement:** the prognostic ocean uses legacy Eckart (Dmitrev–Nesterov) density in float32 (`src/equation_of_state.f90`) by default; UNESCO EOS-80 is implemented opt-in (`src/eos80_unesco.f90`, `EOS_MODE=EOS80`, validated in 11.4/11.4.1, recommendation: optional). Iceberg side uses freezing-point only (table row "Full seawater EOS" below refers to the iceberg module).
 **Production baseline:** Stage 10.13 (low-flow closure behind `low_flow_closure_enabled`; OFF = Stage 10.12/10.10 legacy unchanged); Stage 10.19 adds the env-gated production iceberg connection (inert by default); Stage 10.20 adopts the full-coverage ERA5 Jan file for production gates (`src/param.f90` default path NOT changed); Stage 10.21 adds CA/EOS f32-precision research switches (`STAGE1021_CA_F64`, `STAGE1021_CA_MIX`, `STAGE1021_CA_SCOPE`, `STAGE1021_CA_EPS`) — all OFF by default, production bit-identical (KEEP_CURRENT); Stage 10.22 adds Block-200 stability-audit diagnostic switches (`STAGE1022_DIAG`, `STAGE1022_FREEZE_RO`, `STAGE1022_FREEZE_THERMAL_WIND`, `STAGE1022_FREEZE_TS`, `STAGE1022_FREEZE_RO_DOWNSTREAM`; env names `_FREEZE_RO`/`_FREEZE_TS`/`_FREEZE_RO_DOWNSTREAM`/`_FREEZE_THERMAL_WIND` + `_DIAG`) — all OFF by default, production bit-identical (KEEP_CURRENT); Stage 11.4-D32 adds the ERA5 nearest-edge coverage fallback in `era5_wind()` (loader-only production fix, Jan bit-identical); Stage 11.4-D33 fixes Ocean Baseline 11.x (Jan30/Apr29/Jul30/Oct30, 0 NaN); Stage 11.3C adds `STAGE113_DT/DT1` measurement-only timestep override (defaults = legacy 3600/120); Stage 11.3C.1 adds mm2/mm3 scaling (active only with override) + `s112_cfl_dist` percentiles (DIAG-gated)
 **FPM test targets:** 59 (fpm auto-discovery of `test/*.f90` with a top-level `program`, incl. `check.f90`, `iceberg_test_10p17_melt_budget`, `iceberg_test_10p17_90day`, `drift_scaling_*`)
@@ -151,6 +151,19 @@ ERA5: Jan product covers the model with >=1.28 deg margins; April lacks
 and cyclic-longitude behaviour documented; H-2: ERA5 wind unrotated to the
 EPSG:3996-rotated grid flagged for T4. Full report:
 `docs/validation/stage11.8.0_T0_data_units_verification.md`.
+
+## Stage 11.8.0 T1 — ERA5 forcing contract (no changes)
+
+Verified against the production reader: bilinear spatial interpolation is
+exact on a linear field (max error 0.0) with correct decreasing-latitude flip
+and reject/accept edge behaviour; the longitude wrap is **partially correct
+only** (170 E -> 180.0; latent, 0 production cells affected; T-23). Temporal
+selection is nearest-record with clamping and midpoint-tie-earlier, gaps take
+the nearest record (T-24; axis PASS). **Wind rotation: the grid is rotated
+(X median 50.2 deg from east, max 81.3) and `era5_wind` applies NO
+geographic->grid rotation -> H-2 CONFIRMED CRITICAL for T4.** T-21 accepted
+as a 0.072 % limitation. Report:
+`docs/validation/stage11.8.0_T1_forcing_contract_verification.md`.
 
 ## References
 

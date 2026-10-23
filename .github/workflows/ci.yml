@@ -56,6 +56,13 @@ jobs:
           python3 python/tests/ocean/test_homogeneous_column.py
           python3 python/tests/ocean/test_weak_inversion.py
 
+      - name: Run T1 ERA5 interpolation harness (production reader, synthetic data)
+        run: |
+          FLAGS="-I/usr/include -Wno-error=line-truncation -ffree-line-length-none"
+          fpm test --flag "$FLAGS" --target test_era5_interp_harness
+          python3 python/tests/ocean/test_era5_spatial_interpolation.py
+          python3 python/tests/ocean/test_era5_temporal_interpolation.py
+
   test-python:
     name: Python Environment Check
     runs-on: ubuntu-latest
@@ -164,6 +171,12 @@ jobs:
         run: |
           conda activate iceberg-thermodynamic-model
           python python/tests/ocean/test_era5_coverage_verification.py
+
+      - name: Run T1 wind-rotation verification (explicit SKIP without data)
+        shell: bash -l {0}
+        run: |
+          conda activate iceberg-thermodynamic-model
+          python python/tests/ocean/test_wind_rotation.py
 
       - name: Run ice-coverage diagnostic (explicit SKIP without data bundle)
         shell: bash -l {0}

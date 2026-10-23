@@ -35,7 +35,7 @@ under atmospheric, oceanic, bathymetric, and sea-ice forcing.
 
 ## 📑 Project status
 
-- **Current stage:** Stage 11.8.0 T0 — Data and Units Verification COMPLETE (T-19 snowfall CLOSED CONFIRMED_12H via live CDS probe, divisor 43200 correct & unchanged; EN4 T-20/T-22 and ERA5 T-21/H-2 findings recorded; no data or physics changes). NEXT: 11.8.0 T1 (forcing contract verification). 11.7E.5 tides reader DEFERRED — null-tides provides no scientific value.
+- **Current stage:** Stage 11.8.0 T1 — Forcing Contract Verification COMPLETE (ERA5 bilinear exact; temporal nearest-time PASS; wrap latent T-23; wind rotation CRITICAL for T4 — H-2 confirmed; T-21 accepted; no code/data changes). NEXT: 11.8.0 T2 (CA/EOS core). 11.7E.5 tides reader DEFERRED — null-tides provides no scientific value.
   [Historical note from Stage 10.19, SUPERSEDED by Stage 10.20 restoration
   (full-coverage ERA5: 3-day gate PASS, residual characterized, NOT fixed):
   coupling recovery (completed: the Lagrangian iceberg module is now

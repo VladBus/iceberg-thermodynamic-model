@@ -1,0 +1,35 @@
+{
+  "test": "wind_rotation",
+  "stage": "11.8.0 T1 Phase 3 (preliminary for T4)",
+  "grid_orientation": {
+    "grid_x_axis_from_east_deg": {
+      "min": 14.015409322257945,
+      "median": 50.176570121876615,
+      "mean": 50.058228214972615,
+      "max": 81.27893008003912
+    },
+    "grid_y_axis_from_east_deg": {
+      "min": 8.730155573798543,
+      "median": 39.85822131788377,
+      "mean": 39.96630908048898,
+      "max": 76.22819897398261
+    },
+    "x_y_orthogonality_deg": {
+      "median": 90.01991963713668,
+      "p5": 89.99457552780588,
+      "p95": 90.05353552902812
+    },
+    "rotated_grid": true
+  },
+  "production_code": {
+    "file": "src/wind_forcing.f90::era5_wind",
+    "direct_grid_assignment_u10_to_windx": true,
+    "rotation_applied": false,
+    "legacy_path_used_observed_angle": true
+  },
+  "rotation_needed": true,
+  "rotation_applied": false,
+  "status": "CRITICAL",
+  "finding": "H-2 CONFIRMED: the grid is rotated (grid X is a median 50.2 deg from east; up to 81.3 deg), and era5_wind assigns u10/v10 directly as windx1/windy1 with NO geographic->grid rotation (the legacy FI1DL1 path rotated an observed angle instead). Wind stress direction is therefore misaligned with the model grid by the local convergence angle. Fix belongs to T4; NOT changed in T1.",
+  "impact": "wind stress direction error (median 50.2 deg); T4 must implement rotation and re-baseline wind-driven runs"
+}

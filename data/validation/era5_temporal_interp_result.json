@@ -1,0 +1,34 @@
+{
+  "test": "era5_temporal_interpolation",
+  "stage": "11.8.0 T1 Phase 2",
+  "reader": "src/netcdf_input.f90::era5_find_time_index",
+  "method": "nearest_time_with_clamping",
+  "checks": {
+    "test": "era5_temporal_interp",
+    "reader": "src/netcdf_input.f90::era5_find_time_index",
+    "method": "nearest_time_with_clamping",
+    "exact_0h": 1,
+    "exact_6h": 2,
+    "exact_12h": 3,
+    "between_1h": 1,
+    "between_4h": 2,
+    "tie_3h": 1,
+    "before_range_clamped": 1,
+    "after_range_clamped": 3,
+    "gap_12h": 2,
+    "gap_15h_tie": 2,
+    "gap_21h": 3,
+    "basic_status": "PASS",
+    "gap_status": "PASS",
+    "axis_status": "PASS",
+    "status": "PASS"
+  },
+  "notes": {
+    "tie_break": "exact midpoint selects the EARLIER record",
+    "outside_range": "clamped to first/last record (no error)",
+    "gap_handling": "nearest record across a gap; no temporal interpolation between 6-hourly analyses"
+  },
+  "status": "PASS",
+  "executed": true,
+  "process_exit_code": 0
+}

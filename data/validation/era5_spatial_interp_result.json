@@ -1,0 +1,56 @@
+{
+  "test": "era5_spatial_interpolation",
+  "stage": "11.8.0 T1 Phase 1",
+  "reader": "src/netcdf_input.f90::era5_bilinear2d",
+  "method": "bilinear_on_regular_latlon",
+  "checks": [
+    {
+      "name": "interior_max_abs_err",
+      "value": 0.0
+    },
+    {
+      "name": "interior_status",
+      "value": "PASS"
+    },
+    {
+      "name": "wrap_expected",
+      "value": 170.0
+    },
+    {
+      "name": "wrap_actual",
+      "value": 180.0
+    },
+    {
+      "name": "wrap_abs_err",
+      "value": 10.0
+    },
+    {
+      "name": "wrap_status",
+      "value": "WARNING"
+    },
+    {
+      "name": "lat_outside_high_rejected",
+      "value": true
+    },
+    {
+      "name": "lat_outside_low_rejected",
+      "value": true
+    },
+    {
+      "name": "lat_edge_nodes_accepted",
+      "value": true
+    },
+    {
+      "name": "edges_status",
+      "value": "PASS"
+    },
+    {
+      "name": "status",
+      "value": "WARNING"
+    }
+  ],
+  "wrap_finding": "L-1 LATENT BUG (documented, NOT fixed in T1): longitude normalization subtracts/ adds 360 at most once and can land outside the grid; the weight is then clamped, so a query east of the last node returns the first-node value instead of interpolating across the wrap. Production impact: NONE for the current domain (0 model cells outside the ERA5 longitude range, T0), but global/wrap-adjacent queries are wrong.",
+  "status": "WARNING",
+  "executed": true,
+  "process_exit_code": 0
+}

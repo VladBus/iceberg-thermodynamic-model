@@ -1,10 +1,10 @@
 # Project Roadmap
 
-**Updated:** 2026-10-22
-**Current scientific stage:** Stage 11.8.0.0.1 — CI Fix, Real Tests, Snowfall Re-examination COMPLETE. Stages 11.8.0.0 / 11.7E.4 COMPLETE. Stage 11.7E.5 (tides reader) DEFERRED — null-tides provides no scientific value; not blocked by 11.7F. NEXT: 11.8.0 T0 (data and units verification; includes manual snowfall-accumulation-period verification, T-19).
+**Updated:** 2026-10-24
+**Current scientific stage:** Stage 11.8.0 T3-PREP — EN4 Data Correction COMPLETE (T-20 z-grid + T-22 supercooling FIXED; all four seasons regenerated). Stages T0, T1 and T2 COMPLETE. Stage 11.7E.5 (tides) DEFERRED — null-tides provides no scientific value. NEXT: 11.8.0 T3 (Rest — ocean without wind/fluxes).
 **Stages 3–11.4.1: COMPLETED** (10.x iceberg modernization; 11.1 seasonal characterization; 11.2 CFL audit; 11.4-D21…D33 EN4 stabilization → ERA5-coverage fix → cleanup + Ocean Baseline 11.x; 11.3A execution-graph audit; 11.3B input-architecture audit + NetCDF contracts; 11.3C scheme audit + timestep matrix; 11.3C.1 semantics + CFL distributions; 11.3C.2 time-integration audit; 11.3C.3 loop-bound search (VERDICT D); 11.4 EOS-80 experiment + 11.4.1 impact validation (OPTIONAL, not default)).
-**Current status:** Stages 10.14–11.8.0.0.1 committed (last: `ba447c7` Stage 11.8.0.0.1; see `git log` and `CHANGELOG.md` for history). **Stage 11.8.0.0 COMPLETE**. **Stage 11.8.0.0.1 COMPLETE** (CI green; T2 smoke + weak-inversion tests fail genuinely; snowfall re-examined → INFERRED_12H + T-19; divisor unchanged). **Stage 11.8.0 T0 COMPLETE**; **T1 COMPLETE**; **Stage 11.8.0 T2 COMPLETE** (CA/EOS core: homogeneous f32/f64 PASS, weak inversion conserves (exact f64 ref 1.3e-16; production f32-limited), A-1 CONFIRMED -> in-situ criterion, T-25; T-23 red test formalized). NEXT: T3-PREP (fix T-20/T-22), then T3 (Rest). H-2 is the T4 blocker.
-**Test suite:** 66 Fortran test source files (`ls test/*.f90 | wc -l`); 66 auto-discovered FPM test targets (`fpm test --list | grep -vcE '^\s*$|Matched'`). Counting method (Stage 11.8.0 T0): every current `test/*.f90` contains a top-level `program`, so file count == target count; the historical 64/59 split existed because older helper modules without `program` were present then. Counts verified 2026-10-22.
+**Current status:** Stages 10.14–11.8.0 T3-PREP committed (see `git log` and `CHANGELOG.md` for history). **T0 COMPLETE** (snowfall T-19 RESOLVED; EN4/ERA5 findings). **T1 COMPLETE** (ERA5 forcing contract; H-2 critical, T-23 latent). **T2 COMPLETE** (CA/EOS core; T-25 in-situ criterion confirmed). **T3-PREP COMPLETE** (EN4 data corrected: T-20/T-22 FIXED).
+**Test suite:** 69 Fortran test source files (`ls test/*.f90 | wc -l`); 69 executable test targets (`grep -lE '^\s*program ' test/*.f90 | wc -l`). Counting method (Stage 11.8.0 T0): every current `test/*.f90` holds a top-level `program`, so file count == target count (verified 2026-10-24).
 **Stage 11.5H-RC COMPLETE** (release-candidate gate: self-contained production scheduler, docs synced D-22…D-28). Plan: 11.8.0 diagnostic ladder (T0–T6) → 11.8A validation → 11.8B audit → 11.9 closure → 12.0 voxel (blocked, D-28).
 
 ## Completed foundation
@@ -414,6 +414,32 @@ Dependencies: 11.8.0.0.
 Status: **COMPLETE** — CI green; smoke/core tests authoritative; snowfall
 INFERRED_12H pending manual CDS verification. Report:
 `docs/validation/stage11.8.0.0.1_ci_test_correction.md`.
+
+### Post-T2 correction plan (scheduled, NOT part of T3-PREP)
+
+| Item | Scope | Gate |
+|------|-------|------|
+| **T2-CORRECTIVE** | CA criterion on potential density (or a compression-corrected in-situ criterion), addressing T-25; T-27 (real64 state) in scope | requires Decision **D-33** physics-branch choice; schedule BEFORE **T6** |
+| **T1-CORRECTIVE** | ERA5 longitude handling: edge-clamp (or reject out-of-range) instead of cyclic wrap (T-23) | schedule BEFORE **T4** |
+| **T4** | Wind rotation geographic -> grid (H-2) | T4 tier |
+
+### Stage 11.8.0 T3-PREP — EN4 Data Correction (T-20, T-22)
+
+Scope: regenerate the EN4 initial products for all four seasons with the
+corrected builder and a physical freezing-point clamp; verification/regression
+only (no physics/CA/EOS change).
+Result: **T-20 FIXED** — shipped data were on a different pipeline (up to
+7.5 degC vs rebuild at identical indices), so Option B (regenerate) was used:
+z_model_m == model DATA z (600 m) and Jul/Oct rebuilds now exist. **T-22
+FIXED** — UNESCO Tf(S,p) clamp with a +1e-5 degC f32 margin; cells clamped
+Jan 12,589 (+1.407 max), Apr 2,525 (+0.257), Jul 0, Oct 553 (+0.372); 0 cells
+below Tf in all 8 products. EN4 T0 test and the new correction test both
+report CLEAN. Old products archived in `archive_pre_T3PREP/`; pre-correction
+run baselines are not comparable.
+Dependencies: T2.
+Status: **COMPLETE**. Report:
+`docs/validation/stage11.8.0_T3-PREP_en4_data_correction.md`.
+NEXT: 11.8.0 T3 (Rest).
 
 ### Stage 11.8 Prerequisite: Ocean Stabilization (MANDATORY GATE)
 

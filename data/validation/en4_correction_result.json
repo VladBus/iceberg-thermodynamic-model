@@ -1,0 +1,492 @@
+{
+  "test": "en4_data_correction",
+  "stage": "11.8.0 T3-PREP",
+  "corrections": {
+    "T-20": "regenerated all four seasons with the corrected pipeline (z_model_m == model DATA z; Jul/Oct rebuilds created)",
+    "T-22": "UNESCO Tf(S,p) freezing-point clamp; T is clamped up to Tf+1e-5 degC in wet cells; salinity unchanged"
+  },
+  "clamp_stats": {
+    "2020-01-01": {
+      "cells_clamped_below_Tf": 12589,
+      "max_clamp_degC": 1.4073549755209278,
+      "freezing_clamp_enabled": true
+    },
+    "2020-04-01": {
+      "cells_clamped_below_Tf": 2525,
+      "max_clamp_degC": 0.25714733734277595,
+      "freezing_clamp_enabled": true
+    },
+    "2020-07-01": {
+      "cells_clamped_below_Tf": 0,
+      "max_clamp_degC": 0.0,
+      "freezing_clamp_enabled": true
+    },
+    "2020-10-01": {
+      "cells_clamped_below_Tf": 553,
+      "max_clamp_degC": 0.37229880583334873,
+      "freezing_clamp_enabled": true
+    }
+  },
+  "files": {
+    "2020-01-01_canonical": {
+      "file": "data/input/processed/ocean/initial_ts_2020-01-01.nc",
+      "z_bottom_m": 600.0,
+      "cells_below_Tf": 0,
+      "zero_T": 0,
+      "zero_S": 0,
+      "wet_columns": 11067,
+      "level_cells": 143176,
+      "T_range": [
+        -1.9616097211837769,
+        7.077602386474609
+      ],
+      "S_range": [
+        0.03063647262752056,
+        0.03743230551481247
+      ],
+      "freezing_clamp": "UNESCO Tf(S,p) clamp applied (T3-PREP T-22)",
+      "freezing_clamp_cells": 12589
+    },
+    "2020-01-01_rebuild": {
+      "file": "data/input/processed/ocean/initial_ts_2020-01-01_rebuild.nc",
+      "z_bottom_m": 600.0,
+      "cells_below_Tf": 0,
+      "zero_T": 0,
+      "zero_S": 0,
+      "wet_columns": 11067,
+      "level_cells": 143176,
+      "T_range": [
+        -1.9616097211837769,
+        7.077602386474609
+      ],
+      "S_range": [
+        0.03063647262752056,
+        0.03743230551481247
+      ],
+      "freezing_clamp": "UNESCO Tf(S,p) clamp applied (T3-PREP T-22)",
+      "freezing_clamp_cells": 12589
+    },
+    "2020-04-01_canonical": {
+      "file": "data/input/processed/ocean/initial_ts_2020-04-01.nc",
+      "z_bottom_m": 600.0,
+      "cells_below_Tf": 0,
+      "zero_T": 0,
+      "zero_S": 0,
+      "wet_columns": 11067,
+      "level_cells": 143176,
+      "T_range": [
+        -1.9321292638778687,
+        6.746902942657471
+      ],
+      "S_range": [
+        0.023944351822137833,
+        0.03519747406244278
+      ],
+      "freezing_clamp": "UNESCO Tf(S,p) clamp applied (T3-PREP T-22)",
+      "freezing_clamp_cells": 2525
+    },
+    "2020-04-01_rebuild": {
+      "file": "data/input/processed/ocean/initial_ts_2020-04-01_rebuild.nc",
+      "z_bottom_m": 600.0,
+      "cells_below_Tf": 0,
+      "zero_T": 0,
+      "zero_S": 0,
+      "wet_columns": 11067,
+      "level_cells": 143176,
+      "T_range": [
+        -1.9321292638778687,
+        6.746902942657471
+      ],
+      "S_range": [
+        0.023944351822137833,
+        0.03519747406244278
+      ],
+      "freezing_clamp": "UNESCO Tf(S,p) clamp applied (T3-PREP T-22)",
+      "freezing_clamp_cells": 2525
+    },
+    "2020-07-01_canonical": {
+      "file": "data/input/processed/ocean/initial_ts_2020-07-01.nc",
+      "z_bottom_m": 600.0,
+      "cells_below_Tf": 0,
+      "zero_T": 0,
+      "zero_S": 0,
+      "wet_columns": 11067,
+      "level_cells": 143176,
+      "T_range": [
+        -1.8627313375473022,
+        11.879938125610352
+      ],
+      "S_range": [
+        0.02035702019929886,
+        0.03530261665582657
+      ],
+      "freezing_clamp": "UNESCO Tf(S,p) clamp applied (T3-PREP T-22)",
+      "freezing_clamp_cells": 0
+    },
+    "2020-07-01_rebuild": {
+      "file": "data/input/processed/ocean/initial_ts_2020-07-01_rebuild.nc",
+      "z_bottom_m": 600.0,
+      "cells_below_Tf": 0,
+      "zero_T": 0,
+      "zero_S": 0,
+      "wet_columns": 11067,
+      "level_cells": 143176,
+      "T_range": [
+        -1.8627313375473022,
+        11.879938125610352
+      ],
+      "S_range": [
+        0.02035702019929886,
+        0.03530261665582657
+      ],
+      "freezing_clamp": "UNESCO Tf(S,p) clamp applied (T3-PREP T-22)",
+      "freezing_clamp_cells": 0
+    },
+    "2020-10-01_canonical": {
+      "file": "data/input/processed/ocean/initial_ts_2020-10-01.nc",
+      "z_bottom_m": 600.0,
+      "cells_below_Tf": 0,
+      "zero_T": 0,
+      "zero_S": 0,
+      "wet_columns": 11067,
+      "level_cells": 143176,
+      "T_range": [
+        -2.0639915466308594,
+        9.350772857666016
+      ],
+      "S_range": [
+        0.023596078157424927,
+        0.03528112918138504
+      ],
+      "freezing_clamp": "UNESCO Tf(S,p) clamp applied (T3-PREP T-22)",
+      "freezing_clamp_cells": 553
+    },
+    "2020-10-01_rebuild": {
+      "file": "data/input/processed/ocean/initial_ts_2020-10-01_rebuild.nc",
+      "z_bottom_m": 600.0,
+      "cells_below_Tf": 0,
+      "zero_T": 0,
+      "zero_S": 0,
+      "wet_columns": 11067,
+      "level_cells": 143176,
+      "T_range": [
+        -2.0639915466308594,
+        9.350772857666016
+      ],
+      "S_range": [
+        0.023596078157424927,
+        0.03528112918138504
+      ],
+      "freezing_clamp": "UNESCO Tf(S,p) clamp applied (T3-PREP T-22)",
+      "freezing_clamp_cells": 553
+    }
+  },
+  "checks": [
+    {
+      "name": "2020-01-01_canonical: z_model_m == model DATA z",
+      "status": "PASS",
+      "detail": "bottom 600 m (model 600 m)"
+    },
+    {
+      "name": "2020-01-01_canonical: 0 cells below Tf(S,p)",
+      "status": "PASS",
+      "detail": "0 cells (Tf UNESCO, p=z_m)"
+    },
+    {
+      "name": "2020-01-01_canonical: no sentinel zeros",
+      "status": "PASS",
+      "detail": "T0=0 S0=0"
+    },
+    {
+      "name": "2020-01-01_canonical: units/ranges",
+      "status": "PASS",
+      "detail": "T[-1.96,7.08] S[0.0306,0.0374]"
+    },
+    {
+      "name": "2020-01-01_canonical: wet columns / level cells",
+      "status": "PASS",
+      "detail": "11067 cols / 143176 levels"
+    },
+    {
+      "name": "2020-01-01_canonical: metadata date",
+      "status": "PASS",
+      "detail": "2020-01-01 (expected 2020-01-01)"
+    },
+    {
+      "name": "2020-01-01_canonical: metadata product month",
+      "status": "PASS",
+      "detail": "EN4.2.2 objective analysis (g10), 2020-01, Met Office Hadley"
+    },
+    {
+      "name": "2020-01-01_rebuild: z_model_m == model DATA z",
+      "status": "PASS",
+      "detail": "bottom 600 m (model 600 m)"
+    },
+    {
+      "name": "2020-01-01_rebuild: 0 cells below Tf(S,p)",
+      "status": "PASS",
+      "detail": "0 cells (Tf UNESCO, p=z_m)"
+    },
+    {
+      "name": "2020-01-01_rebuild: no sentinel zeros",
+      "status": "PASS",
+      "detail": "T0=0 S0=0"
+    },
+    {
+      "name": "2020-01-01_rebuild: units/ranges",
+      "status": "PASS",
+      "detail": "T[-1.96,7.08] S[0.0306,0.0374]"
+    },
+    {
+      "name": "2020-01-01_rebuild: wet columns / level cells",
+      "status": "PASS",
+      "detail": "11067 cols / 143176 levels"
+    },
+    {
+      "name": "2020-01-01_rebuild: metadata date",
+      "status": "PASS",
+      "detail": "2020-01-01 (expected 2020-01-01)"
+    },
+    {
+      "name": "2020-01-01_rebuild: metadata product month",
+      "status": "PASS",
+      "detail": "EN4.2.2 objective analysis (g10), 2020-01, Met Office Hadley"
+    },
+    {
+      "name": "2020-01-01: rebuild identical to canonical",
+      "status": "PASS",
+      "detail": "byte-equal values"
+    },
+    {
+      "name": "2020-04-01_canonical: z_model_m == model DATA z",
+      "status": "PASS",
+      "detail": "bottom 600 m (model 600 m)"
+    },
+    {
+      "name": "2020-04-01_canonical: 0 cells below Tf(S,p)",
+      "status": "PASS",
+      "detail": "0 cells (Tf UNESCO, p=z_m)"
+    },
+    {
+      "name": "2020-04-01_canonical: no sentinel zeros",
+      "status": "PASS",
+      "detail": "T0=0 S0=0"
+    },
+    {
+      "name": "2020-04-01_canonical: units/ranges",
+      "status": "PASS",
+      "detail": "T[-1.93,6.75] S[0.0239,0.0352]"
+    },
+    {
+      "name": "2020-04-01_canonical: wet columns / level cells",
+      "status": "PASS",
+      "detail": "11067 cols / 143176 levels"
+    },
+    {
+      "name": "2020-04-01_canonical: metadata date",
+      "status": "PASS",
+      "detail": "2020-04-01 (expected 2020-04-01)"
+    },
+    {
+      "name": "2020-04-01_canonical: metadata product month",
+      "status": "PASS",
+      "detail": "EN4.2.2 objective analysis (g10), 2020-04, Met Office Hadley"
+    },
+    {
+      "name": "2020-04-01_rebuild: z_model_m == model DATA z",
+      "status": "PASS",
+      "detail": "bottom 600 m (model 600 m)"
+    },
+    {
+      "name": "2020-04-01_rebuild: 0 cells below Tf(S,p)",
+      "status": "PASS",
+      "detail": "0 cells (Tf UNESCO, p=z_m)"
+    },
+    {
+      "name": "2020-04-01_rebuild: no sentinel zeros",
+      "status": "PASS",
+      "detail": "T0=0 S0=0"
+    },
+    {
+      "name": "2020-04-01_rebuild: units/ranges",
+      "status": "PASS",
+      "detail": "T[-1.93,6.75] S[0.0239,0.0352]"
+    },
+    {
+      "name": "2020-04-01_rebuild: wet columns / level cells",
+      "status": "PASS",
+      "detail": "11067 cols / 143176 levels"
+    },
+    {
+      "name": "2020-04-01_rebuild: metadata date",
+      "status": "PASS",
+      "detail": "2020-04-01 (expected 2020-04-01)"
+    },
+    {
+      "name": "2020-04-01_rebuild: metadata product month",
+      "status": "PASS",
+      "detail": "EN4.2.2 objective analysis (g10), 2020-04, Met Office Hadley"
+    },
+    {
+      "name": "2020-04-01: rebuild identical to canonical",
+      "status": "PASS",
+      "detail": "byte-equal values"
+    },
+    {
+      "name": "2020-07-01_canonical: z_model_m == model DATA z",
+      "status": "PASS",
+      "detail": "bottom 600 m (model 600 m)"
+    },
+    {
+      "name": "2020-07-01_canonical: 0 cells below Tf(S,p)",
+      "status": "PASS",
+      "detail": "0 cells (Tf UNESCO, p=z_m)"
+    },
+    {
+      "name": "2020-07-01_canonical: no sentinel zeros",
+      "status": "PASS",
+      "detail": "T0=0 S0=0"
+    },
+    {
+      "name": "2020-07-01_canonical: units/ranges",
+      "status": "PASS",
+      "detail": "T[-1.86,11.88] S[0.0204,0.0353]"
+    },
+    {
+      "name": "2020-07-01_canonical: wet columns / level cells",
+      "status": "PASS",
+      "detail": "11067 cols / 143176 levels"
+    },
+    {
+      "name": "2020-07-01_canonical: metadata date",
+      "status": "PASS",
+      "detail": "2020-07-01 (expected 2020-07-01)"
+    },
+    {
+      "name": "2020-07-01_canonical: metadata product month",
+      "status": "PASS",
+      "detail": "EN4.2.2 objective analysis (g10), 2020-07, Met Office Hadley"
+    },
+    {
+      "name": "2020-07-01_rebuild: z_model_m == model DATA z",
+      "status": "PASS",
+      "detail": "bottom 600 m (model 600 m)"
+    },
+    {
+      "name": "2020-07-01_rebuild: 0 cells below Tf(S,p)",
+      "status": "PASS",
+      "detail": "0 cells (Tf UNESCO, p=z_m)"
+    },
+    {
+      "name": "2020-07-01_rebuild: no sentinel zeros",
+      "status": "PASS",
+      "detail": "T0=0 S0=0"
+    },
+    {
+      "name": "2020-07-01_rebuild: units/ranges",
+      "status": "PASS",
+      "detail": "T[-1.86,11.88] S[0.0204,0.0353]"
+    },
+    {
+      "name": "2020-07-01_rebuild: wet columns / level cells",
+      "status": "PASS",
+      "detail": "11067 cols / 143176 levels"
+    },
+    {
+      "name": "2020-07-01_rebuild: metadata date",
+      "status": "PASS",
+      "detail": "2020-07-01 (expected 2020-07-01)"
+    },
+    {
+      "name": "2020-07-01_rebuild: metadata product month",
+      "status": "PASS",
+      "detail": "EN4.2.2 objective analysis (g10), 2020-07, Met Office Hadley"
+    },
+    {
+      "name": "2020-07-01: rebuild identical to canonical",
+      "status": "PASS",
+      "detail": "byte-equal values"
+    },
+    {
+      "name": "2020-10-01_canonical: z_model_m == model DATA z",
+      "status": "PASS",
+      "detail": "bottom 600 m (model 600 m)"
+    },
+    {
+      "name": "2020-10-01_canonical: 0 cells below Tf(S,p)",
+      "status": "PASS",
+      "detail": "0 cells (Tf UNESCO, p=z_m)"
+    },
+    {
+      "name": "2020-10-01_canonical: no sentinel zeros",
+      "status": "PASS",
+      "detail": "T0=0 S0=0"
+    },
+    {
+      "name": "2020-10-01_canonical: units/ranges",
+      "status": "PASS",
+      "detail": "T[-2.06,9.35] S[0.0236,0.0353]"
+    },
+    {
+      "name": "2020-10-01_canonical: wet columns / level cells",
+      "status": "PASS",
+      "detail": "11067 cols / 143176 levels"
+    },
+    {
+      "name": "2020-10-01_canonical: metadata date",
+      "status": "PASS",
+      "detail": "2020-10-01 (expected 2020-10-01)"
+    },
+    {
+      "name": "2020-10-01_canonical: metadata product month",
+      "status": "PASS",
+      "detail": "EN4.2.2 objective analysis (g10), 2020-10, Met Office Hadley"
+    },
+    {
+      "name": "2020-10-01_rebuild: z_model_m == model DATA z",
+      "status": "PASS",
+      "detail": "bottom 600 m (model 600 m)"
+    },
+    {
+      "name": "2020-10-01_rebuild: 0 cells below Tf(S,p)",
+      "status": "PASS",
+      "detail": "0 cells (Tf UNESCO, p=z_m)"
+    },
+    {
+      "name": "2020-10-01_rebuild: no sentinel zeros",
+      "status": "PASS",
+      "detail": "T0=0 S0=0"
+    },
+    {
+      "name": "2020-10-01_rebuild: units/ranges",
+      "status": "PASS",
+      "detail": "T[-2.06,9.35] S[0.0236,0.0353]"
+    },
+    {
+      "name": "2020-10-01_rebuild: wet columns / level cells",
+      "status": "PASS",
+      "detail": "11067 cols / 143176 levels"
+    },
+    {
+      "name": "2020-10-01_rebuild: metadata date",
+      "status": "PASS",
+      "detail": "2020-10-01 (expected 2020-10-01)"
+    },
+    {
+      "name": "2020-10-01_rebuild: metadata product month",
+      "status": "PASS",
+      "detail": "EN4.2.2 objective analysis (g10), 2020-10, Met Office Hadley"
+    },
+    {
+      "name": "2020-10-01: rebuild identical to canonical",
+      "status": "PASS",
+      "detail": "byte-equal values"
+    },
+    {
+      "name": "wet_mask identical across all corrected files",
+      "status": "PASS",
+      "detail": "identical"
+    }
+  ],
+  "overall": "CLEAN"
+}

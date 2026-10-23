@@ -212,7 +212,26 @@ def main():
         default="nearest",
         help="Horizontal interpolation method: nearest-neighbor or bilinear",
     )
+    ap.add_argument(
+        "--date",
+        type=str,
+        default=None,
+        help="Target date YYYY-MM-DD (default: derived from the raw filename)",
+    )
+    ap.add_argument(
+        "--no-clamp-below-freezing",
+        action="store_true",
+        help="Disable the T3-PREP freezing-point clamp (default: clamp ON)",
+    )
     args = ap.parse_args()
+
+    if args.date:
+        target_date = args.date
+    else:
+        import re
+        m = re.search(r"g10\.(\d{4})(\d{2})\.nc$", str(args.raw))
+        target_date = f"{m.group(1)}-{m.group(2)}-01" if m else "2020-01-01"
+    target_month = target_date[:7]
 
     g = load_model_grid()
     lat, lon = g["lat"], g["lon"]
@@ -357,6 +376,32 @@ def main():
     n_uncovered = n_col_pld
     n_low_conf = int((dist > 1.5)[wet_active].sum())
 
+    # --- Stage 11.8.0 T3-PREP (T-22): freezing-point clamp ------------------
+    # UNESCO/Fofonoff-Millard Tf(S,p); p is approximated by the model depth
+    # in dbar (1 dbar ~ 1 m). Supercooled seawater is physically unstable
+    # (it would freeze); clamping T up to Tf is a physical data correction,
+    # NOT a numerical hack. Salinity is unchanged.
+    n_clamped = 0
+    clamp_max = 0.0
+    if not args.no_clamp_below_freezing:
+        kvec = np.arange(ks)[None, None, :]
+        interior = wet[:, :, None] & (kvec < kk1[:, :, None])
+        s_psu = s_out.astype(np.float64) * 1000.0
+        p_dbar = Z_M[None, None, :]
+        tf = ((-0.0575 + 1.710523e-3 * np.sqrt(s_psu)
+               - 2.154996e-4 * s_psu) * s_psu - 7.53e-4 * p_dbar)
+        # +1e-5 degC upward margin: the product stores float32, so clamping
+        # exactly to Tf can round a few ULP BELOW Tf and re-create a
+        # (harmless but detectable) supercooled flag.
+        tf = tf + 1.0e-5
+        below = interior & np.isfinite(t_out) & (t_out < tf)
+        n_clamped = int(below.sum())
+        if n_clamped:
+            clamp_max = float(np.max(tf[below] - t_out[below]))
+            t_out = np.where(below, tf, t_out).astype(np.float32)
+        print(f"freezing-point clamp: {n_clamped} cells clamped "
+              f"(max +{clamp_max:.3f} degC, Tf UNESCO with p=z_m)")
+
     ro = eckart_ro(t_out, s_out)
     n_bad_ro = int(np.count_nonzero(~np.isfinite(ro)))
 
@@ -400,12 +445,15 @@ def main():
 
     stats = {
         "stage": "7.7",
-        "target_date": "2020-01-01",
+        "target_date": target_date,
         "source_file": str(args.raw),
-        "source_time_mid": "2020-01-16",
+        "source_time_mid": target_month + "-16",
         "method": "NN-wet horizontal + piecewise-linear vertical (see build doc)",
         "grid_is1_js1_ks": [is1, js1, ks],
         "z_model_m": [float(x) for x in Z_M],
+        "cells_clamped_below_Tf": n_clamped,
+        "max_clamp_degC": clamp_max,
+        "freezing_clamp_enabled": bool(not args.no_clamp_below_freezing),
         "wet_cells": int(wet.sum()),
         "active_wet_cells": int(wet_active.sum()),
         "en4_wet_points": int(en4_wet.sum()),
@@ -453,9 +501,9 @@ def main():
         },
         attrs={
             "title": "Realistic initial ocean temperature/salinity (Stage 7.7)",
-            "target_run_date": "2020-01-01",
+            "target_run_date": target_date,
             "source": str(args.raw),
-            "source_product": "EN4.2.2 objective analysis (g10), 2020-01, "
+            "source_product": f"EN4.2.2 objective analysis (g10), {target_month}, "
             "Met Office Hadley Centre",
             "conversion": "T_degC = T_K - 273.15; S_frac = S_psu / 1000",
             "regridding": "horizontal NN over EN4 wet points (no cross-land); "
@@ -466,6 +514,9 @@ def main():
             "3=product-land-column",
             "model_land_convention": "wet_mask==1; land cells contain 0 (never NaN)",
             "eos": "Eckart (src/equation_of_state.f90) float32; anomaly rho-1.02",
+            "freezing_clamp": ("UNESCO Tf(S,p) clamp applied (T3-PREP T-22)"
+                               if not args.no_clamp_below_freezing else "disabled"),
+            "freezing_clamp_cells": int(n_clamped),
             "licence": "EN4: Non-Commercial Government Licence v2 (research)",
         },
     )

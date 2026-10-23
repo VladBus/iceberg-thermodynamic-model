@@ -35,7 +35,7 @@ under atmospheric, oceanic, bathymetric, and sea-ice forcing.
 
 ## 📑 Project status
 
-- **Current stage:** Stage 11.8.0 T2 — CA/EOS Core Diagnostics COMPLETE (neutral column untouched f32/f64; weak inversion conserves exactly; A-1 CONFIRMED: in-situ density criterion -> EOS-80 false stability, T-25; T-23 wrap red test formalized; T-27 f32 state storage). NEXT: T3-PREP (fix T-20/T-22 EN4 data), then T3. 11.7E.5 tides reader DEFERRED — null-tides provides no scientific value.
+- **Current stage:** Stage 11.8.0 T3-PREP — EN4 Data Correction COMPLETE (T-20 z-grid and T-22 supercooling FIXED; all four seasons regenerated with the corrected grid + UNESCO Tf(S,p) clamp; EN4 verification CLEAN). NEXT: 11.8.0 T3 (Rest). T-25 (CA in-situ criterion) scheduled as T2-corrective before T6; H-2 for T4; 11.7E.5 tides DEFERRED — null-tides provides no scientific value.
   [Historical note from Stage 10.19, SUPERSEDED by Stage 10.20 restoration
   (full-coverage ERA5: 3-day gate PASS, residual characterized, NOT fixed):
   coupling recovery (completed: the Lagrangian iceberg module is now

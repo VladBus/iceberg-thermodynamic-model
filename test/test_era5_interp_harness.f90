@@ -22,12 +22,15 @@ program test_era5_interp_harness
     real(8), parameter :: DT6 = 21600.0_8
     character(len=256), parameter :: fA = 'build/t1_synthetic_era5.nc'
     character(len=256), parameter :: fB = 'build/t1_synthetic_era5_gap.nc'
+    character(len=256), parameter :: fC = 'build/t2_era5_narrow_wrap.nc'
     integer :: ios
 
     call build_synthetic(trim(fA), .false.)
     call build_synthetic(trim(fB), .true.)
+    call build_narrow(trim(fC))
     call run_spatial(trim(fA))
     call run_temporal(trim(fA), trim(fB))
+    call run_wrap_redtest(trim(fC))
     print *, '=== T1 ERA5 interpolation harness complete ==='
     stop 0
 
@@ -101,6 +104,101 @@ contains
         deallocate (buf)
         call chk(nf90_close(ncid), 'close')
     end subroutine build_synthetic
+
+    ! ==========================================================================
+    ! Narrow-span file for the T-23 red test: longitude 10..70 E only.
+    subroutine build_narrow(path)
+        character(len=*), intent(in) :: path
+        integer, parameter :: NL = 7
+        integer :: ncid, dv, dla, dlo, vu, vv, vt2, vd2, vm, vc, vs, vtime, vla, vlo
+        integer :: dl(3)
+        real(8) :: times(1), latv(NLAT), lonv(NL)
+        real(4), allocatable :: buf(:, :, :)
+        integer :: i, j
+
+        latv = (/70.0_8, 68.0_8, 66.0_8, 64.0_8, 62.0_8, 60.0_8/)
+        lonv = (/10.0_8, 20.0_8, 30.0_8, 40.0_8, 50.0_8, 60.0_8, 70.0_8/)
+        times(1) = T0
+
+        call chk(nf90_create(trim(path), NF90_CLOBBER, ncid), 'create '//trim(path))
+        call chk(nf90_def_dim(ncid, 'valid_time', 1, dv), 'def valid_time')
+        call chk(nf90_def_dim(ncid, 'latitude', NLAT, dla), 'def latitude')
+        call chk(nf90_def_dim(ncid, 'longitude', NL, dlo), 'def longitude')
+        dl = (/dlo, dla, dv/)
+        call chk(nf90_def_var(ncid, 'valid_time', NF90_DOUBLE, (/dv/), vtime), 'def t')
+        call chk(nf90_def_var(ncid, 'latitude', NF90_DOUBLE, (/dla/), vla), 'def la')
+        call chk(nf90_def_var(ncid, 'longitude', NF90_DOUBLE, (/dlo/), vlo), 'def lo')
+        call chk(nf90_def_var(ncid, 'u10', NF90_REAL, dl, vu), 'def u10')
+        call chk(nf90_def_var(ncid, 'v10', NF90_REAL, dl, vv), 'def v10')
+        call chk(nf90_def_var(ncid, 't2m', NF90_REAL, dl, vt2), 'def t2m')
+        call chk(nf90_def_var(ncid, 'd2m', NF90_REAL, dl, vd2), 'def d2m')
+        call chk(nf90_def_var(ncid, 'msl', NF90_REAL, dl, vm), 'def msl')
+        call chk(nf90_def_var(ncid, 'tcc', NF90_REAL, dl, vc), 'def tcc')
+        call chk(nf90_def_var(ncid, 'sf', NF90_REAL, dl, vs), 'def sf')
+        call chk(nf90_enddef(ncid), 'enddef')
+        call chk(nf90_put_var(ncid, vtime, times), 'put time')
+        call chk(nf90_put_var(ncid, vla, latv), 'put lat')
+        call chk(nf90_put_var(ncid, vlo, lonv), 'put lon')
+        allocate (buf(NL, NLAT, 1))
+        do j = 1, NLAT
+            do i = 1, NL
+                buf(i, j, 1) = real(lonv(i), 4)   ! value == longitude node
+            end do
+        end do
+        call chk(nf90_put_var(ncid, vu, buf), 'put u10')
+        buf = 0.0_4
+        call chk(nf90_put_var(ncid, vv, buf), 'put v10')
+        buf = 280.0_4;    call chk(nf90_put_var(ncid, vt2, buf), 'put t2m')
+        buf = 270.0_4;    call chk(nf90_put_var(ncid, vd2, buf), 'put d2m')
+        buf = 100000.0_4; call chk(nf90_put_var(ncid, vm, buf), 'put msl')
+        buf = 0.5_4;      call chk(nf90_put_var(ncid, vc, buf), 'put tcc')
+        buf = 0.0_4;      call chk(nf90_put_var(ncid, vs, buf), 'put sf')
+        deallocate (buf)
+        call chk(nf90_close(ncid), 'close')
+    end subroutine build_narrow
+
+    ! ==========================================================================
+    ! T-23 RED TEST: query EAST of a narrow file (10..70 E) at 75 E.
+    ! Correct behaviour (future fix): CLAMP to the eastern edge -> 70.
+    ! Current behaviour (wrap bug): +-360 normalization lands at -285, the
+    ! binary search/weight clamp then returns the WESTERN edge -> 10.
+    subroutine run_wrap_redtest(path)
+        character(len=*), intent(in) :: path
+        integer :: ios, unit
+        real(8) :: v_east, v_west
+        logical :: ok_e, ok_w
+
+        call era5_open(trim(path), ios)
+        if (ios /= 0) call die('era5_open narrow')
+
+        v_east = -999.0_8
+        ok_e = era5_bilinear2d(era5_u10(:, :, 1), 65.0_8, 75.0_8, v_east)
+        v_west = -999.0_8
+        ok_w = era5_bilinear2d(era5_u10(:, :, 1), 65.0_8, 5.0_8, v_west)
+
+        unit = 73
+        open (unit, file='data/validation/era5_longitude_wrap_fortran.json', &
+              status='replace', action='write')
+        call jopen(unit)
+        call js_str(unit, 'test', 'era5_longitude_wrap_T23')
+        call js_str(unit, 'reader', 'src/netcdf_input.f90::era5_bilinear2d')
+        call js_real(unit, 'file_lon_min', 10.0_8)
+        call js_real(unit, 'file_lon_max', 70.0_8)
+        call js_real(unit, 'query_east_lon', 75.0_8)
+        call js_bool(unit, 'query_east_ok', ok_e)
+        call js_real(unit, 'query_east_actual', v_east)
+        call js_real(unit, 'query_east_correct_clamp', 70.0_8)
+        call js_real(unit, 'query_west_lon', 5.0_8)
+        call js_bool(unit, 'query_west_ok', ok_w)
+        call js_real(unit, 'query_west_actual', v_west)
+        call js_real(unit, 'query_west_correct_clamp', 10.0_8)
+        call js_last(unit, 'status', 'RED_CONFIRMED')
+        call jclose(unit)
+        close (unit)
+
+        print *, '[wrap-T23] 75E -> actual ', v_east, &
+                 ' (correct clamp 70.0); 5E -> actual ', v_west, ' (correct 10.0)'
+    end subroutine run_wrap_redtest
 
     ! ==========================================================================
     subroutine run_spatial(path)

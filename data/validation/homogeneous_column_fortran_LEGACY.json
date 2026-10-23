@@ -9,6 +9,11 @@
   "iterations": 1,
   "guard_hit": false,
   "nmix": 0,
+  "delta_T_max_f64":   0.0000000000E+00,
+  "delta_S_max_f64":   0.0000000000E+00,
+  "iterations_f64": 1,
+  "nmix_f64": 0,
+  "status_f64": "PASS",
   "status": "PASS",
   "test_kind": "smoke_control",
   "exit_code": 0

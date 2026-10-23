@@ -1,0 +1,23 @@
+{
+  "test": "era5_longitude_wrap",
+  "stage": "11.8.0 T2 Phase 0 (T-23)",
+  "reader": "src/netcdf_input.f90::era5_bilinear2d",
+  "file_lon_range": [
+    10.0,
+    70.0
+  ],
+  "query_east": {
+    "lon": 75.0,
+    "ok": true,
+    "actual": 10.0,
+    "correct_clamp": 70.0
+  },
+  "query_west_control": {
+    "lon": 5.0,
+    "actual": 10.0,
+    "correct_clamp": 10.0
+  },
+  "status": "RED_CONFIRMED",
+  "finding": "T-23 CONFIRMED: an east-of-file query (75E, file 10..70E) returns the WESTERN edge (10.0) instead of the correct eastern clamp (70.0). Latent for today's domain but invalid production behaviour for any narrow/global forcing file.",
+  "required_fix": "Replace cyclic +-360 wrap with edge-clamping (or out-of-range rejection) in era5_bilinear2d for longitudes outside the file range; the current wrap can return the opposite edge. Not fixed in T2 (diagnostic); assigned to T1-corrective/T4."
+}

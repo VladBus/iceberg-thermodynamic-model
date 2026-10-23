@@ -26,7 +26,7 @@
 program test_homogeneous_column
     use param, only: z
     use equation_of_state, only: eos80_configure, get_active_eos_mode
-    use convective_adjustment, only: convect_column, ca_reset
+    use convective_adjustment, only: convect_column, convect_column_f64, ca_reset
     implicit none
 
     integer, parameter :: nlev = 18
@@ -34,9 +34,13 @@ program test_homogeneous_column
     real, dimension(nlev) :: half_layer_cm
     integer :: k, ki, nmix, iter_count, k_problem, ios, json_unit
     integer :: exit_code
-    logical :: guard_hit, test_failed
+    integer :: nmix64, iter64, kprob64
+    logical :: guard_hit, test_failed, guard64
     real :: resid_inv
     real :: delta_t_max, delta_s_max
+    real :: resid64
+    real(8) :: delta_t_max64, delta_s_max64
+    character(len=8) :: status64
     character(len=16) :: eos_mode
     character(len=256) :: json_file
     character(len=1), parameter :: q = achar(34)
@@ -81,6 +85,27 @@ program test_homogeneous_column
     end do
     test_failed = (delta_t_max > 1.0e-6) .or. (delta_s_max > 1.0e-6)
 
+    ! ---- T2 Phase 1: production float64-core path (convect_column_f64).
+    ! NOTE: the production API stores T/S back in float32 (see T2 report);
+    ! a truly neutral column must remain bit-identical in both paths.
+    t_after = t_before
+    s_after = s_before
+    nmix64 = 0; iter64 = 0; guard64 = .false.; kprob64 = 0; resid64 = 0.0
+    call convect_column_f64(t_after, s_after, half_layer_cm, ki, nmix64, &
+                            iter64, guard64, kprob64, resid64)
+    delta_t_max64 = 0.0_8
+    delta_s_max64 = 0.0_8
+    do k = 1, nlev
+        delta_t_max64 = max(delta_t_max64, abs(real(t_after(k) - t_before(k), 8)))
+        delta_s_max64 = max(delta_s_max64, abs(real(s_after(k) - s_before(k), 8)))
+    end do
+    status64 = 'PASS    '
+    if (delta_t_max64 > 1.0e-14_8 .or. delta_s_max64 > 1.0e-14_8) then
+        status64 = 'FAIL    '
+        test_failed = .true.
+    end if
+    write (*, '(A,ES12.4,A,ES12.4)') 'f64-core max |dT|/|dS|: ', delta_t_max64, ' / ', delta_s_max64
+
     write (*, '(A,A)')      "EOS_MODE: ", trim(eos_mode)
     write (*, '(A,I0)')     "CA iterations: ", iter_count
     write (*, '(A,L1)')     "Guard hit: ", guard_hit
@@ -124,6 +149,11 @@ program test_homogeneous_column
         write (json_unit, '(A,A,A)') "  ", q // "guard_hit" // q // ": ", "false" // ","
     end if
     write (json_unit, '(A,A,I0,A)') "  ", q // "nmix" // q // ": ", nmix, ","
+    write (json_unit, '(A,A,ES18.10,A)') "  ", q // "delta_T_max_f64" // q // ": ", delta_t_max64, ","
+    write (json_unit, '(A,A,ES18.10,A)') "  ", q // "delta_S_max_f64" // q // ": ", delta_s_max64, ","
+    write (json_unit, '(A,A,I0,A)') "  ", q // "iterations_f64" // q // ": ", iter64, ","
+    write (json_unit, '(A,A,I0,A)') "  ", q // "nmix_f64" // q // ": ", nmix64, ","
+    write (json_unit, '(A,A,A,A,A,A)') "  ", q, "status_f64", q, ": ", q // trim(status64) // q // ","
     if (test_failed) then
         write (json_unit, '(A,A,A,A)') "  ", q // "status" // q // ": ", q // "FAIL" // q, ","
         exit_code = 1

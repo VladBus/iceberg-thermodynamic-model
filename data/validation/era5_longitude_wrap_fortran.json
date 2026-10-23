@@ -1,0 +1,15 @@
+{
+  "test": "era5_longitude_wrap_T23",
+  "reader": "src/netcdf_input.f90::era5_bilinear2d",
+  "file_lon_min":   1.0000000000E+01,
+  "file_lon_max":   7.0000000000E+01,
+  "query_east_lon":   7.5000000000E+01,
+  "query_east_ok": true ,
+  "query_east_actual":   1.0000000000E+01,
+  "query_east_correct_clamp":   7.0000000000E+01,
+  "query_west_lon":   5.0000000000E+00,
+  "query_west_ok": true ,
+  "query_west_actual":   1.0000000000E+01,
+  "query_west_correct_clamp":   1.0000000000E+01,
+  "status": "RED_CONFIRMED"
+}

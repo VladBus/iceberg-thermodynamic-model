@@ -3,7 +3,7 @@
 **Updated:** 2026-10-22
 **Current scientific stage:** Stage 11.8.0.0.1 — CI Fix, Real Tests, Snowfall Re-examination COMPLETE. Stages 11.8.0.0 / 11.7E.4 COMPLETE. Stage 11.7E.5 (tides reader) DEFERRED — null-tides provides no scientific value; not blocked by 11.7F. NEXT: 11.8.0 T0 (data and units verification; includes manual snowfall-accumulation-period verification, T-19).
 **Stages 3–11.4.1: COMPLETED** (10.x iceberg modernization; 11.1 seasonal characterization; 11.2 CFL audit; 11.4-D21…D33 EN4 stabilization → ERA5-coverage fix → cleanup + Ocean Baseline 11.x; 11.3A execution-graph audit; 11.3B input-architecture audit + NetCDF contracts; 11.3C scheme audit + timestep matrix; 11.3C.1 semantics + CFL distributions; 11.3C.2 time-integration audit; 11.3C.3 loop-bound search (VERDICT D); 11.4 EOS-80 experiment + 11.4.1 impact validation (OPTIONAL, not default)).
-**Current status:** Stages 10.14–11.8.0.0.1 committed (last: `ba447c7` Stage 11.8.0.0.1; see `git log` and `CHANGELOG.md` for history). **Stage 11.8.0.0 COMPLETE**. **Stage 11.8.0.0.1 COMPLETE** (CI green; T2 smoke + weak-inversion tests fail genuinely; snowfall re-examined → INFERRED_12H + T-19; divisor unchanged). **Stage 11.8.0 T0 COMPLETE**; **Stage 11.8.0 T1 COMPLETE** (ERA5 forcing contract: interior interpolation exact, temporal nearest-time PASS, wrap latent bug T-23, wind rotation CRITICAL for T4 (H-2 confirmed), T-21 accepted). NEXT: 11.8.0 T2 (CA/EOS core diagnostics).
+**Current status:** Stages 10.14–11.8.0.0.1 committed (last: `ba447c7` Stage 11.8.0.0.1; see `git log` and `CHANGELOG.md` for history). **Stage 11.8.0.0 COMPLETE**. **Stage 11.8.0.0.1 COMPLETE** (CI green; T2 smoke + weak-inversion tests fail genuinely; snowfall re-examined → INFERRED_12H + T-19; divisor unchanged). **Stage 11.8.0 T0 COMPLETE**; **T1 COMPLETE**; **Stage 11.8.0 T2 COMPLETE** (CA/EOS core: homogeneous f32/f64 PASS, weak inversion conserves (exact f64 ref 1.3e-16; production f32-limited), A-1 CONFIRMED -> in-situ criterion, T-25; T-23 red test formalized). NEXT: T3-PREP (fix T-20/T-22), then T3 (Rest). H-2 is the T4 blocker.
 **Test suite:** 66 Fortran test source files (`ls test/*.f90 | wc -l`); 66 auto-discovered FPM test targets (`fpm test --list | grep -vcE '^\s*$|Matched'`). Counting method (Stage 11.8.0 T0): every current `test/*.f90` contains a top-level `program`, so file count == target count; the historical 64/59 split existed because older helper modules without `program` were present then. Counts verified 2026-10-22.
 **Stage 11.5H-RC COMPLETE** (release-candidate gate: self-contained production scheduler, docs synced D-22…D-28). Plan: 11.8.0 diagnostic ladder (T0–T6) → 11.8A validation → 11.8B audit → 11.9 closure → 12.0 voxel (blocked, D-28).
 
@@ -463,6 +463,22 @@ Dependencies: 11.8.0 T0.
 Status: **COMPLETE**. Report:
 `docs/validation/stage11.8.0_T1_forcing_contract_verification.md`.
 NEXT: 11.8.0 T2 (CA/EOS core); T-20/T-22 before T3.
+
+### Stage 11.8.0 T2 — CA/EOS Core Diagnostics
+
+Scope: third ladder rung. Verification only: homogeneous column (f32 + f64
+core, both EOS), weak-inversion conservation with an exact f64 reference,
+and the in-situ vs potential density compressibility test.
+Findings: neutral column untouched (dT=dS=0 in all 4 combinations); genuine
+inversion mixed with exact algorithmic conservation (reference heat 0,
+salt 1.3e-16; production state f32-limited -> T-27); **A-1 CONFIRMED: CA
+compares in-situ density at local pressure, so EOS-80 falsely stabilises a
+potential-density-unstable column (nmix 0/0) -> T-25**; T-23 formalized with
+a narrow-file red test (75E -> 10.0 instead of clamp 70.0).
+Dependencies: T1.
+Status: **COMPLETE**. Report:
+`docs/validation/stage11.8.0_T2_ca_eos_core_diagnostics.md`.
+NEXT: T3-PREP (T-20/T-22 data fixes), then T3 (Rest).
 
 ### Stage 11.8A — Scientific Validation (gated)
 

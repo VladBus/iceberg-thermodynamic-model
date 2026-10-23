@@ -1,7 +1,7 @@
 # Model Physics Block Status
 
 **Date:** 2026-10-22
-**Current repository stage:** Stage 11.8.0 T1 — Forcing Contract Verification COMPLETE (T0 also COMPLETE). Stages 11.8.0.0/11.8.0.0.1/11.7E.4 COMPLETE. Stage 11.7E.5 (tides reader) DEFERRED — null-tides provides no scientific value. NEXT: 11.8.0 T2 (CA/EOS core). Snowfall divisor 43200 CONFIRMED correct from source (T-19 closed via live CDS probe: artifact == step=12 request, bit-identical); EN4 initial data findings T-20/T-22 and ERA5 T-21/H-2 open for later tiers. EOS STATUS (binding, unchanged): EOS-80 OPTIONAL; legacy Eckart DEFAULT and scientific reference; default decision deferred to 11.8A; legacy EOS retained permanently as regression baseline, NOT scheduled for removal.
+**Current repository stage:** Stage 11.8.0 T2 — CA/EOS Core Diagnostics COMPLETE (T0/T1 also COMPLETE). Stages 11.8.0.0/11.8.0.0.1/11.7E.4 COMPLETE. Stage 11.7E.5 (tides reader) DEFERRED — null-tides provides no scientific value. NEXT: T3-PREP (T-20/T-22 EN4 data fixes), then T3 (Rest). Snowfall divisor 43200 CONFIRMED correct from source (T-19 closed via live CDS probe: artifact == step=12 request, bit-identical); EN4 initial data findings T-20/T-22 and ERA5 T-21/H-2 open for later tiers. EOS STATUS (binding, unchanged): EOS-80 OPTIONAL; legacy Eckart DEFAULT and scientific reference; default decision deferred to 11.8A; legacy EOS retained permanently as regression baseline, NOT scheduled for removal.
 **Ocean EOS statement:** the prognostic ocean uses legacy Eckart (Dmitrev–Nesterov) density in float32 (`src/equation_of_state.f90`) by default; UNESCO EOS-80 is implemented opt-in (`src/eos80_unesco.f90`, `EOS_MODE=EOS80`, validated in 11.4/11.4.1, recommendation: optional). Iceberg side uses freezing-point only (table row "Full seawater EOS" below refers to the iceberg module).
 **Production baseline:** Stage 10.13 (low-flow closure behind `low_flow_closure_enabled`; OFF = Stage 10.12/10.10 legacy unchanged); Stage 10.19 adds the env-gated production iceberg connection (inert by default); Stage 10.20 adopts the full-coverage ERA5 Jan file for production gates (`src/param.f90` default path NOT changed); Stage 10.21 adds CA/EOS f32-precision research switches (`STAGE1021_CA_F64`, `STAGE1021_CA_MIX`, `STAGE1021_CA_SCOPE`, `STAGE1021_CA_EPS`) — all OFF by default, production bit-identical (KEEP_CURRENT); Stage 10.22 adds Block-200 stability-audit diagnostic switches (`STAGE1022_DIAG`, `STAGE1022_FREEZE_RO`, `STAGE1022_FREEZE_THERMAL_WIND`, `STAGE1022_FREEZE_TS`, `STAGE1022_FREEZE_RO_DOWNSTREAM`; env names `_FREEZE_RO`/`_FREEZE_TS`/`_FREEZE_RO_DOWNSTREAM`/`_FREEZE_THERMAL_WIND` + `_DIAG`) — all OFF by default, production bit-identical (KEEP_CURRENT); Stage 11.4-D32 adds the ERA5 nearest-edge coverage fallback in `era5_wind()` (loader-only production fix, Jan bit-identical); Stage 11.4-D33 fixes Ocean Baseline 11.x (Jan30/Apr29/Jul30/Oct30, 0 NaN); Stage 11.3C adds `STAGE113_DT/DT1` measurement-only timestep override (defaults = legacy 3600/120); Stage 11.3C.1 adds mm2/mm3 scaling (active only with override) + `s112_cfl_dist` percentiles (DIAG-gated)
 **FPM test targets:** 59 (fpm auto-discovery of `test/*.f90` with a top-level `program`, incl. `check.f90`, `iceberg_test_10p17_melt_budget`, `iceberg_test_10p17_90day`, `drift_scaling_*`)
@@ -164,6 +164,18 @@ the nearest record (T-24; axis PASS). **Wind rotation: the grid is rotated
 geographic->grid rotation -> H-2 CONFIRMED CRITICAL for T4.** T-21 accepted
 as a 0.072 % limitation. Report:
 `docs/validation/stage11.8.0_T1_forcing_contract_verification.md`.
+
+## Stage 11.8.0 T2 — CA/EOS core diagnostics (no changes)
+
+Homogeneous column: dT=dS=0 with both the f32 and f64-core paths in both EOS
+modes (no false convection). Weak inversion: mixed with exact algorithmic
+conservation (real64 reference heat 0, salt 1.3e-16; production state is
+float32-limited — T-27). **A-1 CONFIRMED: CA compares IN-SITU density at the
+local pressure; there is no potential-density criterion. Under EOS-80 a
+potential-density-unstable column can be in-situ stable and is left unmixed
+(T-25, critical).** T-23 longitude wrap formalized with a narrow-file red
+test (east-of-file query returns the western edge; fix = edge-clamping).
+Report: `docs/validation/stage11.8.0_T2_ca_eos_core_diagnostics.md`.
 
 ## References
 

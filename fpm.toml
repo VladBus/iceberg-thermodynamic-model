@@ -75,3 +75,11 @@ main = "test_weak_inversion.f90"
 [test.test_era5_interp_harness]
 source-dir = "test"
 main = "test_era5_interp_harness.f90"
+
+[test.test_weak_inversion_conservation]
+source-dir = "test"
+main = "test_weak_inversion_conservation.f90"
+
+[test.test_ca_compressibility]
+source-dir = "test"
+main = "test_ca_compressibility.f90"

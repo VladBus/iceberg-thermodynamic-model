@@ -1,0 +1,19 @@
+{
+  "test": "ca_compressibility",
+  "eos_mode": "EOS80",
+  "setup": "L1 T=3.0 S=0.0345 z=25m over L2 T=3.6 S=0.0345 z=75m; dz1=50000cm",
+  "density_criterion_source": "src/convective_adjustment.f90: cr(k)=eos_density(ct(k),cs(k),z(k)*0.01) (IN-SITU at local depth)",
+  "sigma0_level1":   7.4860129675E-03,
+  "sigma0_level2":   7.4289789041E-03,
+  "rho_in_situ_level1":   7.6031181013E-03,
+  "rho_in_situ_level2":   7.7789591096E-03,
+  "compression_gain_50dbar":   2.3325751993E-04,
+  "thermal_destabilisation":   5.7034063480E-05,
+  "potential_unstable": true ,
+  "in_situ_stable": true ,
+  "construction_valid": true ,
+  "nmix_production_f32": 0,
+  "nmix_production_f64core": 0,
+  "status": "CRITICAL_CONFIRMED",
+  "finding": "CA compares IN-SITU density at each level pressure (no potential-density criterion). Under EOS-80, compressibility over 50 dbar can exceed the thermal contrast, so a genuinely convective (potential-density-unstable) column is falsely declared stable and left unmixed. Not fixed in T2."
+}

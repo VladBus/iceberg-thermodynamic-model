@@ -80,6 +80,9 @@ def run_mode(exe, mode):
         and r.get("status") == "PASS"
         and float(r.get("delta_T_max", 1e9)) <= TOL
         and float(r.get("delta_S_max", 1e9)) <= TOL
+        and r.get("status_f64") == "PASS"
+        and float(r.get("delta_T_max_f64", 1e9)) <= 1e-14
+        and float(r.get("delta_S_max_f64", 1e9)) <= 1e-14
     )
     r["driver_ok"] = ok
     return r
@@ -110,6 +113,7 @@ def main():
     for mode, r in results["modes"].items():
         print(f"{mode}: status={r.get('status', 'N/A')} "
               f"dT={r.get('delta_T_max', 'N/A')} dS={r.get('delta_S_max', 'N/A')} "
+              f"dT64={r.get('delta_T_max_f64', 'N/A')} dS64={r.get('delta_S_max_f64', 'N/A')} "
               f"iters={r.get('iterations', 'N/A')} proc_exit={r.get('process_exit_code', 'N/A')}")
     print(f"OVERALL: {results['status']}")
     return 0 if all_ok else 1

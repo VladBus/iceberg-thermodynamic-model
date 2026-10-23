@@ -35,7 +35,7 @@ under atmospheric, oceanic, bathymetric, and sea-ice forcing.
 
 ## 📑 Project status
 
-- **Current stage:** Stage 11.8.0 T1 — Forcing Contract Verification COMPLETE (ERA5 bilinear exact; temporal nearest-time PASS; wrap latent T-23; wind rotation CRITICAL for T4 — H-2 confirmed; T-21 accepted; no code/data changes). NEXT: 11.8.0 T2 (CA/EOS core). 11.7E.5 tides reader DEFERRED — null-tides provides no scientific value.
+- **Current stage:** Stage 11.8.0 T2 — CA/EOS Core Diagnostics COMPLETE (neutral column untouched f32/f64; weak inversion conserves exactly; A-1 CONFIRMED: in-situ density criterion -> EOS-80 false stability, T-25; T-23 wrap red test formalized; T-27 f32 state storage). NEXT: T3-PREP (fix T-20/T-22 EN4 data), then T3. 11.7E.5 tides reader DEFERRED — null-tides provides no scientific value.
   [Historical note from Stage 10.19, SUPERSEDED by Stage 10.20 restoration
   (full-coverage ERA5: 3-day gate PASS, residual characterized, NOT fixed):
   coupling recovery (completed: the Lagrangian iceberg module is now

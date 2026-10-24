@@ -1,0 +1,88 @@
+{
+  "test": "mask_consistency",
+  "stage": "11.8.0 T3-CORRECTIVE",
+  "runtime_level_cells": 143422,
+  "files": {
+    "initial_ts_2020-01-01.nc": {
+      "file": "initial_ts_2020-01-01.nc",
+      "shape_ok": true,
+      "lev_match": true,
+      "lev_sum": 143422,
+      "unfilled_pairs": 0,
+      "S_nonpositive_wet": 0,
+      "z_match": true,
+      "mask_source": "build/grid_dump_kt1.dat"
+    },
+    "initial_ts_2020-01-01_rebuild.nc": {
+      "file": "initial_ts_2020-01-01_rebuild.nc",
+      "shape_ok": true,
+      "lev_match": true,
+      "lev_sum": 143422,
+      "unfilled_pairs": 0,
+      "S_nonpositive_wet": 0,
+      "z_match": true,
+      "mask_source": "build/grid_dump_kt1.dat"
+    },
+    "initial_ts_2020-04-01.nc": {
+      "file": "initial_ts_2020-04-01.nc",
+      "shape_ok": true,
+      "lev_match": true,
+      "lev_sum": 143422,
+      "unfilled_pairs": 0,
+      "S_nonpositive_wet": 0,
+      "z_match": true,
+      "mask_source": "build/grid_dump_kt1.dat"
+    },
+    "initial_ts_2020-04-01_rebuild.nc": {
+      "file": "initial_ts_2020-04-01_rebuild.nc",
+      "shape_ok": true,
+      "lev_match": true,
+      "lev_sum": 143422,
+      "unfilled_pairs": 0,
+      "S_nonpositive_wet": 0,
+      "z_match": true,
+      "mask_source": "build/grid_dump_kt1.dat"
+    },
+    "initial_ts_2020-07-01.nc": {
+      "file": "initial_ts_2020-07-01.nc",
+      "shape_ok": true,
+      "lev_match": true,
+      "lev_sum": 143422,
+      "unfilled_pairs": 0,
+      "S_nonpositive_wet": 0,
+      "z_match": true,
+      "mask_source": "build/grid_dump_kt1.dat"
+    },
+    "initial_ts_2020-07-01_rebuild.nc": {
+      "file": "initial_ts_2020-07-01_rebuild.nc",
+      "shape_ok": true,
+      "lev_match": true,
+      "lev_sum": 143422,
+      "unfilled_pairs": 0,
+      "S_nonpositive_wet": 0,
+      "z_match": true,
+      "mask_source": "build/grid_dump_kt1.dat"
+    },
+    "initial_ts_2020-10-01.nc": {
+      "file": "initial_ts_2020-10-01.nc",
+      "shape_ok": true,
+      "lev_match": true,
+      "lev_sum": 143422,
+      "unfilled_pairs": 0,
+      "S_nonpositive_wet": 0,
+      "z_match": true,
+      "mask_source": "build/grid_dump_kt1.dat"
+    },
+    "initial_ts_2020-10-01_rebuild.nc": {
+      "file": "initial_ts_2020-10-01_rebuild.nc",
+      "shape_ok": true,
+      "lev_match": true,
+      "lev_sum": 143422,
+      "unfilled_pairs": 0,
+      "S_nonpositive_wet": 0,
+      "z_match": true,
+      "mask_source": "build/grid_dump_kt1.dat"
+    }
+  },
+  "status": "CLEAN"
+}

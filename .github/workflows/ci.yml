@@ -54,6 +54,8 @@ jobs:
           EOS_MODE=EOS80 fpm test --flag "$FLAGS" --target test_weak_inversion_conservation
           fpm test --flag "$FLAGS" --target test_ca_compressibility
           EOS_MODE=EOS80 fpm test --flag "$FLAGS" --target test_ca_compressibility
+          fpm test --flag "$FLAGS" --target test_advection_boundary
+          python3 python/tests/ocean/test_advection_boundary.py
 
       - name: Run T2 diagnostic drivers (parse Fortran JSON, propagate failures)
         run: |
@@ -172,6 +174,12 @@ jobs:
         run: |
           conda activate iceberg-thermodynamic-model
           python python/tests/ocean/test_en4_initial_verification.py
+
+      - name: Run T3-CORRECTIVE EN4 mask consistency (explicit SKIP without data)
+        shell: bash -l {0}
+        run: |
+          conda activate iceberg-thermodynamic-model
+          python python/tests/ocean/test_mask_consistency.py
 
       - name: Run T3 rest-state analysis (explicit SKIP without run outputs)
         shell: bash -l {0}

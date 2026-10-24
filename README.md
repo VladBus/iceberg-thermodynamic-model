@@ -35,7 +35,7 @@ under atmospheric, oceanic, bathymetric, and sea-ice forcing.
 
 ## 📑 Project status
 
-- **Current stage:** Stage 11.8.0 T3 — Rest-State Diagnostic COMPLETE: **UNSTABLE** (no forcing, LEGACY/EOS80 reach 4-6 m/s in 30 d; drivers T-28 mask gap + T-29 boundary zeroing + T-03 core). NEXT: T3-CORRECTIVE (T-28/T-29), then re-run T3; **T4 NO-GO** until the rest test passes. T-25 scheduled as T2-corrective before T6; 11.7E.5 tides DEFERRED.
+- **Current stage:** Stage 11.8.0 T3-CORRECTIVE COMPLETE — T-28 (EN4 mask gap) and T-29 (advection boundary zeroing) FIXED and verified (mask CLEAN 8/8; red/green advection test; conservation ~26x better). Rest state still **UNSTABLE** (LEGACY 3.92/5.50, EOS80 4.71/6.02 m/s at day 30; remaining driver = core T-03, not CA). NEXT: T3-CORRECTIVE-2; **T4 NO-GO**. T-25 scheduled as T2-corrective before T6. Runs inventory: 44.08 GB, ~29.7 GB potential savings (nothing deleted).
   [Historical note from Stage 10.19, SUPERSEDED by Stage 10.20 restoration
   (full-coverage ERA5: 3-day gate PASS, residual characterized, NOT fixed):
   coupling recovery (completed: the Lagrangian iceberg module is now

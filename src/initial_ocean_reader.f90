@@ -41,6 +41,8 @@ contains
         character(len=*), intent(out), optional :: errmsg
 
         integer :: ncid, dimid
+        integer :: stat, lev_varid, nlev_bad, n_pair_bad
+        integer, allocatable :: lev_file(:, :)
         integer :: dimid_i, dimid_j, dimid_k
         integer :: ni_file, nj_file, nk_file
         integer :: i, j, k, nloaded
@@ -113,6 +115,37 @@ contains
                 size(kt, 1), ", ", size(kt, 2), ", ", size(t1o, 3), ")"
             if (present(errmsg)) errmsg = 'EN4 file dims mismatch: file(i,j,k) vs model(i,j,k)'
             call close_nc(ncid)
+            return
+        end if
+
+        ! --- T3-CORRECTIVE (T-28): product MUST cover the runtime wet mask -----
+        stat = nf90_inq_varid(ncid, 'water_column_levels', lev_varid)
+        if (stat .ne. nf90_noerr) then
+            print *, 'FATAL initial_ocean_reader: product lacks water_column_levels; '// &
+                     'rebuild with build/grid_dump_kt1.dat'
+            ok = .false.
+            if (present(errmsg)) errmsg = 'EN4 product lacks water_column_levels'
+            return
+        end if
+        allocate (lev_file(nj_file, ni_file))
+        stat = nf90_get_var(ncid, lev_varid, lev_file)
+        if (stat .ne. nf90_noerr) then
+            print *, 'FATAL initial_ocean_reader: cannot read water_column_levels'
+            ok = .false.
+            if (present(errmsg)) errmsg = 'cannot read EN4 water_column_levels'
+            return
+        end if
+        if (ni_file .ne. size(kt, 1) .or. nj_file .ne. size(kt, 2)) then
+            print *, 'FATAL initial_ocean_reader: product grid shape does not match runtime kt'
+            ok = .false.
+            if (present(errmsg)) errmsg = 'EN4 product grid shape mismatch'
+            return
+        end if
+        nlev_bad = count(transpose(lev_file) .ne. kt)
+        if (nlev_bad .gt. 0) then
+            print '("FATAL initial_ocean_reader: product wet-level mask does not match the runtime mask (", I0, " columns); rebuild with build/grid_dump_kt1.dat")', nlev_bad
+            ok = .false.
+            if (present(errmsg)) errmsg = 'EN4 product/runtime mask mismatch'
             return
         end if
 
@@ -195,6 +228,25 @@ contains
                 end do
             end do
         end do
+        ! T3-CORRECTIVE: no wet cell may remain with the unfilled (T=0,S=0) pair
+        n_pair_bad = 0
+        do k = 1, size(t1o, 3)
+            do j = 1, size(t1o, 2)
+                do i = 1, size(t1o, 1)
+                    if (kt(i, j) .gt. 0 .and. k .le. kt(i, j)) then
+                        if (t1o(i, j, k) .eq. 0.0 .and. s1o(i, j, k) .eq. 0.0) &
+                            n_pair_bad = n_pair_bad + 1
+                    end if
+                end do
+            end do
+        end do
+        if (n_pair_bad .gt. 0) then
+            print '("FATAL initial_ocean_reader: ", I0, " wet cells hold the unfilled T=0/S=0 pair (T-28)")', n_pair_bad
+            ok = .false.
+            if (present(errmsg)) errmsg = 'EN4 product has unfilled wet cells'
+            return
+        end if
+
         ! Пересчёт smin/smax после исправления
         smin = huge(1.0)
         smax = -huge(1.0)

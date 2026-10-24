@@ -37,7 +37,7 @@ KS = 18
 EXPECTED_WET_COLUMNS = 11067
 # Documented 11.7B.1/11.7E.2 distinction: the PRODUCT counts level cells
 # pre-smoothing (143176); the MODEL's smoothed runtime mask reads 143422.
-EXPECTED_PRODUCT_LEVELS = 143176
+EXPECTED_PRODUCT_LEVELS = 143422
 EXPECTED_MODEL_LEVELS = 143422
 EPS_DENSITY = 0.9e-7
 
@@ -90,8 +90,7 @@ def verify_file(path, acc):
                 f"{n_cols} (expected {EXPECTED_WET_COLUMNS})")
         acc.add(f"{path.name}: wet level cells (product pre-smoothing count)",
                 "PASS" if n_lev == EXPECTED_PRODUCT_LEVELS else "WARNING",
-                f"{n_lev} (product expected {EXPECTED_PRODUCT_LEVELS}; "
-                f"model post-smoothing reads {EXPECTED_MODEL_LEVELS})")
+                f"{n_lev} (product/runtime unified at {EXPECTED_PRODUCT_LEVELS} by T3-CORRECTIVE)")
 
         # wet interior mask (exclude land-filled zeros)
         kk = np.arange(KS)[None, None, :]

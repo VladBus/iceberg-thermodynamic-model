@@ -1,9 +1,9 @@
 # Project Roadmap
 
 **Updated:** 2026-10-24
-**Current scientific stage:** Stage 11.8.0 T3 — Rest-State Diagnostic COMPLETE: classification **UNSTABLE** (no forcing, both EOS modes reach 4-6 m/s by day 30; drivers T-28 mask gap + T-29 boundary zeroing + core T-03 family). NEXT: T3-CORRECTIVE (T-28, then T-29), re-run T3; **T4 is NO-GO** until the rest test passes.
+**Current scientific stage:** Stage 11.8.0 T3-CORRECTIVE COMPLETE — **T-28/T-29 FIXED**, but the rest state is still **UNSTABLE** (LEGACY 3.92/5.50 m/s, EOS80 4.71/6.02 m/s at day 30; remaining driver = core T-03, not CA). NEXT: **T3-CORRECTIVE-2** (core T-03 investigation: balanced rest initialization / pressure-gradient discretization / potential-density CA). **T4 remains NO-GO.**
 **Stages 3–11.4.1: COMPLETED** (10.x iceberg modernization; 11.1 seasonal characterization; 11.2 CFL audit; 11.4-D21…D33 EN4 stabilization → ERA5-coverage fix → cleanup + Ocean Baseline 11.x; 11.3A execution-graph audit; 11.3B input-architecture audit + NetCDF contracts; 11.3C scheme audit + timestep matrix; 11.3C.1 semantics + CFL distributions; 11.3C.2 time-integration audit; 11.3C.3 loop-bound search (VERDICT D); 11.4 EOS-80 experiment + 11.4.1 impact validation (OPTIONAL, not default)).
-**Current status:** Stages 10.14-11.8.0 T3 committed (see `git log`). **T0/T1/T2/T3-PREP COMPLETE**. **T3 COMPLETE (UNSTABLE)**: corrected-EN4 rest runs (LEGACY/EOS80/rebuild) diverge exponentially without forcing; root causes T-28/T-29 (+T-03 core); T4 blocked.
+**Current status:** Stages 10.14-11.8.0 T3-CORRECTIVE committed (see `git log`). T0/T1/T2/T3-PREP/T3 COMPLETE. **T3-CORRECTIVE COMPLETE**: mask-gap (T-28) and advection-boundary (T-29) bugs fixed and verified; T3 re-run still UNSTABLE (core T-03); T4 blocked.
 **Test suite:** 69 Fortran test source files (`ls test/*.f90 | wc -l`); 69 executable test targets (`grep -lE '^\s*program ' test/*.f90 | wc -l`). Counting method (Stage 11.8.0 T0): every current `test/*.f90` holds a top-level `program`, so file count == target count (verified 2026-10-24).
 **Stage 11.5H-RC COMPLETE** (release-candidate gate: self-contained production scheduler, docs synced D-22…D-28). Plan: 11.8.0 diagnostic ladder (T0–T6) → 11.8A validation → 11.8B audit → 11.9 closure → 12.0 voxel (blocked, D-28).
 
@@ -421,7 +421,8 @@ INFERRED_12H pending manual CDS verification. Report:
 |------|-------|------|
 | **T2-CORRECTIVE** | CA criterion on potential density (or a compression-corrected in-situ criterion), addressing T-25; T-27 (real64 state) in scope | requires Decision **D-33** physics-branch choice; schedule BEFORE **T6** |
 | **T1-CORRECTIVE** | ERA5 longitude handling: edge-clamp (or reject out-of-range) instead of cyclic wrap (T-23) | schedule BEFORE **T4** |
-| **T3-CORRECTIVE** | T-28 (product/model mask gap: 934 wet levels loaded as T=0; build on runtime mask or reader-side fill/FATAL) and T-29 (advection writeback zeroes the T/S boundary row/column) | **BEFORE T4** (rest test must pass) |
+| **T3-CORRECTIVE** | T-28 (mask gap) and T-29 (advection boundary) | **DONE 2026-10-24** (both FIXED and verified) |
+| **T3-CORRECTIVE-2** | Remaining core rest-state instability (T-03 family): balanced rest initialization, pressure-gradient discretization, potential-density CA (T-25) | **BEFORE T4** (rest test must pass) |
 | **T4** | Wind rotation geographic -> grid (H-2) | T4 tier |
 
 ### Stage 11.8.0 T3-PREP — EN4 Data Correction (T-20, T-22)
@@ -465,6 +466,27 @@ Status: **COMPLETE (UNSTABLE)**. Report:
 `docs/validation/stage11.8.0_T3_rest_state_diagnostic.md`.
 NEXT: **T3-CORRECTIVE** (T-28, then T-29), re-run T3; **T4 NO-GO** until the
 rest test passes (|U|,|V| < 0.01 m/s, no KE growth, conservation to 1e-4).
+
+### Stage 11.8.0 T3-CORRECTIVE — Mask Gap + Advection Boundary Fixes
+
+Scope: bug fixes only. **T-28 FIXED (Option C)**: the builder now consumes
+the authoritative runtime `kt1` (`build/grid_dump_kt1.dat`) and fills all
+runtime wet levels; the reader FATALs on any product/runtime mask mismatch or
+remaining unfilled T=0/S=0 pair. All 8 products now have 143,422 levels,
+0 unfilled pairs (mask test CLEAN 8/8). **T-29 FIXED (Option A)**: the FCT
+advection writeback is restricted to 1:is,1:js, preserving the T/S boundary;
+a new Fortran test passes and fails when the fix is reverted (red/green
+proven); rest-run day-1 S=0 boundary cells 1,341 -> 0. Re-run of T3 (30 d,
+zero forcing) still UNSTABLE — LEGACY Umax 3.924/Vmax 5.498 m/s (KE x737),
+EOS80 4.713/6.021 (x674), but conservation improved ~26x/6x and drift ~8x;
+the remaining driver is the core T-03 pressure-gradient instability (CA/T-25
+is not the driver; EOS80's CA converges, guard 0). Runs inventory: 44.08 GB
+(CRITICAL 1.9 / ARCHIVE 40.5 / TEMPORARY 2.7; ~29.7 GB potential savings;
+nothing deleted).
+Dependencies: T3.
+Status: **COMPLETE (rest still UNSTABLE)**. Report:
+`docs/validation/stage11.8.0_T3-CORRECTIVE_mask_advection_fix.md`.
+NEXT: **T3-CORRECTIVE-2** (core T-03); **T4 NO-GO**.
 
 ### Stage 11.8 Prerequisite: Ocean Stabilization (MANDATORY GATE)
 

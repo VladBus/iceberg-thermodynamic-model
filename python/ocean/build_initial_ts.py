@@ -223,6 +223,13 @@ def main():
         action="store_true",
         help="Disable the T3-PREP freezing-point clamp (default: clamp ON)",
     )
+    ap.add_argument(
+        "--mask-dump",
+        type=pathlib.Path,
+        default=None,
+        help="Authoritative runtime kt1 dump (build/grid_dump_kt1.dat). "
+             "Default: that file if present; else the replicated pre-smoothing mask.",
+    )
     args = ap.parse_args()
 
     if args.date:
@@ -242,6 +249,25 @@ def main():
 
     kk1 = np.zeros((is1, js1), dtype=np.int64)
     kk1[wet] = np.searchsorted(Z_CM, ht_cm[wet], side="right")
+    mask_source = "python_kk1 (pre-smoothing replica)"
+    mdump = args.mask_dump
+    if mdump is None:
+        mdump = PROJ_ROOT / "build" / "grid_dump_kt1.dat"
+    if mdump and pathlib.Path(mdump).exists():
+        kt_rt = np.loadtxt(mdump, skiprows=1)
+        if kt_rt.shape == (js1, is1):
+            kk1 = kt_rt.T.astype(np.int64).copy()   # (i,j)
+        elif kt_rt.shape == (is1, js1):
+            kk1 = kt_rt.astype(np.int64).copy()
+        else:
+            raise SystemExit(f"mask dump shape {kt_rt.shape} != ({js1},{is1})")
+        wet = kk1 > 0
+        mask_source = str(mdump)
+        print(f"T-28: runtime mask from {mdump} "
+              f"({int(wet.sum())} wet columns, {int(kk1.sum())} level cells)")
+    else:
+        print("WARNING: runtime mask dump not found; using pre-smoothing replica "
+              "(products may not cover the runtime mask -> T-28)")
     lvl = np.arange(1, ks + 1)[None, None, :]
     need = wet[:, :, None] & (lvl <= kk1[:, :, None])
 
@@ -451,6 +477,7 @@ def main():
         "method": "NN-wet horizontal + piecewise-linear vertical (see build doc)",
         "grid_is1_js1_ks": [is1, js1, ks],
         "z_model_m": [float(x) for x in Z_M],
+        "mask_source": mask_source,
         "cells_clamped_below_Tf": n_clamped,
         "max_clamp_degC": clamp_max,
         "freezing_clamp_enabled": bool(not args.no_clamp_below_freezing),
@@ -514,6 +541,8 @@ def main():
             "3=product-land-column",
             "model_land_convention": "wet_mask==1; land cells contain 0 (never NaN)",
             "eos": "Eckart (src/equation_of_state.f90) float32; anomaly rho-1.02",
+            "mask_source": str(mask_source),
+            "wet_level_cells": int(kk1.sum()),
             "freezing_clamp": ("UNESCO Tf(S,p) clamp applied (T3-PREP T-22)"
                                if not args.no_clamp_below_freezing else "disabled"),
             "freezing_clamp_cells": int(n_clamped),

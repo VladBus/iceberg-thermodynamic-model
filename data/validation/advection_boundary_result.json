@@ -1,0 +1,7 @@
+{
+  "test": "advection_boundary",
+  "setup": "uniform S=0.035/T=5, zero velocity, all wet",
+  "interior_violations": 0,
+  "boundary_violations": 0,
+  "status": "PASS"
+}

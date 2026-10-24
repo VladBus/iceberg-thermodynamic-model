@@ -303,7 +303,8 @@ contains
         end do
 
         ! Финальное обновление: T2 = CD [°C]
-        t2(:, :, :) = cd(:, :, :)
+        ! T3-CORRECTIVE (T-29): cd is computed only on 1:is,1:js
+        t2(1:is, 1:js, :) = cd(1:is, 1:js, :)
 
     end subroutine advt
 

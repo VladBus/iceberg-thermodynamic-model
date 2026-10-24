@@ -260,7 +260,8 @@ contains
         end do
 
         ! Финальное обновление: S2 = CD [массовая доля]
-        s2(:, :, :) = cd(:, :, :)
+        ! T3-CORRECTIVE (T-29): cd is computed only on 1:is,1:js
+        s2(1:is, 1:js, :) = cd(1:is, 1:js, :)
 
     end subroutine advs
 

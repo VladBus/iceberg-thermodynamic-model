@@ -6,12 +6,12 @@
     "initial_ts_2020-01-01.nc": {
       "file": "data/input/processed/ocean/initial_ts_2020-01-01.nc",
       "wet_columns": 11067,
-      "wet_level_cells": 143176,
+      "wet_level_cells": 143422,
       "zero_T": 0,
       "zero_S": 0,
       "supercooling": 0,
       "supercooling_gt_0p5C": 0,
-      "density_inversions": 47064,
+      "density_inversions": 47117,
       "z_grid_matches_model": true,
       "T_range": [
         -1.9616097211837769,
@@ -25,12 +25,12 @@
     "initial_ts_2020-01-01_rebuild.nc": {
       "file": "data/input/processed/ocean/initial_ts_2020-01-01_rebuild.nc",
       "wet_columns": 11067,
-      "wet_level_cells": 143176,
+      "wet_level_cells": 143422,
       "zero_T": 0,
       "zero_S": 0,
       "supercooling": 0,
       "supercooling_gt_0p5C": 0,
-      "density_inversions": 47064,
+      "density_inversions": 47117,
       "z_grid_matches_model": true,
       "T_range": [
         -1.9616097211837769,
@@ -44,12 +44,12 @@
     "initial_ts_2020-04-01.nc": {
       "file": "data/input/processed/ocean/initial_ts_2020-04-01.nc",
       "wet_columns": 11067,
-      "wet_level_cells": 143176,
+      "wet_level_cells": 143422,
       "zero_T": 0,
       "zero_S": 0,
       "supercooling": 0,
       "supercooling_gt_0p5C": 0,
-      "density_inversions": 35647,
+      "density_inversions": 35736,
       "z_grid_matches_model": true,
       "T_range": [
         -1.9321292638778687,
@@ -63,12 +63,12 @@
     "initial_ts_2020-04-01_rebuild.nc": {
       "file": "data/input/processed/ocean/initial_ts_2020-04-01_rebuild.nc",
       "wet_columns": 11067,
-      "wet_level_cells": 143176,
+      "wet_level_cells": 143422,
       "zero_T": 0,
       "zero_S": 0,
       "supercooling": 0,
       "supercooling_gt_0p5C": 0,
-      "density_inversions": 35647,
+      "density_inversions": 35736,
       "z_grid_matches_model": true,
       "T_range": [
         -1.9321292638778687,
@@ -82,12 +82,12 @@
     "initial_ts_2020-07-01.nc": {
       "file": "data/input/processed/ocean/initial_ts_2020-07-01.nc",
       "wet_columns": 11067,
-      "wet_level_cells": 143176,
+      "wet_level_cells": 143422,
       "zero_T": 0,
       "zero_S": 0,
       "supercooling": 0,
       "supercooling_gt_0p5C": 0,
-      "density_inversions": 5804,
+      "density_inversions": 5784,
       "z_grid_matches_model": true,
       "T_range": [
         -1.8627313375473022,
@@ -101,12 +101,12 @@
     "initial_ts_2020-07-01_rebuild.nc": {
       "file": "data/input/processed/ocean/initial_ts_2020-07-01_rebuild.nc",
       "wet_columns": 11067,
-      "wet_level_cells": 143176,
+      "wet_level_cells": 143422,
       "zero_T": 0,
       "zero_S": 0,
       "supercooling": 0,
       "supercooling_gt_0p5C": 0,
-      "density_inversions": 5804,
+      "density_inversions": 5784,
       "z_grid_matches_model": true,
       "T_range": [
         -1.8627313375473022,
@@ -120,12 +120,12 @@
     "initial_ts_2020-10-01.nc": {
       "file": "data/input/processed/ocean/initial_ts_2020-10-01.nc",
       "wet_columns": 11067,
-      "wet_level_cells": 143176,
+      "wet_level_cells": 143422,
       "zero_T": 0,
       "zero_S": 0,
       "supercooling": 0,
       "supercooling_gt_0p5C": 0,
-      "density_inversions": 22345,
+      "density_inversions": 22324,
       "z_grid_matches_model": true,
       "T_range": [
         -2.0639915466308594,
@@ -139,12 +139,12 @@
     "initial_ts_2020-10-01_rebuild.nc": {
       "file": "data/input/processed/ocean/initial_ts_2020-10-01_rebuild.nc",
       "wet_columns": 11067,
-      "wet_level_cells": 143176,
+      "wet_level_cells": 143422,
       "zero_T": 0,
       "zero_S": 0,
       "supercooling": 0,
       "supercooling_gt_0p5C": 0,
-      "density_inversions": 22345,
+      "density_inversions": 22324,
       "z_grid_matches_model": true,
       "T_range": [
         -2.0639915466308594,
@@ -175,12 +175,12 @@
     {
       "name": "initial_ts_2020-01-01.nc: wet level cells (product pre-smoothing count)",
       "status": "PASS",
-      "detail": "143176 (product expected 143176; model post-smoothing reads 143422)"
+      "detail": "143422 (product/runtime unified at 143422 by T3-CORRECTIVE)"
     },
     {
       "name": "initial_ts_2020-01-01.nc: zero-T in wet cells",
       "status": "PASS",
-      "detail": "0 (1% budget 1432)"
+      "detail": "0 (1% budget 1434)"
     },
     {
       "name": "initial_ts_2020-01-01.nc: zero-S in wet cells",
@@ -195,12 +195,12 @@
     {
       "name": "initial_ts_2020-01-01.nc: density inversions (>eps)",
       "status": "INFO",
-      "detail": "47064 interfaces, max residual 5.710e-04 (physical stratification; quantified for T2; CA processes this - informational, not a data defect)"
+      "detail": "47117 interfaces, max residual 5.710e-04 (physical stratification; quantified for T2; CA processes this - informational, not a data defect)"
     },
     {
       "name": "initial_ts_2020-01-01.nc: T increasing with depth (>0.05 degC steps)",
       "status": "INFO",
-      "detail": "41820 level-pairs (informational; stable if salty deep)"
+      "detail": "42023 level-pairs (informational; stable if salty deep)"
     },
     {
       "name": "initial_ts_2020-01-01.nc: units/ranges (degC; mass fraction)",
@@ -230,12 +230,12 @@
     {
       "name": "initial_ts_2020-01-01_rebuild.nc: wet level cells (product pre-smoothing count)",
       "status": "PASS",
-      "detail": "143176 (product expected 143176; model post-smoothing reads 143422)"
+      "detail": "143422 (product/runtime unified at 143422 by T3-CORRECTIVE)"
     },
     {
       "name": "initial_ts_2020-01-01_rebuild.nc: zero-T in wet cells",
       "status": "PASS",
-      "detail": "0 (1% budget 1432)"
+      "detail": "0 (1% budget 1434)"
     },
     {
       "name": "initial_ts_2020-01-01_rebuild.nc: zero-S in wet cells",
@@ -250,12 +250,12 @@
     {
       "name": "initial_ts_2020-01-01_rebuild.nc: density inversions (>eps)",
       "status": "INFO",
-      "detail": "47064 interfaces, max residual 5.710e-04 (physical stratification; quantified for T2; CA processes this - informational, not a data defect)"
+      "detail": "47117 interfaces, max residual 5.710e-04 (physical stratification; quantified for T2; CA processes this - informational, not a data defect)"
     },
     {
       "name": "initial_ts_2020-01-01_rebuild.nc: T increasing with depth (>0.05 degC steps)",
       "status": "INFO",
-      "detail": "41820 level-pairs (informational; stable if salty deep)"
+      "detail": "42023 level-pairs (informational; stable if salty deep)"
     },
     {
       "name": "initial_ts_2020-01-01_rebuild.nc: units/ranges (degC; mass fraction)",
@@ -285,12 +285,12 @@
     {
       "name": "initial_ts_2020-04-01.nc: wet level cells (product pre-smoothing count)",
       "status": "PASS",
-      "detail": "143176 (product expected 143176; model post-smoothing reads 143422)"
+      "detail": "143422 (product/runtime unified at 143422 by T3-CORRECTIVE)"
     },
     {
       "name": "initial_ts_2020-04-01.nc: zero-T in wet cells",
       "status": "PASS",
-      "detail": "0 (1% budget 1432)"
+      "detail": "0 (1% budget 1434)"
     },
     {
       "name": "initial_ts_2020-04-01.nc: zero-S in wet cells",
@@ -305,12 +305,12 @@
     {
       "name": "initial_ts_2020-04-01.nc: density inversions (>eps)",
       "status": "INFO",
-      "detail": "35647 interfaces, max residual 9.699e-04 (physical stratification; quantified for T2; CA processes this - informational, not a data defect)"
+      "detail": "35736 interfaces, max residual 9.699e-04 (physical stratification; quantified for T2; CA processes this - informational, not a data defect)"
     },
     {
       "name": "initial_ts_2020-04-01.nc: T increasing with depth (>0.05 degC steps)",
       "status": "INFO",
-      "detail": "38811 level-pairs (informational; stable if salty deep)"
+      "detail": "39053 level-pairs (informational; stable if salty deep)"
     },
     {
       "name": "initial_ts_2020-04-01.nc: units/ranges (degC; mass fraction)",
@@ -340,12 +340,12 @@
     {
       "name": "initial_ts_2020-04-01_rebuild.nc: wet level cells (product pre-smoothing count)",
       "status": "PASS",
-      "detail": "143176 (product expected 143176; model post-smoothing reads 143422)"
+      "detail": "143422 (product/runtime unified at 143422 by T3-CORRECTIVE)"
     },
     {
       "name": "initial_ts_2020-04-01_rebuild.nc: zero-T in wet cells",
       "status": "PASS",
-      "detail": "0 (1% budget 1432)"
+      "detail": "0 (1% budget 1434)"
     },
     {
       "name": "initial_ts_2020-04-01_rebuild.nc: zero-S in wet cells",
@@ -360,12 +360,12 @@
     {
       "name": "initial_ts_2020-04-01_rebuild.nc: density inversions (>eps)",
       "status": "INFO",
-      "detail": "35647 interfaces, max residual 9.699e-04 (physical stratification; quantified for T2; CA processes this - informational, not a data defect)"
+      "detail": "35736 interfaces, max residual 9.699e-04 (physical stratification; quantified for T2; CA processes this - informational, not a data defect)"
     },
     {
       "name": "initial_ts_2020-04-01_rebuild.nc: T increasing with depth (>0.05 degC steps)",
       "status": "INFO",
-      "detail": "38811 level-pairs (informational; stable if salty deep)"
+      "detail": "39053 level-pairs (informational; stable if salty deep)"
     },
     {
       "name": "initial_ts_2020-04-01_rebuild.nc: units/ranges (degC; mass fraction)",
@@ -395,12 +395,12 @@
     {
       "name": "initial_ts_2020-07-01.nc: wet level cells (product pre-smoothing count)",
       "status": "PASS",
-      "detail": "143176 (product expected 143176; model post-smoothing reads 143422)"
+      "detail": "143422 (product/runtime unified at 143422 by T3-CORRECTIVE)"
     },
     {
       "name": "initial_ts_2020-07-01.nc: zero-T in wet cells",
       "status": "PASS",
-      "detail": "0 (1% budget 1432)"
+      "detail": "0 (1% budget 1434)"
     },
     {
       "name": "initial_ts_2020-07-01.nc: zero-S in wet cells",
@@ -415,12 +415,12 @@
     {
       "name": "initial_ts_2020-07-01.nc: density inversions (>eps)",
       "status": "INFO",
-      "detail": "5804 interfaces, max residual 6.517e-04 (physical stratification; quantified for T2; CA processes this - informational, not a data defect)"
+      "detail": "5784 interfaces, max residual 6.517e-04 (physical stratification; quantified for T2; CA processes this - informational, not a data defect)"
     },
     {
       "name": "initial_ts_2020-07-01.nc: T increasing with depth (>0.05 degC steps)",
       "status": "INFO",
-      "detail": "13935 level-pairs (informational; stable if salty deep)"
+      "detail": "13982 level-pairs (informational; stable if salty deep)"
     },
     {
       "name": "initial_ts_2020-07-01.nc: units/ranges (degC; mass fraction)",
@@ -450,12 +450,12 @@
     {
       "name": "initial_ts_2020-07-01_rebuild.nc: wet level cells (product pre-smoothing count)",
       "status": "PASS",
-      "detail": "143176 (product expected 143176; model post-smoothing reads 143422)"
+      "detail": "143422 (product/runtime unified at 143422 by T3-CORRECTIVE)"
     },
     {
       "name": "initial_ts_2020-07-01_rebuild.nc: zero-T in wet cells",
       "status": "PASS",
-      "detail": "0 (1% budget 1432)"
+      "detail": "0 (1% budget 1434)"
     },
     {
       "name": "initial_ts_2020-07-01_rebuild.nc: zero-S in wet cells",
@@ -470,12 +470,12 @@
     {
       "name": "initial_ts_2020-07-01_rebuild.nc: density inversions (>eps)",
       "status": "INFO",
-      "detail": "5804 interfaces, max residual 6.517e-04 (physical stratification; quantified for T2; CA processes this - informational, not a data defect)"
+      "detail": "5784 interfaces, max residual 6.517e-04 (physical stratification; quantified for T2; CA processes this - informational, not a data defect)"
     },
     {
       "name": "initial_ts_2020-07-01_rebuild.nc: T increasing with depth (>0.05 degC steps)",
       "status": "INFO",
-      "detail": "13935 level-pairs (informational; stable if salty deep)"
+      "detail": "13982 level-pairs (informational; stable if salty deep)"
     },
     {
       "name": "initial_ts_2020-07-01_rebuild.nc: units/ranges (degC; mass fraction)",
@@ -505,12 +505,12 @@
     {
       "name": "initial_ts_2020-10-01.nc: wet level cells (product pre-smoothing count)",
       "status": "PASS",
-      "detail": "143176 (product expected 143176; model post-smoothing reads 143422)"
+      "detail": "143422 (product/runtime unified at 143422 by T3-CORRECTIVE)"
     },
     {
       "name": "initial_ts_2020-10-01.nc: zero-T in wet cells",
       "status": "PASS",
-      "detail": "0 (1% budget 1432)"
+      "detail": "0 (1% budget 1434)"
     },
     {
       "name": "initial_ts_2020-10-01.nc: zero-S in wet cells",
@@ -525,12 +525,12 @@
     {
       "name": "initial_ts_2020-10-01.nc: density inversions (>eps)",
       "status": "INFO",
-      "detail": "22345 interfaces, max residual 8.485e-04 (physical stratification; quantified for T2; CA processes this - informational, not a data defect)"
+      "detail": "22324 interfaces, max residual 8.485e-04 (physical stratification; quantified for T2; CA processes this - informational, not a data defect)"
     },
     {
       "name": "initial_ts_2020-10-01.nc: T increasing with depth (>0.05 degC steps)",
       "status": "INFO",
-      "detail": "21333 level-pairs (informational; stable if salty deep)"
+      "detail": "21372 level-pairs (informational; stable if salty deep)"
     },
     {
       "name": "initial_ts_2020-10-01.nc: units/ranges (degC; mass fraction)",
@@ -560,12 +560,12 @@
     {
       "name": "initial_ts_2020-10-01_rebuild.nc: wet level cells (product pre-smoothing count)",
       "status": "PASS",
-      "detail": "143176 (product expected 143176; model post-smoothing reads 143422)"
+      "detail": "143422 (product/runtime unified at 143422 by T3-CORRECTIVE)"
     },
     {
       "name": "initial_ts_2020-10-01_rebuild.nc: zero-T in wet cells",
       "status": "PASS",
-      "detail": "0 (1% budget 1432)"
+      "detail": "0 (1% budget 1434)"
     },
     {
       "name": "initial_ts_2020-10-01_rebuild.nc: zero-S in wet cells",
@@ -580,12 +580,12 @@
     {
       "name": "initial_ts_2020-10-01_rebuild.nc: density inversions (>eps)",
       "status": "INFO",
-      "detail": "22345 interfaces, max residual 8.485e-04 (physical stratification; quantified for T2; CA processes this - informational, not a data defect)"
+      "detail": "22324 interfaces, max residual 8.485e-04 (physical stratification; quantified for T2; CA processes this - informational, not a data defect)"
     },
     {
       "name": "initial_ts_2020-10-01_rebuild.nc: T increasing with depth (>0.05 degC steps)",
       "status": "INFO",
-      "detail": "21333 level-pairs (informational; stable if salty deep)"
+      "detail": "21372 level-pairs (informational; stable if salty deep)"
     },
     {
       "name": "initial_ts_2020-10-01_rebuild.nc: units/ranges (degC; mass fraction)",

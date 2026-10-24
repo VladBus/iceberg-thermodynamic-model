@@ -1,0 +1,1017 @@
+{
+  "total_mb": 45143.0,
+  "total_gb": 44.08,
+  "summary": {
+    "CRITICAL": {
+      "count": 13,
+      "size_mb": 1898.0
+    },
+    "ARCHIVE": {
+      "count": 161,
+      "size_mb": 40542.0
+    },
+    "TEMPORARY": {
+      "count": 25,
+      "size_mb": 2703.0
+    }
+  },
+  "estimated_savings_mb": 29731.0,
+  "estimate_note": "archive ~3x gzip; temporary deleted fully; NOT executed",
+  "runs": [
+    {
+      "name": "e2_fatal_test",
+      "size_mb": 1.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "e2_synth_test",
+      "size_mb": 486.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "e2_synthpresent_test",
+      "size_mb": 384.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "scripts",
+      "size_mb": 1.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.1_apr7",
+      "size_mb": 164.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.1_frozen_jan7",
+      "size_mb": 238.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.1_jan7",
+      "size_mb": 186.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.1_jul7",
+      "size_mb": 164.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.1_oct7",
+      "size_mb": 164.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.2_cfl_test",
+      "size_mb": 684.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.3C1_AprA",
+      "size_mb": 231.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.3C1_AprB",
+      "size_mb": 231.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.3C1_AprC",
+      "size_mb": 231.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.3C1_AprD",
+      "size_mb": 231.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.3C1_AprE",
+      "size_mb": 231.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.3C1_jan7off",
+      "size_mb": 238.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.3C_AprA",
+      "size_mb": 231.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.3C_AprB",
+      "size_mb": 231.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.3C_AprC",
+      "size_mb": 231.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.3C_AprD",
+      "size_mb": 231.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.3C_AprE",
+      "size_mb": 231.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.4_d24_apr7ev",
+      "size_mb": 231.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.4_d32_apr7fix",
+      "size_mb": 231.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.4_d32_jan7fix",
+      "size_mb": 238.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.4_d32_jul7fix",
+      "size_mb": 238.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.4_d32_oct7fix",
+      "size_mb": 238.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.4_d33_apr30",
+      "size_mb": 231.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.4_d33_jan30",
+      "size_mb": 238.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.4_d33_jul30",
+      "size_mb": 238.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.4_d33_oct30",
+      "size_mb": 238.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.4_eosApr",
+      "size_mb": 290.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.4_eosJan",
+      "size_mb": 299.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.4_eosJul",
+      "size_mb": 299.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.4_eosOct",
+      "size_mb": 299.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.4_legApr",
+      "size_mb": 290.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.4_legJan",
+      "size_mb": 300.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.4_legJul",
+      "size_mb": 300.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.4_legOct",
+      "size_mb": 300.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5B_AprA",
+      "size_mb": 290.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5B_AprB",
+      "size_mb": 290.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5B_AprC",
+      "size_mb": 290.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5B_AprD",
+      "size_mb": 290.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5B_AprE",
+      "size_mb": 290.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5B_AprF",
+      "size_mb": 290.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5B_AprG",
+      "size_mb": 290.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5B_AprH",
+      "size_mb": 290.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5B_AprI",
+      "size_mb": 290.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5C1_AprN1trace",
+      "size_mb": 290.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5C1_AprN24freeze",
+      "size_mb": 292.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5C1_AprN24trace",
+      "size_mb": 292.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5C1_janOFF2",
+      "size_mb": 861.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5C1_janOFF3",
+      "size_mb": 300.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5C2_AprA_gain",
+      "size_mb": 293.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5C2_AprA_gain2",
+      "size_mb": 293.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5C2_AprB_cplfreeze",
+      "size_mb": 293.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5C2_AprB_cplfreeze2",
+      "size_mb": 293.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5C2_AprC_heatfreeze",
+      "size_mb": 293.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5C2_AprC_heatfreeze2",
+      "size_mb": 293.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5C2_janOFF",
+      "size_mb": 299.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5C2_janOFF2",
+      "size_mb": 300.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5C3_AprA_ctrl",
+      "size_mb": 292.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5C3_AprB_tsfreeze",
+      "size_mb": 294.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5C3_AprC_reg",
+      "size_mb": 294.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5C3_janOFF",
+      "size_mb": 300.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5C4_AprA_ctrl",
+      "size_mb": 294.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5C4_Apr_ANS",
+      "size_mb": 295.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5C4_Apr_HICE",
+      "size_mb": 295.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5C4_Apr_HSNOW",
+      "size_mb": 295.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5C4_Apr_UV",
+      "size_mb": 295.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5C4_Apr_UV_HICE",
+      "size_mb": 295.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5C4_janOFF",
+      "size_mb": 300.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5C4_probe_HICE",
+      "size_mb": 178.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5C5_AprN1",
+      "size_mb": 291.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5C5_AprN24",
+      "size_mb": 297.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5C5_janOFF",
+      "size_mb": 300.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5C6R_AprN24",
+      "size_mb": 104.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5C6R_AprN24b",
+      "size_mb": 104.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5C6R_janOFF",
+      "size_mb": 300.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5C6_AprN24",
+      "size_mb": 290.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5C6_fast",
+      "size_mb": 290.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5C7_janOFF",
+      "size_mb": 300.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5C7_terms",
+      "size_mb": 161.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5C7_track",
+      "size_mb": 124.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5C81_AprN24",
+      "size_mb": 57.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5C81_janOFF",
+      "size_mb": 300.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5C82_AprN24",
+      "size_mb": 141.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5C82_janOFF",
+      "size_mb": 300.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5C8_AprN24",
+      "size_mb": 293.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5C8_janOFF",
+      "size_mb": 300.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5C_AprA",
+      "size_mb": 290.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5C_AprB",
+      "size_mb": 290.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5C_AprC",
+      "size_mb": 290.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5C_AprD",
+      "size_mb": 291.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5C_AprE",
+      "size_mb": 291.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5C_janOFF",
+      "size_mb": 300.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5D1_AprLegacy",
+      "size_mb": 290.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5D1_AprN1",
+      "size_mb": 290.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5D1_AprN12",
+      "size_mb": 292.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5D1_AprN2",
+      "size_mb": 291.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5D1_AprN24",
+      "size_mb": 293.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5D1_AprN4",
+      "size_mb": 291.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5D1_AprN6",
+      "size_mb": 291.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5D1_JanN1",
+      "size_mb": 300.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5D1_JanN24",
+      "size_mb": 302.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5D2_ExpB",
+      "size_mb": 197.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5D2_ExpC",
+      "size_mb": 123.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5D2_ExpD",
+      "size_mb": 66.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5D2_janOFF",
+      "size_mb": 300.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5D3_JanDT150",
+      "size_mb": 76.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5D3_JanN1",
+      "size_mb": 300.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5D3_dt150full",
+      "size_mb": 291.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5D3_dt1800",
+      "size_mb": 47.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5D3_dt225",
+      "size_mb": 85.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5D3_dt225full",
+      "size_mb": 291.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5D3_dt450",
+      "size_mb": 94.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5D3_dt450full",
+      "size_mb": 291.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5D3_dt450x",
+      "size_mb": 169.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5D3_dt900",
+      "size_mb": 94.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5E_JanDT150",
+      "size_mb": 94.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5E_JanDT225",
+      "size_mb": 85.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5E_JanN1",
+      "size_mb": 300.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5F_F3",
+      "size_mb": 85.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5F_JanDT150",
+      "size_mb": 66.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5F_JanN1",
+      "size_mb": 300.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5G_B150SKZ",
+      "size_mb": 104.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5G_JanDT150",
+      "size_mb": 85.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5G_JanN1",
+      "size_mb": 300.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5HRC_JanN1",
+      "size_mb": 300.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5HRC_Smoke",
+      "size_mb": 66.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5H_JanN1",
+      "size_mb": 300.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5H_JanProd",
+      "size_mb": 76.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5H_LegApr",
+      "size_mb": 290.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.5H_ProdApr",
+      "size_mb": 85.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.6_A",
+      "size_mb": 290.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.6_B",
+      "size_mb": 290.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.6_C",
+      "size_mb": 85.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.6_D",
+      "size_mb": 291.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.6_JA",
+      "size_mb": 300.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.6_JB",
+      "size_mb": 299.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.6_JC",
+      "size_mb": 94.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.6_JD",
+      "size_mb": 300.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.7B1_JanN1",
+      "size_mb": 300.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.7B2_JanN1",
+      "size_mb": 300.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.7B3_JanN1",
+      "size_mb": 300.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.7B_JanN1",
+      "size_mb": 300.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.7C_AprN1",
+      "size_mb": 290.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.7C_JanN1",
+      "size_mb": 300.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.7D.1_JanN1",
+      "size_mb": 300.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.7D2_JanN1",
+      "size_mb": 300.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.7D_AprN1",
+      "size_mb": 290.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.7D_JanN1",
+      "size_mb": 300.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.7E4_A",
+      "size_mb": 29.0,
+      "class": "CRITICAL"
+    },
+    {
+      "name": "stage11.7E4_A7",
+      "size_mb": 85.0,
+      "class": "CRITICAL"
+    },
+    {
+      "name": "stage11.7E4_B",
+      "size_mb": 29.0,
+      "class": "CRITICAL"
+    },
+    {
+      "name": "stage11.7E4_B7",
+      "size_mb": 85.0,
+      "class": "CRITICAL"
+    },
+    {
+      "name": "stage11.7E4_C",
+      "size_mb": 29.0,
+      "class": "CRITICAL"
+    },
+    {
+      "name": "stage11.7E4_C7",
+      "size_mb": 85.0,
+      "class": "CRITICAL"
+    },
+    {
+      "name": "stage11.7E_APROFF",
+      "size_mb": 290.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.7E_APRON",
+      "size_mb": 290.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.7E_JANOFF",
+      "size_mb": 300.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage11.7E_JANON",
+      "size_mb": 300.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage117e1cp_evidence",
+      "size_mb": 1.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage117e2_APROFF",
+      "size_mb": 290.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage117e2_APRON",
+      "size_mb": 290.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage117e2_JANOFF",
+      "size_mb": 300.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage117e2_JANON",
+      "size_mb": 300.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "stage117e2_evidence",
+      "size_mb": 1.0,
+      "class": "ARCHIVE"
+    },
+    {
+      "name": "t3_eos80_canonical",
+      "size_mb": 299.0,
+      "class": "CRITICAL"
+    },
+    {
+      "name": "t3_legacy_canonical",
+      "size_mb": 300.0,
+      "class": "CRITICAL"
+    },
+    {
+      "name": "t3_legacy_rebuild",
+      "size_mb": 300.0,
+      "class": "CRITICAL"
+    },
+    {
+      "name": "t3_smoke_legacy",
+      "size_mb": 29.0,
+      "class": "CRITICAL"
+    },
+    {
+      "name": "t3c_eos80_canonical",
+      "size_mb": 299.0,
+      "class": "CRITICAL"
+    },
+    {
+      "name": "t3c_legacy_canonical",
+      "size_mb": 300.0,
+      "class": "CRITICAL"
+    },
+    {
+      "name": "t3c_smoke",
+      "size_mb": 29.0,
+      "class": "CRITICAL"
+    },
+    {
+      "name": "test_ocean_init",
+      "size_mb": 1.0,
+      "class": "TEMPORARY"
+    },
+    {
+      "name": "test_ocean_init_allowed",
+      "size_mb": 1.0,
+      "class": "TEMPORARY"
+    },
+    {
+      "name": "test_ocean_init_en4",
+      "size_mb": 1.0,
+      "class": "TEMPORARY"
+    },
+    {
+      "name": "test_ocean_init_force",
+      "size_mb": 1.0,
+      "class": "TEMPORARY"
+    },
+    {
+      "name": "test_ocean_init_force2",
+      "size_mb": 1.0,
+      "class": "TEMPORARY"
+    },
+    {
+      "name": "test_prov_allowed",
+      "size_mb": 1.0,
+      "class": "TEMPORARY"
+    },
+    {
+      "name": "test_prov_allowed2",
+      "size_mb": 440.0,
+      "class": "TEMPORARY"
+    },
+    {
+      "name": "test_prov_allowed3",
+      "size_mb": 524.0,
+      "class": "TEMPORARY"
+    },
+    {
+      "name": "test_prov_attr_1_default_strict",
+      "size_mb": 131.0,
+      "class": "TEMPORARY"
+    },
+    {
+      "name": "test_prov_attr_2_override_strict",
+      "size_mb": 94.0,
+      "class": "TEMPORARY"
+    },
+    {
+      "name": "test_prov_attr_3_force_synthetic",
+      "size_mb": 103.0,
+      "class": "TEMPORARY"
+    },
+    {
+      "name": "test_prov_attr_4_eos80",
+      "size_mb": 29.0,
+      "class": "TEMPORARY"
+    },
+    {
+      "name": "test_prov_en4",
+      "size_mb": 234.0,
+      "class": "TEMPORARY"
+    },
+    {
+      "name": "test_prov_final",
+      "size_mb": 487.0,
+      "class": "TEMPORARY"
+    },
+    {
+      "name": "test_prov_force",
+      "size_mb": 440.0,
+      "class": "TEMPORARY"
+    },
+    {
+      "name": "test_prov_invalid",
+      "size_mb": 1.0,
+      "class": "TEMPORARY"
+    },
+    {
+      "name": "test_prov_off2",
+      "size_mb": 29.0,
+      "class": "TEMPORARY"
+    },
+    {
+      "name": "test_prov_on2",
+      "size_mb": 29.0,
+      "class": "TEMPORARY"
+    },
+    {
+      "name": "test_prov_strict",
+      "size_mb": 1.0,
+      "class": "TEMPORARY"
+    },
+    {
+      "name": "test_provenance",
+      "size_mb": 29.0,
+      "class": "TEMPORARY"
+    },
+    {
+      "name": "test_provenance_off",
+      "size_mb": 29.0,
+      "class": "TEMPORARY"
+    },
+    {
+      "name": "test_run",
+      "size_mb": 1.0,
+      "class": "TEMPORARY"
+    },
+    {
+      "name": "test_run_on",
+      "size_mb": 1.0,
+      "class": "TEMPORARY"
+    },
+    {
+      "name": "test_seaice_prov_off",
+      "size_mb": 29.0,
+      "class": "TEMPORARY"
+    },
+    {
+      "name": "test_seaice_prov_on",
+      "size_mb": 66.0,
+      "class": "TEMPORARY"
+    }
+  ]
+}

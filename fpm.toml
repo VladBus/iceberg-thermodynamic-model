@@ -83,3 +83,7 @@ main = "test_weak_inversion_conservation.f90"
 [test.test_ca_compressibility]
 source-dir = "test"
 main = "test_ca_compressibility.f90"
+
+[test.test_advection_boundary]
+source-dir = "test"
+main = "test_advection_boundary.f90"

@@ -35,7 +35,7 @@
       "zero_T": 0,
       "zero_S": 0,
       "wet_columns": 11067,
-      "level_cells": 143176,
+      "level_cells": 143422,
       "T_range": [
         -1.9616097211837769,
         7.077602386474609
@@ -45,7 +45,7 @@
         0.03743230551481247
       ],
       "freezing_clamp": "UNESCO Tf(S,p) clamp applied (T3-PREP T-22)",
-      "freezing_clamp_cells": 12589
+      "freezing_clamp_cells": 12595
     },
     "2020-01-01_rebuild": {
       "file": "data/input/processed/ocean/initial_ts_2020-01-01_rebuild.nc",
@@ -54,7 +54,7 @@
       "zero_T": 0,
       "zero_S": 0,
       "wet_columns": 11067,
-      "level_cells": 143176,
+      "level_cells": 143422,
       "T_range": [
         -1.9616097211837769,
         7.077602386474609
@@ -64,7 +64,7 @@
         0.03743230551481247
       ],
       "freezing_clamp": "UNESCO Tf(S,p) clamp applied (T3-PREP T-22)",
-      "freezing_clamp_cells": 12589
+      "freezing_clamp_cells": 12595
     },
     "2020-04-01_canonical": {
       "file": "data/input/processed/ocean/initial_ts_2020-04-01.nc",
@@ -73,7 +73,7 @@
       "zero_T": 0,
       "zero_S": 0,
       "wet_columns": 11067,
-      "level_cells": 143176,
+      "level_cells": 143422,
       "T_range": [
         -1.9321292638778687,
         6.746902942657471
@@ -92,7 +92,7 @@
       "zero_T": 0,
       "zero_S": 0,
       "wet_columns": 11067,
-      "level_cells": 143176,
+      "level_cells": 143422,
       "T_range": [
         -1.9321292638778687,
         6.746902942657471
@@ -111,7 +111,7 @@
       "zero_T": 0,
       "zero_S": 0,
       "wet_columns": 11067,
-      "level_cells": 143176,
+      "level_cells": 143422,
       "T_range": [
         -1.8627313375473022,
         11.879938125610352
@@ -130,7 +130,7 @@
       "zero_T": 0,
       "zero_S": 0,
       "wet_columns": 11067,
-      "level_cells": 143176,
+      "level_cells": 143422,
       "T_range": [
         -1.8627313375473022,
         11.879938125610352
@@ -149,7 +149,7 @@
       "zero_T": 0,
       "zero_S": 0,
       "wet_columns": 11067,
-      "level_cells": 143176,
+      "level_cells": 143422,
       "T_range": [
         -2.0639915466308594,
         9.350772857666016
@@ -168,7 +168,7 @@
       "zero_T": 0,
       "zero_S": 0,
       "wet_columns": 11067,
-      "level_cells": 143176,
+      "level_cells": 143422,
       "T_range": [
         -2.0639915466308594,
         9.350772857666016
@@ -205,7 +205,7 @@
     {
       "name": "2020-01-01_canonical: wet columns / level cells",
       "status": "PASS",
-      "detail": "11067 cols / 143176 levels"
+      "detail": "11067 cols / 143422 levels"
     },
     {
       "name": "2020-01-01_canonical: metadata date",
@@ -240,7 +240,7 @@
     {
       "name": "2020-01-01_rebuild: wet columns / level cells",
       "status": "PASS",
-      "detail": "11067 cols / 143176 levels"
+      "detail": "11067 cols / 143422 levels"
     },
     {
       "name": "2020-01-01_rebuild: metadata date",
@@ -280,7 +280,7 @@
     {
       "name": "2020-04-01_canonical: wet columns / level cells",
       "status": "PASS",
-      "detail": "11067 cols / 143176 levels"
+      "detail": "11067 cols / 143422 levels"
     },
     {
       "name": "2020-04-01_canonical: metadata date",
@@ -315,7 +315,7 @@
     {
       "name": "2020-04-01_rebuild: wet columns / level cells",
       "status": "PASS",
-      "detail": "11067 cols / 143176 levels"
+      "detail": "11067 cols / 143422 levels"
     },
     {
       "name": "2020-04-01_rebuild: metadata date",
@@ -355,7 +355,7 @@
     {
       "name": "2020-07-01_canonical: wet columns / level cells",
       "status": "PASS",
-      "detail": "11067 cols / 143176 levels"
+      "detail": "11067 cols / 143422 levels"
     },
     {
       "name": "2020-07-01_canonical: metadata date",
@@ -390,7 +390,7 @@
     {
       "name": "2020-07-01_rebuild: wet columns / level cells",
       "status": "PASS",
-      "detail": "11067 cols / 143176 levels"
+      "detail": "11067 cols / 143422 levels"
     },
     {
       "name": "2020-07-01_rebuild: metadata date",
@@ -430,7 +430,7 @@
     {
       "name": "2020-10-01_canonical: wet columns / level cells",
       "status": "PASS",
-      "detail": "11067 cols / 143176 levels"
+      "detail": "11067 cols / 143422 levels"
     },
     {
       "name": "2020-10-01_canonical: metadata date",
@@ -465,7 +465,7 @@
     {
       "name": "2020-10-01_rebuild: wet columns / level cells",
       "status": "PASS",
-      "detail": "11067 cols / 143176 levels"
+      "detail": "11067 cols / 143422 levels"
     },
     {
       "name": "2020-10-01_rebuild: metadata date",

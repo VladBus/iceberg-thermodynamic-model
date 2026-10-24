@@ -195,7 +195,7 @@ def main():
            "runs": results}
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(out, indent=2, default=float))
-    print(f"Results: {args.out.relative_to(PROJECT)}")
+    print(f"Results: {args.out}")
 
 
 if __name__ == "__main__":

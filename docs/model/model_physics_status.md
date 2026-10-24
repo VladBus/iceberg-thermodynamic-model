@@ -1,7 +1,7 @@
 # Model Physics Block Status
 
-**Date:** 2026-10-24
-**Current repository stage:** Stage 11.8.0 T3-CORRECTIVE COMPLETE — T-28 (mask gap) and T-29 (advection boundary) FIXED; rest state still **UNSTABLE** (core T-03). NEXT: T3-CORRECTIVE-2; **T4 NO-GO**. T-25 remains critical (T2-CORRECTIVE before T6); H-2 is the T4 blocker.
+**Date:** 2026-10-25
+**Current repository stage:** Stage 11.8.0 T3-CORRECTIVE-2 COMPLETE — T-03 root cause identified: CA density-writeback -> baroclinic PGF feedback (RO not prognostic; CA is the only RO update); seeded by the unbalanced rest init, localised by the SW clamped boundary, amplified at dt=3600. NEXT: T3-CORRECTIVE-3 (fix; D-33). **T4 NO-GO.**
 **Ocean EOS statement:** the prognostic ocean uses legacy Eckart (Dmitrev–Nesterov) density in float32 (`src/equation_of_state.f90`) by default; UNESCO EOS-80 is implemented opt-in (`src/eos80_unesco.f90`, `EOS_MODE=EOS80`, validated in 11.4/11.4.1, recommendation: optional). Iceberg side uses freezing-point only (table row "Full seawater EOS" below refers to the iceberg module).
 **Production baseline:** Stage 10.13 (low-flow closure behind `low_flow_closure_enabled`; OFF = Stage 10.12/10.10 legacy unchanged); Stage 10.19 adds the env-gated production iceberg connection (inert by default); Stage 10.20 adopts the full-coverage ERA5 Jan file for production gates (`src/param.f90` default path NOT changed); Stage 10.21 adds CA/EOS f32-precision research switches (`STAGE1021_CA_F64`, `STAGE1021_CA_MIX`, `STAGE1021_CA_SCOPE`, `STAGE1021_CA_EPS`) — all OFF by default, production bit-identical (KEEP_CURRENT); Stage 10.22 adds Block-200 stability-audit diagnostic switches (`STAGE1022_DIAG`, `STAGE1022_FREEZE_RO`, `STAGE1022_FREEZE_THERMAL_WIND`, `STAGE1022_FREEZE_TS`, `STAGE1022_FREEZE_RO_DOWNSTREAM`; env names `_FREEZE_RO`/`_FREEZE_TS`/`_FREEZE_RO_DOWNSTREAM`/`_FREEZE_THERMAL_WIND` + `_DIAG`) — all OFF by default, production bit-identical (KEEP_CURRENT); Stage 11.4-D32 adds the ERA5 nearest-edge coverage fallback in `era5_wind()` (loader-only production fix, Jan bit-identical); Stage 11.4-D33 fixes Ocean Baseline 11.x (Jan30/Apr29/Jul30/Oct30, 0 NaN); Stage 11.3C adds `STAGE113_DT/DT1` measurement-only timestep override (defaults = legacy 3600/120); Stage 11.3C.1 adds mm2/mm3 scaling (active only with override) + `s112_cfl_dist` percentiles (DIAG-gated)
 **FPM test targets:** 59 (fpm auto-discovery of `test/*.f90` with a top-level `program`, incl. `check.f90`, `iceberg_test_10p17_melt_budget`, `iceberg_test_10p17_90day`, `drift_scaling_*`)
@@ -216,6 +216,21 @@ same growth, so the remaining driver is the core T-03 pressure-gradient
 instability, not CA/T-25 or the fixed interface defects. T4 remains NO-GO;
 next is T3-CORRECTIVE-2. Report:
 `docs/validation/stage11.8.0_T3-CORRECTIVE_mask_advection_fix.md`.
+
+## Stage 11.8.0 T3-CORRECTIVE-2 — T-03 root cause: CA density writeback -> PGF
+
+Diagnostic only. The rest-state growth is not a PGF-stencil error (surface
+double-count 1.5e-5) and not boundary-only. `RO` is not prognostic: `eos_diag()`
+runs only at init/final, so the density used by Block 200 is refreshed only by
+convective adjustment. `FREEZE_RO` (CA mixes T/S but does not write RO) bounds
+the flow at 0.20 m/s / 6.1e13 J in both LEGACY and EOS-80; the baselines grow to
+3.9-4.7 m/s / 6.8-8.1e15 J. CA-induced Delta-RO reaches 8.26 kg/m3 and its PGF
+work share grows from 7.9 % to 99.6 %. The initial thermal-wind state (0.283 m/s,
+transport 0.144 m/s) is the seed; the SW 600-m clamped boundary/topography
+localises it; dt=1800 is bounded (0.53 m/s), dt=3600 exponential. T-25 is
+revised: EOS-80 CA convergence does not exonerate the RO writeback. T4 NO-GO;
+T3-CORRECTIVE-3 (fix) requires D-33. Report:
+`docs/validation/stage11.8.0_T3-CORRECTIVE-2_t03_diagnosis.md`.
 
 ## References
 

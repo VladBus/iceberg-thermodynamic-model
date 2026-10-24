@@ -130,6 +130,7 @@ program main
     integer :: ss_d2, d2_npass
     real :: d2_dt
     character(len=64) :: env_str2
+    logical :: rest_mode   ! Stage 11.8.0 T3: ocean rest-state diagnostic
     integer :: ios2
     ! Stage 11.5B: MM2-override flag (declaration with the other one).
     logical :: stage113_mm2_set
@@ -179,6 +180,23 @@ program main
     nat(4) = int(hour)
 
     kl1 = 1             ! Флаг использования термодинамики (1 - да, требует patm>0)
+
+    ! ======================================================================
+    ! Stage 11.8.0 T3: REST-STATE diagnostic (env-gated, default OFF)
+    ! ON: wind/heat/freshwater/ice-ocean forcing disabled; ocean dynamics
+    ! (advection, pressure gradient, Coriolis, CA, B200/210/280) ACTIVE.
+    ! ======================================================================
+    call get_environment_variable('STAGE118_T3_REST_MODE', env_str)
+    rest_mode = .false.
+    if (len_trim(env_str) .gt. 0) then
+        if (trim(env_str) .eq. 'true' .or. trim(env_str) .eq. '1' .or. &
+            trim(env_str) .eq. 'TRUE') rest_mode = .true.
+    end if
+    if (rest_mode) then
+        kl1 = 0
+        print *, '>>> STAGE118_T3_REST_MODE ON: wind=0, heat=0, ', &
+                 'freshwater=0, ice-ocean=0; dynamics+CA ACTIVE'
+    end if
     nom = 1             ! Идентификатор чтения начальных данных
     ! Временный переключатель для отладки ERA5 input (этап 2/3).
     forcing_mode = forcing_mode_era5
@@ -702,7 +720,11 @@ program main
                 " time steps, ", nperday, " steps/day)"
 
             ! Вычисляем начальные поля ветра/давления ДО термодинамической инициализации
-            call era5_wind(start_sec)
+            if (rest_mode) then
+                call zero_forcing_fields()
+            else
+                call era5_wind(start_sec)
+            end if
 
             ! Copy ERA5 pressure gradients to working arrays for thermal wind init
             dpx = dpx1
@@ -728,6 +750,13 @@ program main
     ! Uses RO from eos_diag for thermal-wind balance, reference level, and dynamic height SSH.
     ! Mode controlled by ICEBERG_OCEAN_VELOCITY_INIT env var.
     call init_thermal_wind()
+    if (rest_mode) then
+        u1 = 0.0; u2 = 0.0; v1 = 0.0; v2 = 0.0
+        up1 = 0.0; up2 = 0.0; vp1 = 0.0; vp2 = 0.0
+        w = 0.0
+        call zero_forcing_fields()
+        print *, '>>> T3 REST: thermal-wind velocities zeroed (initial |U|=|V|=0)'
+    end if
 
     ! Stage 10.22: проба начального состояния (INIT)
     if (s22_diag) call s22_probe('INIT', 0, 0)
@@ -822,7 +851,9 @@ program main
                 ! Переход к следующим метеоданным (день KKK+1)
                 pp(:) = p(:, kkk + 1)
                 if (forcing_mode .eq. forcing_mode_era5) then
-                    call era5_wind(start_sec + real(kkk, 8)*86400.0_8)
+                    if (.not. rest_mode) then
+                        call era5_wind(start_sec + real(kkk, 8)*86400.0_8)
+                    end if
                     ! Diagnostic: update monthly domain-mean sfal for validation (not used for forcing)
                     sfal_accum(lll) = sfal_accum(lll) &
                                       + compute_snowfall_mean(era5_snowfall_rate)
@@ -1930,5 +1961,32 @@ contains
         end do
         compute_snowfall_mean = total/real(is1*js1)
     end function compute_snowfall_mean
+
+    ! ======================================================================
+    ! Stage 11.8.0 T3: zero all atmospheric forcing fields (rest state).
+    ! Ocean dynamics use only the initial T/S and their own pressure field.
+    ! ======================================================================
+    subroutine zero_forcing_fields()
+        windx1 = 0.0
+        windy1 = 0.0
+        wind = 0.0
+        tx1 = 0.0
+        ty1 = 0.0
+        p1 = 0.0
+        dpx1 = 0.0
+        dpy1 = 0.0
+        tatm = 0.0
+        patm = 0.0
+        humid = 0.0
+        cloud = 0.0
+        era5_snowfall_rate = 0.0
+        ! working copies consumed by the initial dynamics
+        dpx = 0.0
+        dpy = 0.0
+        tx = 0.0
+        ty = 0.0
+        windx = 0.0
+        windy = 0.0
+    end subroutine zero_forcing_fields
 
 end program main

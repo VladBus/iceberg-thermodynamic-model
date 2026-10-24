@@ -35,7 +35,7 @@ under atmospheric, oceanic, bathymetric, and sea-ice forcing.
 
 ## 📑 Project status
 
-- **Current stage:** Stage 11.8.0 T3-PREP — EN4 Data Correction COMPLETE (T-20 z-grid and T-22 supercooling FIXED; all four seasons regenerated with the corrected grid + UNESCO Tf(S,p) clamp; EN4 verification CLEAN). NEXT: 11.8.0 T3 (Rest). T-25 (CA in-situ criterion) scheduled as T2-corrective before T6; H-2 for T4; 11.7E.5 tides DEFERRED — null-tides provides no scientific value.
+- **Current stage:** Stage 11.8.0 T3 — Rest-State Diagnostic COMPLETE: **UNSTABLE** (no forcing, LEGACY/EOS80 reach 4-6 m/s in 30 d; drivers T-28 mask gap + T-29 boundary zeroing + T-03 core). NEXT: T3-CORRECTIVE (T-28/T-29), then re-run T3; **T4 NO-GO** until the rest test passes. T-25 scheduled as T2-corrective before T6; 11.7E.5 tides DEFERRED.
   [Historical note from Stage 10.19, SUPERSEDED by Stage 10.20 restoration
   (full-coverage ERA5: 3-day gate PASS, residual characterized, NOT fixed):
   coupling recovery (completed: the Lagrangian iceberg module is now

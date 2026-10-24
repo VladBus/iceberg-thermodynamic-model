@@ -173,6 +173,12 @@ jobs:
           conda activate iceberg-thermodynamic-model
           python python/tests/ocean/test_en4_initial_verification.py
 
+      - name: Run T3 rest-state analysis (explicit SKIP without run outputs)
+        shell: bash -l {0}
+        run: |
+          conda activate iceberg-thermodynamic-model
+          python python/tests/ocean/test_t3_rest_state.py
+
       - name: Run T3-PREP EN4 data correction verification (explicit SKIP without data)
         shell: bash -l {0}
         run: |

@@ -1,9 +1,9 @@
 # Project Roadmap
 
 **Updated:** 2026-10-24
-**Current scientific stage:** Stage 11.8.0 T3-PREP — EN4 Data Correction COMPLETE (T-20 z-grid + T-22 supercooling FIXED; all four seasons regenerated). Stages T0, T1 and T2 COMPLETE. Stage 11.7E.5 (tides) DEFERRED — null-tides provides no scientific value. NEXT: 11.8.0 T3 (Rest — ocean without wind/fluxes).
+**Current scientific stage:** Stage 11.8.0 T3 — Rest-State Diagnostic COMPLETE: classification **UNSTABLE** (no forcing, both EOS modes reach 4-6 m/s by day 30; drivers T-28 mask gap + T-29 boundary zeroing + core T-03 family). NEXT: T3-CORRECTIVE (T-28, then T-29), re-run T3; **T4 is NO-GO** until the rest test passes.
 **Stages 3–11.4.1: COMPLETED** (10.x iceberg modernization; 11.1 seasonal characterization; 11.2 CFL audit; 11.4-D21…D33 EN4 stabilization → ERA5-coverage fix → cleanup + Ocean Baseline 11.x; 11.3A execution-graph audit; 11.3B input-architecture audit + NetCDF contracts; 11.3C scheme audit + timestep matrix; 11.3C.1 semantics + CFL distributions; 11.3C.2 time-integration audit; 11.3C.3 loop-bound search (VERDICT D); 11.4 EOS-80 experiment + 11.4.1 impact validation (OPTIONAL, not default)).
-**Current status:** Stages 10.14–11.8.0 T3-PREP committed (see `git log` and `CHANGELOG.md` for history). **T0 COMPLETE** (snowfall T-19 RESOLVED; EN4/ERA5 findings). **T1 COMPLETE** (ERA5 forcing contract; H-2 critical, T-23 latent). **T2 COMPLETE** (CA/EOS core; T-25 in-situ criterion confirmed). **T3-PREP COMPLETE** (EN4 data corrected: T-20/T-22 FIXED).
+**Current status:** Stages 10.14-11.8.0 T3 committed (see `git log`). **T0/T1/T2/T3-PREP COMPLETE**. **T3 COMPLETE (UNSTABLE)**: corrected-EN4 rest runs (LEGACY/EOS80/rebuild) diverge exponentially without forcing; root causes T-28/T-29 (+T-03 core); T4 blocked.
 **Test suite:** 69 Fortran test source files (`ls test/*.f90 | wc -l`); 69 executable test targets (`grep -lE '^\s*program ' test/*.f90 | wc -l`). Counting method (Stage 11.8.0 T0): every current `test/*.f90` holds a top-level `program`, so file count == target count (verified 2026-10-24).
 **Stage 11.5H-RC COMPLETE** (release-candidate gate: self-contained production scheduler, docs synced D-22…D-28). Plan: 11.8.0 diagnostic ladder (T0–T6) → 11.8A validation → 11.8B audit → 11.9 closure → 12.0 voxel (blocked, D-28).
 
@@ -421,6 +421,7 @@ INFERRED_12H pending manual CDS verification. Report:
 |------|-------|------|
 | **T2-CORRECTIVE** | CA criterion on potential density (or a compression-corrected in-situ criterion), addressing T-25; T-27 (real64 state) in scope | requires Decision **D-33** physics-branch choice; schedule BEFORE **T6** |
 | **T1-CORRECTIVE** | ERA5 longitude handling: edge-clamp (or reject out-of-range) instead of cyclic wrap (T-23) | schedule BEFORE **T4** |
+| **T3-CORRECTIVE** | T-28 (product/model mask gap: 934 wet levels loaded as T=0; build on runtime mask or reader-side fill/FATAL) and T-29 (advection writeback zeroes the T/S boundary row/column) | **BEFORE T4** (rest test must pass) |
 | **T4** | Wind rotation geographic -> grid (H-2) | T4 tier |
 
 ### Stage 11.8.0 T3-PREP — EN4 Data Correction (T-20, T-22)
@@ -440,6 +441,30 @@ Dependencies: T2.
 Status: **COMPLETE**. Report:
 `docs/validation/stage11.8.0_T3-PREP_en4_data_correction.md`.
 NEXT: 11.8.0 T3 (Rest).
+
+### Stage 11.8.0 T3 — Rest-State Diagnostic (ocean without forcing)
+
+Scope: env-gated rest mode (`STAGE118_T3_REST_MODE`, default OFF): no wind
+fields, `kl1=0` (no heat/freshwater/snow), initial velocities and barotropic
+transports zeroed; advection, pressure gradient, Coriolis, CA, B200/210/280
+remain active. Runs: LEGACY/EOS80 canonical + LEGACY rebuild, 30 days, from
+the corrected EN4 January product.
+Result: all runs complete 30 days with **no NaN** but are **UNSTABLE**:
+LEGACY Umax 3.859 / Vmax 5.912 m/s, KE 0 -> 1.32e16 (x1128), CA guard
+saturated; EOS80 Umax 4.481 / Vmax 4.706 m/s, KE 0 -> 9.74e15 (x911), CA
+converges (guard 0). The near-identical growth in both EOS modes shows the
+blow-up is NOT CA-driven. Drivers: **T-28** (934 wet levels loaded as T=0
+from the product/mask gap), **T-29** (FCT advection writeback zeroes the
+i=is1/j=js1 T/S boundary: 1,341 cells by day 1), plus core pressure-gradient
+instability (T-03). Heat/salt drift 0.59-0.82 % / 1.33-1.46 %; volume 0.
+Rebuild is byte-identical to canonical (md5), so the comparison is a
+determinism check only. New metrics baseline:
+`data/validation/t3_rest_result.json` (replaces pre-T3-PREP baselines; a
+defect baseline, not a validated reference).
+Status: **COMPLETE (UNSTABLE)**. Report:
+`docs/validation/stage11.8.0_T3_rest_state_diagnostic.md`.
+NEXT: **T3-CORRECTIVE** (T-28, then T-29), re-run T3; **T4 NO-GO** until the
+rest test passes (|U|,|V| < 0.01 m/s, no KE growth, conservation to 1e-4).
 
 ### Stage 11.8 Prerequisite: Ocean Stabilization (MANDATORY GATE)
 

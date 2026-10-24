@@ -1,7 +1,7 @@
 # Model Physics Block Status
 
 **Date:** 2026-10-24
-**Current repository stage:** Stage 11.8.0 T3-PREP — EN4 Data Correction COMPLETE (T0/T1/T2 also COMPLETE). NEXT: 11.8.0 T3 (Rest). EN4 initial data are now CLEAN for all four seasons (T-20/T-22 FIXED); T-25 (CA in-situ criterion) remains CRITICAL and is scheduled as T2-CORRECTIVE before T6; H-2 is the T4 blocker; T-23 is T1-corrective.
+**Current repository stage:** Stage 11.8.0 T3 — Rest-State Diagnostic COMPLETE (classification **UNSTABLE**). NEXT: T3-CORRECTIVE (T-28/T-29), then re-run T3; **T4 NO-GO**. T-25 (CA in-situ criterion) remains critical (T2-CORRECTIVE before T6); H-2 is the T4 blocker.
 **Ocean EOS statement:** the prognostic ocean uses legacy Eckart (Dmitrev–Nesterov) density in float32 (`src/equation_of_state.f90`) by default; UNESCO EOS-80 is implemented opt-in (`src/eos80_unesco.f90`, `EOS_MODE=EOS80`, validated in 11.4/11.4.1, recommendation: optional). Iceberg side uses freezing-point only (table row "Full seawater EOS" below refers to the iceberg module).
 **Production baseline:** Stage 10.13 (low-flow closure behind `low_flow_closure_enabled`; OFF = Stage 10.12/10.10 legacy unchanged); Stage 10.19 adds the env-gated production iceberg connection (inert by default); Stage 10.20 adopts the full-coverage ERA5 Jan file for production gates (`src/param.f90` default path NOT changed); Stage 10.21 adds CA/EOS f32-precision research switches (`STAGE1021_CA_F64`, `STAGE1021_CA_MIX`, `STAGE1021_CA_SCOPE`, `STAGE1021_CA_EPS`) — all OFF by default, production bit-identical (KEEP_CURRENT); Stage 10.22 adds Block-200 stability-audit diagnostic switches (`STAGE1022_DIAG`, `STAGE1022_FREEZE_RO`, `STAGE1022_FREEZE_THERMAL_WIND`, `STAGE1022_FREEZE_TS`, `STAGE1022_FREEZE_RO_DOWNSTREAM`; env names `_FREEZE_RO`/`_FREEZE_TS`/`_FREEZE_RO_DOWNSTREAM`/`_FREEZE_THERMAL_WIND` + `_DIAG`) — all OFF by default, production bit-identical (KEEP_CURRENT); Stage 11.4-D32 adds the ERA5 nearest-edge coverage fallback in `era5_wind()` (loader-only production fix, Jan bit-identical); Stage 11.4-D33 fixes Ocean Baseline 11.x (Jan30/Apr29/Jul30/Oct30, 0 NaN); Stage 11.3C adds `STAGE113_DT/DT1` measurement-only timestep override (defaults = legacy 3600/120); Stage 11.3C.1 adds mm2/mm3 scaling (active only with override) + `s112_cfl_dist` percentiles (DIAG-gated)
 **FPM test targets:** 59 (fpm auto-discovery of `test/*.f90` with a top-level `program`, incl. `check.f90`, `iceberg_test_10p17_melt_budget`, `iceberg_test_10p17_90day`, `drift_scaling_*`)
@@ -188,6 +188,20 @@ initial cells (T-22 FIXED; clamped: Jan 12,589 / Apr 2,525 / Jul 0 / Oct 553;
 0 cells below Tf everywhere). EN4 T0 and T3-PREP verification are CLEAN.
 No physics/EOS change; CA/T-25, T-23 and H-2 were NOT fixed.
 Report: `docs/validation/stage11.8.0_T3-PREP_en4_data_correction.md`.
+
+## Stage 11.8.0 T3 — rest state (no forcing): UNSTABLE
+
+With all external forcing disabled and zero initial velocity, the corrected
+EN4 ocean does not stay at rest: LEGACY reaches Umax 3.86 / Vmax 5.91 m/s and
+EOS-80 4.48 / 4.71 m/s within 30 days (no NaN); kinetic energy grows x911-
+x1128; heat/salt drift 0.6-1.5 %. CA statistics differ by two orders of
+magnitude between the modes yet the early growth is nearly identical, so the
+blow-up is not CA-driven. Drivers: **T-28** (934 wet levels loaded as 0 degC
+from the product/runtime mask gap), **T-29** (advection writeback zeroes the
+T/S boundary row/column - 1,341 cells from day 1), plus the T-03 core
+pressure-gradient instability. T-25 remains critical but is not the T3
+driver. New metrics baseline: `data/validation/t3_rest_result.json`.
+Report: `docs/validation/stage11.8.0_T3_rest_state_diagnostic.md`.
 
 ## References
 

@@ -35,7 +35,7 @@ under atmospheric, oceanic, bathymetric, and sea-ice forcing.
 
 ## 📑 Project status
 
-- **Current stage:** Stage 11.8.0 T3-CORRECTIVE-3 COMPLETE — **T-19 FIXED** (v2 CDS probe R=1.009 -> hourly; divider 3600; contract 120/120). E1/E2/E3 (prognostic RO, potential CA, f64 N²) implemented behind OFF-by-default D-33 switches, but **T3b still FAILS** (Umax 3.902 m/s, KE30/KE15 52.98); E6 sponge masks only. T4 NO-GO; next T3-CORRECTIVE-4. `docs/STAGE11_STATE.md` is the living T-01…T-33 table; 69 historical reports archived.
+- **Current stage:** Stage 11.8.0 T3-CORRECTIVE-4 COMPLETE — T3b bounded adjustment **PASS**: dt=1800 s + Laplacian Ah=10000 m²/s (E1+E2+E3, no sponge) gives max |U| 0.147 m/s, KE30/KE15 0.568. Fundamental 13.89 km vs 2.36 km Rossby-radius limitation documented. T4 remains blocked by H-2/T-23. T-19 snowfall fixed (hourly, divisor 3600).
   [Historical note from Stage 10.19, SUPERSEDED by Stage 10.20 restoration
   (full-coverage ERA5: 3-day gate PASS, residual characterized, NOT fixed):
   coupling recovery (completed: the Lagrangian iceberg module is now

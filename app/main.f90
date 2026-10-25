@@ -84,7 +84,7 @@ program main
     ! Физические константы
     real :: ah, aht, ahs, g, roc, cp     ! Коэффициенты диффузии, g, rho0, Cp
     ! Производные константы (вычисляются один раз для скорости)
-    real :: c1, c2, c3, c4, c5, c8, c9, c10, c11, c12, c15, c16, c17
+    real :: c1, c2, c3, c3w, c3d, c4, c5, c8, c9, c10, c11, c12, c15, c16, c17
     ! Рабочие переменные для вычислений в циклах
     real :: sas, a, b, a1, b1, a2, b2, a3, b3, a4, b4, cc_val
     real :: hht, uij, vij, fix, fiy, aa, au, av, sl, du, ff, ff1
@@ -429,6 +429,8 @@ program main
     c2 = dt/dx                      ! [с/см] Число Куранта для бароклинного шага.
     !   c2 = 3600/1389000 ≈ 2.59e-3.
     c3 = ah/(dx*dx)                 ! [см²·с⁻¹/см²] = [1/с] Коэффициент Laplacian-вязкости.
+    c3w = c3                        ! c3 + optional Stage 11.8.0 dissipation
+    c3d = 0.0
     !   c3 = 7.5e6/(1.389e6)² ≈ 3.89e-6 1/с.
     c4 = aht/(dx*dx)*dt             ! [безразм.] Коэффициент диффузии тепла.
     c5 = ahs/(dx*dx)*dt             ! [безразм.] Коэффициент диффузии соли.
@@ -607,6 +609,11 @@ program main
     call eos80_configure()
     ! Stage 11.8.0 T3-CORRECTIVE-3: D-33 physics-branch switches (all OFF default).
     call s118_init()
+    ! Stage 11.8.0 T3-CORRECTIVE-4: optional extra Laplacian viscosity.
+    if (s118_lap_visc) then
+        c3d = s118_ah_m2s*1.0e4/(dx*dx)  ! m2/s -> cm2/s / dx2
+        c3w = c3 + c3d
+    end if
     if (ca_f64_mode .or. ca_f64_mix .or. ca_f64_scope .or. &
         abs(ca_eps_value - 0.9e-7) .gt. 1e-15) then
         print *, ">>> STAGE 10.21: CA precision experiment ENABLED (f64=", ca_f64_mode, &
@@ -1421,8 +1428,8 @@ program main
                                 ! Уравнение 3D-импульса (с隐式 Кориолис):
                                 !   AUU = U1 + (f·dt/2)·V1 + dt·[-(g/ρ₀)·SUM - DPX + Ah/dx²·∇²U]
                                 !   AVV = V1 - (f·dt/2)·U1 + dt·[-(g/ρ₀)·SUM1 - DPY + Ah/dx²·∇²V]
-                                auu = uij + asa1*vij + dt*(-c1*sum - dpx(i, j) + c3*slapu)
-                                avv = vij - asa1*uij + dt*(-c1*sum1 - dpy(i, j) + c3*slapv)
+                                auu = uij + asa1*vij + dt*(-c1*sum - dpx(i, j) + c3w*slapu)
+                                avv = vij - asa1*uij + dt*(-c1*sum1 - dpy(i, j) + c3w*slapv)
                                 ! Решение 2×2 системы (явный Кориолис):
                                 u2(i, j, k) = (auu + avv*asa1)/asa
                                 v2(i, j, k) = (avv - auu*asa1)/asa

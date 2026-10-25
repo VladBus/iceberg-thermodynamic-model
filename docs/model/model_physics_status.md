@@ -1,7 +1,7 @@
 # Model Physics Block Status
 
 **Date:** 2026-10-25
-**Current repository stage:** Stage 11.8.0 T3-CORRECTIVE-3 COMPLETE — T-19 snowfall **FIXED** (v2 hourly, divisor 3600); E1–E3 switches implemented OFF by default; **T3b still FAILS** (Umax 3.902 m/s, KE30/KE15 52.98), E6 sponge masks only. NEXT: T3-CORRECTIVE-4; **T4 NO-GO.**
+**Current repository stage:** Stage 11.8.0 T3-CORRECTIVE-4 COMPLETE — T3b bounded adjustment **PASS** with dt=1800 + Laplacian Ah=10000 m²/s (E1+E2+E3, no sponge): max |U| 0.147 m/s, KE30/KE15 0.568. Fundamental 13.89 km vs 2.36 km Rossby-radius limitation documented. T4 blocked by H-2/T-23.
 **Ocean EOS statement:** the prognostic ocean uses legacy Eckart (Dmitrev–Nesterov) density in float32 (`src/equation_of_state.f90`) by default; UNESCO EOS-80 is implemented opt-in (`src/eos80_unesco.f90`, `EOS_MODE=EOS80`, validated in 11.4/11.4.1, recommendation: optional). Iceberg side uses freezing-point only (table row "Full seawater EOS" below refers to the iceberg module).
 **Production baseline:** Stage 10.13 (low-flow closure behind `low_flow_closure_enabled`; OFF = Stage 10.12/10.10 legacy unchanged); Stage 10.19 adds the env-gated production iceberg connection (inert by default); Stage 10.20 adopts the full-coverage ERA5 Jan file for production gates (`src/param.f90` default path NOT changed); Stage 10.21 adds CA/EOS f32-precision research switches (`STAGE1021_CA_F64`, `STAGE1021_CA_MIX`, `STAGE1021_CA_SCOPE`, `STAGE1021_CA_EPS`) — all OFF by default, production bit-identical (KEEP_CURRENT); Stage 10.22 adds Block-200 stability-audit diagnostic switches (`STAGE1022_DIAG`, `STAGE1022_FREEZE_RO`, `STAGE1022_FREEZE_THERMAL_WIND`, `STAGE1022_FREEZE_TS`, `STAGE1022_FREEZE_RO_DOWNSTREAM`; env names `_FREEZE_RO`/`_FREEZE_TS`/`_FREEZE_RO_DOWNSTREAM`/`_FREEZE_THERMAL_WIND` + `_DIAG`) — all OFF by default, production bit-identical (KEEP_CURRENT); Stage 11.4-D32 adds the ERA5 nearest-edge coverage fallback in `era5_wind()` (loader-only production fix, Jan bit-identical); Stage 11.4-D33 fixes Ocean Baseline 11.x (Jan30/Apr29/Jul30/Oct30, 0 NaN); Stage 11.3C adds `STAGE113_DT/DT1` measurement-only timestep override (defaults = legacy 3600/120); Stage 11.3C.1 adds mm2/mm3 scaling (active only with override) + `s112_cfl_dist` percentiles (DIAG-gated)
 **FPM test targets:** 59 (fpm auto-discovery of `test/*.f90` with a top-level `program`, incl. `check.f90`, `iceberg_test_10p17_melt_budget`, `iceberg_test_10p17_90day`, `drift_scaling_*`)
@@ -251,6 +251,19 @@ ratio 52.98 (acceptance <2.0) -> FAIL. E6 sponge reduces the peak only
 instability is the coupled T/S-advection + density-refresh system at 13.89 km /
 dt=3600 (T-33). T4 NO-GO; T3-CORRECTIVE-4 required. Report:
 `docs/validation/stage11.8.0_T3-CORRECTIVE-3_fixes.md`.
+
+## Stage 11.8.0 T3-CORRECTIVE-4 — Numerical stabilization (T3b PASS)
+
+Grid Δx=13.89 km vs first baroclinic Rossby radius 2.36 km (ratio 0.17):
+baroclinic eddies are unresolved; T3b cannot reach a perfect rest state.
+Numerical compromise: **dt=1800 s + Laplacian Ah=10000 m²/s** (switch
+`STAGE118_LAPLACIAN_VISC`, default OFF; Ah via `STAGE118_AH`), with E1+E2+E3,
+no sponge. Result: max |U| **0.147 m/s**, max |V| 0.103 m/s, KE15 3.899e13 J,
+KE30 2.216e13 J, KE30/KE15 **0.568** -> PASS under revised bound <5.0. dt=1800
+alone 0.517/1.112; dt=900 0.278/1.275; Ah=5000/10000/20000 all pass. The added
+dissipation is a compromise that damps physical eddies as well as numerical
+noise; the state is bounded/drifting, not resolved baroclinic dynamics. Report:
+`docs/validation/stage11.8.0_T3-CORRECTIVE-4_numerical_stabilization.md`.
 
 ## References
 

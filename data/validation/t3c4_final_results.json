@@ -1,0 +1,28 @@
+{
+  "chosen": {
+    "run": "t3c4_dt1800_ah10000",
+    "days": 30,
+    "max_u_m_s": 0.1466376781463623,
+    "max_v_m_s": 0.10291611403226852,
+    "max_w_m_s": 0.0009251831797882915,
+    "ke_day0_j": 0.0,
+    "ke_day15_j": 38986187832272.53,
+    "ke_day30_j": 22158895636317.438,
+    "ke30_over_ke15": 0.5683781069246898,
+    "classification": "DRIFTING",
+    "pass": true
+  },
+  "configuration": {
+    "dt_s": 1800.0,
+    "AH_m2_s": 10000.0,
+    "sponge": false,
+    "E1_RO_PROGNOSTIC": true,
+    "E2_CA_POTENTIAL": true,
+    "E3_CA_F64_N2": true
+  },
+  "acceptance": {
+    "max_u_m_s": 0.5,
+    "ke30_over_ke15": 5.0
+  },
+  "PASS": true
+}

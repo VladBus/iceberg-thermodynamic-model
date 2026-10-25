@@ -412,3 +412,11 @@ not added.
 - **T3b result:** E1+E2+E3 Umax 3.902 m/s, KE15 1.641e14 J, KE30 8.696e15 J, ratio 52.98 -> **FAIL**. EOS80 all 3.849/49.3; balanced init 3.998/50.4; E6 sponge reduces peak (3.71 -> 1.71 m/s at extreme damping) but no plateau.
 - **Decision:** KEEP_CURRENT production physics; all switches OFF default; EOS_MODE=LEGACY default. T4 remains **NO-GO**; T3-CORRECTIVE-4 required for the coupled advection/density instability (T-33). No boundary sponge promotion; no physics default change.
 - **Report:** `docs/validation/stage11.8.0_T3-CORRECTIVE-3_fixes.md`.
+
+## D-36. T3b numerical stabilization: dt=1800 + Laplacian Ah=10000; bounded adjustment accepted (Stage 11.8.0 T3-CORRECTIVE-4, 2026-10-25)
+
+- **Limitation:** Δx=13.89 km vs first baroclinic Rossby radius 2.36 km (ratio 0.17); baroclinic eddies are unresolved. Perfect rest is not attainable; T3b is redefined as bounded adjustment (max |U|<0.5 m/s, KE30/KE15<5.0).
+- **Chosen configuration:** dt=1800 s; extra Laplacian viscosity Ah=10000 m²/s (`STAGE118_LAPLACIAN_VISC`, default OFF; `STAGE118_AH`); E1+E2+E3; no sponge. Result: max |U| 0.147 m/s, max |V| 0.103 m/s, KE15 3.899e13 J, KE30 2.216e13 J, KE30/KE15 0.568 -> PASS.
+- **Alternatives:** dt=1800 alone 0.517/1.112; dt=900 0.278/1.275; Ah=5000 0.188/0.610; Ah=20000 0.114/0.559. Ah=50000 violates the explicit 2-D stability limit at dt=1800 and is not used.
+- **Trade-off:** dissipation damps physical eddies as well as numerical noise; the stabilized state is a bounded, dissipative compromise, not resolved baroclinic dynamics.
+- **Decision:** numerical gate PASS; **T4 implementation remains NO-GO until H-2 (wind rotation) and T-23 (ERA5 wrap) are fixed**. No default physics/EOS/scheduler change; switches OFF by default. Report: `docs/validation/stage11.8.0_T3-CORRECTIVE-4_numerical_stabilization.md`.

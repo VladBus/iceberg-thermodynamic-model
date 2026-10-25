@@ -1,8 +1,8 @@
 # Stage 11 — Living State (≤150 lines)
 
 **Updated:** 2026-10-25
-**Base commit:** `8d40cc0` (T3-CORRECTIVE-2); T3-CORRECTIVE-3 changes in the
-current worktree/commit.
+**Base commit:** `35bf3b7` (T3-CORRECTIVE-3); T3-CORRECTIVE-4 changes in the
+current commit.
 **Branch policy:** `main` = legacy-frozen default; stage11-physics changes are
 env-gated (default OFF) until D-33 approval.
 
@@ -10,13 +10,13 @@ env-gated (default OFF) until D-33 approval.
 
 | Field | Value |
 |---|---|
-| Current stage | 11.8.0 T3-CORRECTIVE-3 (implementation + hygiene) |
-| Ocean rest state | **UNSTABLE after E1–E3** (T3b fails: max \|U\| 3.90 m/s, KE30/KE15 52.98) |
+| Current stage | 11.8.0 T3-CORRECTIVE-4 (numerical stabilization) — COMPLETE |
+| Ocean rest state | **T3b PASS (bounded)** — max \|U\| **0.147 m/s**, KE30/KE15 **0.568** (dt=1800, Ah=10000, no sponge) |
 | T-19 snowfall | **FIXED** — v2 CDS probe R=1.009 (hourly); divisor 3600 |
 | T-25 potential CA | Implemented behind `STAGE118_CA_POTENTIAL` (OFF); no effect in LEGACY |
 | T-32 prognostic RO | Implemented behind `STAGE118_RO_PROGNOSTIC` (OFF); no effect (CA already refreshes RO) |
 | T-31 EUU | **FIXED diagnostically** — 3D KE printed as `KE3D(J)` |
-| Next step | T3-CORRECTIVE-4: coupled advection/density instability; **T4 NO-GO** |
+| Next step | **T4 implementation blocked by H-2/T-23** (numerical T3b gate cleared) |
 
 ## Issue table (T-01 … T-33)
 
@@ -51,10 +51,10 @@ env-gated (default OFF) until D-33 approval.
 | T-27 | ADDRESSED | E3 CA criterion uses real64 density differences; stored T/S remains f32 |
 | T-28 | FIXED | EN4 product/runtime mask unified (143,422 levels) |
 | T-29 | FIXED | Advection boundary writeback restricted to interior |
-| T-30 | OPEN | T3b still unstable after E1–E3; max \|U\| 3.90, KE30/KE15 52.98 |
+| T-30 | MITIGATED | T3b PASS with dt=1800 + Ah=10000; max \|U\| 0.147, KE30/KE15 0.568 |
 | T-31 | FIXED | `KE3D(J)` diagnostic added; EUU remains barotropic-only |
 | T-32 | IMPLEMENTED | E1 RO prognostics behind switch; no effect because CA refreshes RO for all wet columns |
-| T-33 | OPEN | Coupled T/S advection + density refresh remains baroclinically unstable at 13.9 km/dt=3600; T4 blocked |
+| T-33 | MITIGATED | Unresolved baroclinic eddies (R_d 2.36 km vs 13.89 km); bounded by dt=1800 + Ah=10000; fundamental limitation documented |
 
 ## Switches (default OFF; D-33 gate)
 
@@ -65,10 +65,11 @@ env-gated (default OFF) until D-33 approval.
 | `STAGE118_CA_F64_N2` | real64 CA differences + N² < −1e-6 | Reduces CA mixings/guard; no stabilization |
 | `STAGE118_BOUNDARY_SPONGE` | Rayleigh sponge, width 8, τ=1 day | Reduces peak; no plateau; not used in T3b |
 | `STAGE118_T3_KEEP_TW` | Retain thermal-wind initial state in rest mode | Still unstable (balanced-init T3b also fails) |
+| `STAGE118_LAPLACIAN_VISC` / `STAGE118_AH` | Extra Laplacian viscosity, Ah [m²/s] | **Chosen: Ah=10000 with dt=1800**; T3b PASS |
 
 ## Evidence
 
-- T3b: `data/validation/t3c3_fix_results.json`, `t3c3_experiments.json`
+- T3b: `data/validation/t3c4_final_results.json`, `t3c4_ah_results.json`, `t3c4_dt_results.json`
 - T-19: `data/validation/t19_cds_probe_v2.json`, `snowfall_period_result.json`
 - Sponge tests: `t3c3_sponge_results.json`, `t3c3_sponge2_results.json`,
   `t3c3_sponge3_results.json`
@@ -76,9 +77,7 @@ env-gated (default OFF) until D-33 approval.
 
 ## Next action
 
-1. **T3-CORRECTIVE-4** (required): stabilize the coupled advection/density
-   system — candidate levers: horizontal/vertical dissipation, boundary
-   radiation, time-step/CA sub-cycling, or a balanced test initialization.
-2. Keep **T4 NO-GO** until T3b passes and T-23/H-2 are fixed.
-3. Do not promote any E1–E3 switch to production without D-33 and a passing
-   T3b/T3a gate.
+1. T3b numerical gate is **PASS** with dt=1800 + Ah=10000 (no sponge).
+2. **T4 remains blocked by H-2 (wind rotation) and T-23 (ERA5 wrap).**
+3. Do not promote E1–E3 or the dissipation switch to production without
+   D-33 and a documented production configuration.

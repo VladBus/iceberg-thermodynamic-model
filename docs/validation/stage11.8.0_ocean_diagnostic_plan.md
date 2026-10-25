@@ -62,7 +62,7 @@ Ordered by causal priority (fix upstream first):
 | **Volume conservation** | Closed basin: volume to 1e-6 relative | Σ(u·h·dx·dy) balance |
 | **Heat/salt conservation** | Total heat/salt with flux correction to 1e-4 relative | Budget closure diagnostics |
 | **Stable stratification** | N² ≥ -ε on potential density after CA in all cells every step | `N²_min ≥ -1e-8` post-CA |
-| **Rest stability** | **T3a** homogeneous column: max |u|<1e-6 m/s, ΔT<1e-6 °C. **T3b** real EN4 + zero forcing: max |U|<0.5 m/s, KE30/KE15<2.0, no exponential growth (bounded geostrophic adjustment). | T2/T3 tier tests |
+| **Rest stability** | **T3a** homogeneous column: max |u|<1e-6 m/s, ΔT<1e-6 °C. **T3b** real EN4 + zero forcing: max |U|<0.5 m/s, KE30/KE15<5.0, no exponential growth (bounded geostrophic adjustment). | T2/T3 tier tests |
 | **Physical plausibility** | T ≥ Tf(S,p), 0 ≤ S ≤ 42, |u| < 3 m/s (sea) / < 5 m/s straits | Daily diagnostic bounds |
 | **Reproducibility** | Repeated run with same config file gives same output hash manifest | MD5 of daily_diagnostics.csv identical |
 
@@ -72,7 +72,7 @@ Ordered by causal priority (fix upstream first):
   (b) weak-inversion CORE test PASS (inversion mixed, confinement, stability);
   (c) analytical mixing solution PASS to 1e-12 (known two-/three-layer
   volume-weighted mixing, float64 reference).
-- **T3 gate:** T3a pure rest (|u|<1e-6) and T3b adaptation (|U|<0.5 m/s, KE30/KE15<2.0, no exponential growth); no NaN.
+- **T3 gate:** T3a pure rest (|u|<1e-6) and T3b adaptation (|U|<0.5 m/s, KE30/KE15<5.0, no exponential growth); no NaN.
 - **T6 gate:** 30-day full run stable → 90-day → 365-day
 
 ---

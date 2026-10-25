@@ -7,7 +7,7 @@
 !   2. Постоянный снегопад → константное значение в массивах
 !   3. Накопление за 6 часов: rate * 21600 [м/с * с = м]
 !   4. Накопление за 24 часа: rate * 86400 [м]
-!   5. Конвертация единиц: 1 м water eq. за 12ч = 1/43200 м/с ≈ 2.31e-5 м/с
+!   5. Конвертация единиц: 1 м water eq. за 1ч = 1/3600 м/с ≈ 2.78e-4 м/с
 !   6. Отсутствие отрицательных значений (снегопад не может быть отрицательным)
 !   7. Выравнивание по времени: модельный шаг 3600с должен быть кратным шагу данных 21600с
 !   8. Обработка пропущенных временных шагов (линейная интерполяция)
@@ -17,7 +17,7 @@
 !   dt = 3600 с — модельный временной шаг (1 час)
 !   21600 = 6*3600 — шаг снегопада ERA5 [с]
 !   86400 = 24*3600 — число секунд в сутках [с]
-!   43200 = 12*3600 — число секунд в 12 часах [с]
+!   3600 = 1*3600 — число секунд в 1 часе [с]
 ! ==============================================================================
 
 program snowfall_test
@@ -31,7 +31,7 @@ program snowfall_test
     real :: era5_snowfall_rate_test(is1, js1)
     real :: snow_accum_6h, snow_accum_24h
     real :: snow_rate
-    real :: snow_accum_12h, rate_from_accum
+    real :: snow_accum_1h, rate_from_accum
     real :: snow_t0, snow_t6, snow_interp
     integer :: nsteps_day, nsnow_day
     logical :: has_negative
@@ -125,17 +125,17 @@ program snowfall_test
     ! --- Test 5: Unit conversion (m water equivalent to m/s rate) ---
     print *, ""
     print *, "--- Test 5: Unit conversion ---"
-    ! 1 м water equivalent за 12 часов = 1 / (12*3600) = 1/43200 [м/с]
-    ! Используется при конвертации CDS sf: накопление за 12ч → rate
-    snow_accum_12h = 1.0  ! 1 метр водного эквивалента за 12 часов
-    rate_from_accum = snow_accum_12h/43200.0  ! 12 часов = 43200 секунд
+    ! 1 м water equivalent за 1 час = 1/3600 [м/с]
+    ! Используется при конвертации CDS sf: часовое накопление → rate
+    snow_accum_1h = 1.0  ! 1 метр водного эквивалента за 1 час
+    rate_from_accum = snow_accum_1h/3600.0  ! 1 час = 3600 секунд
 
     n_checks = n_checks + 1
-    if (abs(rate_from_accum - 2.31481e-5) .gt. 1e-8) then
+    if (abs(rate_from_accum - 2.77778e-4) .gt. 1e-8) then
         print *, "ERROR Test 5: unit conversion mismatch", rate_from_accum
         n_errors = n_errors + 1
     else
-        print *, "OK Test 5: 1m/12h = ", rate_from_accum, " m/s"
+        print *, "OK Test 5: 1m/1h = ", rate_from_accum, " m/s"
     end if
 
     ! --- Test 6: No negative values ---

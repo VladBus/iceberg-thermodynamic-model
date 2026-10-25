@@ -39,7 +39,7 @@ closures were implemented:
 - `KNOWN_ISSUES.md` N-05: _"Calibration deferred until re-scoring on the 3eq
   closure"_; open questions §44: _"Re-scoring of the 10.8.2 set against the
   3eq + natural-convection closure"_.
-- `docs/validation/stage10.8.2_observational_validation.md` §15: recommended
+- `docs/archive/stage11/stage10.8.2_observational_validation.md` §15: recommended
   next step is _"a three-equation ice-ocean interface (Holland & Jenkins 1999) with a natural-convection floor"_.
 
 Before this stage, `observational_validation.py` (10.8.2) scored only the
@@ -198,7 +198,7 @@ conda run -n iceberg-thermodynamic-model python python/tests/test_basal_melt_val
 
 - `python/validation/three_equation_scoring.py` (new) — re-scoring layer;
 - `python/tests/test_three_equation_scoring.py` (new) — 177 locking checks;
-- `docs/validation/stage10.14_three_equation_rescoring.md` (this report);
+- `docs/archive/stage11/stage10.14_three_equation_rescoring.md` (this report);
 - living docs updated: `docs/validation/INDEX.md`,
   `docs/model/model_physics_status.md`, `docs/model/stage10_modernization_plan.md`,
   `docs/PROJECT_ROADMAP.md`, `docs/DECISIONS.md`, `KNOWN_ISSUES.md`,

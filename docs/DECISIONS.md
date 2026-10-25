@@ -54,14 +54,14 @@ Format: `ID | stage/date | status` + short description. Details — via links.
 - **Stage:** 10.10 / 10.10.1 | **Status:** ACTIVE (selectable; bulk path unchanged)
 - **Decision:** H&J99/J2010 scheme (`solve_three_equation_interface`); Eq. III in the mass-conserving form `ρ_w γ_S (S_w − S_B) = ρ_i m S_B` (MOM6/PISM/MITgcm/H&J99 Eq. 4 convention), NOT `γ_S (S_w − S_B) = m S_B` (which implied ρ_i/ρ_w = 1).
 - **Effect:** the canonical H&J99 anchor m increased by 10.5%; production end-to-end m by 1.7%.
-- **Sources:** `docs/validation/stage10.10_three_equation_interface.md`.
+- **Sources:** `docs/archive/stage11/stage10.10_three_equation_interface.md`.
 
 ## D-07. Natural convection: formulation retained despite identified limitations
 
 - **Stage:** 10.11 / 10.11.2 / 10.11.3 | **Status:** ACTIVE (selectable), limitations documented
 - **Problem:** the Ra cap 1e10 is always active (Nu pinned at 323.17); the haline term is inert; the haline sign is opposite to the physical stabilizing role; zero-flow m = 1.4e-3 m/day is 7–700× below the observed band 0.01–1 m/day.
 - **Decision (10.11.3):** production NOT changed (no better alternative without new data); the mechanism is cap-determined; the real mechanism is double-diffusive (MK77/Keitzl16/Middleton21) → motivation for Stage 10.13.
-- **Sources:** `docs/validation/stage10.11.3_natural_convection_physics_audit.md`.
+- **Sources:** `docs/archive/stage11/stage10.11.3_natural_convection_physics_audit.md`.
 
 ## D-08. Prognostic internal temperature — two-node lumped model, fully gated
 
@@ -69,7 +69,7 @@ Format: `ID | stage/date | status` + short description. Details — via links.
 - **Decision:** `T_ice` (two nodes: surface + interior), explicit Euler, clamp [−100, 0] °C; switch `thermal_evolution_enabled` (default ON) **fully gates** the stage in the step: OFF = bit-identical legacy (verified by F.1–F.4).
 - **Why:** the constant `T_i = −10` was a model assumption; the two-node model is the minimum giving an energy-consistent response without an internal grid.
 - **Limitations:** lumped (Bi ≫ 1); excess energy discarded at the clamp; `K_ICE` not calibrated.
-- **Sources:** `docs/validation/stage10.12_internal_thermal_evolution.md`, design note alongside.
+- **Sources:** `docs/archive/stage11/stage10.12_internal_thermal_evolution.md`, design note alongside.
 
 ## D-09. Low-flow closure — research parameterization behind an OFF-by-default switch
 
@@ -77,13 +77,13 @@ Format: `ID | stage/date | status` + short description. Details — via links.
 - **Decision:** hybrid "diffusion-limited sublayer + double-diffusive enhancement" integrated into production via `low_flow_closure_enabled` (OFF by default); effective γ_T/γ_S are blended before the existing 3eq solve (not m); the legacy guard `u_rel ≤ 0 → m=0` is preserved via `allow_zero_flow`; NaN fallback to the forced branch.
 - **Why:** closes the zero-flow observational gap (0.107 m/day at U=0 vs 1.4e-3), without touching the forced branch (bit-identical at high U).
 - **Limitations:** t_scale = 1 day (dominant sensitivity), f_dc = 2.5 not calibrated, κ_S convention (Le=100) is 4.4% below the Python reference.
-- **Sources:** `docs/validation/stage10.13_phase_c_results.md`, `docs/validation/stage10.13_phase_b_results.md`, design note.
+- **Sources:** `docs/archive/stage11/stage10.13_phase_c_results.md`, `docs/archive/stage11/stage10.13_phase_b_results.md`, design note.
 
 ## D-10. Scalar calibration of the basal-melt coefficient is NOT performed
 
 - **Stage:** 10.9 | **Status:** ACTIVE
 - **Decision:** the required C_γ differs by 0.918 orders of magnitude between the two independent sources (NJ80, KW84); the functional-form mismatch (obs ~ dT^1.73 vs closure dT^1.0) is not absorbed by a scalar. Calibration deferred until the three-equation closure (10.10+) and the 10.8.2 re-scoring.
-- **Sources:** `docs/validation/stage10.9_calibration_assessment.md`.
+- **Sources:** `docs/archive/stage11/stage10.9_calibration_assessment.md`.
 
 ## D-11. Switches preserve legacy behavior when OFF
 
@@ -118,7 +118,7 @@ Format: `ID | stage/date | status` + short description. Details — via links.
 - **Stage:** 10.14 | **Status:** ACTIVE (verification result)
 - **Decision:** the 10.8.2 observational set is re-scored against the already-implemented three-equation (10.10/10.10.1) and three-equation + natural-convection (10.11) closures with the 10.8.2 acceptance criterion. The 3eq closure does NOT improve the u>0 point metrics (RMSE 0.108 → 0.366, bias +0.083 → +0.277; NJ80 functional-form mismatch persists); the 3eq+natural closure reproduces the RH80 quiescent lab rows at the lab scale (5/5 in band) while the iceberg-scale Ra cap keeps the 10.11.3 gap statement valid. No calibration, no production change, no switch-default change.
 - **Why:** the roadmap explicitly lists this re-scoring after 10.13; it completes the KNOWN_ISSUES N-05 dependency (calibration remains not identifiable) and qualifies the 10.11.3 gap statement as scale-specific.
-- **Sources:** `docs/validation/stage10.14_three_equation_rescoring.md`.
+- **Sources:** `docs/archive/stage11/stage10.14_three_equation_rescoring.md`.
 
 ## D-16. Lateral melt — per-iceberg observational bounds; production KEEP_CURRENT
 
@@ -139,11 +139,11 @@ Format: `ID | stage/date | status` + short description. Details — via links.
   per-iceberg bounds are now quantitative but cannot discriminate U^0 vs
   U^0.8 closures without paired U_rel. Changing the closure without the
   velocity constraint would be a physics change without evidence.
-- **Sources:** `docs/validation/stage10.17_melt_thermodynamic_budget_audit.md`,
-  `docs/validation/stage10.18a_lateral_melt_parameterization_audit.md`,
-  `docs/validation/stage10.18b_observational_constraint.md`,
-  `docs/validation/stage10.18c_existing_observations_reanalysis.md`,
-  `docs/validation/stage10.18d_velocity_resolved_observational_upgrade.md`.
+- **Sources:** `docs/archive/stage11/stage10.17_melt_thermodynamic_budget_audit.md`,
+  `docs/archive/stage11/stage10.18a_lateral_melt_parameterization_audit.md`,
+  `docs/archive/stage11/stage10.18b_observational_constraint.md`,
+  `docs/archive/stage11/stage10.18c_existing_observations_reanalysis.md`,
+  `docs/archive/stage11/stage10.18d_velocity_resolved_observational_upgrade.md`.
 - **Limitations:** C_eff_submarine is a SUBMARINE_TOTAL quantity (side+basal)
   vs the model's lateral-only coefficient — comparison is bounded, not a
   direct lateral match; regional TF is representative, not per-iceberg;
@@ -173,7 +173,7 @@ Format: `ID | stage/date | status` + short description. Details — via links.
   gating it keeps all legacy runs bit-identical; the NaN guard prevents
   silent corruption of the iceberg state on the dead ocean; the CASE C/D
   classification scopes the next stage (ocean-init stabilization) precisely.
-- **Sources:** `docs/validation/stage10.19_production_runtime_coupling_recovery.md`,
+- **Sources:** `docs/archive/stage11/stage10.19_production_runtime_coupling_recovery.md`,
   `app/main.f90`, `src/iceberg_forcing.f90`, `fpm.toml`.
 - **Limitations:** the online-coupled run shows `steps executed : 0` until
   the ocean-init stabilization stage (10.20 candidate) passes the
@@ -218,7 +218,7 @@ Format: `ID | stage/date | status` + short description. Details — via links.
   first death) gives the next physics stage a closed mechanism to target
   (EOS precision / CA threshold / guard policy per RULES.md, or a
   preconditioned-solver study).
-- **Sources:** `docs/validation/stage10.20_ocean_initialization_numerical_stabilization.md`,
+- **Sources:** `docs/archive/stage11/stage10.20_ocean_initialization_numerical_stabilization.md`,
   `data/runs/stage10.20_gate3d_fullcov/`,
   `data/runs/stage10.20_gate30d_fullcov/output/csv/daily_diagnostics.csv`,
   `data/runs/stage10.20_gate30d_fullcov/output/csv/convective_guard_events.csv`,
@@ -235,7 +235,7 @@ Format: `ID | stage/date | status` + short description. Details — via links.
 - **Problem:** D-03's "keep threshold 0.9e-7 + float32 EOS + 1000-iteration guard" equilibrium is falsified as a *precision* policy: with float32 EOS every achievable density anomaly lies on the k·2⁻²³ lattice (`2⁻²³ = 1.1920929E-07 > 0.9E-07`, max |RO_f64 − RO_f32| = 1.389E-07, the reciprocal `1/(0.698+aa/bb) ≈ 1.027` sits in the [1,2) binade), so the threshold is unreachable for any nonzero inversion and the guard MUST saturate. D-18/10.20 left the ocean corrupting days 1–4 and dying density-first mid-day-5 with the guard saturated; the open question was whether the guard is the *cause* or a *symptom* of the death.
 - **Decision:** (1) precision machinery implemented behind env-gated runtime switches (`STAGE1021_CA_F64`, `_CA_MIX`, `_CA_SCOPE=all`, `STAGE1021_CA_EPS=1.5e-7|2.4e-7`; default OFF → **bit-identical legacy, verified byte-for-byte**: NC 5/5 + `convective_guard_events.csv` identical, `daily_diagnostics.csv` unique rows md5-identical); (2) controlled experiment matrix A0/EXP-A/EXP-B15/EXP-B24/EXP-C/EXP-D run through 1d → 3d → 7d → 30d production gates: 1-day clean (12/12), 3-day clean (36/36), 7-day and 30-day all **eliminate the CA guard days 1–4** (guard hits 0, maxiter 1001 → 125–256, nmix −5–8×; EXP-B15 partial mode 12–35 hits/day = columns whose residual lands on 2⁻²² > 1.5e-7, reproduced by standalone fixture B); **yet every closure still diverges density-first mid-day-5** (final steps A0=55, EXP-A=57, EXP-B15=57, EXP-B24=51, EXP-C=56, EXP-D=52) → **acceptance 360 NOT met**; (3) **the CA guard saturation was a SYMPTOM, not the cause** — day-5 re-saturation occurs on already-nonphysical fields arriving from the Block-200 geostrophic spike / Thomas vertical-viscosity blowup (T-03 family, CASE D); (4) **production KEEP_CURRENT** — all switches remain OFF; the f64/epsilon machinery is retained behind switches as a validated diagnostic and a ready lever for a future approved stage (zero cost when OFF); (5) two documentation defects corrected: `src/equation_of_state.f90` doc-header RO range (actual 0.006055–0.008318 over T ∈ [−2,5], S ∈ [0.033,0.035], NOT the claimed ~0.025) and `src/param.f90:67-69` z-coordinate comment (×100 mismatch) — comment-only.
 - **Why:** eliminating the guard changes NOTHING about the day-5 death (identical EUU trajectory through day 4, identical first-NaN signature `NaN_RO=198` at `F_after_conv`/Block 210 in all closures) — the divergence trigger is upstream of CA; D-03's precision clause is superseded (threshold unreachable in f32, proven by exact residual values 2⁻²³/2⁻²², the binade argument, and convergence at 1.5e-7/2.4e-7/f64 in fixtures A/B and every production experiment), but the 0.9e-7 *density* threshold itself is retained (no physics justification to change).
-- **Sources:** `docs/validation/stage10.21_convective_precision_stabilization.md`, `data/runs/stage10.21_p30d_{a0,expA,expB15,expB24,expC,expD}/output/csv/daily_diagnostics.csv` + `convective_guard_events.csv`, `src/equation_of_state.f90`, `src/convective_adjustment.f90`, `app/main.f90`, `python/tests/test_stage10_21_precision.py` (13 checks), `python/tests/test_stage10_21_convective_adjustment.py` (18 checks); D-03, D-18 in this file.
+- **Sources:** `docs/archive/stage11/stage10.21_convective_precision_stabilization.md`, `data/runs/stage10.21_p30d_{a0,expA,expB15,expB24,expC,expD}/output/csv/daily_diagnostics.csv` + `convective_guard_events.csv`, `src/equation_of_state.f90`, `src/convective_adjustment.f90`, `app/main.f90`, `python/tests/test_stage10_21_precision.py` (13 checks), `python/tests/test_stage10_21_convective_adjustment.py` (18 checks); D-03, D-18 in this file.
 - **Limitations:** the online-coupled production acceptance remains OPEN — 30-day gate `steps executed: 360` requires an ocean-init/geostrophic-spike stabilization stage (Block-200 init / Thomas solver per RULES.md procedure), NOT further CA precision work; the offline real-forcing path (TEST_11 family) is unaffected; full regression battery PASS (55 SUCCESS).
 
 ## D-20. Causal isolation of the ocean divergence chain (Stage 10.22): Block 200 = transmitter, Block 210 = downstream amplifier, origin = CA/EOS float32 density corruption; production KEEP_CURRENT
@@ -244,7 +244,7 @@ Format: `ID | stage/date | status` + short description. Details — via links.
 - **Problem:** after 10.19–10.21 narrowed the residual ocean death to "density-first divergence mid-day-5, first NaN `NaN_RO=198` at `F_after_conv`", the responsibility split among CA (T-01), Block 200 (baroclinic pressure gradient / geostrophic momentum) and Block 210 (Thomas vertical viscosity, T-03) stayed qualitative — no step-granularity evidence showed WHERE the first nonphysical density appears and WHICH block first transmits NaN into momentum.
 - **Decision:** (1) instrument the chain at step granularity behind 5 OFF-by-default runtime switches (`STAGE1022_DIAG`, `STAGE1022_FREEZE_RO`, `STAGE1022_FREEZE_THERMAL_WIND`, `STAGE1022_FREEZE_TS`, `STAGE1022_FREEZE_RO_DOWNSTREAM`) writing three CSV streams (probes, Block-200, Block-210) — default OFF → **bit-identical legacy verified** (a0 vs a0_diag daily_diagnostics.md IDENTICAL md5 `1ef13cb4d212db8570dd64737e945897` \u2014 instrumentation read-only; bit-identical legacy via no production code differences vs 10.21 `7a17cac`); (2) run the A5 experiment matrix (A0 baseline, A1 freeze_ro, A2 no_tw, A3 freeze_ts, A4 frozen_ro) through 30 days + independent Python replay (`python/validation/block200_isolate.py`) reproducing Block 200 exactly for all stable closures; (3) establish the causal timeline: first physically impossible state **day 4 step 1** (`CA_after ro_min = −1.946690E-04`, ρ-anomaly < 0 → day4 end −4.365810E-02) → first NaN **day 5 step 6** (`CA_after ro_nan = 198`, clean u/v/T/S) → Block 200 **transmits** (`B200_before` ro_nan 198 with clean momentum; `B200_after` u2_nan/v2_nan = 333) → Block 210 **amplifies** (rhs_max 1.12608E+16, den_min 7.05833E-04) → day-6 zombie 142,081 cells — matches 10.19/10.20 `NaN_RO=198 at F_after_conv`; (4) prove Block 210 Thomas pivots are negative **by construction** (`a1 = −1+a+b < 0`, piv_neg = piv_cnt = 100 %, piv_min = 1.0) — structural, NOT a pathology; (5) **production KEEP_CURRENT** — no physics change; stabilizer levers validated in experiments (freeze-ρ, freeze-TS in Block 200, reduced current) are research diagnostics only, NOT production paths.
 - **Why:** the A5 independent replay proves Block 200 is an exact function of its (ρ, T, S, u, v) inputs — a1/a3/a4 reproduce its outputs 30/30 days within ≤ 4.213e-06 relative, while only the variants that change the ρ inputs alter the outcome; the a0 day-1 13-metric failures are a **ro-phase artifact** of the replay methodology (snapshot ρ predates the in-run ρ of step 1), not physics; therefore the divergence origin is the upstream CA/EOS float32 density corruption (T-01 family: day-4 ρ < 0 → day-5 ρ = NaN), Block 200 is the transmitter, and Block 210 is the downstream amplifier.
-- **Sources:** `docs/validation/stage10.22_ocean_density_thermal_wind_block200_audit.md`, `data/output/diagnostics/stage10.22/replay_verify.log`, `data/runs/stage10.22_p30d_a0_diag/output/csv/stage1022_{probes,block200,block210}.csv`, `python/validation/block200_isolate.py` (A5 replay), `src/stage1022_diagnostics.f90`, `app/main.f90`, `src/convective_adjustment.f90`; D-17, D-18, D-19 in this file.
+- **Sources:** `docs/archive/stage11/stage10.22_ocean_density_thermal_wind_block200_audit.md`, `data/output/diagnostics/stage10.22/replay_verify.log`, `data/runs/stage10.22_p30d_a0_diag/output/csv/stage1022_{probes,block200,block210}.csv`, `python/validation/block200_isolate.py` (A5 replay), `src/stage1022_diagnostics.f90`, `app/main.f90`, `src/convective_adjustment.f90`; D-17, D-18, D-19 in this file.
 - **Limitations:** the online-coupled production acceptance remains OPEN — 30-day gate `steps executed: 360` requires an approved physics stage that removes the CA/EOS float32 density corruption or its downstream transmission (EOS precision / CA threshold / guard policy per RULES.md, or a preconditioned-solver study); the stabilizer switches are diagnostic-only and must NOT become production defaults without a dedicated stage; the offline real-forcing path (TEST_11 family) is unaffected.
 
 ## D-21. Stage 11.1 seasonal ocean stability result: instability is general to prognostic ocean evolution, not seasonal
@@ -253,7 +253,7 @@ Format: `ID | stage/date | status` + short description. Details — via links.
 - **Problem:** Stage 10 closed with a persistent ocean prognostic instability (density-first divergence mid-day 5 → NaN/zombie by day 6). The question: is this instability specific to the January 2020 initial condition/forcing, or is it a general property of the prognostic ocean model?
 - **Decision:** (1) ran 7-day ocean stability experiments for four seasonal initial conditions (Jan/Apr/Jul/Oct 2020) with corresponding ERA5 forcing; (2) added frozen-ocean control (30 days, atmosphere-only, `ICEBERG_FROZEN_DENSITY=true`); (3) all four seasonal cases crash within 1–5 days with identical failure mode (Day 1: T→273.15K, S→0, ro→0, NaN cascade); (4) frozen-ocean control (30 days, atmosphere-only) remained completely stable (ro 0.0075–0.0082 g/cm³, 0 NaN); (5) diagnosed that the EN4 initial T/S fields for April/July/October already contain negative density anomaly (`ro_min = -20.07 g/cm³`) on Day 0, while January survives 4 days before the same cascade.
 - **Why:** the identical `ro_min = -20.07 g/cm³` for April/July/October surface layers indicates a systematic EN4 processing defect (likely `shallowest_finite` flag handling in `build_initial_ts.py` vertical regridding). The frozen-ocean control proves atmospheric forcing alone is stable; instability requires prognostic ocean evolution. The identical failure mode across seasons proves the instability is **general to the prognostic ocean model**, not seasonal.
-- **Sources:** `docs/validation/stage11.1_ocean_stability_seasonal_initial_conditions.md`, `data/runs/stage11.1_{jan7,apr7,jul7,oct7}/output/nc/`, `data/runs/stage11.1_frozen_jan7/output/nc/`, `docs/validation/stage11.1_ocean_stability_seasonal_initial_conditions.md`.
+- **Sources:** `docs/archive/stage11/stage11.1_ocean_stability_seasonal_initial_conditions.md`, `data/runs/stage11.1_{jan7,apr7,jul7,oct7}/output/nc/`, `data/runs/stage11.1_frozen_jan7/output/nc/`, `docs/archive/stage11/stage11.1_ocean_stability_seasonal_initial_conditions.md`.
 - **Limitations:** only 7-day screening runs (not full 30-day acceptance gate); no cross-forcing matrix (J-A, A-J) tested; EN4 raw data not independently validated for April/July/October surface layers; frozen-ocean control only run for January atmosphere.
 - **Next:** Stage 11.2 — EN4 Initial Condition Stabilization (fix the EN4 surface-layer extrapolation bug; target: 30-day stable ocean run across seasons, `steps executed = 360`).
 
@@ -263,7 +263,7 @@ Format: `ID | stage/date | status` + short description. Details — via links.
 - **Problem:** Family-B dt=150 climates (fresh and STALE) diverge thermodynamically from legacy (heat −22% vs −1%, ice 777 vs 215 at April d7) while kinetic energy stays within 2% — which regime anchors production validation?
 - **Decision:** legacy N=1 (dt=3600, 1 ocean pass/day, day-stale coupling) REMAINS the scientific reference; all dt=150 variants are experimental climates pending the mandatory sea-ice gate.
 - **Why:** temporal convergence NOT achieved (11.5E: dt=225 vs dt=150 fields differ O(1)); STALE coupling provably cannot rejoin legacy (11.5H: PROD-STALE bit-identical to F3); promoting an unconverged regime would launder a regime change as a fix.
-- **Sources:** `docs/validation/stage11.5H_production_temporal_architecture.md` §2/§4, `docs/validation/stage11.5E_temporal_contract_closure.md`.
+- **Sources:** `docs/archive/stage11/stage11.5H_production_temporal_architecture.md` §2/§4, `docs/archive/stage11/stage11.5E_temporal_contract_closure.md`.
 - **Limitations:** legacy itself is dynamically young (ocean 1 h/day vs ice 24 h/day, 11.5A) — reference ≠ ideal, only validated.
 - **Next:** 11.8 matrix baselines against N=1; sea-ice gate adjudicates climates (D-27).
 
@@ -273,7 +273,7 @@ Format: `ID | stage/date | status` + short description. Details — via links.
 - **Problem:** 11.5E/11.5G loosely called dt=150 "largest fully validated stable" — but 225 s is the largest proven 29-day stable dt (11.5D.3), and 225-vs-150 climates are unconverged.
 - **Decision:** dt=150 = conservative numerically-stable candidate reference for scheduler work; production-climate validation requires temporal convergence + sea-ice gate, neither met.
 - **Why:** stability ≠ correctness; heat −22%/ice 3–8× vs legacy at BOTH 150 and 225 (11.5E) with O(1) field differences between them.
-- **Sources:** `docs/validation/stage11.5D.3_dt_threshold_scan.md`, `docs/validation/stage11.5E_temporal_contract_closure.md`.
+- **Sources:** `docs/archive/stage11/stage11.5D.3_dt_threshold_scan.md`, `docs/archive/stage11/stage11.5E_temporal_contract_closure.md`.
 - **Limitations:** convergence study (dt→0 limit) not performed — listed in KNOWN_ISSUES.
 - **Next:** 11.8 decides promotion only via gate evidence.
 
@@ -283,7 +283,7 @@ Format: `ID | stage/date | status` + short description. Details — via links.
 - **Problem:** is the Family-B thermodynamic divergence carried by ice→ocean feedback freshness (fixable by STALE coupling)?
 - **Decision:** NO — PROD-STALE (day-start-frozen txic/tyic/ans, production scheduler) is md5-bit-identical to F3 and ≈ fresh (heat −22%, ice 777 vs legacy −1%/215). Driver = ocean→ice freshness + ocean-internal cadence (11.5F closure, 11.5G narrowed out skz).
 - **Why:** two independent implementations (115C1-freeze, 115H-owned freeze) agree bit-for-bit; freezing the only freezable direction (11.5F §1 theorem) changes nothing.
-- **Sources:** `docs/validation/stage11.5H_production_temporal_architecture.md` §2/§4, `stage11.5F_coupling_cadence_isolation.md`, `stage11.5G_final_coupling_check_and_productionization.md`.
+- **Sources:** `docs/archive/stage11/stage11.5H_production_temporal_architecture.md` §2/§4, `stage11.5F_coupling_cadence_isolation.md`, `stage11.5G_final_coupling_check_and_productionization.md`.
 - **Limitations:** residual {T/S-freshness?, CA-cadence?} unseparated (requires freezing the ocean itself — impossible by the u1-rollover theorem).
 - **Next:** NO MORE freeze experiments (mandate since 11.5G); 11.5H-RC closes the coupling-forensics line.
 
@@ -293,7 +293,7 @@ Format: `ID | stage/date | status` + short description. Details — via links.
 - **Problem:** `heat()` reads `skt` for turbulent flux fw (`thermodynamics.f90:117`) but production never writes `skt` (sole write = synthetic test) → fw ≡ 0 in all production runs; basal evolution runs on conduction + fresh T1.
 - **Decision:** record as scientific debt (proper ice-ocean turbulent thermodynamic flux closure: prognostic skt + formulation + validation); DO NOT implement in Stage 11 — it would re-open Stage-10 physics.
 - **Why:** 11.5G audit (repo-wide word-boundary: `skz` write-only for physics, `skt` write-never); correcting the 11.5F skz→fw misread.
-- **Sources:** `docs/validation/stage11.5G_final_coupling_check_and_productionization.md` §1, `stage11.5H_production_temporal_architecture.md` §5.
+- **Sources:** `docs/archive/stage11/stage11.5G_final_coupling_check_and_productionization.md` §1, `stage11.5H_production_temporal_architecture.md` §5.
 - **Limitations:** fw≡0 affects basal balance interpretation in all climates (legacy included).
 - **Next:** future stage (possibly Stage 12+) with dedicated physics review per RULES.md.
 
@@ -303,7 +303,7 @@ Format: `ID | stage/date | status` + short description. Details — via links.
 - **Problem:** `shal()` uses shadowing locals dt1=120/mm3=30 (3600 s/call always) regardless of ocean dt — a structural conflict with substepped ocean (11.5E §E3).
 - **Decision:** DO NOT touch; any modification needs a dedicated physics stage with RULES.md procedure + approval. Production scheduler keeps shal 1×/day.
 - **Why:** barotropic solver stability + FCT anti-diffusion guards nearby; "fixing" risks blowup (AGENTS.md constraints).
-- **Sources:** `src/shallow_water.f90:97,102`, `docs/validation/stage11.5E_temporal_contract_closure.md` §E3.
+- **Sources:** `src/shallow_water.f90:97,102`, `docs/archive/stage11/stage11.5E_temporal_contract_closure.md` §E3.
 - **Limitations:** shal cadence mismatch vs substepped ocean persists (documented, not resolved).
 - **Next:** 11.8 notes it as residual; change only via approved physics stage.
 
@@ -313,7 +313,7 @@ Format: `ID | stage/date | status` + short description. Details — via links.
 - **Problem:** legacy April-d7 ice 215 vs Family-B 779–2736 = regime change, not numerical noise; no lawful basis to prefer either climate without observations.
 - **Decision:** no production regime promotion (STALE, fresh, or dt change) without OSI-SAF/NSIDC adjudication; 11.8A executes the gate, 11.8B audits it.
 - **Why:** 11.5E established the divergence; 11.5H proved coupling-freeze cannot rejoin legacy — observations are the only remaining arbiter.
-- **Sources:** `docs/validation/stage11.5E_temporal_contract_closure.md`, `stage11.5H_production_temporal_architecture.md` §8.
+- **Sources:** `docs/archive/stage11/stage11.5E_temporal_contract_closure.md`, `stage11.5H_production_temporal_architecture.md` §8.
 - **Limitations:** gate design (metrics, tolerance, datasets) deferred to 11.8A.
 - **Next:** 11.8A sea-ice validation; 11.8B release audit.
 
@@ -323,7 +323,7 @@ Format: `ID | stage/date | status` + short description. Details — via links.
 - **Problem:** premature voxel work on an unvalidated temporal/thermodynamic interface risks building on a regime-change artifact.
 - **Decision:** Stage 12 may start ONLY after Stage-11 COMPLETE: validated production ocean core + defined interface semantics + active CFL monitoring + validated NetCDF I/O + removed legacy inputs + closed validation baseline (11.5G §5.5 criteria, reaffirmed).
 - **Why:** 11.5-series proved the interface cadence changes the climate; voxel thermodynamics couples through exactly this interface.
-- **Sources:** `docs/validation/stage11.5G_final_coupling_check_and_productionization.md` §5.5, 11.5H §8.
+- **Sources:** `docs/archive/stage11/stage11.5G_final_coupling_check_and_productionization.md` §5.5, 11.5H §8.
 - **Limitations:** none (pure gating decision).
 - **Next:** 11.6 → 11.7 → 11.8A → 11.8B → 11.9 → Stage 12.
 
@@ -333,7 +333,7 @@ Format: `ID | stage/date | status` + short description. Details — via links.
 - **Problem:** under the corrected criterion (physical correctness + reference tests + numerical stability + impact on model — NOT "improvement vs observations"), should the validated EOS-80 pathway become production default?
 - **Decision:** OPTIONAL (`EOS_MODE=EOS80` opt-in; default LEGACY untouched, OFF bit-identical incl. Jan NDIFF=0).
 - **Why:** FOR — correctness (UNESCO compressibility), 28/28 reference tests, 4/4 April + 4/4 Jan green (0 NaN, CA converges maxiter 20–29/guard 0, salt 10× better at STALE, heat nearer legacy at STALE, 6.5× faster at STALE). AGAINST — ice response large (+36% N1 / +58% STALE d7, +96% d29 N1) and UNVALIDATED vs observations; April EUU process review (11.4) still open; per-cell velocity maps unavailable. Matches 11.4's recommendation.
-- **Sources:** `docs/validation/stage11.6_eos80_integration_rebaseline.md` §§1–5, `test/eos80_reference.f90` (28/28), April A/B/C/D + Jan JA–JD runs.
+- **Sources:** `docs/archive/stage11/stage11.6_eos80_integration_rebaseline.md` §§1–5, `test/eos80_reference.f90` (28/28), April A/B/C/D + Jan JA–JD runs.
 - **Limitations:** EOS dimension joins scheduler dimension in the 11.8A sea-ice gate; no EOS-80 production claims until then.
 - **EOS-80 promotion requires:**
   - (a) Ocean stabilization gate passed (365-day run without NaN, per `docs/validation/stage11.8.0_ocean_diagnostic_plan.md`)
@@ -347,7 +347,7 @@ Format: `ID | stage/date | status` + short description. Details — via links.
 - **Problem:** (a) `eos_diag` checked precision switch before EOS switch → EOS80+f64 computed LEGACY density (hidden EOS selection); (b) 11.6 claimed EOS×scheduler factorization, but day-7 interaction is +0.6865e28 heat (15.7% of A) / +375.41 ice (174.6% of A) — dominant; (c) "all 4 stable" mixed full (A/B/D 29 d, JA/JB/JD 30 d) and short (C d8, JC d9) runs.
 - **Decision:** (a) branch reorder EOS80-first with EXPLICIT rule — `eos80_mode` selects formula AND implies f64 in `eos_diag`; `eos_f64_mode` is legacy-precision-only (every resulting path already exercised; legacy combos bit-identical); (b) factorization WITHDRAWN, interaction quantified (nonlinear stratification×coupling: compressible gradients suppress spurious CA mixing, STALE coupling amplifies freezing multiplicatively); (c) stability claims say "stated intervals" (nothing beyond day 8 claimed for C).
 - **Why:** audit table (all sites × 4 combos) showed eos_diag as the sole gap; CA/probe/alpha-beta already dispatch correctly; interaction symmetric both factorizations (937.19−561.78 = +375.41 ✓).
-- **Sources:** `docs/validation/stage11.6.1_dispatch_audit_closure.md` §§0–3, `test/eos_dispatch.f90` (14/14), Jan/Apr OFF bit-identical reruns.
+- **Sources:** `docs/archive/stage11/stage11.6.1_dispatch_audit_closure.md` §§0–3, `test/eos_dispatch.f90` (14/14), Jan/Apr OFF bit-identical reruns.
 - **Limitations:** STAGE1021×EOS80 combos beyond eos_diag untested at model scale; interaction mechanism is interpretation.
 - **Next:** 11.7 NetCDF (output contract records EOS_MODE per run).
 
@@ -368,7 +368,7 @@ Format: `ID | stage/date | status` + short description. Details — via links.
     - `scheduler_mode`: `N1_LEGACY` or `PRODUCTION_STALE` (from actual scheduler state)
     - Removed misleading `initialization_date`/`initialization_checksum` (were "available"/"unavailable")
 - **Why:** the silent fallback violated the principle of explicit initialization; provenance metadata must reflect actual model state, not re-parsed environment variables; enum validation prevents silent misconfiguration.
-- **Sources:** `docs/validation/stage11.7E.2.2_provenance_integrity.md`, `src/initial_conditions.f90`, `src/initial_ocean_reader.f90`, `src/netcdf_output.f90`, `src/provenance.f90`.
+- **Sources:** `docs/archive/stage11/stage11.7E.2.2_provenance_integrity.md`, `src/initial_conditions.f90`, `src/initial_ocean_reader.f90`, `src/netcdf_output.f90`, `src/provenance.f90`.
 - **Limitations:** default `realistic_ocean_file` points to the shipped Jan product (bilinear signature); rebuild products satisfy STRICT contract. No production default change to the input file path.
 - **Next:** 11.7E.3 ERA5 forcing reader verification.
 
@@ -404,3 +404,11 @@ not added.
 - **Decision:** KEEP_CURRENT production physics — no source change in T3-CORRECTIVE-2. T-03 root cause is classified as the **CA density-writeback -> PGF feedback** (T-32), seeded by the unbalanced rest init and amplified by the dt=3600 splitting and the clamped SW boundary. The T3-CORRECTIVE statement that T-25 is not primary because EOS-80 CA converges is **revised**: EOS-80 still writes RO and is unstable; T-25 remains CRITICAL and is the leading CA-defect candidate.
 - **Next:** T3-CORRECTIVE-3 (fix) must pass D-33; candidate fixes: (1) make RO consistent with evolving T/S (prognostic/after advection), (2) potential-density CA (T-25), (3) CA sub-cycling / dt convergence, (4) boundary radiation. Acceptance: rest |U|,|V| < 0.01 m/s, no KE growth, conservation < 1e-4. T4 remains NO-GO; T-23/H-2 remain T4 prerequisites.
 - **Report:** `docs/validation/stage11.8.0_T3-CORRECTIVE-2_t03_diagnosis.md`; evidence `data/validation/t3c2_spatial_diagnosis.json`, `data/validation/t3c2_controls_analysis.json`.
+
+## D-35. T-19 v2 hourly snowfall; T3-CORRECTIVE-3 fixes implemented but T3b fails (Stage 11.8.0, 2026-10-25)
+
+- **T-19:** v1 step-range CDS probe was invalid. v2 requests 24 hourly fields without `step`; R=mean(12:00)/mean(all 24)=**1.00898** -> hourly accumulation. Adopt **divisor 3600 s**; hourly records are summed over 6-h model windows; merged products regenerated. `CONFIRMED_1H`; v1 JSON invalid.
+- **E1/E2/E3:** implemented behind OFF-by-default D-33 switches (`STAGE118_RO_PROGNOSTIC`, `_CA_POTENTIAL`, `_CA_F64_N2`). E1 is a no-op because `conv_adj` already rewrites RO for every wet column; E2 is a no-op in LEGACY because Eckart is pressure-independent (EOS80-only); E3 reduces CA mixing/guard but does not stabilize.
+- **T3b result:** E1+E2+E3 Umax 3.902 m/s, KE15 1.641e14 J, KE30 8.696e15 J, ratio 52.98 -> **FAIL**. EOS80 all 3.849/49.3; balanced init 3.998/50.4; E6 sponge reduces peak (3.71 -> 1.71 m/s at extreme damping) but no plateau.
+- **Decision:** KEEP_CURRENT production physics; all switches OFF default; EOS_MODE=LEGACY default. T4 remains **NO-GO**; T3-CORRECTIVE-4 required for the coupled advection/density instability (T-33). No boundary sponge promotion; no physics default change.
+- **Report:** `docs/validation/stage11.8.0_T3-CORRECTIVE-3_fixes.md`.

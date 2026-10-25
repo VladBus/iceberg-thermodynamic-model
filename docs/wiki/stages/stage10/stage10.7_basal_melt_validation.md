@@ -222,7 +222,7 @@ balance) с calibration-сюжетом; независимое подтверж�
 | Файл                                                                      | Изменение                            |
 | ------------------------------------------------------------------------- | ------------------------------------ |
 | `test/iceberg_test_10p7_basal_melt_validation.f90`                        | Новый: 17 независимых проверок (A–J) |
-| `docs/validation/stage10.7_basal_melt_validation.md`                      | Новый: настоящий документ            |
+| `docs/archive/stage11/stage10.7_basal_melt_validation.md`                      | Новый: настоящий документ            |
 | `docs/model/model_physics_status.md`                                      | Синхронизация статуса (10.7 audit)   |
 | `docs/model/stage10_modernization_plan.md`                                | Отметить Stage 10.7 выполненным      |
 | `docs/references/citation_map.md`, `docs/references/literature_matrix.md` | Ссылки на audit                      |

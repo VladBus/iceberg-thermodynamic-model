@@ -194,7 +194,7 @@ required until the ocean state is stabilized (next-stage prerequisite).
 
 ### 5.3 Documentation (this stage)
 
-- `docs/validation/stage10.19_production_runtime_coupling_recovery.md` (this report)
+- `docs/archive/stage11/stage10.19_production_runtime_coupling_recovery.md` (this report)
 - `docs/data_sources.md` — created as the single authoritative index of
   external data sources (ERA5, EN4, IBCAO, OSI-SAF, C3S, and the
   observational datasets from 10.8.2/10.18B/C/D) with retrieval recipes,

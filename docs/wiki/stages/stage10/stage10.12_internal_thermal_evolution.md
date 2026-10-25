@@ -3,7 +3,7 @@
 **Classification**: C — production physics ADDED on a separately switchable path; two-node lumped interior implemented and independently validated (Fortran 17 + Python 35 checks).
 **Baseline commit**: db0524e (stage10.11.3)
 **Date**: 2026-09-15
-**Design note**: `docs/validation/stage10.12_internal_thermal_evolution_design_note.md` (Phase A; Variant C chosen)
+**Design note**: `docs/archive/stage11/stage10.12_internal_thermal_evolution_design_note.md` (Phase A; Variant C chosen)
 
 ---
 

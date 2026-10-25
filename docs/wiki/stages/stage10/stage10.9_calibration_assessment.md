@@ -293,8 +293,8 @@ conclusion "do not change C_gamma" is itself the deliverable.
 
 - `python/validation/calibration_assessment.py` (new; module)
 - `python/tests/test_calibration_assessment.py` (new; 212 checks A-T)
-- `docs/validation/stage10.9_calibration_assessment.md` (this report)
-- `docs/validation/stage10.8.2_observational_validation.md` (claims
+- `docs/archive/stage11/stage10.9_calibration_assessment.md` (this report)
+- `docs/archive/stage11/stage10.8.2_observational_validation.md` (claims
   #7, #8 corrected; #1, #2, #4 qualified; Section 15 of that report links here)
 - `docs/model/*`, `docs/references/*`, `docs/PROJECT_ROADMAP.md`,
   `.github/workflows/ci.yml`, `AGENTS.md` (see diff)

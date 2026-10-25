@@ -42,7 +42,7 @@ ERA5_MERGED_PATH = PROJECT / "data/input/processed/era5/2020/2020_04/era5_2020_0
 # Minimal committed fixture for clean CI clones (Stage 11.7E.3.2)
 ERA5_FIXTURE_PATH = PROJECT / "python/tests/fixtures/era5_synthetic.nc"
 
-# Raw snowfall (12-hourly accumulation) — available locally, absent in CI
+# Raw snowfall (00/12 sampling; values are hourly accumulations) — local only
 ERA5_RAW_SNOWFALL_PATH = PROJECT / "data/input/raw/era5/2020/2020_04/snowfall_2020_04.nc"
 
 # Snowfall merge script (conversion factor protection)
@@ -138,15 +138,15 @@ def units_match(actual, expected):
 def check_snowfall_conversion(ds, mode, sf):
     """Protect the accumulation -> rate conversion from silent regression.
 
-    Real mode with raw file: verify raw units, 12-h period, and that the
-    merged rate equals raw accumulation / 43200.
+    Real mode with raw file: verify raw units, sampling spacing, and that the
+    merged rate equals raw hourly accumulation / 3600.
     Real mode without raw file: verify the merged metadata documents the
-    12-hour conversion and the output range is a plausible rate.
+    hourly conversion and the output range is a plausible rate.
     Fixture mode: verify the fixture's known accumulation -> rate values.
     """
     merge_src = MERGE_SNOWFALL_SCRIPT.read_text() if MERGE_SNOWFALL_SCRIPT.exists() else ""
-    check("43200" in merge_src,
-          "merge_snowfall.py uses 43200 s (12 h) accumulation period",
+    check("3600" in merge_src,
+          "merge_snowfall.py uses 3600 s (hourly) accumulation period",
           f"checked {MERGE_SNOWFALL_SCRIPT}")
 
     if mode == "fixture":
@@ -154,8 +154,8 @@ def check_snowfall_conversion(ds, mode, sf):
         period = float(ds.getncattr("fixture_snowfall_accumulation_period_s"))
         units = ds.getncattr("fixture_snowfall_accumulation_units")
 
-        check(period == 43200.0,
-              "fixture snowfall accumulation period == 43200 s (12 h)",
+        check(period == 3600.0,
+              "fixture snowfall accumulation period == 3600 s (1 h)",
               f"got {period}")
         check(units == "m of water equivalent",
               "fixture snowfall accumulation units == 'm of water equivalent'",
@@ -164,7 +164,7 @@ def check_snowfall_conversion(ds, mode, sf):
         expected_rate = accum / period
         actual_rate = float(np.nanmax(sf))
         check(abs(actual_rate - expected_rate) <= 1e-12,
-              "fixture sf rate == accumulation / 43200",
+              "fixture sf rate == accumulation / 3600",
               f"expected {expected_rate:.6e}, got {actual_rate:.6e}")
 
         expected_nz = int(ds.getncattr("fixture_sf_nonzero_count"))
@@ -186,11 +186,11 @@ def check_snowfall_conversion(ds, mode, sf):
               "raw ERA5 sf units are 'm of water equivalent'",
               f"got '{raw_units}'")
         check(raw_dt.size > 0 and np.all(raw_dt == 43200),
-              "raw ERA5 sf accumulation period == 12 h (43200 s)",
+              "raw ERA5 sf sampling == 12 h (2/day); accumulation itself is hourly",
               f"got diffs {np.unique(raw_dt)[:5]}")
-        check(abs(float(np.nanmax(sf)) - raw_max / 43200.0) <= 1e-12,
-              "merged sf max == raw accumulation / 43200",
-              f"raw_max/43200={raw_max/43200.0:.6e}, merged={float(np.nanmax(sf)):.6e}")
+        check(abs(float(np.nanmax(sf)) - raw_max / 3600.0) <= 1e-12,
+              "merged sf max == raw hourly accumulation / 3600",
+              f"raw_max/3600={raw_max/3600.0:.6e}, merged={float(np.nanmax(sf)):.6e}")
         check(np.count_nonzero(sf) >= 1000,
               "merged sf has many non-zero cells (>= 1000)",
               f"got {np.count_nonzero(sf)}")
@@ -198,8 +198,8 @@ def check_snowfall_conversion(ds, mode, sf):
     else:
         sf_var = ds.variables["sf"]
         sf_comment = sf_var.getncattr("comment") if "comment" in sf_var.ncattrs() else ""
-        check(("12" in sf_comment) or ("43200" in sf_comment),
-              "merged sf metadata documents 12-hour accumulation conversion",
+        check(("12" in sf_comment) or ("3600" in sf_comment),
+              "merged sf metadata documents hourly accumulation conversion",
               f"comment: '{sf_comment[:80]}'")
         check(np.nanmax(sf) < 1e-4,
               "merged sf max is a plausible rate (< 1e-4 m/s)",
@@ -227,11 +227,11 @@ def check_snowfall_conversion_function():
     check(rate.shape == accum.shape,
           "snowfall conversion preserves shape",
           f"got {rate.shape}")
-    check(np.array_equal(rate, accum / 43200.0),
-          "snowfall conversion == accumulation / 43200",
-          f"max diff {np.max(np.abs(rate - accum / 43200.0)):.3e}")
-    check(not np.array_equal(rate, accum / 3600.0),
-          "snowfall conversion is not accumulation / 3600")
+    check(np.array_equal(rate, accum / 3600.0),
+          "snowfall conversion == accumulation / 3600",
+          f"max diff {np.max(np.abs(rate - accum / 3600.0)):.3e}")
+    check(not np.array_equal(rate, accum / 43200.0),
+          "snowfall conversion is not accumulation / 43200")
     check(not np.array_equal(rate, accum / 86400.0),
           "snowfall conversion is not accumulation / 86400")
 
@@ -264,8 +264,8 @@ def check_snowfall_conversion_function():
                   "merged sf units == m s-1",
                   f"got {merged.variables['sf'].units!r}")
             merged_max = float(np.nanmax(merged.variables["sf"][:]))
-            check(abs(merged_max - 0.00432 / 43200.0) <= 1e-12,
-                  "merged sf uses /43200 conversion",
+            check(abs(merged_max - 0.00432 / 3600.0) <= 1e-12,
+                  "merged sf uses /3600 hourly conversion",
                   f"got {merged_max:.6e}")
 
 
@@ -538,7 +538,7 @@ def main():
         info("  u10/v10 [m/s] -> windx1/windy1 [cm/s]: ×100 (lines 298-299)")
         info("  msl [Pa] -> p1/patm [hPa]: ×0.01 (lines 320, 322)")
         info("  t2m [K] -> tatm [°C]: -273.15 (line 321)")
-        info("  sf [m/s]: already rate from merge (divided by 43200)")
+        info("  sf [m/s]: already rate from merge (divided by 3600)")
 
         # Temporal interpolation
         info("Temporal interpolation (src/netcdf_input.f90:era5_find_time_index() lines 360-385):")

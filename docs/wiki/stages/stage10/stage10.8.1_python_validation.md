@@ -226,6 +226,6 @@ rather than silently changing either formulation.
 - Weeks, W. F. & Campbell, W. J. (1973). J. Glaciol. 12, 207-233.
 - FitzMaurice, A. & Stern, A. A. (2018). Ocean Modelling 131, 54-69.
 - Cenedese, C. & Straneo, F. (2023). iceberg submarine-melt review (observed 0.01-1 m/day).
-- Prior stage: `docs/validation/stage10.7_basal_melt_validation.md`.
+- Prior stage: `docs/archive/stage11/stage10.7_basal_melt_validation.md`.
 
 **Test program:** `python/tests/test_basal_melt_validation.py` — 44 checks, 0 errors.

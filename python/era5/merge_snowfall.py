@@ -1,13 +1,17 @@
 #!/usr/bin/env python3
-"""Merge ERA5 snowfall (accumulated forecast) with instantaneous variables.
+"""Merge ERA5 snowfall (hourly accumulation) with instantaneous variables.
 
-ERA5 snowfall (variable 'sf') is an accumulated forecast variable:
-- Available at analysis times (00:00 and 12:00 UTC)
-- Each value represents 12-hour accumulation ending at that analysis time
-- Units: m of water equivalent
+ERA5 single-level snowfall (``sf``) is an **hourly accumulation over the hour
+ending at the validity time** (ECMWF convention; T-19 v2 CDS probe: the 12:00
+field is 1.009x the mean of all 24 hourly fields, not 12x).  The model's
+atmosphere is 6-hourly, so:
 
-This script merges snowfall into the instantaneous variables NetCDF file,
-interpolating to the model's 6-hourly time steps.
+* hourly raw records are summed over each 6-hour window ``(t-6h, t]`` and
+  divided by 21600 s to obtain a 6-hour mean rate;
+* coarser sampled artifacts (e.g. 00/12 UTC only) are converted with the
+  **hourly divisor 3600 s** and linearly interpolated to the model times.
+
+Units: m of water equivalent -> m s-1.
 
 Usage (Stage 6.2 run-based data layout):
 
@@ -29,7 +33,9 @@ import xarray as xr
 
 from scipy import interpolate
 
-SNOWFALL_ACCUMULATION_PERIOD_S = 43200.0
+# T-19 v2: ECMWF hourly accumulations are over the hour ending at valid_time.
+SNOWFALL_ACCUMULATION_PERIOD_S = 3600.0
+MODEL_STEP_S = 21600.0  # 6-hourly atmospheric forcing
 
 
 def accumulation_to_rate(accumulation, period_s=SNOWFALL_ACCUMULATION_PERIOD_S):
@@ -39,12 +45,31 @@ def accumulation_to_rate(accumulation, period_s=SNOWFALL_ACCUMULATION_PERIOD_S):
     return np.asarray(accumulation) / float(period_s)
 
 
+def aggregate_hourly_to_model_steps(snow_accum, snow_time_sec, target_time_sec,
+                                    period_s=SNOWFALL_ACCUMULATION_PERIOD_S,
+                                    step_s=MODEL_STEP_S):
+    """Aggregate hourly accumulations into model-step mean rates.
+
+    For each target time, sum the raw accumulations whose validity times fall
+    in ``(target - step_s, target]`` and divide by ``step_s``.  This is the
+    correct treatment when the raw file is hourly; it avoids treating a single
+    hourly accumulation as a 6-hour total.
+    """
+    out = np.zeros((len(target_time_sec),) + snow_accum.shape[1:], dtype=np.float32)
+    for n, t in enumerate(target_time_sec):
+        sel = (snow_time_sec > t - step_s) & (snow_time_sec <= t)
+        if not np.any(sel):
+            continue
+        out[n] = np.sum(snow_accum[sel], axis=0) / float(step_s)
+    return out
+
+
 def merge_snowfall(instantaneous_nc, snowfall_nc, output_nc):
     """Merge snowfall into instantaneous variables file.
 
     Args:
         instantaneous_nc: Path to ERA5 instantaneous variables (u10, v10, t2m, d2m, msl, tcc)
-        snowfall_nc: Path to ERA5 snowfall (accumulated, 12-hourly at 00/12 UTC)
+        snowfall_nc: Path to ERA5 snowfall (hourly accumulations, m water eq.)
         output_nc: Output merged NetCDF path
     """
     print(f"Reading instantaneous variables from {instantaneous_nc}")
@@ -53,24 +78,16 @@ def merge_snowfall(instantaneous_nc, snowfall_nc, output_nc):
     print(f"Reading snowfall from {snowfall_nc}")
     ds_snow = xr.open_dataset(snowfall_nc)
 
-    # Verify snowfall structure
     print(f"Snowfall shape: {ds_snow['sf'].shape}")
     print(f"Snowfall time steps: {len(ds_snow.valid_time)}")
     print(
         f"Snowfall time range: {ds_snow.valid_time[0].values} to {ds_snow.valid_time[-1].values}"
     )
 
-    # The snowfall is at 00:00 and 12:00 UTC (analysis times)
-    # Each value = 12-hour accumulation ending at that analysis time
-    # We need to interpolate to the instantaneous file's 6-hourly times (00, 06, 12, 18 UTC)
-
-    # Use the instantaneous file's time axis as the target
     target_times = ds_inst.valid_time.values
     target_time_sec = np.array(
         [np.datetime64(t, "s").astype("int64") for t in target_times]
     )
-
-    # Snowfall time axis
     snow_times = ds_snow.valid_time.values
     snow_time_sec = np.array(
         [np.datetime64(t, "s").astype("int64") for t in snow_times]
@@ -81,37 +98,39 @@ def merge_snowfall(instantaneous_nc, snowfall_nc, output_nc):
     print(f"Snowfall time steps: {len(snow_times)}")
     print(f"Snowfall time range: {snow_times[0]} to {snow_times[-1]}")
 
-    # The snowfall is at 00:00 and 12:00 UTC (analysis times)
-    # Each value = 12-hour accumulation ending at that analysis time
-    # Convert snowfall accumulations to rates [m/s]
-    # Each accumulation is over 12 hours = 43200 seconds
     snow_accum = ds_snow["sf"].values  # [time, lat, lon] in m water equivalent
-    snow_rate = accumulation_to_rate(snow_accum)  # m/s
-
-    # Interpolate snowfall rate to target times
+    dt_snow = np.diff(snow_time_sec)
+    median_dt = float(np.median(dt_snow)) if dt_snow.size else np.inf
     nlat, nlon = snow_accum.shape[1], snow_accum.shape[2]
-    snow_rate_interp = np.zeros((len(target_times), nlat, nlon), dtype=np.float32)
 
-    print("Interpolating snowfall rate to 6-hourly times...")
-    for i in range(nlat):
-        for j in range(nlon):
-            # Skip land points (where snowfall is always 0)
-            if np.all(snow_rate[:, i, j] == 0):
-                continue
-            f = interpolate.interp1d(
-                snow_time_sec,
-                snow_rate[:, i, j],
-                kind="linear",
-                bounds_error=False,
-                fill_value=0.0,
-            )
-            snow_rate_interp[:, i, j] = f(target_time_sec)
+    if median_dt <= 3600.0 and len(snow_times) >= 2:
+        # Hourly raw file: sum the six hourly accumulations per model step.
+        print("Hourly snowfall detected: aggregating to 6-hourly model steps "
+              "(sum / 21600 s).")
+        snow_rate_interp = aggregate_hourly_to_model_steps(
+            snow_accum, snow_time_sec, target_time_sec)
+    else:
+        # Coarse sampled artifact (e.g. 00/12 UTC): each record is an hourly
+        # accumulation at the validity time.  Convert with /3600 and interpolate.
+        print("Coarse snowfall sampling detected: hourly accumulation -> rate "
+              "(/3600 s) and linear interpolation to model times.")
+        snow_rate = accumulation_to_rate(snow_accum)  # m/s
+        snow_rate_interp = np.zeros(
+            (len(target_times), nlat, nlon), dtype=np.float32)
+        for i in range(nlat):
+            for j in range(nlon):
+                if np.all(snow_rate[:, i, j] == 0):
+                    continue
+                f = interpolate.interp1d(
+                    snow_time_sec,
+                    snow_rate[:, i, j],
+                    kind="linear",
+                    bounds_error=False,
+                    fill_value=0.0,
+                )
+                snow_rate_interp[:, i, j] = f(target_time_sec)
 
-    # Create new dataset with merged variables
-    # Start with instantaneous variables and add snowfall
     ds_out = ds_inst.copy()
-
-    # Add snowfall as new variable with distinct name
     ds_out["sf"] = xr.DataArray(
         snow_rate_interp,
         dims=("valid_time", "latitude", "longitude"),
@@ -124,19 +143,18 @@ def merge_snowfall(instantaneous_nc, snowfall_nc, output_nc):
             "units": "m s-1",
             "long_name": "Snowfall rate",
             "standard_name": "snowfall_flux",
-            "comment": "Interpolated from ERA5 12-hourly accumulated snowfall (sf) at 00/12 UTC analyses. Original units: m water equivalent per 12 hours. Converted to m/s rate.",
+            "comment": ("ERA5 hourly snowfall accumulation (m water equivalent "
+                        "over the hour ending at valid_time); divided by 3600 s "
+                        "and, when hourly records are available, summed over each "
+                        "6-hour model window (/21600 s)."),
         },
     )
 
-    # Select only the variables we need (instantaneous + snowfall)
-    # The model expects: u10, v10, t2m, d2m, msl, tcc, sf
     required_vars = ["u10", "v10", "t2m", "d2m", "msl", "tcc", "sf"]
     for var in list(ds_out.data_vars.keys()):
         if var not in required_vars:
             ds_out = ds_out.drop_vars(var)
 
-    # Write output with proper time encoding (seconds since 1970-01-01)
-    # to match the original CDS format expected by the Fortran model
     encoding = {
         "valid_time": {
             "units": "seconds since 1970-01-01",
@@ -144,7 +162,6 @@ def merge_snowfall(instantaneous_nc, snowfall_nc, output_nc):
             "dtype": "int64",
         }
     }
-    # Apply same encoding to all time-dependent variables
     for var in ds_out.data_vars:
         if "valid_time" in ds_out[var].dims:
             encoding[var] = {"zlib": True, "complevel": 4}
@@ -167,7 +184,7 @@ def main():
     )
     parser.add_argument(
         "snowfall_nc",
-        help="Path to snowfall NetCDF (accumulated, 12-hourly at 00/12 UTC)",
+        help="Path to ERA5 snowfall NetCDF (hourly accumulations, m water eq.)",
     )
     parser.add_argument("output_nc", help="Output merged NetCDF path")
     args = parser.parse_args()

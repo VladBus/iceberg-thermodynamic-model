@@ -22,6 +22,8 @@ module convective_adjustment
     use equation_of_state, only: density_anomaly, density_anomaly_f64, &
                                  eos_density, eos_density_f64
     use stage1022_diagnostics, only: s22_freeze_ro
+    use stage118_physics_switches, only: s118_ro_prognostic, &
+        s118_ca_potential, s118_ca_f64_n2
     use, intrinsic :: iso_fortran_env, only: real64
     implicit none
 
@@ -150,6 +152,7 @@ contains
         real :: cr(ks)
         real :: dzz, dzz1, dz1z, a
         real :: resid, rmax_inv
+        real(real64) :: a64, rho1, rho2, n2_val, dz_m, p1, p2
         integer :: k, k1, ki2, a1
         integer :: iter_count
 
@@ -182,8 +185,40 @@ contains
                 k1 = k + 1
                 dzz1 = cdz1(k1)        ! Толщина полуслоя уровня k+1 [см]
                 dz1z = dzz + dzz1       ! Суммарная толщина полуслоёв [см]
-                a = cr(k) - cr(k1)      ! Плотностная инверсия [г/см³]
-                if (a .le. eps_density) then
+                ! Stage 11.8.0 T3-CORRECTIVE-3 (E2/E3, OFF default):
+                ! E2 compares both levels at the same reference pressure
+                ! (potential density); E3 uses real64 differences and the
+                ! physical N^2 < -1e-6 s^-2 criterion.
+                if (s118_ca_f64_n2) then
+                    if (s118_ca_potential) then
+                        p1 = real(z(k1)*0.01, real64)
+                        p2 = p1
+                    else
+                        p1 = real(z(k)*0.01, real64)
+                        p2 = real(z(k1)*0.01, real64)
+                    end if
+                    rho1 = eos_density_f64(real(ct(k), real64), real(cs(k), real64), p1)
+                    rho2 = eos_density_f64(real(ct(k1), real64), real(cs(k1), real64), p2)
+                    a64 = rho1 - rho2
+                    a = real(a64, kind(1.0))
+                else if (s118_ca_potential) then
+                    p1 = real(z(k1)*0.01, real64)
+                    rho1 = real(eos_density(ct(k), cs(k), real(p1, kind(1.0))), real64)
+                    rho2 = real(eos_density(ct(k1), cs(k1), real(p1, kind(1.0))), real64)
+                    a = real(rho1 - rho2, kind(1.0))
+                    a64 = rho1 - rho2
+                else
+                    a = cr(k) - cr(k1)  ! Плотностная инверсия [г/см³]
+                    a64 = real(a, real64)
+                end if
+                if (s118_ca_f64_n2) then
+                    dz_m = real(z(k1) - z(k), real64)
+                    n2_val = -(981.0_real64/1.0_real64)*a64/dz_m
+                    if (n2_val .ge. -1.0e-6_real64) then
+                        dzz = dzz1
+                        cycle
+                    end if
+                else if (a .le. eps_density) then
                     dzz = dzz1  ! Нет инверсии — переходим к следующему интерфейсу
                     cycle
                 end if
@@ -282,6 +317,7 @@ contains
         real(real64) :: dzz, dzz1, dz1z, a
         real(real64) :: resid, rmax_inv
         real(real64) :: t_new, s_new
+        real(real64) :: a64, rho1, rho2, n2_val, dz_m, p1, p2
         integer :: k, k1, ki2, a1
         integer :: iter_count
 
@@ -313,8 +349,24 @@ contains
                 k1 = k + 1
                 dzz1 = real(cdz1(k1), real64)   ! Толщина полуслоя уровня k+1 [см]
                 dz1z = dzz + dzz1              ! Суммарная толщина полуслоёв [см]
-                a = cr(k) - cr(k1)             ! Плотностная инверсия [г/см³]
-                if (a .le. real(eps_density, real64)) then
+                ! Stage 11.8.0 T3-CORRECTIVE-3 (E2/E3, OFF default).
+                if (s118_ca_potential) then
+                    p1 = real(z(k1)*0.01, real64)
+                    rho1 = eos_density_f64(real(ct(k), real64), real(cs(k), real64), p1)
+                    rho2 = eos_density_f64(real(ct(k1), real64), real(cs(k1), real64), p1)
+                    a = rho1 - rho2
+                else
+                    a = cr(k) - cr(k1)         ! Плотностная инверсия [г/см³]
+                end if
+                a64 = a
+                if (s118_ca_f64_n2) then
+                    dz_m = real(z(k1) - z(k), real64)
+                    n2_val = -(981.0_real64/1.0_real64)*a64/dz_m
+                    if (n2_val .ge. -1.0e-6_real64) then
+                        dzz = dzz1
+                        cycle
+                    end if
+                else if (a .le. real(eps_density, real64)) then
                     dzz = dzz1  ! Нет инверсии — переходим к следующему интерфейсу
                     cycle
                 end if
@@ -455,7 +507,7 @@ contains
                     s2(i, j, k) = cs(k)
                     ! Stage 10.22 A1: при s22_freeze_ro пересчёт RO отключается
                     ! (T/S по-прежнему перемешиваются; RO остаётся как до conv_adj).
-                    if (.not. s22_freeze_ro) then
+                    if ((.not. s22_freeze_ro) .and. (.not. s118_ro_prognostic)) then
                         if (ca_f64_mode .and. ca_f64_scope) then
                             ! Stage 10.21 scope=all (EXP-C): RO через f64-плотность —
                             ! единая последовательность вычислений с ядром столбца.

@@ -1,0 +1,91 @@
+{
+  "stage": "11.8.0 T3-CORRECTIVE-3",
+  "test": "T3b adaptation (real EN4 T/S, zero forcing, zero initial velocity)",
+  "acceptance": {
+    "max_u_m_s": 0.5,
+    "ke30_over_ke15": 2.0
+  },
+  "baseline": {
+    "run": "t3c_legacy_canonical",
+    "days": 30,
+    "max_u_m_s": 3.923518657684326,
+    "max_v_m_s": 5.498370170593262,
+    "max_w_m_s": 0.04279228672385216,
+    "ke_day0_j": 0.0,
+    "ke_day15_j": 169294302088003.8,
+    "ke_day30_j": 8092188949622848.0,
+    "ke30_over_ke15": 47.799535187051404,
+    "classification": "UNSTABLE"
+  },
+  "experiments": {
+    "t3c3_e1": {
+      "run": "t3c3_e1",
+      "days": 30,
+      "max_u_m_s": 3.923518657684326,
+      "max_v_m_s": 5.498370170593262,
+      "max_w_m_s": 0.04279228672385216,
+      "ke_day0_j": 0.0,
+      "ke_day15_j": 169294302088003.8,
+      "ke_day30_j": 8092188949622848.0,
+      "ke30_over_ke15": 47.799535187051404,
+      "classification": "UNSTABLE"
+    },
+    "t3c3_e2": {
+      "run": "t3c3_e2",
+      "days": 30,
+      "max_u_m_s": 3.923518657684326,
+      "max_v_m_s": 5.498370170593262,
+      "max_w_m_s": 0.04279228672385216,
+      "ke_day0_j": 0.0,
+      "ke_day15_j": 169294302088003.8,
+      "ke_day30_j": 8092188949622848.0,
+      "ke30_over_ke15": 47.799535187051404,
+      "classification": "UNSTABLE"
+    },
+    "t3c3_e3": {
+      "run": "t3c3_e3",
+      "days": 30,
+      "max_u_m_s": 3.9015636444091797,
+      "max_v_m_s": 5.410172462463379,
+      "max_w_m_s": 0.04241952300071716,
+      "ke_day0_j": 0.0,
+      "ke_day15_j": 164145711137147.56,
+      "ke_day30_j": 8695836384855503.0,
+      "ke30_over_ke15": 52.97632405143945,
+      "classification": "UNSTABLE"
+    },
+    "t3c3_all": {
+      "run": "t3c3_all",
+      "days": 30,
+      "max_u_m_s": 3.9015636444091797,
+      "max_v_m_s": 5.410172462463379,
+      "max_w_m_s": 0.04241952300071716,
+      "ke_day0_j": 0.0,
+      "ke_day15_j": 164145711137147.56,
+      "ke_day30_j": 8695836384855503.0,
+      "ke30_over_ke15": 52.97632405143945,
+      "classification": "UNSTABLE"
+    }
+  },
+  "t3b_primary": {
+    "run": "t3c3_all",
+    "days": 30,
+    "max_u_m_s": 3.9015636444091797,
+    "max_v_m_s": 5.410172462463379,
+    "max_w_m_s": 0.04241952300071716,
+    "ke_day0_j": 0.0,
+    "ke_day15_j": 164145711137147.56,
+    "ke_day30_j": 8695836384855503.0,
+    "ke30_over_ke15": 52.97632405143945,
+    "classification": "UNSTABLE"
+  },
+  "t3b_pass": false,
+  "t3a_note": "T3a pure rest (homogeneous T/S, real bathymetry): max |U| < 1e-6 m/s, no PGF. Documented; not executed in this stage.",
+  "findings": {
+    "E1_RO_PROGNOSTIC": "implemented; no effect in practice because conv_adj already recomputes RO for every wet column after T/S mixing.",
+    "E2_CA_POTENTIAL": "implemented; no effect in LEGACY (Eckart is pressure-independent); active only with EOS80.",
+    "E3_CA_F64_N2": "implemented; reduces CA mixings (day 2: 61,454 vs 7,083,949) and guard hits (0 vs 1001), but does not stabilize.",
+    "E6_BOUNDARY_SPONGE": "tested (width 8-20, tau 1 h-1 day); reduces peak but does not produce a plateau; not used in T3b."
+  },
+  "conclusion": "T3b FAILS: the coupled advection/density system remains unstable even with E1-E3; the requested fixes do not meet the acceptance criteria. T4 remains NO-GO."
+}

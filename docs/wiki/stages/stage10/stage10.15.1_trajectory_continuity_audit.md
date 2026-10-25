@@ -44,7 +44,7 @@ or remove suspicious data.
 
 ## 2. Provenance
 
-- Stage 10.15 report: `docs/validation/stage10.15_operational_demonstration.md`
+- Stage 10.15 report: `docs/archive/stage11/stage10.15_operational_demonstration.md`
   (original report — **kept unchanged**; this audit is a dated follow-up).
 - Stage 10.15 diagnostic script: `python/analysis/stage10.15_diagnostics.py`.
 - Audited CSV (exact): `data/output/stage10.15/test11_trajectory.csv`
@@ -256,11 +256,11 @@ transposition (28 checks), independent of the Fortran suite.
 | ---- | ------ | ------- |
 | `python/analysis/stage10.15_1_trajectory_audit.py` | NEW — deterministic audit script (checks + per-step CSV + corrected trajectory CSV + 9 figures + summary JSON) | diagnostics only |
 | `python/tests/test_stage10_15_1_trajectory_audit.py` | NEW — 28 regression checks (synthetic formula regression + real-output audit) | tests only |
-| `docs/validation/stage10.15.1_trajectory_continuity_audit.md` | NEW — this report | documentation |
+| `docs/archive/stage11/stage10.15.1_trajectory_continuity_audit.md` | NEW — this report | documentation |
 | `docs/validation/INDEX.md`, `docs/PROJECT_ROADMAP.md`, `KNOWN_ISSUES.md` (T-13), `CHANGELOG.md` | updated | documentation |
 
 **Unchanged:** `src/`, `app/`, `test/`, `fpm.toml`, all historical reports,
-`docs/validation/stage10.15_operational_demonstration.md` (original Stage
+`docs/archive/stage11/stage10.15_operational_demonstration.md` (original Stage
 10.15 report preserved; the corrected figure is linked from this report).
 
 **Why the source is not changed in this stage:** the fix is a one-line-pair

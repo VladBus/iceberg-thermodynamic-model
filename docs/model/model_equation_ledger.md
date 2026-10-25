@@ -1,7 +1,7 @@
 # Model Equation Ledger — Mathematical Specification of the Current Model
 
 **Date:** 2026-09-15
-**Current repository stage:** Stage 11.5H-RC (release-candidate gate). Equations below are the PHYSICAL specification (unchanged by Stages 11.5–11.5H-RC); temporal integration architecture (operator cadence, substepping, STALE coupling, production scheduler) is documented separately in `docs/validation/stage11.5H_production_temporal_architecture.md` and does not alter these equations.
+**Current repository stage:** Stage 11.5H-RC (release-candidate gate). Equations below are the PHYSICAL specification (unchanged by Stages 11.5–11.5H-RC); temporal integration architecture (operator cadence, substepping, STALE coupling, production scheduler) is documented separately in `docs/archive/stage11/stage11.5H_production_temporal_architecture.md` and does not alter these equations.
 **Production baseline:** Stage 10.13 (low-flow closure behind `low_flow_closure_enabled`; OFF = Stage 10.12/10.10 behavior unchanged)
 **Units:** SI in the iceberg module unless explicitly noted.
 
@@ -219,8 +219,8 @@ Independent validation: the Stage 10.10.1 Fortran test (25 checks) and
 (65 checks), including a shared cross-language contract value
 (`m ~ 1.0438e-8` m/s for the H&J99 Table 1 anchor and `m = 4.067e-6` m/s for
 the production end-to-end case). See
-`docs/validation/stage10.10_three_equation_interface.md` (superseded) and
-`docs/validation/stage10.10_three_equation_interface.md`.
+`docs/archive/stage11/stage10.10_three_equation_interface.md` (superseded) and
+`docs/archive/stage11/stage10.10_three_equation_interface.md`.
 
 ## 10.3 Natural-convection basal melt (Stage 10.11)
 
@@ -285,7 +285,7 @@ band was incorrect and is removed. The physically motivated (stabilizing) haline
 sign would instead give `Ra<0 -> Nu=0 -> m=0`; the real quiescent mechanism is
 double-diffusive / diffusion-limited convection (Martin & Kauffman 1977;
 Keitzl et al. 2016; Middleton et al. 2021), which this closure does not
-represent. See `docs/validation/stage10.11.3_natural_convection_physics_audit.md`.
+represent. See `docs/archive/stage11/stage10.11.3_natural_convection_physics_audit.md`.
 
 Parameters (Stage 10.11 additions):
 `beta_T = 3.0e-5 1/K`, `beta_S = 7.8e-4 1/PSU`, `Le = 100`,
@@ -348,7 +348,7 @@ Known limitations: lumped parametrization, no internal melt at `T_ice = 0`
 (excess energy discarded at the clamp), removed-ice enthalpy not tracked
 (intensive `T_ice` through geometry shrink), `K_ICE = 2.2 W/(m K)` is a model
 parameter (literature range 2.0-2.3), not calibrated.
-See `docs/validation/stage10.12_internal_thermal_evolution.md`.
+See `docs/archive/stage11/stage10.12_internal_thermal_evolution.md`.
 
 ## 10.5 Diffusion-limited / double-diffusive low-flow closure (Stage 10.13)
 
@@ -404,9 +404,9 @@ convention (Le=100), interface freshening of the 3eq solve, gamma-blending
 before the solve (vs m-blending in the Python hybrid). Known limitations:
 t_scale dominant sensitivity, f_dc not calibrated, research parameterization
 (not universal validation).
-See `docs/validation/stage10.13_phase_c_results.md`,
-`docs/validation/stage10.13_phase_b_results.md`,
-`docs/validation/stage10.13_diffusion_limited_low_flow_design_note.md`.
+See `docs/archive/stage11/stage10.13_phase_c_results.md`,
+`docs/archive/stage11/stage10.13_phase_b_results.md`,
+`docs/archive/stage11/stage10.13_diffusion_limited_low_flow_design_note.md`.
 
 ## 11. Lateral melt
 

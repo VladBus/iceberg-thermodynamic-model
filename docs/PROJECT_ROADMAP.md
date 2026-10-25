@@ -1,9 +1,9 @@
 # Project Roadmap
 
 **Updated:** 2026-10-25
-**Current scientific stage:** Stage 11.8.0 T3-CORRECTIVE-2 COMPLETE — T-03 root cause IDENTIFIED: **CA density-writeback -> baroclinic PGF feedback**, seeded by the unbalanced zero-velocity rest init, localised by the SW clamped boundary and amplified at dt=3600. FREEZE_RO/TS bound the flow in both EOS modes; PGF-stencil double-count is 1.5e-5 (not the driver). NEXT: **T3-CORRECTIVE-3 (fix)** — prognostic RO / potential-density CA / CA sub-cycling + boundary radiation; requires D-33. **T4 remains NO-GO.**
+**Current scientific stage:** Stage 11.8.0 T3-CORRECTIVE-3 COMPLETE (implementation + hygiene) — **T-19 FIXED** (v2 probe R=1.009 -> hourly; divisor 3600); E1/E2/E3 implemented behind OFF-by-default switches, but **T3b still FAILS** (Umax 3.902 m/s, KE30/KE15 52.98) and E6 sponge only masks the boundary peak. NEXT: **T3-CORRECTIVE-4** (coupled advection/density stabilization); **T4 NO-GO.**
 **Stages 3–11.4.1: COMPLETED** (10.x iceberg modernization; 11.1 seasonal characterization; 11.2 CFL audit; 11.4-D21…D33 EN4 stabilization → ERA5-coverage fix → cleanup + Ocean Baseline 11.x; 11.3A execution-graph audit; 11.3B input-architecture audit + NetCDF contracts; 11.3C scheme audit + timestep matrix; 11.3C.1 semantics + CFL distributions; 11.3C.2 time-integration audit; 11.3C.3 loop-bound search (VERDICT D); 11.4 EOS-80 experiment + 11.4.1 impact validation (OPTIONAL, not default)).
-**Current status:** Stages 10.14-11.8.0 T3-CORRECTIVE-2 committed. T0/T1/T2/T3-PREP/T3/T3-CORRECTIVE/T3-CORRECTIVE-2 COMPLETE. **T3-CORRECTIVE-2 diagnosis:** root cause = CA density writeback -> PGF feedback; no physics change; T4 NO-GO, T3-CORRECTIVE-3 GO.
+**Current status:** Stages 10.14-11.8.0 T3-CORRECTIVE-3 committed. T0/T1/T2/T3-PREP/T3/T3-CORRECTIVE/T3-CORRECTIVE-2/T3-CORRECTIVE-3 COMPLETE. **T3-CORRECTIVE-3:** T-19 v2 fixed (hourly, /3600); E1–E3 switches implemented (default OFF); T3b fails; T4 NO-GO.
 **Test suite:** 69 Fortran test source files (`ls test/*.f90 | wc -l`); 69 executable test targets (`grep -lE '^\s*program ' test/*.f90 | wc -l`). Counting method (Stage 11.8.0 T0): every current `test/*.f90` holds a top-level `program`, so file count == target count (verified 2026-10-24).
 **Stage 11.5H-RC COMPLETE** (release-candidate gate: self-contained production scheduler, docs synced D-22…D-28). Plan: 11.8.0 diagnostic ladder (T0–T6) → 11.8A validation → 11.8B audit → 11.9 closure → 12.0 voxel (blocked, D-28).
 
@@ -154,7 +154,7 @@ for all later stages): "EOS-80 implemented and validated as OPTIONAL;
 legacy Eckart remains DEFAULT and scientific reference; default decision
 deferred to Stage 11.8A observational validation; legacy EOS is retained
 permanently as regression baseline and is NOT scheduled for removal."
-Report: `docs/validation/stage11.6_eos80_integration_rebaseline.md`.
+Report: `docs/archive/stage11/stage11.6_eos80_integration_rebaseline.md`.
 
 ### Stage 11.6.1 — EOS-80 Dispatch Audit Closure & Result-Interpretation Correction (COMPLETE, D-30)
 
@@ -187,7 +187,7 @@ MD5-only-byte-identical checksum policy, test-coverage map (3 existing +
 5 missing incl. EOS-duplicated), CFL 6-formula audit (no production
 thresholds exist → all TBD with 11.8A-evidence plan), Q1–Q4 open questions,
 11.7B–F staged sequence, EOS-agnostic binding statement.
-Report: `docs/validation/stage11.7A_netcdf_contracts_preflight.md`.
+Report: `docs/archive/stage11/stage11.7A_netcdf_contracts_preflight.md`.
 NEXT: 11.7C.
 
 ### Stage 11.7B.1 — kk1 Equivalence Closure & Grid Contract Audit (COMPLETE)
@@ -199,7 +199,7 @@ oracle + Fortran dump harness (anchors 11067/143422); three-way zero
 mismatches, gate 10336; Jan==Apr products identical (143176 = pre-smoothing
 product levels, additional-only); dims Option A (i,j,k); CF grid_mapping
 deferred; python 23/23; GO 11.7C.
-Report: `docs/validation/stage11.7B.1_kk1_equivalence_closure.md`.
+Report: `docs/archive/stage11/stage11.7B.1_kk1_equivalence_closure.md`.
 NEXT: 11.7C.
 
 ### Stage 11.7B — Grid & Bathymetry NetCDF Builders + Equivalence (COMPLETE)
@@ -210,7 +210,7 @@ within policy, anchors 11067 wet cols / 143176 levels vs April product);
 i=is1 border asymmetry caught by anchor and fixed pre-test; :238 quirk
 replicated-not-fixed; battery 50/50, strict clean, Jan OFF NDIFF=0;
 legacy KOORD.DAT/hhh.bar stay sole production inputs; EOS-agnostic.
-Report: `docs/validation/stage11.7B_grid_bathymetry_migration.md`.
+Report: `docs/archive/stage11/stage11.7B_grid_bathymetry_migration.md`.
 NEXT: 11.7C.
 
 ### Stage 11.7B.2 — Grid Reproducibility & Test Artifact Hygiene (COMPLETE)
@@ -223,7 +223,7 @@ root→build/ (self-recreating, .gitignore-covered); 6 root files removed
 by name, symlinks intact; SKIP conventions (Fortran + Python) for inputless
 environments; CI cannot run the grid gate (documented, no synthetic
 substitute); T-12 corrected; GO 11.7C.
-Report: `docs/validation/stage11.7B.2_grid_reproducibility.md`.
+Report: `docs/archive/stage11/stage11.7B.2_grid_reproducibility.md`.
 NEXT: 11.7C.
 
 ### Stage 11.7B.3 — hht Determinism Guard & Test Contract Fix (COMPLETE)
@@ -232,7 +232,7 @@ FAIL-capable gate anchor (10336 recomputed from ht) + mandated hht
 comment in grid_dump; python SKIP pre-check first (SKIP exit 0 /
 FAIL exit 1, consistent both languages); 11.7B.2 language softened
 (undefined behavior, non-portable); T-15 added; CI limitation stated.
-Report: `docs/validation/stage11.7B.3_hht_guard_test_fix.md`.
+Report: `docs/archive/stage11/stage11.7B.3_hht_guard_test_fix.md`.
 NEXT: 11.7C.
 
 ### Stage 11.7C — EN4 & ERA5 Passthrough Builders + Equivalence Verification (COMPLETE)
@@ -243,7 +243,7 @@ dates/physics/steps); EN4 rebuilds (Jan+Apr) BIT-IDENTICAL to committed
 11.7E); ERA5 merge BIT-IDENTICAL all 7 vars; contracts verified
 (dims/units/fills/D32/z_model_m); Jan NDIFF=0, April 0 NaN/31 files;
 planning notes (11.8A EOS criteria+gates, D-28 entry).
-Report: `docs/validation/stage11.7C_en4_era5_passthrough.md`.
+Report: `docs/archive/stage11/stage11.7C_en4_era5_passthrough.md`.
 NEXT: 11.7D (seaice_initial.nc + tides.nc).
 
 `grid.nc` (replaces KOORD.DAT/hhh.bar), `bathymetry.nc`,
@@ -268,7 +268,7 @@ Closes 11.7D.1 gaps IN CODE (not docs-only): test genuinely independent
 `sea_ice_status` attributes verifiable in file; T-16 (diagnostic sea ice)
 + T-17 (HST 0.40 legacy quirk) in KNOWN_ISSUES; tides `reference_dt1_seconds`
 + dt1 comment; python 20/20; GO 11.7E.
-Report: `docs/validation/stage11.7D.2_actual_code_correction.md`.
+Report: `docs/archive/stage11/stage11.7D.2_actual_code_correction.md`.
 
 ### Stage 11.7E.1 — Grid/Depth Codes Reader Switch (COMPLETE)
 
@@ -288,8 +288,8 @@ corrections. Gates: Jan/Apr ON≡OFF≡baselines bit-identical (32+31
 files); battery 50/0; strict clean; diff-check clean. Rollback: unset
 env var (legacy files intact). Axis-order convention verified and
 handled explicitly in the reader (T-18 corrected by 11.7E.1-CP).
-Report: `docs/validation/stage11.7E_grid_bathymetry_reader_switch.md`.
-Corrections: `docs/validation/stage11.7E.1-CP_plan_contract_corrections.md`
+Report: `docs/archive/stage11/stage11.7E_grid_bathymetry_reader_switch.md`.
+Corrections: `docs/archive/stage11/stage11.7E.1-CP_plan_contract_corrections.md`
 (plan/contract corrections; no physics change).
 GO 11.7E.2.
 
@@ -337,7 +337,7 @@ selection works; criteria A/B/C documented; template present; snowfall
 conversion protected; docs corrected; regression green; diff-check clean.
 Dependencies: 11.7E.3.1 verified.
 Rollback: revert commit (test/documentation only; no physics path).
-Report: `docs/validation/stage11.7E.3.2_ci_fixture_criteria_clarification.md`.
+Report: `docs/archive/stage11/stage11.7E.3.2_ci_fixture_criteria_clarification.md`.
 
 ### Stage 11.7E.4 — Sea-Ice Reader Switch
 
@@ -364,7 +364,7 @@ data must change the result):
 Manifest provenance attributes verified, T-16 status updated.
 Dependencies: 11.7E.1–11.7E.3.2 verified.
 Rollback: unset env var (legacy files remain in place).
-Status: **COMPLETE** — real Jan-2020 data connected; A/B bit-identical for 7 days; C documented; builder transpose defect fixed. Report: `docs/validation/stage11.7E.4_real_seaice_connection.md`.
+Status: **COMPLETE** — real Jan-2020 data connected; A/B bit-identical for 7 days; C documented; builder transpose defect fixed. Report: `docs/archive/stage11/stage11.7E.4_real_seaice_connection.md`.
 
 ### Stage 11.7E.5 — Tides Reader Switch (DEFERRED)
 
@@ -408,11 +408,11 @@ artifacts carry two 12-hourly records/day); documentation/data hygiene
 
 Acceptance: CI green on the pushed commit; failure-path probe demonstrated
 (exit 1 + FAIL JSON); weak inversion conserves heat/salt with confined mixing
-(LEGACY) and zero spurious mixing (EOS80); divisor UNCHANGED; T-19 recorded.
+(LEGACY) and zero spurious mixing (EOS80); divisor UNCHANGED at that time; T-19 later corrected by v2 to hourly/3600 (T3-CORRECTIVE-3).
 
 Dependencies: 11.8.0.0.
 Status: **COMPLETE** — CI green; smoke/core tests authoritative; snowfall
-INFERRED_12H pending manual CDS verification. Report:
+later corrected by v2 (hourly, 3600; T3-CORRECTIVE-3). Report:
 `docs/validation/stage11.8.0.0.1_ci_test_correction.md`.
 
 ### Post-T2 correction plan (scheduled, NOT part of T3-PREP)
@@ -423,7 +423,8 @@ INFERRED_12H pending manual CDS verification. Report:
 | **T1-CORRECTIVE** | ERA5 longitude handling: edge-clamp (or reject out-of-range) instead of cyclic wrap (T-23) | schedule BEFORE **T4** |
 | **T3-CORRECTIVE** | T-28 (mask gap) and T-29 (advection boundary) | **DONE 2026-10-24** (both FIXED and verified) |
 | **T3-CORRECTIVE-2** | T-03 root-cause diagnosis (spatial, geostrophic, PGF, energy, boundary, CA/RO controls) | **DONE 2026-10-25** (diagnosed; no physics change) |
-| **T3-CORRECTIVE-3** | Fix the CA density-writeback -> PGF feedback: prognostic RO / potential-density CA / CA sub-cycling + boundary radiation (D-33) | **BEFORE T4** (rest test must pass) |
+| **T3-CORRECTIVE-3** | T-19 v2 + E1–E3 (prognostic RO / potential CA / f64 N²) + hygiene | **DONE 2026-10-25** (T3b still fails) |
+| **T3-CORRECTIVE-4** | Coupled advection/density stabilization: dissipation, radiation, CA/time-step sub-cycling, resolution/initialization | **BEFORE T4** (T3b must pass) |
 | **T4** | Wind rotation geographic -> grid (H-2) | T4 tier |
 
 ### Stage 11.8.0 T3-PREP — EN4 Data Correction (T-20, T-22)
@@ -509,15 +510,34 @@ Coriolis work ~0. **T-25 is revised:** EOS-80 CA convergence does not exonerate
 the CA density writeback; T-25 remains the leading CA defect candidate.
 Dependencies: T3-CORRECTIVE. Status: **COMPLETE (diagnosis)**. Report:
 `docs/validation/stage11.8.0_T3-CORRECTIVE-2_t03_diagnosis.md`.
-NEXT: **T3-CORRECTIVE-3** (fix, D-33 required); **T4 NO-GO**.
+NEXT: **T3-CORRECTIVE-3** (COMPLETE; T3b fails — see below); **T4 NO-GO**.
+
+### Stage 11.8.0 T3-CORRECTIVE-3 — Fixes, T-19 v2, Hygiene
+
+**T-19 FIXED:** v2 CDS probe (24 hourly validity times, no `step`) gives
+R = mean(12:00)/mean(all 24) = **1.00898** -> hourly accumulation; v1 invalid.
+Divider changed **43200 -> 3600 s**; hourly records are summed to 6-h windows;
+merged April/Jan products regenerated; `CONFIRMED_1H`, contract 120/120.
+
+**E1/E2/E3 implemented behind OFF-by-default switches:** `STAGE118_RO_PROGNOSTIC`
+(recompute RO after CA before B200; CA skips local writeback), `STAGE118_CA_POTENTIAL`
+(both levels at lower-level pressure), `STAGE118_CA_F64_N2` (real64 differences,
+N² < -1e-6). E1 is a no-op (CA already rewrites RO for every wet column); E2 is
+a no-op in LEGACY (Eckart pressure-independent); E3 reduces CA mixings
+(7.08e6 -> 61,454/day) but does not stabilize. **T3b FAILS:** Umax 3.902 m/s,
+KE15 1.641e14 J, KE30 8.696e15 J, ratio 52.98. E6 sponge reduces the peak
+(3.71 -> 1.71 m/s at extreme damping) but no plateau; balanced initialization
+also fails (3.998 m/s, ratio 50.4). **T4 NO-GO; T3-CORRECTIVE-4 required**
+(coupled advection/density stabilization). Report:
+`docs/validation/stage11.8.0_T3-CORRECTIVE-3_fixes.md`.
 
 ### Stage 11.8 Prerequisite: Ocean Stabilization (MANDATORY GATE)
 
 - **Current state:** production ocean passes **55/360** steps before NaN
-  (density-first divergence; Stages 10.20/10.22). The rest-state diagnosis
-  (T3 → T3-CORRECTIVE → T3-CORRECTIVE-2) is still **UNSTABLE**: root cause =
-  CA density-writeback → baroclinic PGF feedback (T-32); **T4 remains NO-GO**;
-  next is T3-CORRECTIVE-3 (fix; D-33).
+  (density-first divergence; Stages 10.20/10.22). T3-CORRECTIVE-3 implemented
+  E1–E3 and T-19 v2, but **T3b still fails** (Umax 3.902 m/s, KE30/KE15 52.98);
+  the coupled advection/density instability remains (T-33). **T4 NO-GO**;
+  next is T3-CORRECTIVE-4.
 - **Requirement:** a full **360-step** production run (12 steps/day × 30 days)
   without NaN, without guard saturation, without fallback substitutions.
   This is **mandatory** before the 11.8A seasonal matrix — not optional
@@ -536,7 +556,7 @@ Scope: first ladder rung (T0) per `stage11.8.0_ocean_diagnostic_plan.md`:
 snowfall accumulation period, EN4 initial T/S, ERA5 coverage/edges/time,
 wind-rotation preliminary. Verification only; no data or physics changes.
 Findings: T-19 CLOSED (CONFIRMED_12H via bit-identical live `step=12` CDS
-reproduction; divisor 43200 correct); new T-20 (shipped EN4 z_model_m legacy
+reproduction; T-19 later corrected by v2: hourly, divisor 3600); new T-20 (shipped EN4 z_model_m legacy
 grid; Jul/Oct rebuilds missing; reader index-reads), T-21 (April south margin
 -0.15 deg, 8 D32-clamped cells), T-22 (Jan rebuild sub-Tf cells), H-2 wind
 rotation documented for T4.
@@ -674,7 +694,7 @@ Delivered:
   columns byte-identical to 10.16);
 - independent Python regression `test_stage10_17_melt_budget.py` (40
   checks) and analysis `stage10.17_melt_analysis.py` (12 figures + budgets);
-- report `docs/validation/stage10.17_melt_thermodynamic_budget_audit.md`.
+- report `docs/archive/stage11/stage10.17_melt_thermodynamic_budget_audit.md`.
 
 Result: the melt machinery is internally consistent (M ≡ ρ_i·L·W·H,
 budget closure 5e-4 %), the legacy **lateral melt dominates (96.8 %)** at
@@ -696,7 +716,7 @@ Delivered:
   matrix (ΔT × U × L), scalings, TEST_11 offline replay (6 variants),
   geometry comparison, 10 figures, machine-readable outputs
   (`data/output/stage10.18a/`);
-- report `docs/validation/stage10.18a_lateral_melt_parameterization_audit.md`.
+- report `docs/archive/stage11/stage10.18a_lateral_melt_parameterization_audit.md`.
 
 Result: **no production physics change** (git diff on `src/`/`test/` empty).
 The reference layer reproduces production exactly (replay dM 15.43 %/lateral
@@ -746,7 +766,7 @@ Delivered:
   (independence summary, comparison matrix, velocity-resolved subset, gap
   matrix, separate C_eff diagnostics, 10 figures);
 - tests `python/tests/test_stage10_18c_observations.py` (61 checks);
-- report `docs/validation/stage10.18c_existing_observations_reanalysis.md`.
+- report `docs/archive/stage11/stage10.18c_existing_observations_reanalysis.md`.
 
 Result: **no production physics change** (git diff `src/`/`test/` empty).
 The public datasets do not provide a single field case with simultaneous
@@ -796,7 +816,7 @@ Key results: regional maxima reproduce the paper (WAP/WAIS max 1.1–1.3× of
 per-iceberg (76 % of 167 bergs imply TF in 0.2–1.6 °C); velocity-dependent
 literature variants bracket observed medians; per-iceberg C_eff_submarine
 median 1.56e-7 = 0.16× production (range 0.08–0.33×). Report:
-`docs/validation/stage10.18d_velocity_resolved_observational_upgrade.md`.
+`docs/archive/stage11/stage10.18d_velocity_resolved_observational_upgrade.md`.
 
 ### Stage 10.15.2 — coordinate mapping and bilinear interpolation fix (COMPLETE)
 
@@ -816,7 +836,7 @@ Delivered:
   0.029);
 - comparison script `python/analysis/stage10.15_2_compare.py` + output
   bundle `data/output/stage10.15_2/` (gitignored; pre-fix preserved);
-- report `docs/validation/stage10.15.2_coordinate_mapping_bilinear_fix.md`.
+- report `docs/archive/stage11/stage10.15.2_coordinate_mapping_bilinear_fix.md`.
 
 T-13 is RESOLVED. **T-07 drift anomaly remains OPEN** (drift-scaling
 numbers unchanged — the drift tests do not exercise the corrected
@@ -830,7 +850,7 @@ Delivered:
 - deterministic audit script `python/analysis/stage10.15_1_trajectory_audit.py`
   (28 checks, per-step audit CSV, corrected trajectory CSV, 9 figures,
   summary JSON; output bundle `data/output/stage10.15_1/`, gitignored);
-- report `docs/validation/stage10.15.1_trajectory_continuity_audit.md`;
+- report `docs/archive/stage11/stage10.15.1_trajectory_continuity_audit.md`;
 - regression tests `python/tests/test_stage10_15_1_trajectory_audit.py`.
 
 Key finding: the Stage 10.15 geographic trajectory is **discontinuous**
@@ -861,7 +881,7 @@ Delivered:
   dead from day 1 with real EN4 init, so coupled forcing is not yet possible.
 - Diagnostics: `python/analysis/stage10.15_diagnostics.py` (7 figures +
   summary JSON); output bundle `data/output/stage10.15/` (gitignored).
-- Report: `docs/validation/stage10.15_operational_demonstration.md`.
+- Report: `docs/archive/stage11/stage10.15_operational_demonstration.md`.
 
 **Known status**: operational demonstration completed with documented
 limitations; not an observational validation. Commit pending user review.
@@ -884,7 +904,7 @@ Roadmap item §142–143 delivered:
 - Validation: `python/tests/test_three_equation_scoring.py` (177/177 PASS);
   all 7 pre-existing Python suites unchanged (822 checks, 0 errors).
 - No calibration, no production change, no switch-default change.
-- Report: `docs/validation/stage10.14_three_equation_rescoring.md`.
+- Report: `docs/archive/stage11/stage10.14_three_equation_rescoring.md`.
 
 **Known status**: re-scoring completes the KNOWN_ISSUES N-05 dependency
 (re-scoring on the 3eq closure); calibration remains not identifiable.
@@ -902,8 +922,8 @@ Phases A–C delivered:
   three-equation interface preserved, forced branch bit-identical at high U,
   legacy OFF verified; Fortran 23/23, Python/Fortran comparison 56/56,
   full battery exit 0, strict build clean.
-- Reports: `docs/validation/stage10.13_phase_b_results.md`,
-  `docs/validation/stage10.13_phase_c_results.md`.
+- Reports: `docs/archive/stage11/stage10.13_phase_b_results.md`,
+  `docs/archive/stage11/stage10.13_phase_c_results.md`.
 
 **Known status**: research parameterization (t_scale, f_dc, κ_S convention
 uncertainties documented; not universal validation). Commit of Phase C
@@ -939,7 +959,7 @@ Stage 10.11 implemented a physically-motivated natural-convection closure for th
 
 - **Validation**: Fortran test `iceberg_test_10p11_natural_convection` (23 checks, DELIVERED in the Stage 10.11.2 audit; the original Stage 10.11 claim of 15 checks was never delivered in 6a0014e) + Python `test_three_equation_natural.py` (70 checks) including zero-flow, low-flow continuity, mixed-convection regime, Ra/Nu scaling, salt/heat balance identities, and cross-language contract (`m = 1.638e-8 m/s` at `U_rel=0`, `T_w=2°C`, `S_w=34.5 PSU`, `L=100m`, `D=50m`). Strict `-Wall -Wextra -fcheck=all` build clean.
 
-- **Report**: `docs/validation/stage10.11_natural_convection.md`.
+- **Report**: `docs/archive/stage11/stage10.11_natural_convection.md`.
 
 ### Stage 10.12 — prognostic internal thermal evolution (DONE)
 
@@ -976,8 +996,8 @@ design note Variant C):
 - **Build**: unused `stdlib` git dependency removed from `fpm.toml` (0
   `use stdlib*` in the repo; eliminates the network fetch / broken partial
   clone failure mode of fpm 0.13.0-alpha).
-- **Report**: `docs/validation/stage10.12_internal_thermal_evolution.md`;
-  design note: `docs/validation/stage10.12_internal_thermal_evolution_design_note.md`.
+- **Report**: `docs/archive/stage11/stage10.12_internal_thermal_evolution.md`;
+  design note: `docs/archive/stage11/stage10.12_internal_thermal_evolution_design_note.md`.
 
 Priority for the next stage (after 10.12):
 

@@ -7,7 +7,7 @@ bugs**, but it did find and correct three documentation/verification problems th
 the Stage 10.11 delivery left behind:
 
 1. The claimed Fortran test `iceberg_test_10p11_natural_convection` was **never
-   delivered** in commit `6a0014e` (`docs/validation/stage10.11_natural_convection.md`;
+   delivered** in commit `6a0014e` (`docs/archive/stage11/stage10.11_natural_convection.md`;
    the stage report
    §5.1/§8/§9 claimed "15 checks" that did not exist). This stage delivers the
    actual test: **23 checks, 0 errors** (embedded-literal independent replicas).
@@ -201,7 +201,7 @@ from `three_equation_natural.py`):
 | `docs/references/citation_map.md`                                            | Same mis-citation                                                                                                                                   | Corrected                                                                                                                                                                         |
 | `docs/references/references.bib`                                             | **missing** `fujiiHondaMoriokaNaturalConvection1973`, `gayenGriffithsKerrMeltDrivenConvection2016`, `churchillComprehensiveCorrelatingEquation1977` | Added (3 verified DOIs; 148 total entries)                                                                                                                                        |
 | `docs/model/model_equation_ledger.md` §10.3                                  | Gayen "convection cells; Gayen 2016 LES"; "(15 checks)"                                                                                             | L per Fujii plate; audit note; "(23 checks, delivered in Stage 10.11.2)"                                                                                                          |
-| `docs/validation/stage10.11_natural_convection.md`                           | §5.1 "15 checks", §6 "~0.1%"; Gayen line                                                                                                            | Superseded claims annotated (see §G); exact values inserted                                                                                                                       |
+| `docs/archive/stage11/stage10.11_natural_convection.md`                           | §5.1 "15 checks", §6 "~0.1%"; Gayen line                                                                                                            | Superseded claims annotated (see §G); exact values inserted                                                                                                                       |
 
 ## F. Parameters and Provenance
 

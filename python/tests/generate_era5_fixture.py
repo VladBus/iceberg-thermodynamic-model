@@ -27,10 +27,10 @@ Dimensions / values (deliberately tiny but structurally valid)
 Variables (all float32, `_FillValue = NaN`):
     u10, v10 [m s-1], t2m, d2m [K], msl [Pa], tcc [1], sf [m s-1]
 
-Snowfall is built from a known 12-hour accumulation so the conversion
+Snowfall is built from a known hourly accumulation so the conversion
 protection in the test has an exact expected value:
 
-    sf_rate = 0.00432 m / 43200 s = 1.0e-7 m s-1
+    sf_rate = 0.00432 m / 3600 s = 1.2e-6 m s-1
 
 Known expected values are stored as global attributes (`fixture_*`) so the
 test does not have to duplicate magic numbers.
@@ -71,9 +71,9 @@ TIME_START = datetime(2020, 4, 1, 0, 0, 0)
 TIME_INTERVAL_S = 21600  # 6 hours
 
 # --- Snowfall conversion (must match python/era5/merge_snowfall.py) ---------
-SNOW_ACCUM_M = 0.00432          # 4.32 mm water equivalent per 12 hours
-SNOW_ACCUM_PERIOD_S = 43200     # 12 hours in seconds
-SNOW_RATE = SNOW_ACCUM_M / SNOW_ACCUM_PERIOD_S  # 1.0e-7 m/s
+SNOW_ACCUM_M = 0.00432          # 4.32 mm water equivalent per hour
+SNOW_ACCUM_PERIOD_S = 3600      # hourly accumulation (T-19 v2)
+SNOW_RATE = SNOW_ACCUM_M / SNOW_ACCUM_PERIOD_S  # 1.2e-6 m/s
 
 EPOCH = datetime(1970, 1, 1, 0, 0, 0)
 

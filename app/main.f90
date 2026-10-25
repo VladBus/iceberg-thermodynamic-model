@@ -47,6 +47,8 @@ program main
     use netcdf_input
     use equation_of_state
     use convective_adjustment
+    use stage118_physics_switches
+    use stage118_boundary_sponge, only: apply_boundary_sponge
     use run_config
     use thermal_wind_init
     use stage86_diagnostics
@@ -104,6 +106,7 @@ program main
 
     ! Энергетические диагностики
     real :: ecc = 0.0, ess = 0.0         ! Предыдущая и текущая кинетическая энергия
+    real(8) :: ke3d_diag                 ! T-31: правильная 3D-кинетическая энергия [Дж]
     character(len=20) :: nam_file        ! Имя файла начального льда (1_1.ice ... 1_5.ice)
     character(len=256) :: day_file       ! Имя суточного NetCDF файл
     character(len=64) :: run_id_arg      ! Аргумент командной строки: run_id
@@ -602,6 +605,8 @@ program main
     call eos_configure(ca_f64_scope)
     ! Stage 11.4: EOS-80 selector (env EOS_MODE; default LEGACY = bit-identical).
     call eos80_configure()
+    ! Stage 11.8.0 T3-CORRECTIVE-3: D-33 physics-branch switches (all OFF default).
+    call s118_init()
     if (ca_f64_mode .or. ca_f64_mix .or. ca_f64_scope .or. &
         abs(ca_eps_value - 0.9e-7) .gt. 1e-15) then
         print *, ">>> STAGE 10.21: CA precision experiment ENABLED (f64=", ca_f64_mode, &
@@ -751,11 +756,15 @@ program main
     ! Mode controlled by ICEBERG_OCEAN_VELOCITY_INIT env var.
     call init_thermal_wind()
     if (rest_mode) then
-        u1 = 0.0; u2 = 0.0; v1 = 0.0; v2 = 0.0
-        up1 = 0.0; up2 = 0.0; vp1 = 0.0; vp2 = 0.0
-        w = 0.0
+        if (.not. s118_t3_keep_tw) then
+            u1 = 0.0; u2 = 0.0; v1 = 0.0; v2 = 0.0
+            up1 = 0.0; up2 = 0.0; vp1 = 0.0; vp2 = 0.0
+            w = 0.0
+            print *, '>>> T3 REST: thermal-wind velocities zeroed (initial |U|=|V|=0)'
+        else
+            print *, '>>> T3 REST: BALANCED thermal-wind initial state retained (STAGE118_T3_KEEP_TW)'
+        end if
         call zero_forcing_fields()
-        print *, '>>> T3 REST: thermal-wind velocities zeroed (initial |U|=|V|=0)'
     end if
 
     ! Stage 10.22: проба начального состояния (INIT)
@@ -833,7 +842,22 @@ program main
                 if (nday1 .eq. 91) exit
 
                 ess = euu - ecc
-                print *, "Day:", kkk, " Month:", lll, " Kin.Energy(EUU)=", euu
+                ! T-31: EUU — только баротропный диагностический аккумулятор;
+                ! печатаем также корректную 3D-кинетическую энергию (диагностика).
+                ke3d_diag = 0.0_8
+                do j = 2, js
+                    do i = 2, is
+                        if (kk1(i, j) .eq. 0) cycle
+                        do k = 1, kk1(i, j)
+                            ke3d_diag = ke3d_diag + 0.5_8*(real(u2(i, j, k), 8)**2 + &
+                                real(v2(i, j, k), 8)**2)*real(dz1(k), 8)* &
+                                (1389000.0_8**2)
+                        end do
+                    end do
+                end do
+                ke3d_diag = ke3d_diag*1.0e-7_8  ! эрг -> Дж
+                print *, "Day:", kkk, " Month:", lll, " Kin.Energy(EUU)=", euu, &
+                    " KE3D(J)=", ke3d_diag
                 ecc = euu
                 euu = 0.0
 
@@ -1258,6 +1282,9 @@ program main
                         ! Stage 11.4-D24: скан до CA (диагностика, env-gated)
                         call s112_scan_ocean_state(kkk, iii, real(nday1*24 + iii)*3600.0, 'BEFORE_conv_adj')
                         call conv_adj(kkk, iii)
+                        ! Stage 11.8.0 E1: prognostic RO (T/S -> RO) after CA,
+                        ! before Block 200.  OFF default -> legacy bit-identical.
+                        if (s118_ro_prognostic) call eos_update_ro()
 
                         ! Stage 8.6 diagnostics: F = after convective adjustment
                         call capture_state('F_after_conv', kkk, iii, u2, v2, w, t2, s2, ro)
@@ -1697,6 +1724,8 @@ program main
                     ! Stage 11.5D.2: end of internal substep loop (single pass
                     ! unless Experiment D).
                     end do  ! ss_d2
+                    ! Stage 11.8.0 E6 fallback: boundary sponge (OFF default).
+                    if (s118_boundary_sponge) call apply_boundary_sponge(dt)
                     ! Stage 8.6 diagnostics: J = after Block 280
                     call capture_velocity_state('J_after_B280', kkk, iii, u2, v2)
                     if (.not. s115h_prod_active()) call s115c1_checkpoint(kkk, iii, 'AFTER_B280')

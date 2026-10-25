@@ -33,7 +33,7 @@ Epistemic labels used throughout:
 ### 2.1 Exact limitation inherited from Stage 10.11.3 `[repo]`
 
 The Stage 10.11 natural-convection closure
-(`docs/validation/stage10.11.3_natural_convection_physics_audit.md`) has
+(`docs/archive/stage11/stage10.11.3_natural_convection_physics_audit.md`) has
 established:
 
 1. The uncapped Rayleigh number for the representative case is
@@ -315,7 +315,7 @@ Phase B (research, no production integration):
 
 ## 12. File/reference checks (Phase A)
 
-- Design note: `docs/validation/stage10.13_diffusion_limited_low_flow_design_note.md` (this file)
+- Design note: `docs/archive/stage11/stage10.13_diffusion_limited_low_flow_design_note.md` (this file)
 - Roadmap: `docs/PROJECT_ROADMAP.md` — focused corrections only (header counts
   17→21 / 50→54 / 137→156; 10.13 row + Phase A block; Longer-term link; no
   historical rewrites)

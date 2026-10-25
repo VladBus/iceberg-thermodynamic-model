@@ -180,6 +180,35 @@ module equation_of_state
     end function density_anomaly_f64
 
     ! ==========================================================================
+    ! eos_update_ro: тихий пересчёт RO по текущим T2/S2 (Stage 11.8.0 E1).
+    ! Используется при STAGE118_RO_PROGNOSTIC=true после адвекции/CA и перед
+    ! Block 200.  Не печатает статистику и не меняет T/S.
+    ! ==========================================================================
+    subroutine eos_update_ro()
+        integer :: i, j, k
+
+        do k = 1, ks
+            do j = 2, js
+                do i = 2, is
+                    if (kt1(i, j) .eq. 0) cycle
+                    if (k .gt. kt1(i, j)) cycle
+                    if (eos80_mode) then
+                        ro(i, j, k) = real(eos_density_f64( &
+                            real(t2(i, j, k), real64), real(s2(i, j, k), real64), &
+                            real(z(k)*0.01, real64)), kind(1.0))
+                    else if (eos_f64_mode) then
+                        ro(i, j, k) = real(density_anomaly_f64( &
+                            real(t2(i, j, k), real64), real(s2(i, j, k), real64)), &
+                            kind(1.0))
+                    else
+                        ro(i, j, k) = density_anomaly(t2(i, j, k), s2(i, j, k))
+                    end if
+                end do
+            end do
+        end do
+    end subroutine eos_update_ro
+
+    ! ==========================================================================
     ! eos_diag: диагностический расчёт RO по текущим T2/S2 (этап 3.1).
     !
     ! Заполняет ro(i,j,k) только в активных водных ячейках (kt1>0, k≤kt1)

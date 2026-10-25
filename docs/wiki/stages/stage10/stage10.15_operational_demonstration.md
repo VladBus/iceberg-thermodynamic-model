@@ -42,7 +42,7 @@ Stage 10.15 is:
 
 - Roadmap: `docs/PROJECT_ROADMAP.md` (Stage 10.13/10.14 complete; longer-term
   items listed, none mandatory for this stage).
-- Stage 10.14 report: `docs/validation/stage10.14_three_equation_rescoring.md`.
+- Stage 10.14 report: `docs/archive/stage11/stage10.14_three_equation_rescoring.md`.
 - Modernization plan: `docs/model/stage10_modernization_plan.md`.
 - Known issues: `KNOWN_ISSUES.md` (T-12 symlinks; T-06/T-07 drift anomalies;
   N-08; Stage 8 ocean instability family).
@@ -242,7 +242,7 @@ correct drift physics (speed ratio anomaly T-07 remains).
 ## 10. Files changed
 
 - `python/analysis/stage10.15_diagnostics.py` (new, diagnostics only);
-- `docs/validation/stage10.15_operational_demonstration.md` (this report);
+- `docs/archive/stage11/stage10.15_operational_demonstration.md` (this report);
 - living docs updated: `docs/validation/INDEX.md`,
   `docs/model/model_physics_status.md`, `docs/PROJECT_ROADMAP.md`,
   `docs/model/stage10_modernization_plan.md`, `KNOWN_ISSUES.md`,

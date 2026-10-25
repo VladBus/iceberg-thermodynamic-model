@@ -35,7 +35,7 @@ under atmospheric, oceanic, bathymetric, and sea-ice forcing.
 
 ## 📑 Project status
 
-- **Current stage:** Stage 11.8.0 T3-CORRECTIVE-2 COMPLETE — **T-03 root cause identified**: CA density-writeback -> baroclinic PGF feedback (`RO` not prognostic; CA is the only RO update). `FREEZE_RO` bounds the flow in both EOS modes (0.20 m/s / 6.1e13 J) while baselines reach 3.9-4.7 m/s / 6.8-8.1e15 J; CA-induced PGF work grows 7.9% -> 99.6%; the SW boundary/topography localises it and dt=3600 amplifies it. PGF stencil double-count is 1.5e-5 (not the driver); T-25 revised (not exonerated). NEXT: T3-CORRECTIVE-3 (fix; D-33); **T4 NO-GO**.
+- **Current stage:** Stage 11.8.0 T3-CORRECTIVE-3 COMPLETE — **T-19 FIXED** (v2 CDS probe R=1.009 -> hourly; divider 3600; contract 120/120). E1/E2/E3 (prognostic RO, potential CA, f64 N²) implemented behind OFF-by-default D-33 switches, but **T3b still FAILS** (Umax 3.902 m/s, KE30/KE15 52.98); E6 sponge masks only. T4 NO-GO; next T3-CORRECTIVE-4. `docs/STAGE11_STATE.md` is the living T-01…T-33 table; 69 historical reports archived.
   [Historical note from Stage 10.19, SUPERSEDED by Stage 10.20 restoration
   (full-coverage ERA5: 3-day gate PASS, residual characterized, NOT fixed):
   coupling recovery (completed: the Lagrangian iceberg module is now

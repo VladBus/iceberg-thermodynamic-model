@@ -226,7 +226,7 @@ Artifacts: `data/validation/observations/iceberg_basal_melt_observations.csv`
 - `data/validation/observations/iceberg_basal_melt_observations_provenance.md` (new)
 - `python/validation/observational_validation.py` (new)
 - `python/tests/test_observational_validation.py` (new)
-- `docs/validation/stage10.8.2_observational_validation.md` (this report)
+- `docs/archive/stage11/stage10.8.2_observational_validation.md` (this report)
 - `docs/references/references.bib`, `docs/references/literature_matrix.md`,
   `docs/references/citation_map.md`, `docs/model/*`, `docs/PROJECT_ROADMAP.md`,
   `AGENTS.md`, `.github/workflows/ci.yml` (see diff)

@@ -32,7 +32,7 @@ Epistemic labels: `[source]` verified publication; `[repo]` production-consisten
 | `python/tests/test_low_flow.py`                                                                   | NEW — analytical tests A–K (167 checks)                       |
 | `python/validation/low_flow_sweep.py`                                                             | NEW — coarse sweep, CSV + figures                             |
 | `python/validation/low_flow_scoring.py`                                                           | NEW — 10.8.2 re-scoring (reuses `observational_validation`)   |
-| `docs/validation/stage10.13_phase_b_results.md`                                                   | NEW — this document                                           |
+| `docs/archive/stage11/stage10.13_phase_b_results.md`                                                   | NEW — this document                                           |
 | Generated (gitignored under `data/`): `data/output/diagnostics/stage10.13/sweep.csv`, `fig_*.png` | NOT committed                                                 |
 
 ## 4. Prototype API

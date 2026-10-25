@@ -67,5 +67,7 @@
   "artifact_vs_step12_maxdiff_m": 0.0,
   "step12_over_artifact_sum_ratio": 1.0,
   "artifact_vs_hourlysum_maxdiff_m": 0.0,
-  "artifact_only_field_nonzero": true
+  "artifact_only_field_nonzero": true,
+  "status": "INVALID_V1",
+  "invalid_reason": "step-range request collapsed by CDS; use t19_cds_probe_v2.json"
 }

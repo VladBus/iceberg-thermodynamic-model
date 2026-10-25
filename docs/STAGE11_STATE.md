@@ -10,13 +10,13 @@ env-gated (default OFF) until D-33 approval.
 
 | Field | Value |
 |---|---|
-| Current stage | 11.8.0 T5 (long-run stability + T-34) — COMPLETE (FAIL) |
+| Current stage | 11.8.0 T5-CORRECTIVE (storm-safe search) — COMPLETE (FAIL) |
 | Ocean rest state | **T3b PASS (bounded)** — max \|U\| **0.147 m/s**, KE30/KE15 **0.568** (dt=1800, Ah=10000, no sponge) |
 | T-19 snowfall | **FIXED** — v2 CDS probe R=1.009 (hourly); divisor 3600 |
 | T-25 potential CA | Implemented behind `STAGE118_CA_POTENTIAL` (OFF); no effect in LEGACY |
 | T-32 prognostic RO | Implemented behind `STAGE118_RO_PROGNOSTIC` (OFF); no effect (CA already refreshes RO) |
 | T-31 EUU | **FIXED diagnostically** — 3D KE printed as `KE3D(J)` |
-| Next step | **T5-CORRECTIVE** (90-day forced instability); **T6 NO-GO** |
+| Next step | **T5-CORRECTIVE-2** (storm mechanism isolation); **T6 NO-GO** |
 
 ## Issue table (T-01 … T-35)
 
@@ -56,7 +56,7 @@ env-gated (default OFF) until D-33 approval.
 | T-32 | IMPLEMENTED | E1 RO prognostics behind switch; no effect because CA refreshes RO for all wet columns |
 | T-33 | MITIGATED | Unresolved baroclinic eddies (R_d 2.36 km vs 13.89 km); bounded by dt=1800 + Ah=10000; fundamental limitation documented |
 | T-34 | CLOSED (tentative) | Heat drift physical: −3.94 W/m² Jan, −9.81 W/m² Apr; volume 0, salt <1e-3 |
-| T-35 | OPEN | 90-day run explodes at day 61 (KE60/KE30 17,568, Umax 488 m/s, SIGFPE); April 30 d stable |
+| T-35 | OPEN | All Δt/Ah configs fail: config1 FPE day63; config2/3/4 NaN day67/70/74; storm peak 2020-03-16; stronger dissipation only delays |
 | H-2 | FIXED | `STAGE118_WIND_ROTATION`; alpha median 50.18°, max 81.28°; dir error 2.8e-14° |
 
 ## Switches (default OFF; D-33 gate)
@@ -78,6 +78,7 @@ env-gated (default OFF) until D-33 approval.
 - H-2/T-23: `wind_rotation_verification.json`, `wind_rotation_fortran.json`, `lon_clamp_verification.json`, `t3_with_fixes.json`
 - T4: `t4_wind_forcing_metrics.json`, `t4_ekman_analysis.json`, `t4_energy_budget.json`, `t4_acceptance.json`, `t4_comparison_t3.json`
 - T5: `t5_90day_results.json`, `t5_april_results.json`, `t5_seasonal_comparison.json`, `t34_heat_closure.json`
+- T5-CORRECTIVE: `t5c_config1_results.json`…`t5c_config4_results.json`, `t5c_storm_analysis.json`, `t5c_summary.json`
 - T-19: `data/validation/t19_cds_probe_v2.json`, `snowfall_period_result.json`
 - Sponge tests: `t3c3_sponge_results.json`, `t3c3_sponge2_results.json`,
   `t3c3_sponge3_results.json`
@@ -85,6 +86,6 @@ env-gated (default OFF) until D-33 approval.
 
 ## Next action
 
-1. **T5 FAIL**: 90-day January run explodes at day 61; April 30-day is stable. **T-34 CLOSED (physical, tentative).**
-2. **T6 NO-GO**; next is **T5-CORRECTIVE** for long-run forced stability (storm-safe dissipation/Δtime stepping).
-3. Do not promote switches without the relevant decision.
+1. **T5-CORRECTIVE FAIL**: no prescribed Δt/Ah config survives 90 days; stronger dissipation delays but does not prevent storm collapse.
+2. **T6 NO-GO**; next is **T5-CORRECTIVE-2** (isolate storm-time CA/advection/thermodynamic path, then design a storm-safe scheme).
+3. No chosen configuration; do not promote switches.

@@ -1,9 +1,9 @@
 # Project Roadmap
 
 **Updated:** 2026-10-25
-**Current scientific stage:** Stage 11.8.0 T5 COMPLETE — **FAIL**: 90-day January forced run explodes at day 61 (KE60/KE30 17,568, Umax 488 m/s, SIGFPE); April 30-day stable (KE30/KE15 1.541, Umax 0.866), seasonally consistent. **T-34 CLOSED (physical, tentative)**. **T5-CORRECTIVE required; T6 NO-GO.**
+**Current scientific stage:** Stage 11.8.0 T5-CORRECTIVE COMPLETE — **FAIL**: no prescribed Δt/Ah configuration survives 90 days. config1 dt900/Ah20000 FPE day63; config2 dt900/Ah30000 NaN day67; config3 dt600/Ah30000 NaN day70; config4 dt600/Ah50000 NaN day74. Storm peak 2020-03-16 18 UTC, max wind 26.86 m/s. **T5-CORRECTIVE-2 required; T6 NO-GO.**
 **Stages 3–11.4.1: COMPLETED** (10.x iceberg modernization; 11.1 seasonal characterization; 11.2 CFL audit; 11.4-D21…D33 EN4 stabilization → ERA5-coverage fix → cleanup + Ocean Baseline 11.x; 11.3A execution-graph audit; 11.3B input-architecture audit + NetCDF contracts; 11.3C scheme audit + timestep matrix; 11.3C.1 semantics + CFL distributions; 11.3C.2 time-integration audit; 11.3C.3 loop-bound search (VERDICT D); 11.4 EOS-80 experiment + 11.4.1 impact validation (OPTIONAL, not default)).
-**Current status:** Stages 10.14-11.8.0 T5 committed. T0/T1/T2/T3-PREP/T3/T3-CORRECTIVE/T3-CORRECTIVE-2/T3-CORRECTIVE-3/T3-CORRECTIVE-4/T4-PREP/T4/T5 COMPLETE. **T5:** FAIL (90-day); T-34 CLOSED; T6 NO-GO.
+**Current status:** Stages 10.14-11.8.0 T5-CORRECTIVE committed. T0/T1/T2/T3/T4/T5/T5-CORRECTIVE COMPLETE. **T5-CORRECTIVE:** FAIL (no config); T6 NO-GO; next T5-CORRECTIVE-2.
 **Test suite:** 69 Fortran test source files (`ls test/*.f90 | wc -l`); 69 executable test targets (`grep -lE '^\s*program ' test/*.f90 | wc -l`). Counting method (Stage 11.8.0 T0): every current `test/*.f90` holds a top-level `program`, so file count == target count (verified 2026-10-24).
 **Stage 11.5H-RC COMPLETE** (release-candidate gate: self-contained production scheduler, docs synced D-22…D-28). Plan: 11.8.0 diagnostic ladder (T0–T6) → 11.8A validation → 11.8B audit → 11.9 closure → 12.0 voxel (blocked, D-28).
 
@@ -428,7 +428,8 @@ later corrected by v2 (hourly, 3600; T3-CORRECTIVE-3). Report:
 | **T4-PREP** | Wind rotation (H-2) + longitude clamp (T-23) | **DONE 2026-10-25** |
 | **T4** | First forced ERA5 run + diagnostics | **DONE 2026-10-25** (PASS; heat caveat T-34) |
 | **T5** | 90-day/180-day stability + T-34 | **DONE 2026-10-25** (FAIL; T-34 CLOSED) |
-| **T5-CORRECTIVE** | Long-run forced stability (storm-safe dissipation/Δtime stepping) | **BEFORE T6** |
+| **T5-CORRECTIVE** | Storm-safe Δt/Ah search | **DONE 2026-10-25** (FAIL; no config) |
+| **T5-CORRECTIVE-2** | Storm mechanism isolation (CA/advection/thermodynamics) + storm-safe scheme | **BEFORE T6** |
 
 ### Stage 11.8.0 T3-PREP — EN4 Data Correction (T-20, T-22)
 
@@ -610,6 +611,24 @@ salt <1e-3. No surface-flux archive, hence tentative.
 **180-day not performed** (conditional on 90-day pass). **T5 overall FAIL;
 T6 NO-GO; T5-CORRECTIVE required.** Report:
 `docs/validation/stage11.8.0_T5_time_stepping_stability.md`.
+
+### Stage 11.8.0 T5-CORRECTIVE — Storm-safe configuration search
+
+**No configuration passes.** 90-day January Q1 runs:
+
+| config | Δt | Ah | outcome |
+|---|---|---|---|
+| 1 | 900 | 20000 | FPE after day63; Umax 1361 m/s |
+| 2 | 900 | 30000 | first NaN day67; Umax 4.4e7 m/s |
+| 3 | 600 | 30000 | first NaN day70; Umax 4.0e7 m/s |
+| 4 exploratory | 600 | 50000 | first NaN day74; Umax 2.5e5 m/s |
+
+Storm peak **2020-03-16 18 UTC**, max wind **26.86 m/s**, model τmax
+0.609 Pa; collapse occurs during/after the storm. Stronger dissipation only
+delays the NaN by days, so the failure is not a simple ocean-momentum
+CFL/Ah limit. No chosen configuration; April requirement not applicable (T5
+April baseline remains stable reference). **T6 NO-GO; T5-CORRECTIVE-2
+required.** Report: `docs/validation/stage11.8.0_T5-CORRECTIVE_storm_safe.md`.
 
 ### Stage 11.8 Prerequisite: Ocean Stabilization (MANDATORY GATE)
 

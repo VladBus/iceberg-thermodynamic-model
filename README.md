@@ -35,7 +35,7 @@ under atmospheric, oceanic, bathymetric, and sea-ice forcing.
 
 ## 📑 Project status
 
-- **Current stage:** Stage 11.8.0 T5 COMPLETE — **FAIL**: 90-day January forced run explodes at day 61 (KE60/KE30 17,568, Umax 488 m/s, SIGFPE); April 30-day stable (KE30/KE15 1.541), seasonally consistent. T-34 CLOSED (physical, tentative); T5-CORRECTIVE required; **T6 NO-GO.**
+- **Current stage:** Stage 11.8.0 T5-CORRECTIVE COMPLETE — **FAIL**: no prescribed Δt/Ah config survives 90 days (config1 FPE day63; config2/3/4 NaN day67/70/74; storm 2020-03-16, 26.86 m/s). T6 NO-GO; next T5-CORRECTIVE-2.
   [Historical note from Stage 10.19, SUPERSEDED by Stage 10.20 restoration
   (full-coverage ERA5: 3-day gate PASS, residual characterized, NOT fixed):
   coupling recovery (completed: the Lagrangian iceberg module is now

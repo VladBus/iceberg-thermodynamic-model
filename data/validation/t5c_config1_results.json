@@ -1,0 +1,17 @@
+{
+  "run": "t5c_config1",
+  "label": "config1",
+  "dt_s": 900,
+  "Ah_m2_s": 20000,
+  "days_completed": 63,
+  "first_nan_day": null,
+  "max_u_m_s": 1361.5347900390625,
+  "max_v_m_s": 1282.971435546875,
+  "ke30_j": 523743662963523.75,
+  "ke60_j": 640957371139829.8,
+  "ke90_j": null,
+  "ke60_over_ke30": 1.2237997640163703,
+  "ke90_over_ke60": null,
+  "fpe_after_day": 64,
+  "PASS": false
+}

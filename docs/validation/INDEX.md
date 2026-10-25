@@ -112,6 +112,8 @@ Stage 10 reports have been archived to `docs/wiki/stages/stage10/`. See the arch
 
 | `stage11.8.0_T5_time_stepping_stability.md` (90-day FAIL, April PASS, T-34 closed) | 11.8.0 T5 | COMPLETE (FAIL; T-34 CLOSED) | **90-day Jan:** bounded to day45, then KE30 6.704e14 → KE60 1.178e19 J (ratio **17,568**), Umax 488 m/s, CA inversion 2.50e2; SIGFPE day61 — **FAIL**. **April 30d:** max |U| 0.866, KE30/KE15 **1.541**, KE30 ratio 0.752, max-U ratio 0.893 — stable; Ekman not observed (spring). **T-34 CLOSED (physical, tentative):** 30d heat drift −3.94 W/m² (Jan), −9.81 W/m² (Apr); volume 0, salt <1e-3. 180-day skipped (conditional). **T6 NO-GO; T5-CORRECTIVE.** | `docs/validation/stage11.8.0_T5_time_stepping_stability.md` |
 
+| `stage11.8.0_T5-CORRECTIVE_storm_safe.md` (Δt/Ah search FAIL) | 11.8.0 T5-CORRECTIVE | COMPLETE (FAIL; no config) | **Config1** dt900/Ah20000 FPE after day63 (Umax 1361); **config2** dt900/Ah30000 first NaN day67; **config3** dt600/Ah30000 first NaN day70; exploratory **config4** dt600/Ah50000 first NaN day74. Storm peak **2020-03-16 18 UTC**, max wind 26.86 m/s, τmax 0.609 Pa. No chosen config; April N/A; T5 April baseline stable. **T6 NO-GO; T5-CORRECTIVE-2.** | `docs/validation/stage11.8.0_T5-CORRECTIVE_storm_safe.md` |
+
 ## Rules
 
 - Reports here are not rewritten after stage completion (exception: technical navigational fixes).

@@ -445,3 +445,10 @@ not added.
 - **T-34:** CLOSED (physical, tentative). Stable 30-day heat drift implies −3.94 W/m² (Jan) and −9.81 W/m² (Apr), plausible Arctic cooling; volume 0 and salt <1e-3. No direct surface-flux archive, hence tentative.
 - **Decision:** T5 overall **FAIL**; 180-day conditional run skipped. **T6 NO-GO.** Next stage is **T5-CORRECTIVE** (long-run forced stability: storm-safe dissipation/Δtime stepping). No physics/EOS/scheduler change.
 - **Report:** `docs/validation/stage11.8.0_T5_time_stepping_stability.md`.
+
+## D-40. T5-CORRECTIVE: no storm-safe Δt/Ah configuration; T6 NO-GO (Stage 11.8.0, 2026-10-25)
+
+- **Search:** 90-day January Q1, all T4 switches. Config1 dt=900/Ah=20000: FPE after day63, Umax 1361 m/s. Config2 dt=900/Ah=30000: first NaN day67. Config3 dt=600/Ah=30000: first NaN day70. Exploratory config4 dt=600/Ah=50000: first NaN day74.
+- **Storm:** peak 2020-03-16 18 UTC, max wind 26.86 m/s, model τmax 0.609 Pa; collapse occurs during/after storm.
+- **Decision:** no configuration passes (no-NaN, KE90/KE60<5, max|U|<5). Stronger dissipation only delays failure, so the instability is not a simple ocean-momentum CFL/Ah limit. No chosen configuration. T5 April baseline remains stable seasonal reference. **T6 NO-GO; T5-CORRECTIVE-2** must isolate storm-time CA/advection/thermodynamic path. No physics/EOS/scheduler change.
+- **Report:** `docs/validation/stage11.8.0_T5-CORRECTIVE_storm_safe.md`.

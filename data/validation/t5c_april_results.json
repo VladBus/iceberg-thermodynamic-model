@@ -1,0 +1,36 @@
+{
+  "note": "No 90-day configuration passed; April 30-day below is the T5 baseline (dt=1800, Ah=10000), retained as seasonal reference.",
+  "configuration": "baseline T5",
+  "result": {
+    "run": "t5_30day_apr30",
+    "days_completed": 30,
+    "max_u_m_s": 0.8661251664161682,
+    "max_v_m_s": 0.5334383845329285,
+    "max_w_m_s": 0.0026044028345495462,
+    "ke_day0_j": 54453684456059.01,
+    "ke_day15_j": 326908612361340.56,
+    "ke_day30_j": 503834633943803.0,
+    "ke30_over_ke15": 1.5412094233445937,
+    "drift_T_rms": 0.45543810011719815,
+    "drift_S_rms_psu": 0.11566917069687249,
+    "conservation": {
+      "volume_rel": 0.0,
+      "heat_rel": 0.013114066809986342,
+      "salt_rel": 0.0007340085401965043
+    },
+    "ekman": {
+      "day": 15,
+      "n": 10331,
+      "mean_angle_deg": 6.7540218013603734,
+      "fraction_right": 0.3441099603136192,
+      "fraction_15_75_right": 0.23279450198431903
+    },
+    "status": "PASS",
+    "heat_closure": {
+      "run": "t5_30day_apr30",
+      "days": 30,
+      "heat_rel": 0.013114066809986342,
+      "implied_mean_heat_flux_w_m2": -9.8132658687919
+    }
+  }
+}

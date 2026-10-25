@@ -1,7 +1,7 @@
 # Model Physics Block Status
 
 **Date:** 2026-10-25
-**Current repository stage:** Stage 11.8.0 T5-CORRECTIVE COMPLETE — **FAIL**: no Δt/Ah config survives 90 days (config1 FPE day63; config2/3/4 NaN day67/70/74; storm 2020-03-16, max wind 26.86 m/s). T6 NO-GO; T5-CORRECTIVE-2 required.
+**Current repository stage:** Stage 11.8.0 T5-CORRECTIVE-2 COMPLETE — root cause **ADVECTION_ERROR + BOUNDARY_REFLECTION** (CA secondary); Config1 corruption starts day29 (RO<0), S<0 day46, collapses days63-65. **T6 NO-GO; T5-CORRECTIVE-3 required.**
 **Ocean EOS statement:** the prognostic ocean uses legacy Eckart (Dmitrev–Nesterov) density in float32 (`src/equation_of_state.f90`) by default; UNESCO EOS-80 is implemented opt-in (`src/eos80_unesco.f90`, `EOS_MODE=EOS80`, validated in 11.4/11.4.1, recommendation: optional). Iceberg side uses freezing-point only (table row "Full seawater EOS" below refers to the iceberg module).
 **Production baseline:** Stage 10.13 (low-flow closure behind `low_flow_closure_enabled`; OFF = Stage 10.12/10.10 legacy unchanged); Stage 10.19 adds the env-gated production iceberg connection (inert by default); Stage 10.20 adopts the full-coverage ERA5 Jan file for production gates (`src/param.f90` default path NOT changed); Stage 10.21 adds CA/EOS f32-precision research switches (`STAGE1021_CA_F64`, `STAGE1021_CA_MIX`, `STAGE1021_CA_SCOPE`, `STAGE1021_CA_EPS`) — all OFF by default, production bit-identical (KEEP_CURRENT); Stage 10.22 adds Block-200 stability-audit diagnostic switches (`STAGE1022_DIAG`, `STAGE1022_FREEZE_RO`, `STAGE1022_FREEZE_THERMAL_WIND`, `STAGE1022_FREEZE_TS`, `STAGE1022_FREEZE_RO_DOWNSTREAM`; env names `_FREEZE_RO`/`_FREEZE_TS`/`_FREEZE_RO_DOWNSTREAM`/`_FREEZE_THERMAL_WIND` + `_DIAG`) — all OFF by default, production bit-identical (KEEP_CURRENT); Stage 11.4-D32 adds the ERA5 nearest-edge coverage fallback in `era5_wind()` (loader-only production fix, Jan bit-identical); Stage 11.4-D33 fixes Ocean Baseline 11.x (Jan30/Apr29/Jul30/Oct30, 0 NaN); Stage 11.3C adds `STAGE113_DT/DT1` measurement-only timestep override (defaults = legacy 3600/120); Stage 11.3C.1 adds mm2/mm3 scaling (active only with override) + `s112_cfl_dist` percentiles (DIAG-gated)
 **FPM test targets:** 59 (fpm auto-discovery of `test/*.f90` with a top-level `program`, incl. `check.f90`, `iceberg_test_10p17_melt_budget`, `iceberg_test_10p17_90day`, `drift_scaling_*`)
@@ -310,6 +310,20 @@ Stronger dissipation only delays the collapse, so the failure is not a simple
 ocean momentum CFL/Ah limit. No chosen configuration; T5 April baseline
 remains the stable seasonal reference. **T6 NO-GO; T5-CORRECTIVE-2 required.**
 Report: `docs/validation/stage11.8.0_T5-CORRECTIVE_storm_safe.md`.
+
+## Stage 11.8.0 T5-CORRECTIVE-2 — storm root cause
+
+Config1 (dt900/Ah20000) 75-day detailed diagnostics: first RO<0 day29, first
+S<0 day46 (−7.55 PSU), T>10 °C day57, collapse days63-65 (T max 532 °C, S min
+−9,859 PSU, RO min −2.9e7). Negative cells start at the surface near the
+lateral boundary and spread along it; boundary max |U| exceeds interior
+days60-64. CA nmix remains ~3e5/day (no spike); CA inversions grow only after
+T/S corruption. Wind work 20-64 GW vs dissipation 24-102 GW. Q1 wind peak
+2020-03-16/day75 is **after** collapse; failure is cumulative.
+**Root cause: MULTIPLE — ADVECTION_ERROR primary, BOUNDARY_REFLECTION
+amplifier, CA secondary.** Reference originals absent. T6 NO-GO;
+T5-CORRECTIVE-3 (monotone/positive salinity advection + boundary). Report:
+`docs/validation/stage11.8.0_T5-CORRECTIVE-2_diagnostics.md`.
 
 ## References
 

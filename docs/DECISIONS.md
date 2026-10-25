@@ -452,3 +452,13 @@ not added.
 - **Storm:** peak 2020-03-16 18 UTC, max wind 26.86 m/s, model τmax 0.609 Pa; collapse occurs during/after storm.
 - **Decision:** no configuration passes (no-NaN, KE90/KE60<5, max|U|<5). Stronger dissipation only delays failure, so the instability is not a simple ocean-momentum CFL/Ah limit. No chosen configuration. T5 April baseline remains stable seasonal reference. **T6 NO-GO; T5-CORRECTIVE-2** must isolate storm-time CA/advection/thermodynamic path. No physics/EOS/scheduler change.
 - **Report:** `docs/validation/stage11.8.0_T5-CORRECTIVE_storm_safe.md`.
+
+## D-41. T5-CORRECTIVE-2 root cause: salinity advection + boundary reflection (Stage 11.8.0, 2026-10-25)
+
+- **Config1 detailed run:** first negative RO day29, first negative salinity day46 (−7.55 PSU), T>10 °C day57, collapse days63–65 (T max 532 °C, S min −9,859 PSU, RO min −2.9e7). Negative cells start at the surface near the lateral boundary and spread along it.
+- **CA:** nmix remains ~3e5/day (no spike); inversions grow only after T/S corruption → CA secondary.
+- **Boundary:** boundary max |U| exceeds interior days60–64 (day64 28.3 vs 3.6 m/s) → amplifier.
+- **Energy:** wind work 20–64 GW vs Laplacian dissipation 24–102 GW → energy accumulation not primary.
+- **Storm timing:** Q1 peak 2020-03-16/day75 occurs after collapse; failure is cumulative advection error, not a single-storm trigger.
+- **Decision:** root cause = **MULTIPLE (ADVECTION_ERROR primary; BOUNDARY_REFLECTION amplifier; CA secondary)**. No fixes implemented; **T6 NO-GO**; next **T5-CORRECTIVE-3** (monotone/positive salinity advection + boundary treatment). Reference originals absent; no storm guidance.
+- **Report:** `docs/validation/stage11.8.0_T5-CORRECTIVE-2_diagnostics.md`; literature `t5c2_literature_review.md`.

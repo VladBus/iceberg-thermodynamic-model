@@ -1,9 +1,9 @@
 # Project Roadmap
 
 **Updated:** 2026-10-25
-**Current scientific stage:** Stage 11.8.0 T5-CORRECTIVE COMPLETE — **FAIL**: no prescribed Δt/Ah configuration survives 90 days. config1 dt900/Ah20000 FPE day63; config2 dt900/Ah30000 NaN day67; config3 dt600/Ah30000 NaN day70; config4 dt600/Ah50000 NaN day74. Storm peak 2020-03-16 18 UTC, max wind 26.86 m/s. **T5-CORRECTIVE-2 required; T6 NO-GO.**
+**Current scientific stage:** Stage 11.8.0 T5-CORRECTIVE-2 COMPLETE — root cause **ADVECTION_ERROR (negative salinity/RO) primary + BOUNDARY_REFLECTION amplifier**; CA secondary. Config1 first RO<0 day29, S<0 day46, T>10 day57, collapse days63-65. Stronger dt/Ah only delays. **T6 NO-GO; T5-CORRECTIVE-3 required.**
 **Stages 3–11.4.1: COMPLETED** (10.x iceberg modernization; 11.1 seasonal characterization; 11.2 CFL audit; 11.4-D21…D33 EN4 stabilization → ERA5-coverage fix → cleanup + Ocean Baseline 11.x; 11.3A execution-graph audit; 11.3B input-architecture audit + NetCDF contracts; 11.3C scheme audit + timestep matrix; 11.3C.1 semantics + CFL distributions; 11.3C.2 time-integration audit; 11.3C.3 loop-bound search (VERDICT D); 11.4 EOS-80 experiment + 11.4.1 impact validation (OPTIONAL, not default)).
-**Current status:** Stages 10.14-11.8.0 T5-CORRECTIVE committed. T0/T1/T2/T3/T4/T5/T5-CORRECTIVE COMPLETE. **T5-CORRECTIVE:** FAIL (no config); T6 NO-GO; next T5-CORRECTIVE-2.
+**Current status:** Stages 10.14-11.8.0 T5-CORRECTIVE-2 committed. T0/T1/T2/T3/T4/T5/T5-CORRECTIVE/T5-CORRECTIVE-2 COMPLETE. **T5-CORRECTIVE-2:** root cause isolated; T6 NO-GO.
 **Test suite:** 69 Fortran test source files (`ls test/*.f90 | wc -l`); 69 executable test targets (`grep -lE '^\s*program ' test/*.f90 | wc -l`). Counting method (Stage 11.8.0 T0): every current `test/*.f90` holds a top-level `program`, so file count == target count (verified 2026-10-24).
 **Stage 11.5H-RC COMPLETE** (release-candidate gate: self-contained production scheduler, docs synced D-22…D-28). Plan: 11.8.0 diagnostic ladder (T0–T6) → 11.8A validation → 11.8B audit → 11.9 closure → 12.0 voxel (blocked, D-28).
 
@@ -429,7 +429,8 @@ later corrected by v2 (hourly, 3600; T3-CORRECTIVE-3). Report:
 | **T4** | First forced ERA5 run + diagnostics | **DONE 2026-10-25** (PASS; heat caveat T-34) |
 | **T5** | 90-day/180-day stability + T-34 | **DONE 2026-10-25** (FAIL; T-34 CLOSED) |
 | **T5-CORRECTIVE** | Storm-safe Δt/Ah search | **DONE 2026-10-25** (FAIL; no config) |
-| **T5-CORRECTIVE-2** | Storm mechanism isolation (CA/advection/thermodynamics) + storm-safe scheme | **BEFORE T6** |
+| **T5-CORRECTIVE-2** | Storm-time diagnostics + root-cause isolation | **DONE 2026-10-25** (diagnostic; no fix) |
+| **T5-CORRECTIVE-3** | Monotone/positive salinity advection + boundary treatment | **BEFORE T6** |
 
 ### Stage 11.8.0 T3-PREP — EN4 Data Correction (T-20, T-22)
 
@@ -629,6 +630,23 @@ delays the NaN by days, so the failure is not a simple ocean-momentum
 CFL/Ah limit. No chosen configuration; April requirement not applicable (T5
 April baseline remains stable reference). **T6 NO-GO; T5-CORRECTIVE-2
 required.** Report: `docs/validation/stage11.8.0_T5-CORRECTIVE_storm_safe.md`.
+
+### Stage 11.8.0 T5-CORRECTIVE-2 — Storm diagnostics
+
+Config1 (dt900/Ah20000) detailed 75-day run: first RO<0 **day29**, S<0 **day46**
+(−7.55 PSU), T>10 °C **day57**, collapse days63-65 (T max 532 °C, S min
+−9,859 PSU, RO min −2.9e7). Negative cells start at the surface near the
+boundary and spread along it; boundary max |U| exceeds interior days60-64.
+CA nmix remains ~3e5/day (no spike); inversions grow after T/S corruption.
+Wind work 20-64 GW vs dissipation 24-102 GW, so energy accumulation is not
+primary. Q1 wind peak is 2020-03-16/day75, **after** the collapse; the failure
+is cumulative, not a single-storm trigger.
+
+**Root cause: MULTIPLE — ADVECTION_ERROR primary; BOUNDARY_REFLECTION
+amplifier; CA secondary.** Reference originals absent; no storm guidance.
+Literature recommends monotone/positive salinity advection and radiation
+boundary. **T6 NO-GO; T5-CORRECTIVE-3 required.** Report:
+`docs/validation/stage11.8.0_T5-CORRECTIVE-2_diagnostics.md`.
 
 ### Stage 11.8 Prerequisite: Ocean Stabilization (MANDATORY GATE)
 

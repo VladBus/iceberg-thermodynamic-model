@@ -35,7 +35,7 @@ under atmospheric, oceanic, bathymetric, and sea-ice forcing.
 
 ## 📑 Project status
 
-- **Current stage:** Stage 11.8.0 T5-CORRECTIVE COMPLETE — **FAIL**: no prescribed Δt/Ah config survives 90 days (config1 FPE day63; config2/3/4 NaN day67/70/74; storm 2020-03-16, 26.86 m/s). T6 NO-GO; next T5-CORRECTIVE-2.
+- **Current stage:** Stage 11.8.0 T5-CORRECTIVE-2 COMPLETE — root cause **ADVECTION_ERROR (negative salinity/RO) + BOUNDARY_REFLECTION amplifier**; CA secondary. Config1 corruption starts day29, collapses days63-65; stronger dt/Ah only delays. T6 NO-GO; next T5-CORRECTIVE-3.
   [Historical note from Stage 10.19, SUPERSEDED by Stage 10.20 restoration
   (full-coverage ERA5: 3-day gate PASS, residual characterized, NOT fixed):
   coupling recovery (completed: the Lagrangian iceberg module is now

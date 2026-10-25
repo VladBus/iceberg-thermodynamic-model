@@ -10,15 +10,15 @@ env-gated (default OFF) until D-33 approval.
 
 | Field | Value |
 |---|---|
-| Current stage | 11.8.0 T5-CORRECTIVE (storm-safe search) — COMPLETE (FAIL) |
+| Current stage | 11.8.0 T5-CORRECTIVE-2 (storm diagnostics) — COMPLETE |
 | Ocean rest state | **T3b PASS (bounded)** — max \|U\| **0.147 m/s**, KE30/KE15 **0.568** (dt=1800, Ah=10000, no sponge) |
 | T-19 snowfall | **FIXED** — v2 CDS probe R=1.009 (hourly); divisor 3600 |
 | T-25 potential CA | Implemented behind `STAGE118_CA_POTENTIAL` (OFF); no effect in LEGACY |
 | T-32 prognostic RO | Implemented behind `STAGE118_RO_PROGNOSTIC` (OFF); no effect (CA already refreshes RO) |
 | T-31 EUU | **FIXED diagnostically** — 3D KE printed as `KE3D(J)` |
-| Next step | **T5-CORRECTIVE-2** (storm mechanism isolation); **T6 NO-GO** |
+| Next step | **T5-CORRECTIVE-3** (monotone/positive salinity advection + boundary); **T6 NO-GO** |
 
-## Issue table (T-01 … T-35)
+## Issue table (T-01 … T-36)
 
 | # | Status | Notes |
 |---|---|---|
@@ -56,7 +56,8 @@ env-gated (default OFF) until D-33 approval.
 | T-32 | IMPLEMENTED | E1 RO prognostics behind switch; no effect because CA refreshes RO for all wet columns |
 | T-33 | MITIGATED | Unresolved baroclinic eddies (R_d 2.36 km vs 13.89 km); bounded by dt=1800 + Ah=10000; fundamental limitation documented |
 | T-34 | CLOSED (tentative) | Heat drift physical: −3.94 W/m² Jan, −9.81 W/m² Apr; volume 0, salt <1e-3 |
-| T-35 | OPEN | All Δt/Ah configs fail: config1 FPE day63; config2/3/4 NaN day67/70/74; storm peak 2020-03-16; stronger dissipation only delays |
+| T-35 | OPEN | All Δt/Ah configs fail; root cause = ADVECTION_ERROR + boundary reflection; CA secondary |
+| T-36 | OPEN | Salinity advection: RO<0 day29, S<0 day46, T>10 day57; boundary max U > interior days60-64 |
 | H-2 | FIXED | `STAGE118_WIND_ROTATION`; alpha median 50.18°, max 81.28°; dir error 2.8e-14° |
 
 ## Switches (default OFF; D-33 gate)
@@ -79,6 +80,7 @@ env-gated (default OFF) until D-33 approval.
 - T4: `t4_wind_forcing_metrics.json`, `t4_ekman_analysis.json`, `t4_energy_budget.json`, `t4_acceptance.json`, `t4_comparison_t3.json`
 - T5: `t5_90day_results.json`, `t5_april_results.json`, `t5_seasonal_comparison.json`, `t34_heat_closure.json`
 - T5-CORRECTIVE: `t5c_config1_results.json`…`t5c_config4_results.json`, `t5c_storm_analysis.json`, `t5c_summary.json`
+- T5-CORRECTIVE-2: `t5c2_root_cause.json`, `t5c2_ca_diagnostics.json`, `t5c2_advection_diagnostics.json`, `t5c2_boundary_diagnostics.json`, `t5c2_energy_budget.json`
 - T-19: `data/validation/t19_cds_probe_v2.json`, `snowfall_period_result.json`
 - Sponge tests: `t3c3_sponge_results.json`, `t3c3_sponge2_results.json`,
   `t3c3_sponge3_results.json`
@@ -86,6 +88,6 @@ env-gated (default OFF) until D-33 approval.
 
 ## Next action
 
-1. **T5-CORRECTIVE FAIL**: no prescribed Δt/Ah config survives 90 days; stronger dissipation delays but does not prevent storm collapse.
-2. **T6 NO-GO**; next is **T5-CORRECTIVE-2** (isolate storm-time CA/advection/thermodynamic path, then design a storm-safe scheme).
-3. No chosen configuration; do not promote switches.
+1. **T5-CORRECTIVE-2 COMPLETE**: root cause **ADVECTION_ERROR + BOUNDARY_REFLECTION**; CA secondary; T-34 remains CLOSED.
+2. **T6 NO-GO**; next **T5-CORRECTIVE-3** (monotone/positive salinity advection + boundary treatment).
+3. No fixes implemented in the diagnostic stage; do not promote stronger Ah alone.

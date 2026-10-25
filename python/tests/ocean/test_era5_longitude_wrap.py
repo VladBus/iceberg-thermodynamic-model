@@ -1,32 +1,19 @@
 #!/usr/bin/env python3
+"""T-23 verification: ERA5 longitude edge clamp vs legacy cyclic wrap.
+
+The Fortran harness builds a narrow file (10..70 E) and calls the production
+era5_bilinear2d three times through env switches:
+  * STAGE118_LON_CLAMP=false (legacy): 75E -> 10E (wrong side)
+  * STAGE118_LON_CLAMP=true  (fix):    75E -> 70E (east edge)
+  * 5E control -> 10E in both modes.
+
+Outputs:
+  data/validation/era5_longitude_wrap_result.json
+  data/validation/lon_clamp_verification.json
 """
-Stage 11.8.0 T2 Phase 0 — T-23 RED TEST: ERA5 longitude wrap returns the
-wrong side for queries east of a narrow file.
-
-The Fortran harness builds a narrow synthetic ERA5 file (longitude 10..70 E,
-latitude 60..70 N, u10 == longitude) and calls the PRODUCTION
-era5_bilinear2d:
-
-    query 75 E  -> current actual 10.0  (WESTERN edge)   [BUG]
-                   correct clamp 70.0  (EASTERN edge)
-    query  5 E  -> current actual 10.0  (western edge, correct clamp)
-
-Why: the +-360 normalization subtracts 360 once (75 -> -285), lands outside
-the grid, the binary search pins column 1 and the weight clamp returns the
-first column. Required fix (recorded, NOT applied in T2): replace the cyclic
-wrap with EDGE-CLAMPING in era5_bilinear2d (or reject out-of-range as the
-latitude branch already does).
-
-This is a CHARACTERIZATION (red) test: it passes while the bug is present
-(status RED_CONFIRMED) and also passes if the behaviour is fixed (FIXED);
-an unexpected value is a hard failure.
-
-Exit: 0 for RED_CONFIRMED / FIXED; 1 otherwise.
-Stdlib only (runs in the fpm CI job).
-"""
-
 import glob
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -34,6 +21,7 @@ from pathlib import Path
 PROJECT = Path(__file__).resolve().parents[3]
 OUT_DIR = PROJECT / "data" / "validation"
 TARGET = "test_era5_interp_harness"
+FJSON = OUT_DIR / "era5_longitude_wrap_fortran.json"
 
 
 def find_exe():
@@ -56,65 +44,59 @@ def ensure_built():
     return exe
 
 
+def run(exe, clamp):
+    env = dict(os.environ)
+    env["STAGE118_LON_CLAMP"] = "true" if clamp else "false"
+    FJSON.unlink(missing_ok=True)
+    p = subprocess.run([str(exe)], cwd=PROJECT, capture_output=True, text=True, env=env)
+    if not FJSON.exists():
+        raise RuntimeError(f"wrap JSON missing (clamp={clamp}): {p.stdout[-1000:]}{p.stderr[-1000:]}")
+    return json.loads(FJSON.read_text())
+
+
 def main():
     OUT_DIR.mkdir(parents=True, exist_ok=True)
-    fjson = OUT_DIR / "era5_longitude_wrap_fortran.json"
-    fjson.unlink(missing_ok=True)
     try:
         exe = ensure_built()
+        off = run(exe, False)
+        on = run(exe, True)
     except Exception as e:  # noqa: BLE001
         print(f"FAIL: {e}")
         return 1
-    p = subprocess.run([str(exe)], cwd=PROJECT, capture_output=True, text=True)
-    if not fjson.exists():
-        print("FAIL: wrap JSON missing")
-        print(p.stdout[-2000:] + p.stderr[-2000:])
-        return 1
-    raw = json.loads(fjson.read_text())
 
-    east = float(raw["query_east_actual"])
-    east_ok = bool(raw["query_east_ok"])
-    correct = float(raw["query_east_correct_clamp"])
-    west = float(raw["query_west_actual"])
-
+    e_off = float(off["query_east_actual"])
+    w_off = float(off["query_west_actual"])
+    e_on = float(on["query_east_actual"])
+    w_on = float(on["query_west_actual"])
     tol = 1e-9
-    if abs(east - 10.0) < tol and abs(west - 10.0) < tol:
-        status = "RED_CONFIRMED"
-        note = ("T-23 CONFIRMED: an east-of-file query (75E, file 10..70E) "
-                "returns the WESTERN edge (10.0) instead of the correct "
-                "eastern clamp (70.0). Latent for today's domain but invalid "
-                "production behaviour for any narrow/global forcing file.")
-    elif abs(east - correct) < tol:
+    if abs(e_on - 70.0) < tol and abs(w_on - 10.0) < tol and abs(e_off - 10.0) < tol:
         status = "FIXED"
-        note = ("The wrap branch now clamps to the eastern edge (70.0) - "
-                "T-23 appears fixed; update this characterization test.")
+        note = ("T-23 FIXED: legacy wrap returns 10E for a 75E query; "
+                "STAGE118_LON_CLAMP=true returns the eastern edge 70E; "
+                "the 5E control remains 10E.")
+    elif abs(e_off - 10.0) < tol and abs(e_on - 10.0) < tol:
+        status = "RED_CONFIRMED"
+        note = "Clamp switch did not change the out-of-range behaviour."
     else:
         status = "UNEXPECTED"
-        note = f"Unexpected east-edge value {east} (correct {correct})."
+        note = f"off east={e_off}, on east={e_on}, on west={w_on}"
 
     result = {
         "test": "era5_longitude_wrap",
-        "stage": "11.8.0 T2 Phase 0 (T-23)",
-        "reader": raw.get("reader"),
-        "file_lon_range": [raw.get("file_lon_min"), raw.get("file_lon_max")],
-        "query_east": {"lon": raw.get("query_east_lon"), "ok": east_ok,
-                       "actual": east, "correct_clamp": correct},
-        "query_west_control": {"lon": raw.get("query_west_lon"),
-                               "actual": west, "correct_clamp": 10.0},
+        "stage": "11.8.0 T4-PREP (T-23)",
+        "reader": on.get("reader"),
+        "file_lon_range": [on.get("file_lon_min"), on.get("file_lon_max")],
+        "legacy_wrap": {"query_east_75E": e_off, "query_west_5E": w_off},
+        "clamp_on": {"query_east_75E": e_on, "query_west_5E": w_on},
+        "expected_clamp_east": 70.0,
         "status": status,
         "finding": note,
-        "required_fix": ("Replace cyclic +-360 wrap with edge-clamping (or "
-                         "out-of-range rejection) in era5_bilinear2d for "
-                         "longitudes outside the file range; the current "
-                         "wrap can return the opposite edge. Not fixed in "
-                         "T2 (diagnostic); assigned to T1-corrective/T4."),
     }
-    (OUT_DIR / "era5_longitude_wrap_result.json").write_text(
-        json.dumps(result, indent=2))
+    (OUT_DIR / "era5_longitude_wrap_result.json").write_text(json.dumps(result, indent=2))
+    (OUT_DIR / "lon_clamp_verification.json").write_text(json.dumps(result, indent=2))
     print(f"T-23 status: {status}")
     print(note)
-    print(f"Results: {(OUT_DIR / 'era5_longitude_wrap_result.json').relative_to(PROJECT)}")
-    return 0 if status in ("RED_CONFIRMED", "FIXED") else 1
+    return 0 if status == "FIXED" else 1
 
 
 if __name__ == "__main__":

@@ -106,6 +106,8 @@ Stage 10 reports have been archived to `docs/wiki/stages/stage10/`. See the arch
 
 | `stage11.8.0_T3-CORRECTIVE-4_numerical_stabilization.md` (dt=1800 + Ah=10000; T3b PASS) | 11.8.0 T3-CORRECTIVE-4 | COMPLETE (numerical; T3b PASS) | **T3b:** dt=3600 3.902 / 52.98; dt=1800 0.517 / 1.112; dt=900 0.278 / 1.275; **dt=1800 + Ah=10000 0.147 m/s, KE15 3.899e13 J, KE30 2.216e13 J, ratio 0.568 -> PASS**. Ah=5000/10000/20000 pass; 50000 exceeds explicit stability at dt=1800. No sponge. Acceptance revised to max |U|<0.5, KE30/KE15<5.0 (13.89 km vs 2.36 km Rossby radius). **T4 numerical gate cleared but implementation NO-GO until H-2/T-23.** | `docs/validation/stage11.8.0_T3-CORRECTIVE-4_numerical_stabilization.md` |
 
+| `stage11.8.0_T4-PREP_wind_rotation_lon_clamp.md` (H-2/T-23 fixed) | 11.8.0 T4-PREP | COMPLETE (prerequisites fixed) | **H-2 FIXED:** `STAGE118_WIND_ROTATION`; alpha mean 50.06°, median 50.18°, range 14.02–81.28°; 20-cell angular error 2.8e-14°; Fortran OFF/ON interior vector error 3.45e-4 m/s. **T-23 FIXED:** `STAGE118_LON_CLAMP`; 75E→70E ON vs 10E OFF; T1 spatial/temporal PASS with ON. Both default OFF/bit-identical. T3 with both ON unchanged (0.147 m/s, 0.568). **T4 GO.** | `docs/validation/stage11.8.0_T4-PREP_wind_rotation_lon_clamp.md` |
+
 ## Rules
 
 - Reports here are not rewritten after stage completion (exception: technical navigational fixes).

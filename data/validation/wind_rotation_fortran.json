@@ -1,0 +1,11 @@
+{
+  "test": "wind_rotation_fortran",
+  "stage": "11.8.0 T4-PREP",
+  "run_off": "t4prep_rot_off",
+  "run_on": "t4prep_rot_on",
+  "max_abs_vector_error_m_s": 0.06476198083941531,
+  "max_wind_change_m_s": 13.458329200744629,
+  "status": "PASS",
+  "interior_max_abs_vector_error_m_s": 0.0003452114373543055,
+  "boundary_note": "i=is1 boundary copies the interior rotated wind; expected-alpha at the boundary differs, so exclude the copied boundary."
+}

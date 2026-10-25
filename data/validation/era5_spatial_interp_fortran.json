@@ -4,13 +4,13 @@
   "method": "bilinear_on_regular_latlon",
   "interior_max_abs_err":   0.0000000000E+00,
   "interior_status": "PASS",
-  "wrap_expected":   1.7000000000E+02,
-  "wrap_actual":   1.8000000000E+02,
-  "wrap_abs_err":   1.0000000000E+01,
-  "wrap_status": "WARNING",
+  "wrap_expected":   1.3500000000E+02,
+  "wrap_actual":   1.3500000000E+02,
+  "wrap_abs_err":   0.0000000000E+00,
+  "wrap_status": "PASS",
   "lat_outside_high_rejected": true ,
   "lat_outside_low_rejected": true ,
   "lat_edge_nodes_accepted": true ,
   "edges_status": "PASS",
-  "status": "WARNING"
+  "status": "PASS"
 }

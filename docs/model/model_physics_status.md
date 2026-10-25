@@ -1,7 +1,7 @@
 # Model Physics Block Status
 
 **Date:** 2026-10-25
-**Current repository stage:** Stage 11.8.0 T3-CORRECTIVE-4 COMPLETE — T3b bounded adjustment **PASS** with dt=1800 + Laplacian Ah=10000 m²/s (E1+E2+E3, no sponge): max |U| 0.147 m/s, KE30/KE15 0.568. Fundamental 13.89 km vs 2.36 km Rossby-radius limitation documented. T4 blocked by H-2/T-23.
+**Current repository stage:** Stage 11.8.0 T4-PREP COMPLETE — H-2 wind rotation and T-23 longitude clamp FIXED behind OFF-by-default switches and verified; T3b remains PASS (dt=1800 + Ah=10000). **T4 (wind forcing) is GO.**
 **Ocean EOS statement:** the prognostic ocean uses legacy Eckart (Dmitrev–Nesterov) density in float32 (`src/equation_of_state.f90`) by default; UNESCO EOS-80 is implemented opt-in (`src/eos80_unesco.f90`, `EOS_MODE=EOS80`, validated in 11.4/11.4.1, recommendation: optional). Iceberg side uses freezing-point only (table row "Full seawater EOS" below refers to the iceberg module).
 **Production baseline:** Stage 10.13 (low-flow closure behind `low_flow_closure_enabled`; OFF = Stage 10.12/10.10 legacy unchanged); Stage 10.19 adds the env-gated production iceberg connection (inert by default); Stage 10.20 adopts the full-coverage ERA5 Jan file for production gates (`src/param.f90` default path NOT changed); Stage 10.21 adds CA/EOS f32-precision research switches (`STAGE1021_CA_F64`, `STAGE1021_CA_MIX`, `STAGE1021_CA_SCOPE`, `STAGE1021_CA_EPS`) — all OFF by default, production bit-identical (KEEP_CURRENT); Stage 10.22 adds Block-200 stability-audit diagnostic switches (`STAGE1022_DIAG`, `STAGE1022_FREEZE_RO`, `STAGE1022_FREEZE_THERMAL_WIND`, `STAGE1022_FREEZE_TS`, `STAGE1022_FREEZE_RO_DOWNSTREAM`; env names `_FREEZE_RO`/`_FREEZE_TS`/`_FREEZE_RO_DOWNSTREAM`/`_FREEZE_THERMAL_WIND` + `_DIAG`) — all OFF by default, production bit-identical (KEEP_CURRENT); Stage 11.4-D32 adds the ERA5 nearest-edge coverage fallback in `era5_wind()` (loader-only production fix, Jan bit-identical); Stage 11.4-D33 fixes Ocean Baseline 11.x (Jan30/Apr29/Jul30/Oct30, 0 NaN); Stage 11.3C adds `STAGE113_DT/DT1` measurement-only timestep override (defaults = legacy 3600/120); Stage 11.3C.1 adds mm2/mm3 scaling (active only with override) + `s112_cfl_dist` percentiles (DIAG-gated)
 **FPM test targets:** 59 (fpm auto-discovery of `test/*.f90` with a top-level `program`, incl. `check.f90`, `iceberg_test_10p17_melt_budget`, `iceberg_test_10p17_90day`, `drift_scaling_*`)
@@ -264,6 +264,18 @@ alone 0.517/1.112; dt=900 0.278/1.275; Ah=5000/10000/20000 all pass. The added
 dissipation is a compromise that damps physical eddies as well as numerical
 noise; the state is bounded/drifting, not resolved baroclinic dynamics. Report:
 `docs/validation/stage11.8.0_T3-CORRECTIVE-4_numerical_stabilization.md`.
+
+## Stage 11.8.0 T4-PREP — H-2 and T-23 fixed
+
+**H-2:** `STAGE118_WIND_ROTATION` (default OFF) rotates ERA5 geographic wind
+to the rotated grid using alpha from KOORD.DAT FI/DL; mean 50.06°, median
+50.18°, range 14.02–81.28°; 20-cell angular error 2.8e-14°; Fortran OFF/ON
+1-day interior vector error 3.45e-4 m/s. **T-23:** `STAGE118_LON_CLAMP`
+(default OFF) replaces cyclic wrap with edge clamping; narrow 10–70E test
+75E→70E (ON) vs 10E (OFF); T1 spatial/temporal PASS with ON. Both switches
+OFF by default are bit-identical legacy. T3 with both ON unchanged
+(max |U| 0.147 m/s, KE30/KE15 0.568). **T4 GO.** Report:
+`docs/validation/stage11.8.0_T4-PREP_wind_rotation_lon_clamp.md`.
 
 ## References
 

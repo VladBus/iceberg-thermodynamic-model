@@ -420,3 +420,11 @@ not added.
 - **Alternatives:** dt=1800 alone 0.517/1.112; dt=900 0.278/1.275; Ah=5000 0.188/0.610; Ah=20000 0.114/0.559. Ah=50000 violates the explicit 2-D stability limit at dt=1800 and is not used.
 - **Trade-off:** dissipation damps physical eddies as well as numerical noise; the stabilized state is a bounded, dissipative compromise, not resolved baroclinic dynamics.
 - **Decision:** numerical gate PASS; **T4 implementation remains NO-GO until H-2 (wind rotation) and T-23 (ERA5 wrap) are fixed**. No default physics/EOS/scheduler change; switches OFF by default. Report: `docs/validation/stage11.8.0_T3-CORRECTIVE-4_numerical_stabilization.md`.
+
+## D-37. Wind rotation and longitude clamp switches (Stage 11.8.0 T4-PREP, 2026-10-25)
+
+- **Context:** H-2 (ERA5 wind not rotated to the rotated grid) and T-23 (cyclic longitude wrap wrong for limited-domain files) were the two T4 prerequisites. D-36 is already occupied by the T3-CORRECTIVE-4 numerical-stabilization decision; this is D-37.
+- **H-2:** `STAGE118_WIND_ROTATION` (default OFF) rotates u10/v10 from geographic to grid axes using alpha from KOORD.DAT FI/DL. Verified: mean alpha 50.06°, median 50.18°, range 14.02–81.28°; 20-cell `dir_grid = dir_geo − alpha` error 2.8e-14°; Fortran OFF/ON interior vector error 3.45e-4 m/s.
+- **T-23:** `STAGE118_LON_CLAMP` (default OFF) clamps out-of-range longitude to the file edges instead of cyclic ±360° wrap. Narrow 10–70E test: OFF 75E→10E (legacy), ON 75E→70E; 5E control→10E. T1 spatial/temporal with ON PASS/PASS.
+- **Decision:** Both switches remain **OFF by default** for backward compatibility in this stage; **enable in production after T4 validation** and a separate decision. T3b remains PASS; **T4 (wind forcing) is GO**, implementation not started in T4-PREP.
+- **Report:** `docs/validation/stage11.8.0_T4-PREP_wind_rotation_lon_clamp.md`.

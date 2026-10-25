@@ -40,6 +40,7 @@
 module wind_forcing
     use param
     use smooth_filter    ! Подключаем модуль сглаживания
+    use stage118_physics_switches, only: s118_wind_rotation
     use netcdf_input, only: era5_find_time_index, era5_bilinear2d, &
                             era5_u10, era5_v10, era5_t2m, era5_msl, &
                             era5_d2m, era5_tcc, era5_snowfall, era5_is_open, &
@@ -232,6 +233,9 @@ contains
         integer :: nbad
         real(8) :: lat, lon, u10v, v10v, t2mv, mslv, d2mv, tccv, snowfallv
         real(8) :: spd, cof8, u_cm, v_cm
+        real(8) :: alpha, dlon, dlat, ug, vg
+        integer :: i1, i2
+        real(8), parameter :: pi8 = 3.141592653589793_8
         ! Stage 11.4-D32: clamped latitude for nearest-edge fallback (только локал)
         real(8) :: lat_use
         real, parameter :: dxx = 13.89e5 ! Горизонтальный шаг сетки (см)
@@ -297,6 +301,21 @@ contains
                 ! преобразование из CDS sf: накопление/43200с
                 u_cm = u10v*100.0_8   ! u10 [м/с] → [см/с] (×100)
                 v_cm = v10v*100.0_8   ! v10 [м/с] → [см/с] (×100)
+                ! Stage 11.8.0 T4-PREP (H-2): rotate ERA5 geographic
+                ! (east/north) wind to the rotated model grid.  alpha is the
+                ! angle of the grid X axis (i direction) from geographic east.
+                ! Default OFF -> legacy unrotated behaviour.
+                if (s118_wind_rotation) then
+                    i1 = max(i - 1, 1)
+                    i2 = min(i + 1, is1)
+                    dlon = real(dl(i2, j) - dl(i1, j), 8)
+                    dlat = real(fi(i2, j) - fi(i1, j), 8)
+                    alpha = atan2(dlat, dlon*cos(fi(i, j)*pi8/180.0_8))
+                    ug = u_cm*cos(alpha) + v_cm*sin(alpha)
+                    vg = -u_cm*sin(alpha) + v_cm*cos(alpha)
+                    u_cm = ug
+                    v_cm = vg
+                end if
                 spd = sqrt(u_cm*u_cm + v_cm*v_cm)  ! модуль ветра [см/с]
 
                 ! Квадратичный закон сопротивления (идентичен legacy-wind1):

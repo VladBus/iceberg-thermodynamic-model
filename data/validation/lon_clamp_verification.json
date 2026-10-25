@@ -1,0 +1,20 @@
+{
+  "test": "era5_longitude_wrap",
+  "stage": "11.8.0 T4-PREP (T-23)",
+  "reader": "src/netcdf_input.f90::era5_bilinear2d",
+  "file_lon_range": [
+    10.0,
+    70.0
+  ],
+  "legacy_wrap": {
+    "query_east_75E": 10.0,
+    "query_west_5E": 10.0
+  },
+  "clamp_on": {
+    "query_east_75E": 70.0,
+    "query_west_5E": 10.0
+  },
+  "expected_clamp_east": 70.0,
+  "status": "FIXED",
+  "finding": "T-23 FIXED: legacy wrap returns 10E for a 75E query; STAGE118_LON_CLAMP=true returns the eastern edge 70E; the 5E control remains 10E."
+}

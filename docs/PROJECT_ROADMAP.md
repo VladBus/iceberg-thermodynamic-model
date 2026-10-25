@@ -1,9 +1,9 @@
 # Project Roadmap
 
 **Updated:** 2026-10-25
-**Current scientific stage:** Stage 11.8.0 T3-CORRECTIVE-4 COMPLETE — T3b **PASS** under the revised bounded-adjustment criterion: dt=1800 s + Laplacian Ah=10000 m²/s (E1+E2+E3, no sponge) gives max |U| **0.147 m/s**, KE15 3.899e13 J, KE30 2.216e13 J, KE30/KE15 **0.568**. Fundamental 13.89 km vs 2.36 km Rossby-radius limitation documented. **T4 remains blocked by H-2/T-23**; do not start T4.
+**Current scientific stage:** Stage 11.8.0 T4-PREP COMPLETE — H-2 (wind rotation) and T-23 (longitude clamp) **FIXED** behind OFF-by-default switches and verified; T3b numerical gate remains PASS. **T4 (wind forcing) is GO**; do not start it in this stage. Production switches stay OFF until T4 validation/D-37.
 **Stages 3–11.4.1: COMPLETED** (10.x iceberg modernization; 11.1 seasonal characterization; 11.2 CFL audit; 11.4-D21…D33 EN4 stabilization → ERA5-coverage fix → cleanup + Ocean Baseline 11.x; 11.3A execution-graph audit; 11.3B input-architecture audit + NetCDF contracts; 11.3C scheme audit + timestep matrix; 11.3C.1 semantics + CFL distributions; 11.3C.2 time-integration audit; 11.3C.3 loop-bound search (VERDICT D); 11.4 EOS-80 experiment + 11.4.1 impact validation (OPTIONAL, not default)).
-**Current status:** Stages 10.14-11.8.0 T3-CORRECTIVE-4 committed. T0/T1/T2/T3-PREP/T3/T3-CORRECTIVE/T3-CORRECTIVE-2/T3-CORRECTIVE-3/T3-CORRECTIVE-4 COMPLETE. **T3-CORRECTIVE-4:** numerical stabilization PASS (dt=1800, Ah=10000); T4 blocked by H-2/T-23.
+**Current status:** Stages 10.14-11.8.0 T4-PREP committed. T0/T1/T2/T3-PREP/T3/T3-CORRECTIVE/T3-CORRECTIVE-2/T3-CORRECTIVE-3/T3-CORRECTIVE-4/T4-PREP COMPLETE. **T4-PREP:** H-2/T-23 FIXED; T4 GO.
 **Test suite:** 69 Fortran test source files (`ls test/*.f90 | wc -l`); 69 executable test targets (`grep -lE '^\s*program ' test/*.f90 | wc -l`). Counting method (Stage 11.8.0 T0): every current `test/*.f90` holds a top-level `program`, so file count == target count (verified 2026-10-24).
 **Stage 11.5H-RC COMPLETE** (release-candidate gate: self-contained production scheduler, docs synced D-22…D-28). Plan: 11.8.0 diagnostic ladder (T0–T6) → 11.8A validation → 11.8B audit → 11.9 closure → 12.0 voxel (blocked, D-28).
 
@@ -420,12 +420,13 @@ later corrected by v2 (hourly, 3600; T3-CORRECTIVE-3). Report:
 | Item | Scope | Gate |
 |------|-------|------|
 | **T2-CORRECTIVE** | CA criterion on potential density (or a compression-corrected in-situ criterion), addressing T-25; T-27 (real64 state) in scope | requires Decision **D-33** physics-branch choice; schedule BEFORE **T6** |
-| **T1-CORRECTIVE** | ERA5 longitude handling: edge-clamp (or reject out-of-range) instead of cyclic wrap (T-23) | schedule BEFORE **T4** |
+| **T1-CORRECTIVE** | ERA5 longitude clamp (T-23) | **DONE 2026-10-25 in T4-PREP** |
 | **T3-CORRECTIVE** | T-28 (mask gap) and T-29 (advection boundary) | **DONE 2026-10-24** (both FIXED and verified) |
 | **T3-CORRECTIVE-2** | T-03 root-cause diagnosis (spatial, geostrophic, PGF, energy, boundary, CA/RO controls) | **DONE 2026-10-25** (diagnosed; no physics change) |
 | **T3-CORRECTIVE-3** | T-19 v2 + E1–E3 (prognostic RO / potential CA / f64 N²) + hygiene | **DONE 2026-10-25** (T3b still fails) |
 | **T3-CORRECTIVE-4** | Numerical stabilization: dt reduction + Laplacian dissipation (no sponge) | **DONE 2026-10-25** (T3b PASS; T4 blocked by H-2/T-23) |
-| **T4** | Wind rotation geographic -> grid (H-2) | T4 tier |
+| **T4-PREP** | Wind rotation (H-2) + longitude clamp (T-23) | **DONE 2026-10-25** |
+| **T4** | Wind forcing implementation | **GO** (do not start in T4-PREP) |
 
 ### Stage 11.8.0 T3-PREP — EN4 Data Correction (T-20, T-22)
 
@@ -552,12 +553,29 @@ compromise**, not resolved eddy dynamics. **T4 numerical gate cleared but T4
 implementation remains NO-GO until H-2/T-23.** Report:
 `docs/validation/stage11.8.0_T3-CORRECTIVE-4_numerical_stabilization.md`.
 
+### Stage 11.8.0 T4-PREP — Wind Rotation (H-2) + Longitude Clamp (T-23)
+
+**H-2 FIXED:** `STAGE118_WIND_ROTATION` (default OFF) rotates ERA5
+geographic wind to the rotated grid using alpha from KOORD.DAT FI/DL:
+u_g=u·cosα+v·sinα, v_g=−u·sinα+v·cosα. Alpha: mean 50.06°, median 50.18°,
+range 14.02–81.28°. 20-cell verification max angular error 2.8e-14°; Fortran
+OFF/ON 1-day max wind change 13.46 m/s (interior vector error 3.45e-4 m/s).
+
+**T-23 FIXED:** `STAGE118_LON_CLAMP` (default OFF) clamps out-of-range
+longitude to the file edge instead of cyclic ±360° wrap. Narrow 10–70E test:
+OFF 75E→10E; ON 75E→70E; 5E control→10E. T1 spatial/temporal with clamp ON:
+PASS/PASS. Both switches OFF by default are bit-identical legacy.
+
+Integration: T3 with both switches ON and the chosen dt=1800+Ah=10000 config is
+unchanged (max |U| 0.147 m/s, KE30/KE15 0.568). **T4 is GO**; implementation
+not started here. Report:
+`docs/validation/stage11.8.0_T4-PREP_wind_rotation_lon_clamp.md`.
+
 ### Stage 11.8 Prerequisite: Ocean Stabilization (MANDATORY GATE)
 
 - **Current state:** production ocean passes **55/360** steps before NaN
   (density-first divergence; Stages 10.20/10.22). T3-CORRECTIVE-4 stabilized the rest state with dt=1800 + Ah=10000
-  (max |U| 0.147 m/s, KE30/KE15 0.568; T3b PASS). **T4 is blocked by
-  H-2/T-23; numerical gate cleared.**
+  (max |U| 0.147 m/s, KE30/KE15 0.568; T3b PASS). **T4 prerequisites H-2/T-23 are now FIXED; T4 is GO.**
 - **Requirement:** a full **360-step** production run (12 steps/day × 30 days)
   without NaN, without guard saturation, without fallback substitutions.
   This is **mandatory** before the 11.8A seasonal matrix — not optional

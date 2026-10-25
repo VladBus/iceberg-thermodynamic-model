@@ -17,6 +17,7 @@
 
 module netcdf_input
     use netcdf
+    use stage118_physics_switches, only: s118_lon_clamp
     implicit none
 
     ! --- ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ: ХРАНЕНИЕ ERA5 ПОЛЕЙ ---
@@ -34,8 +35,8 @@ module netcdf_input
     real(4), allocatable :: era5_msl(:, :, :)  ! [Pa] давление на уровне моря
     real(4), allocatable :: era5_d2m(:, :, :)  ! [K] температура точки росы на 2м
     real(4), allocatable :: era5_tcc(:, :, :)  ! [1] total cloud cover (доли единицы)
-    ! Snowfall: CDS variable 'sf' - 12-часовая накопленная снегозапас [m water equivalent]
-    ! После деления на 43200с (12ч) в merge_snowfall.py -> [m s-1] rate
+    ! Snowfall: CDS variable 'sf' - hourly accumulation [m water equivalent]
+    ! After /3600 s (T-19 v2) in merge_snowfall.py -> [m s-1] rate
     real(4), allocatable :: era5_snowfall(:, :, :)  ! [m s-1] snowfall rate (water equivalent)
     real(4) :: era5_fill = 3.4028235e38        ! Заполнитель/нет данных (ERA5 GRIB missing value)
     logical :: era5_lat_decreasing = .false.   ! Флаг: широта в файле убывающая (90 -> -90)
@@ -435,15 +436,20 @@ contains
         ilat = lo
         ilat1 = min(ilat + 1, era5_nlat)
 
-        ! Поиск по longitude. Если lon вне диапазона файла — нормализуем
-        ! сдвигом на 360° в допустимый диапазон (циклическая долгота).
-        lon_wrap = lon
-        do while (lon_wrap .lt. era5_lon(1))
-            lon_wrap = lon_wrap + 360.0_8
-        end do
-        do while (lon_wrap .gt. era5_lon(era5_nlon))
-            lon_wrap = lon_wrap - 360.0_8
-        end do
+        ! Поиск по longitude. Legacy: циклический сдвиг ±360°.
+        ! STAGE118_LON_CLAMP=true: clamp to the file edges (correct for
+        ! limited-domain files; T-23). Default OFF -> bit-identical legacy.
+        if (s118_lon_clamp) then
+            lon_wrap = min(max(lon, era5_lon(1)), era5_lon(era5_nlon))
+        else
+            lon_wrap = lon
+            do while (lon_wrap .lt. era5_lon(1))
+                lon_wrap = lon_wrap + 360.0_8
+            end do
+            do while (lon_wrap .gt. era5_lon(era5_nlon))
+                lon_wrap = lon_wrap - 360.0_8
+            end do
+        end if
 
         lo = 1
         hi = era5_nlon
@@ -457,9 +463,16 @@ contains
         end do
         jlon = lo
 
-        ! Правый сосед по долготе с циклическим переносом через ±180°.
+        ! Правый сосед по долготе. Legacy wraps through ±180°; clamp mode
+        ! stays on the last file column (T-23).
         jlon1 = jlon + 1
-        if (jlon1 .gt. era5_nlon) jlon1 = 1
+        if (jlon1 .gt. era5_nlon) then
+            if (s118_lon_clamp) then
+                jlon1 = era5_nlon
+            else
+                jlon1 = 1
+            end if
+        end if
 
         lat0 = era5_lat(ilat)
         lat1 = era5_lat(ilat1)
@@ -475,6 +488,8 @@ contains
         ! Вес по долготе. Для циклического узла используем +360° правой границы.
         if (lon1 .gt. lon0) then
             wlon = (lon_wrap - lon0)/(lon1 - lon0)
+        else if (s118_lon_clamp) then
+            wlon = 0.0_8
         else
             wlon = (lon_wrap - lon0)/(lon1 + 360.0_8 - lon0)
         end if

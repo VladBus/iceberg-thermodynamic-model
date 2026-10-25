@@ -35,7 +35,7 @@ under atmospheric, oceanic, bathymetric, and sea-ice forcing.
 
 ## 📑 Project status
 
-- **Current stage:** Stage 11.8.0 T3-CORRECTIVE-4 COMPLETE — T3b bounded adjustment **PASS**: dt=1800 s + Laplacian Ah=10000 m²/s (E1+E2+E3, no sponge) gives max |U| 0.147 m/s, KE30/KE15 0.568. Fundamental 13.89 km vs 2.36 km Rossby-radius limitation documented. T4 remains blocked by H-2/T-23. T-19 snowfall fixed (hourly, divisor 3600).
+- **Current stage:** Stage 11.8.0 T4-PREP COMPLETE — **H-2 FIXED** (`STAGE118_WIND_ROTATION`; alpha median 50.18°, max 81.28°) and **T-23 FIXED** (`STAGE118_LON_CLAMP`; 75E→70E ON, 10E OFF). T3b remains PASS (dt=1800, Ah=10000). **T4 (wind forcing) GO**; switches default OFF; do not start T4 here.
   [Historical note from Stage 10.19, SUPERSEDED by Stage 10.20 restoration
   (full-coverage ERA5: 3-day gate PASS, residual characterized, NOT fixed):
   coupling recovery (completed: the Lagrangian iceberg module is now

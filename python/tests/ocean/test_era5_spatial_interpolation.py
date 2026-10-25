@@ -84,13 +84,12 @@ def main():
         "method": raw.get("method"),
         "checks": checks,
         "wrap_finding": (
-            "L-1 LATENT BUG (documented, NOT fixed in T1): longitude "
-            "normalization subtracts/ adds 360 at most once and can land "
-            "outside the grid; the weight is then clamped, so a query east of "
-            "the last node returns the first-node value instead of "
-            "interpolating across the wrap. Production impact: NONE for the "
-            "current domain (0 model cells outside the ERA5 longitude range, "
-            "T0), but global/wrap-adjacent queries are wrong."),
+            "T-23 has a selectable fix: legacy cyclic wrap (OFF) is retained "
+            "for backward compatibility; STAGE118_LON_CLAMP=true clamps an "
+            "out-of-range longitude to the file edge. With the switch ON this "
+            "synthetic 170E query correctly returns the 135E edge (PASS); "
+            "with it OFF the legacy 180E-wrap path remains a documented "
+            "WARNING."),
         "status": raw.get("status", "FAIL"),
         "executed": True,
         "process_exit_code": p.returncode,

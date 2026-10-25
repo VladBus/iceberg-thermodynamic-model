@@ -14,7 +14,8 @@
 program test_era5_interp_harness
     use netcdf
     use netcdf_input, only: era5_open, era5_bilinear2d, era5_find_time_index, &
-                            era5_time, era5_ntime, era5_lat, era5_u10, era5_v10
+                            era5_time, era5_ntime, era5_lat, era5_lon, era5_nlon, era5_u10, era5_v10
+    use stage118_physics_switches, only: s118_init, s118_lon_clamp
     implicit none
 
     integer, parameter :: NT = 3, NLAT = 6, NLON = 8
@@ -25,6 +26,7 @@ program test_era5_interp_harness
     character(len=256), parameter :: fC = 'build/t2_era5_narrow_wrap.nc'
     integer :: ios
 
+    call s118_init()
     call build_synthetic(trim(fA), .false.)
     call build_synthetic(trim(fB), .true.)
     call build_narrow(trim(fC))
@@ -203,7 +205,7 @@ contains
     ! ==========================================================================
     subroutine run_spatial(path)
         character(len=*), intent(in) :: path
-        real(8) :: plat(4), plon(4), expect(4), val, maxerr, wval, werr
+        real(8) :: plat(4), plon(4), expect(4), val, maxerr, wval, werr, wexp
         logical :: ok, out_hi, out_lo, edge_hi, edge_lo
         integer :: i, ios, unit
         character(len=8) :: st_interior, st_wrap, st_edges, overall
@@ -228,10 +230,16 @@ contains
         end do
         st_interior = status_of(maxerr < 1.0e-4_8)
 
-        ! dateline wrap probe (global circular axis -180..135, 45 deg)
+        ! dateline probe. Legacy cyclic axis expects 170 (wrap); with
+        ! STAGE118_LON_CLAMP=true the east edge (135) is the correct clamp.
         wval = -9999.0_8
         ok = era5_bilinear2d(era5_v10(:, :, 1), 65.0_8, 170.0_8, wval)
-        werr = abs(wval - 170.0_8)
+        if (s118_lon_clamp) then
+            wexp = era5_lon(era5_nlon)
+        else
+            wexp = 170.0_8
+        end if
+        werr = abs(wval - wexp)
         if (.not. ok) werr = huge(1.0_8)
         st_wrap = 'WARNING '
         if (werr < 1.0e-4_8) st_wrap = 'PASS    '
@@ -257,7 +265,7 @@ contains
         call js_str(unit, 'method', 'bilinear_on_regular_latlon')
         call js_real(unit, 'interior_max_abs_err', maxerr)
         call js_str(unit, 'interior_status', trim(st_interior))
-        call js_real(unit, 'wrap_expected', 170.0_8)
+        call js_real(unit, 'wrap_expected', wexp)
         call js_real(unit, 'wrap_actual', wval)
         call js_real(unit, 'wrap_abs_err', werr)
         call js_str(unit, 'wrap_status', trim(st_wrap))
@@ -270,7 +278,7 @@ contains
         close (unit)
 
         print *, '[spatial] interior max err = ', maxerr, ' status=', trim(st_interior)
-        print *, '[spatial] wrap 170E expected 170: actual=', wval, &
+        print *, '[spatial] wrap 170E expected', wexp, ': actual=', wval, &
                  ' err=', werr, ' status=', trim(st_wrap)
         print *, '[spatial] edges=', trim(st_edges), ' overall=', trim(overall)
     end subroutine run_spatial

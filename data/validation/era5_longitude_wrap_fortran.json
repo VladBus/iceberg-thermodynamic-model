@@ -5,7 +5,7 @@
   "file_lon_max":   7.0000000000E+01,
   "query_east_lon":   7.5000000000E+01,
   "query_east_ok": true ,
-  "query_east_actual":   1.0000000000E+01,
+  "query_east_actual":   7.0000000000E+01,
   "query_east_correct_clamp":   7.0000000000E+01,
   "query_west_lon":   5.0000000000E+00,
   "query_west_ok": true ,

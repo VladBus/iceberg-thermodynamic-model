@@ -1,0 +1,67 @@
+{
+  "test": "wind_rotation_H2",
+  "stage": "11.8.0 T4-PREP",
+  "grid": "KOORD.DAT (FI, DL)",
+  "formula": "u_grid = u_geo*cos(a) + v_geo*sin(a); v_grid = -u_geo*sin(a) + v_geo*cos(a)",
+  "alpha_mean_deg_wet": 50.058230006548584,
+  "alpha_median_deg_wet": 50.17692615012664,
+  "alpha_min_deg_wet": 14.016000753168987,
+  "alpha_max_deg_wet": 81.27888514447146,
+  "expected_median_deg": 50.2,
+  "expected_max_deg": 81.3,
+  "samples": [
+    {
+      "j": 53,
+      "i": 67,
+      "lat": 74.5,
+      "lon": 38.0,
+      "alpha_deg": 52.01087745186246,
+      "dir_geo_deg": -71.96261434818423,
+      "dir_grid_deg": -123.97349180004669,
+      "angular_error_deg": 0.0
+    },
+    {
+      "j": 53,
+      "i": 68,
+      "lat": 74.5978,
+      "lon": 38.2881,
+      "alpha_deg": 51.7257171547926,
+      "dir_geo_deg": -71.7689769715884,
+      "dir_grid_deg": -123.49469412638098,
+      "angular_error_deg": 2.842170943040401e-14
+    },
+    {
+      "j": 54,
+      "i": 67,
+      "lat": 74.4232,
+      "lon": 38.3645,
+      "alpha_deg": 51.646824666617015,
+      "dir_geo_deg": -71.7689769715884,
+      "dir_grid_deg": -123.4158016382054,
+      "angular_error_deg": 0.0
+    },
+    {
+      "j": 52,
+      "i": 67,
+      "lat": 74.5762,
+      "lon": 37.6318,
+      "alpha_deg": 52.38268610916588,
+      "dir_geo_deg": -72.32472855800535,
+      "dir_grid_deg": -124.70741466717125,
+      "angular_error_deg": 0.0
+    },
+    {
+      "j": 53,
+      "i": 66,
+      "lat": 74.4019,
+      "lon": 37.7156,
+      "alpha_deg": 52.29531456387347,
+      "dir_geo_deg": -72.32472855800535,
+      "dir_grid_deg": -124.62004312187884,
+      "angular_error_deg": -2.842170943040401e-14
+    }
+  ],
+  "max_abs_angular_error_deg": 2.842170943040401e-14,
+  "n_checked": 20,
+  "status": "PASS"
+}

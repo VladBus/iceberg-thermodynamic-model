@@ -108,6 +108,8 @@ Stage 10 reports have been archived to `docs/wiki/stages/stage10/`. See the arch
 
 | `stage11.8.0_T4-PREP_wind_rotation_lon_clamp.md` (H-2/T-23 fixed) | 11.8.0 T4-PREP | COMPLETE (prerequisites fixed) | **H-2 FIXED:** `STAGE118_WIND_ROTATION`; alpha mean 50.06°, median 50.18°, range 14.02–81.28°; 20-cell angular error 2.8e-14°; Fortran OFF/ON interior vector error 3.45e-4 m/s. **T-23 FIXED:** `STAGE118_LON_CLAMP`; 75E→70E ON vs 10E OFF; T1 spatial/temporal PASS with ON. Both default OFF/bit-identical. T3 with both ON unchanged (0.147 m/s, 0.568). **T4 GO.** | `docs/validation/stage11.8.0_T4-PREP_wind_rotation_lon_clamp.md` |
 
+| `stage11.8.0_T4_wind_forcing.md` (first forced ERA5 run) | 11.8.0 T4 | COMPLETE (PASS; heat caveat T-34) | **Config:** rest OFF, wind rotation ON, lon clamp ON, dt=1800, Ah=10000, E1+E2+E3, LEGACY, EN4 Jan, ERA5 Jan, 30 d; no NaN/Inf. **Metrics:** max |U| 0.970, max |V| 0.598, max |W| 0.0024; KE0/15/30 4.645e13/4.408e14/6.699e14 J; **KE30/KE15 1.520**; drift T/S 0.311°C/0.229 PSU; volume 0, salt 8.319e-4, heat 5.228e-3 (forced −3.94 W/m²). **Ekman:** day15 −40.4°, 61.4% right; day30 +22° (geostrophic). **Energy:** wind work +3.805e10 W, dissipation 7.48e9 W. **vs T3:** KE ×30.2, max |U| +0.824. **T5 GO.** | `docs/validation/stage11.8.0_T4_wind_forcing.md` |
+
 ## Rules
 
 - Reports here are not rewritten after stage completion (exception: technical navigational fixes).

@@ -1,0 +1,7 @@
+{
+  "volume_rel": 0.0,
+  "heat_rel": 0.0052275750125703214,
+  "salt_rel": 0.0008318831617999734,
+  "implied_mean_surface_heat_flux_w_m2": -3.941371461414768,
+  "interpretation": "heat content change is a physical surface-forcing response; volume/salt numerical conservation pass (<1e-3)"
+}

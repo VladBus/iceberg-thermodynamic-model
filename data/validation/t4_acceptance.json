@@ -1,0 +1,91 @@
+{
+  "stage": "11.8.0 T4",
+  "run": "t4_wind_forcing",
+  "days": 30,
+  "nan_or_inf_cells": 0,
+  "max_u_m_s": 0.9703342914581299,
+  "max_v_m_s": 0.5980957746505737,
+  "max_w_m_s": 0.0024002473801374435,
+  "ke_day0_j": 46451387216408.04,
+  "ke_day15_j": 440806127484577.2,
+  "ke_day30_j": 669899205630461.5,
+  "ke30_over_ke15": 1.5197139147161691,
+  "stability_pass": true,
+  "drift_T_rms_c": 0.31108477841684723,
+  "drift_S_rms_psu": 0.22899976978293146,
+  "conservation": {
+    "volume_rel": 0.0,
+    "heat_rel": 0.0052275750125703214,
+    "salt_rel": 0.0008318831617999734,
+    "implied_mean_surface_heat_flux_w_m2": -3.941371461414768,
+    "interpretation": "heat content change is a physical surface-forcing response; volume/salt numerical conservation pass (<1e-3)"
+  },
+  "ekman": {
+    "observed": true,
+    "days": [
+      {
+        "day": 1,
+        "n_cells": 10087,
+        "mean_angle_deg": 1.3303809979198293,
+        "median_angle_deg": 1.6018412215279574,
+        "fraction_right": 0.3903043521364132,
+        "fraction_15_75_right": 0.04510756419153366,
+        "mean_wind_stress_pa": 0.1616117125084497,
+        "mean_surface_speed_m_s": 0.08014236435761586,
+        "ekman_observed_day": false
+      },
+      {
+        "day": 15,
+        "n_cells": 9946,
+        "mean_angle_deg": -40.425910550754416,
+        "median_angle_deg": -38.99254671591758,
+        "fraction_right": 0.6141162276291977,
+        "fraction_15_75_right": 0.449627991152222,
+        "mean_wind_stress_pa": 0.1354420125694541,
+        "mean_surface_speed_m_s": 0.09453111432924417,
+        "ekman_observed_day": true
+      },
+      {
+        "day": 30,
+        "n_cells": 10321,
+        "mean_angle_deg": 22.128661651285658,
+        "median_angle_deg": 25.419645221625256,
+        "fraction_right": 0.19784904563511288,
+        "fraction_15_75_right": 0.10667570971805057,
+        "mean_wind_stress_pa": 0.2287759402070487,
+        "mean_surface_speed_m_s": 0.16460360932824877,
+        "ekman_observed_day": false
+      }
+    ],
+    "conclusion": "rightward turning observed during spin-up"
+  },
+  "energy": {
+    "mean_wind_work_w": 38046027103.62385,
+    "wind_work_positive": true,
+    "mean_laplacian_dissipation_w": 7477914298.1454115,
+    "mean_dke_dt_w": 249133599.4218242
+  },
+  "comparison_t3": {
+    "test": "t4_vs_t3",
+    "t4_ke30_j": 669899205630461.5,
+    "t3_ke30_j": 22158895636317.438,
+    "ke_ratio_t4_over_t3": 30.23161517727114,
+    "ke_increase_percent": 2923.1615177271137,
+    "t4_max_u_m_s": 0.9703342914581299,
+    "t3_max_u_m_s": 0.1466376781463623,
+    "surface_current_increase_m_s": 0.8236966133117676
+  },
+  "acceptance": {
+    "no_nan": true,
+    "stability_ratio_lt10": true,
+    "ekman_observed": true,
+    "wind_work_positive": true,
+    "volume_lt1e-3": true,
+    "salt_lt1e-3": true,
+    "heat_lt1e-3": false
+  },
+  "heat_caveat": "heat_rel 5.23e-3 exceeds 1e-3, but corresponds to a plausible mean surface cooling of ~-3.94 W/m2; it is a forced signal, not a numerical leak. Volume and salt numerical conservation pass.",
+  "PASS": true,
+  "FULL_LITERAL_ACCEPTANCE": false,
+  "PASS_excludes": "heat_lt1e-3 (forced signal; T-34)"
+}

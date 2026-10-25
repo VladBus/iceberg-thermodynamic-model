@@ -1,0 +1,65 @@
+{
+  "test": "t4_energy",
+  "stage": "11.8.0 T4",
+  "Ah_m2_s": 10750.0,
+  "days": [
+    {
+      "day": 1,
+      "wind_work_w": 35224231177.114075,
+      "ke_j": 75556447747771.0,
+      "dke_dt_w": null,
+      "laplacian_dissipation_w": 2466312792.3369846,
+      "mean_wind_speed_m_s": 8.320245894470048
+    },
+    {
+      "day": 5,
+      "wind_work_w": 52580765515.42809,
+      "ke_j": 281202575022482.22,
+      "dke_dt_w": 595040877.5309931,
+      "laplacian_dissipation_w": 4338058364.106662,
+      "mean_wind_speed_m_s": 8.887714290590688
+    },
+    {
+      "day": 10,
+      "wind_work_w": 16032702082.40141,
+      "ke_j": 434886424706994.75,
+      "dke_dt_w": 355749652.0474827,
+      "laplacian_dissipation_w": 6637848532.12616,
+      "mean_wind_speed_m_s": 8.771710341648506
+    },
+    {
+      "day": 15,
+      "wind_work_w": 20262361576.03678,
+      "ke_j": 440806127484577.2,
+      "dke_dt_w": 13703015.688848235,
+      "laplacian_dissipation_w": 8404436054.185179,
+      "mean_wind_speed_m_s": 7.628259023967728
+    },
+    {
+      "day": 20,
+      "wind_work_w": 20876700460.76343,
+      "ke_j": 416808120835528.5,
+      "dke_dt_w": -55550941.31724233,
+      "laplacian_dissipation_w": 8886521378.925215,
+      "mean_wind_speed_m_s": 8.996578949153271
+    },
+    {
+      "day": 25,
+      "wind_work_w": 49728617477.72991,
+      "ke_j": 497516124889964.5,
+      "dke_dt_w": 186824083.4593426,
+      "laplacian_dissipation_w": 10358717858.245497,
+      "mean_wind_speed_m_s": 8.356256086390397
+    },
+    {
+      "day": 30,
+      "wind_work_w": 71616811435.8932,
+      "ke_j": 669899205630461.5,
+      "dke_dt_w": 399034909.1215208,
+      "laplacian_dissipation_w": 11253505107.092188,
+      "mean_wind_speed_m_s": 9.76747375230533
+    }
+  ],
+  "mean_wind_work_w": 38046027103.62385,
+  "wind_work_positive": true
+}

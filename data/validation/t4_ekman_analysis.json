@@ -1,0 +1,42 @@
+{
+  "test": "t4_ekman",
+  "stage": "11.8.0 T4",
+  "definition": "angle = atan2(tau_x*v - tau_y*u, tau_x*u + tau_y*v); negative = right of wind",
+  "days": [
+    {
+      "day": 1,
+      "n_cells": 10087,
+      "mean_angle_deg": 1.3303809979198293,
+      "median_angle_deg": 1.6018412215279574,
+      "fraction_right": 0.3903043521364132,
+      "fraction_15_75_right": 0.04510756419153366,
+      "mean_wind_stress_pa": 0.1616117125084497,
+      "mean_surface_speed_m_s": 0.08014236435761586,
+      "ekman_observed_day": false
+    },
+    {
+      "day": 15,
+      "n_cells": 9946,
+      "mean_angle_deg": -40.425910550754416,
+      "median_angle_deg": -38.99254671591758,
+      "fraction_right": 0.6141162276291977,
+      "fraction_15_75_right": 0.449627991152222,
+      "mean_wind_stress_pa": 0.1354420125694541,
+      "mean_surface_speed_m_s": 0.09453111432924417,
+      "ekman_observed_day": true
+    },
+    {
+      "day": 30,
+      "n_cells": 10321,
+      "mean_angle_deg": 22.128661651285658,
+      "median_angle_deg": 25.419645221625256,
+      "fraction_right": 0.19784904563511288,
+      "fraction_15_75_right": 0.10667570971805057,
+      "mean_wind_stress_pa": 0.2287759402070487,
+      "mean_surface_speed_m_s": 0.16460360932824877,
+      "ekman_observed_day": false
+    }
+  ],
+  "ekman_observed": true,
+  "conclusion": "rightward turning observed during spin-up"
+}

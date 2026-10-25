@@ -428,3 +428,12 @@ not added.
 - **T-23:** `STAGE118_LON_CLAMP` (default OFF) clamps out-of-range longitude to the file edges instead of cyclic ±360° wrap. Narrow 10–70E test: OFF 75E→10E (legacy), ON 75E→70E; 5E control→10E. T1 spatial/temporal with ON PASS/PASS.
 - **Decision:** Both switches remain **OFF by default** for backward compatibility in this stage; **enable in production after T4 validation** and a separate decision. T3b remains PASS; **T4 (wind forcing) is GO**, implementation not started in T4-PREP.
 - **Report:** `docs/validation/stage11.8.0_T4-PREP_wind_rotation_lon_clamp.md`.
+
+## D-38. First forced ERA5 run (T4) accepted; T5 GO with heat-budget caveat (Stage 11.8.0, 2026-10-25)
+
+- **Config:** rest OFF; `STAGE118_WIND_ROTATION=ON`, `STAGE118_LON_CLAMP=ON`; dt=1800; Ah=10000; E1+E2+E3; LEGACY; corrected EN4 January; ERA5 January full-coverage; 30 days.
+- **Result:** no NaN/Inf; max |U| 0.970 m/s, max |V| 0.598 m/s; KE0/15/30 4.645e13/4.408e14/6.699e14 J; KE30/KE15 **1.520** (<10); T/S drift 0.311 °C/0.229 PSU; volume 0, salt 8.319e-4, heat 5.228e-3.
+- **Heat caveat:** heat drift corresponds to a plausible **−3.94 W/m²** mean surface forcing; the model does not archive a surface heat-flux integral, so numerical heat conservation cannot be separated from forcing (T-34, OPEN diagnostic gap). Volume/salt numerical conservation pass.
+- **Physical response:** Ekman day 15 mean −40.4° / 61.4 % right; day 30 geostrophic +22°; wind work positive every sampled day (mean +3.805e10 W); Laplacian dissipation 7.48e9 W.
+- **Decision:** T4 **PASS** on stability/Ekman/wind/volume/salt; **T5 (time-stepping stability) GO**, not started. No physics/EOS/scheduler change.
+- **Report:** `docs/validation/stage11.8.0_T4_wind_forcing.md`.

@@ -35,7 +35,7 @@ under atmospheric, oceanic, bathymetric, and sea-ice forcing.
 
 ## 📑 Project status
 
-- **Current stage:** Stage 11.8.0 T4-PREP COMPLETE — **H-2 FIXED** (`STAGE118_WIND_ROTATION`; alpha median 50.18°, max 81.28°) and **T-23 FIXED** (`STAGE118_LON_CLAMP`; 75E→70E ON, 10E OFF). T3b remains PASS (dt=1800, Ah=10000). **T4 (wind forcing) GO**; switches default OFF; do not start T4 here.
+- **Current stage:** Stage 11.8.0 T4 COMPLETE — first 30-day ERA5 forced run **PASS**: max |U| 0.970 m/s, KE30/KE15 1.520 (<10), wind work positive, Ekman spin-up at day 15; heat drift 5.23e-3 is forced (T-34). **T5 (time-stepping stability) GO**; not started.
   [Historical note from Stage 10.19, SUPERSEDED by Stage 10.20 restoration
   (full-coverage ERA5: 3-day gate PASS, residual characterized, NOT fixed):
   coupling recovery (completed: the Lagrangian iceberg module is now

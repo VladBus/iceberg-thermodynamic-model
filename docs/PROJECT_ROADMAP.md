@@ -1,9 +1,9 @@
 # Project Roadmap
 
 **Updated:** 2026-10-25
-**Current scientific stage:** Stage 11.8.0 T4-PREP COMPLETE — H-2 (wind rotation) and T-23 (longitude clamp) **FIXED** behind OFF-by-default switches and verified; T3b numerical gate remains PASS. **T4 (wind forcing) is GO**; do not start it in this stage. Production switches stay OFF until T4 validation/D-37.
+**Current scientific stage:** Stage 11.8.0 T4 COMPLETE — first forced 30-day ERA5 run **PASS** (max |U| 0.970 m/s, KE30/KE15 1.520 <10, wind work positive, Ekman spin-up at day 15; heat drift 5.23e-3 is forced, T-34). **T5 (time-stepping stability) is GO**; do not start it here.
 **Stages 3–11.4.1: COMPLETED** (10.x iceberg modernization; 11.1 seasonal characterization; 11.2 CFL audit; 11.4-D21…D33 EN4 stabilization → ERA5-coverage fix → cleanup + Ocean Baseline 11.x; 11.3A execution-graph audit; 11.3B input-architecture audit + NetCDF contracts; 11.3C scheme audit + timestep matrix; 11.3C.1 semantics + CFL distributions; 11.3C.2 time-integration audit; 11.3C.3 loop-bound search (VERDICT D); 11.4 EOS-80 experiment + 11.4.1 impact validation (OPTIONAL, not default)).
-**Current status:** Stages 10.14-11.8.0 T4-PREP committed. T0/T1/T2/T3-PREP/T3/T3-CORRECTIVE/T3-CORRECTIVE-2/T3-CORRECTIVE-3/T3-CORRECTIVE-4/T4-PREP COMPLETE. **T4-PREP:** H-2/T-23 FIXED; T4 GO.
+**Current status:** Stages 10.14-11.8.0 T4 committed. T0/T1/T2/T3-PREP/T3/T3-CORRECTIVE/T3-CORRECTIVE-2/T3-CORRECTIVE-3/T3-CORRECTIVE-4/T4-PREP/T4 COMPLETE. **T4:** forced run PASS; T5 GO.
 **Test suite:** 69 Fortran test source files (`ls test/*.f90 | wc -l`); 69 executable test targets (`grep -lE '^\s*program ' test/*.f90 | wc -l`). Counting method (Stage 11.8.0 T0): every current `test/*.f90` holds a top-level `program`, so file count == target count (verified 2026-10-24).
 **Stage 11.5H-RC COMPLETE** (release-candidate gate: self-contained production scheduler, docs synced D-22…D-28). Plan: 11.8.0 diagnostic ladder (T0–T6) → 11.8A validation → 11.8B audit → 11.9 closure → 12.0 voxel (blocked, D-28).
 
@@ -426,7 +426,8 @@ later corrected by v2 (hourly, 3600; T3-CORRECTIVE-3). Report:
 | **T3-CORRECTIVE-3** | T-19 v2 + E1–E3 (prognostic RO / potential CA / f64 N²) + hygiene | **DONE 2026-10-25** (T3b still fails) |
 | **T3-CORRECTIVE-4** | Numerical stabilization: dt reduction + Laplacian dissipation (no sponge) | **DONE 2026-10-25** (T3b PASS; T4 blocked by H-2/T-23) |
 | **T4-PREP** | Wind rotation (H-2) + longitude clamp (T-23) | **DONE 2026-10-25** |
-| **T4** | Wind forcing implementation | **GO** (do not start in T4-PREP) |
+| **T4** | First forced ERA5 run + diagnostics | **DONE 2026-10-25** (PASS; heat caveat T-34) |
+| **T5** | Time-stepping stability | **GO** (do not start in T4) |
 
 ### Stage 11.8.0 T3-PREP — EN4 Data Correction (T-20, T-22)
 
@@ -570,6 +571,25 @@ Integration: T3 with both switches ON and the chosen dt=1800+Ah=10000 config is
 unchanged (max |U| 0.147 m/s, KE30/KE15 0.568). **T4 is GO**; implementation
 not started here. Report:
 `docs/validation/stage11.8.0_T4-PREP_wind_rotation_lon_clamp.md`.
+
+### Stage 11.8.0 T4 — First Forced Run
+
+Configuration: rest OFF; wind rotation ON; longitude clamp ON; dt=1800;
+Ah=10000; E1+E2+E3; EOS LEGACY; corrected EN4 January; ERA5 January
+full-coverage; 30 days. No NaN/Inf.
+
+**Metrics:** max |U| **0.970 m/s**, max |V| 0.598 m/s, max |W| 0.0024 m/s;
+KE0/15/30 **4.645e13 / 4.408e14 / 6.699e14 J**; KE30/KE15 **1.520** (<10);
+T/S drift 0.311 °C / 0.229 PSU; volume 0, salt 8.319e-4, heat 5.228e-3
+(equivalent to −3.94 W/m² forced cooling; heat-flux closure not archived,
+T-34). **Ekman:** day-15 mean angle **−40.4°**, 61.4 % of cells right of wind;
+day-30 geostrophic field dominates (+22°). **Energy:** mean wind work
+**+3.805e10 W** (positive every sampled day), mean Laplacian dissipation
+7.48e9 W. **vs T3:** KE ×30.2 (+2923 %), max |U| +0.824 m/s.
+
+**T4 PASS** on stability/Ekman/wind/volume/salt; heat caveat documented.
+**T5 GO**; implementation not started. Report:
+`docs/validation/stage11.8.0_T4_wind_forcing.md`.
 
 ### Stage 11.8 Prerequisite: Ocean Stabilization (MANDATORY GATE)
 

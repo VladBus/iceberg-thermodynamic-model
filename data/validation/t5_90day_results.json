@@ -1,0 +1,21 @@
+{
+  "run": "t5_90day_jan",
+  "days_completed": 60,
+  "fpe_after_day": 61,
+  "max_u_m_s": 488.21380615234375,
+  "max_v_m_s": 571.3936767578125,
+  "max_w_m_s": 0.008330161683261395,
+  "ke_day0_j": 46451387216408.04,
+  "ke_day30_j": 670416451164757.6,
+  "ke_day60_j": 1.177770408804335e+19,
+  "ke60_over_ke30": 17567.743255078523,
+  "conservation_day60": {
+    "volume_rel": 0.0,
+    "heat_rel": 0.00646278551572242,
+    "salt_rel": 0.028440021719118868
+  },
+  "drift_T_day60": 6.560038135941503,
+  "drift_S_day60": 121.83399099782287,
+  "status": "FAIL",
+  "reason": "SIGFPE at day 61 after explosive growth (KE60 1.18e19 J, Umax 488 m/s); KE60/KE30 17557 >5"
+}

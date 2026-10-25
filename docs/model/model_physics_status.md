@@ -1,7 +1,7 @@
 # Model Physics Block Status
 
 **Date:** 2026-10-25
-**Current repository stage:** Stage 11.8.0 T4 COMPLETE — first forced 30-day ERA5 run PASS (max |U| 0.970 m/s, KE30/KE15 1.520, wind work positive, Ekman spin-up at day 15); heat drift 5.23e-3 is forced (T-34). **T5 (time-stepping stability) GO.**
+**Current repository stage:** Stage 11.8.0 T5 COMPLETE — **FAIL**: 90-day January run explodes at day 61 (KE60/KE30 17,568, Umax 488 m/s, SIGFPE); April 30-day stable (KE30/KE15 1.541) and seasonally consistent. T-34 CLOSED (physical, tentative); T5-CORRECTIVE required; **T6 NO-GO.**
 **Ocean EOS statement:** the prognostic ocean uses legacy Eckart (Dmitrev–Nesterov) density in float32 (`src/equation_of_state.f90`) by default; UNESCO EOS-80 is implemented opt-in (`src/eos80_unesco.f90`, `EOS_MODE=EOS80`, validated in 11.4/11.4.1, recommendation: optional). Iceberg side uses freezing-point only (table row "Full seawater EOS" below refers to the iceberg module).
 **Production baseline:** Stage 10.13 (low-flow closure behind `low_flow_closure_enabled`; OFF = Stage 10.12/10.10 legacy unchanged); Stage 10.19 adds the env-gated production iceberg connection (inert by default); Stage 10.20 adopts the full-coverage ERA5 Jan file for production gates (`src/param.f90` default path NOT changed); Stage 10.21 adds CA/EOS f32-precision research switches (`STAGE1021_CA_F64`, `STAGE1021_CA_MIX`, `STAGE1021_CA_SCOPE`, `STAGE1021_CA_EPS`) — all OFF by default, production bit-identical (KEEP_CURRENT); Stage 10.22 adds Block-200 stability-audit diagnostic switches (`STAGE1022_DIAG`, `STAGE1022_FREEZE_RO`, `STAGE1022_FREEZE_THERMAL_WIND`, `STAGE1022_FREEZE_TS`, `STAGE1022_FREEZE_RO_DOWNSTREAM`; env names `_FREEZE_RO`/`_FREEZE_TS`/`_FREEZE_RO_DOWNSTREAM`/`_FREEZE_THERMAL_WIND` + `_DIAG`) — all OFF by default, production bit-identical (KEEP_CURRENT); Stage 11.4-D32 adds the ERA5 nearest-edge coverage fallback in `era5_wind()` (loader-only production fix, Jan bit-identical); Stage 11.4-D33 fixes Ocean Baseline 11.x (Jan30/Apr29/Jul30/Oct30, 0 NaN); Stage 11.3C adds `STAGE113_DT/DT1` measurement-only timestep override (defaults = legacy 3600/120); Stage 11.3C.1 adds mm2/mm3 scaling (active only with override) + `s112_cfl_dist` percentiles (DIAG-gated)
 **FPM test targets:** 59 (fpm auto-discovery of `test/*.f90` with a top-level `program`, incl. `check.f90`, `iceberg_test_10p17_melt_budget`, `iceberg_test_10p17_90day`, `drift_scaling_*`)
@@ -287,6 +287,18 @@ LEGACY. No NaN/Inf. max |U| 0.970 m/s, max |V| 0.598 m/s, KE0/15/30
 61.4 % right; day 30 geostrophic (+22°). Mean wind work +3.805e10 W;
 mean Laplacian dissipation 7.48e9 W. T4 vs T3: KE ×30.2, max |U| +0.824 m/s.
 **T5 GO.** Report: `docs/validation/stage11.8.0_T4_wind_forcing.md`.
+
+## Stage 11.8.0 T5 — 90-day FAIL, April PASS, T-34 CLOSED
+
+90-day January forced run (all T4 switches) is bounded to day 45, then explodes
+by day 60: KE30 6.704e14 → KE60 1.178e19 J (ratio 17,568), Umax 488 m/s, CA
+input inversion 2.50e2; SIGFPE at day 61. April 30-day is stable
+(max |U| 0.866 m/s, KE30/KE15 1.541, seasonal KE ratio 0.752, max-U ratio
+0.893); April Ekman right-turning not observed at day 15. T-34 CLOSED
+(physical, tentative): 30-day heat drift implies −3.94 W/m² (Jan) and
+−9.81 W/m² (Apr), plausible Arctic cooling; volume 0, salt <1e-3. 180-day
+skipped because 90-day failed. **T6 NO-GO; T5-CORRECTIVE required.** Report:
+`docs/validation/stage11.8.0_T5_time_stepping_stability.md`.
 
 ## References
 

@@ -35,7 +35,7 @@ under atmospheric, oceanic, bathymetric, and sea-ice forcing.
 
 ## 📑 Project status
 
-- **Current stage:** Stage 11.8.0 T4 COMPLETE — first 30-day ERA5 forced run **PASS**: max |U| 0.970 m/s, KE30/KE15 1.520 (<10), wind work positive, Ekman spin-up at day 15; heat drift 5.23e-3 is forced (T-34). **T5 (time-stepping stability) GO**; not started.
+- **Current stage:** Stage 11.8.0 T5 COMPLETE — **FAIL**: 90-day January forced run explodes at day 61 (KE60/KE30 17,568, Umax 488 m/s, SIGFPE); April 30-day stable (KE30/KE15 1.541), seasonally consistent. T-34 CLOSED (physical, tentative); T5-CORRECTIVE required; **T6 NO-GO.**
   [Historical note from Stage 10.19, SUPERSEDED by Stage 10.20 restoration
   (full-coverage ERA5: 3-day gate PASS, residual characterized, NOT fixed):
   coupling recovery (completed: the Lagrangian iceberg module is now

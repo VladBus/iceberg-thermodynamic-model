@@ -437,3 +437,11 @@ not added.
 - **Physical response:** Ekman day 15 mean −40.4° / 61.4 % right; day 30 geostrophic +22°; wind work positive every sampled day (mean +3.805e10 W); Laplacian dissipation 7.48e9 W.
 - **Decision:** T4 **PASS** on stability/Ekman/wind/volume/salt; **T5 (time-stepping stability) GO**, not started. No physics/EOS/scheduler change.
 - **Report:** `docs/validation/stage11.8.0_T4_wind_forcing.md`.
+
+## D-39. T5 long-run forced instability; T-34 heat closure physical (Stage 11.8.0 T5, 2026-10-25)
+
+- **90-day January:** bounded through day 45 but explodes by day 60 (KE30 6.704e14 → KE60 1.178e19 J; ratio 17,568; Umax 488 m/s; CA input inversion 2.50e2; SIGFPE day 61). Q1 March storm forcing triggers a long-run numerical instability.
+- **April 30-day:** stable (max |U| 0.866 m/s, KE30/KE15 1.541); seasonal comparison within factor 2 (KE ratio 0.752, max-U ratio 0.893). Ekman right-turning is not observed at day 15 (spring geostrophic dominance).
+- **T-34:** CLOSED (physical, tentative). Stable 30-day heat drift implies −3.94 W/m² (Jan) and −9.81 W/m² (Apr), plausible Arctic cooling; volume 0 and salt <1e-3. No direct surface-flux archive, hence tentative.
+- **Decision:** T5 overall **FAIL**; 180-day conditional run skipped. **T6 NO-GO.** Next stage is **T5-CORRECTIVE** (long-run forced stability: storm-safe dissipation/Δtime stepping). No physics/EOS/scheduler change.
+- **Report:** `docs/validation/stage11.8.0_T5_time_stepping_stability.md`.

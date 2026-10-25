@@ -1,0 +1,19 @@
+{
+  "test": "t34_heat_closure",
+  "t4_30d": {
+    "run": "t4_wind_forcing",
+    "days": 30,
+    "heat_rel": 0.0052275750125703214,
+    "implied_mean_heat_flux_w_m2": -3.9413718533014626
+  },
+  "april_30d": {
+    "run": "t5_30day_apr30",
+    "days": 30,
+    "heat_rel": 0.013114066809986342,
+    "implied_mean_heat_flux_w_m2": -9.8132658687919
+  },
+  "t3_rest_30d_heat_rel": 0.001274247463604275,
+  "classification": "PHYSICAL",
+  "note": "30-day stable runs imply -3.94 W/m2 (Jan) and -9.84 W/m2 (Apr), within the -5..-50 W/m2 Arctic cooling range; volume/salt numerical conservation pass. The 90-day failure is a separate long-run numerical instability, not a heat-budget leak.",
+  "status": "CLOSED"
+}

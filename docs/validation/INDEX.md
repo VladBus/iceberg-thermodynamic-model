@@ -110,6 +110,8 @@ Stage 10 reports have been archived to `docs/wiki/stages/stage10/`. See the arch
 
 | `stage11.8.0_T4_wind_forcing.md` (first forced ERA5 run) | 11.8.0 T4 | COMPLETE (PASS; heat caveat T-34) | **Config:** rest OFF, wind rotation ON, lon clamp ON, dt=1800, Ah=10000, E1+E2+E3, LEGACY, EN4 Jan, ERA5 Jan, 30 d; no NaN/Inf. **Metrics:** max |U| 0.970, max |V| 0.598, max |W| 0.0024; KE0/15/30 4.645e13/4.408e14/6.699e14 J; **KE30/KE15 1.520**; drift T/S 0.311°C/0.229 PSU; volume 0, salt 8.319e-4, heat 5.228e-3 (forced −3.94 W/m²). **Ekman:** day15 −40.4°, 61.4% right; day30 +22° (geostrophic). **Energy:** wind work +3.805e10 W, dissipation 7.48e9 W. **vs T3:** KE ×30.2, max |U| +0.824. **T5 GO.** | `docs/validation/stage11.8.0_T4_wind_forcing.md` |
 
+| `stage11.8.0_T5_time_stepping_stability.md` (90-day FAIL, April PASS, T-34 closed) | 11.8.0 T5 | COMPLETE (FAIL; T-34 CLOSED) | **90-day Jan:** bounded to day45, then KE30 6.704e14 → KE60 1.178e19 J (ratio **17,568**), Umax 488 m/s, CA inversion 2.50e2; SIGFPE day61 — **FAIL**. **April 30d:** max |U| 0.866, KE30/KE15 **1.541**, KE30 ratio 0.752, max-U ratio 0.893 — stable; Ekman not observed (spring). **T-34 CLOSED (physical, tentative):** 30d heat drift −3.94 W/m² (Jan), −9.81 W/m² (Apr); volume 0, salt <1e-3. 180-day skipped (conditional). **T6 NO-GO; T5-CORRECTIVE.** | `docs/validation/stage11.8.0_T5_time_stepping_stability.md` |
+
 ## Rules
 
 - Reports here are not rewritten after stage completion (exception: technical navigational fixes).

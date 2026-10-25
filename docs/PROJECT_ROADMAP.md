@@ -1,9 +1,9 @@
 # Project Roadmap
 
 **Updated:** 2026-10-25
-**Current scientific stage:** Stage 11.8.0 T4 COMPLETE — first forced 30-day ERA5 run **PASS** (max |U| 0.970 m/s, KE30/KE15 1.520 <10, wind work positive, Ekman spin-up at day 15; heat drift 5.23e-3 is forced, T-34). **T5 (time-stepping stability) is GO**; do not start it here.
+**Current scientific stage:** Stage 11.8.0 T5 COMPLETE — **FAIL**: 90-day January forced run explodes at day 61 (KE60/KE30 17,568, Umax 488 m/s, SIGFPE); April 30-day stable (KE30/KE15 1.541, Umax 0.866), seasonally consistent. **T-34 CLOSED (physical, tentative)**. **T5-CORRECTIVE required; T6 NO-GO.**
 **Stages 3–11.4.1: COMPLETED** (10.x iceberg modernization; 11.1 seasonal characterization; 11.2 CFL audit; 11.4-D21…D33 EN4 stabilization → ERA5-coverage fix → cleanup + Ocean Baseline 11.x; 11.3A execution-graph audit; 11.3B input-architecture audit + NetCDF contracts; 11.3C scheme audit + timestep matrix; 11.3C.1 semantics + CFL distributions; 11.3C.2 time-integration audit; 11.3C.3 loop-bound search (VERDICT D); 11.4 EOS-80 experiment + 11.4.1 impact validation (OPTIONAL, not default)).
-**Current status:** Stages 10.14-11.8.0 T4 committed. T0/T1/T2/T3-PREP/T3/T3-CORRECTIVE/T3-CORRECTIVE-2/T3-CORRECTIVE-3/T3-CORRECTIVE-4/T4-PREP/T4 COMPLETE. **T4:** forced run PASS; T5 GO.
+**Current status:** Stages 10.14-11.8.0 T5 committed. T0/T1/T2/T3-PREP/T3/T3-CORRECTIVE/T3-CORRECTIVE-2/T3-CORRECTIVE-3/T3-CORRECTIVE-4/T4-PREP/T4/T5 COMPLETE. **T5:** FAIL (90-day); T-34 CLOSED; T6 NO-GO.
 **Test suite:** 69 Fortran test source files (`ls test/*.f90 | wc -l`); 69 executable test targets (`grep -lE '^\s*program ' test/*.f90 | wc -l`). Counting method (Stage 11.8.0 T0): every current `test/*.f90` holds a top-level `program`, so file count == target count (verified 2026-10-24).
 **Stage 11.5H-RC COMPLETE** (release-candidate gate: self-contained production scheduler, docs synced D-22…D-28). Plan: 11.8.0 diagnostic ladder (T0–T6) → 11.8A validation → 11.8B audit → 11.9 closure → 12.0 voxel (blocked, D-28).
 
@@ -427,7 +427,8 @@ later corrected by v2 (hourly, 3600; T3-CORRECTIVE-3). Report:
 | **T3-CORRECTIVE-4** | Numerical stabilization: dt reduction + Laplacian dissipation (no sponge) | **DONE 2026-10-25** (T3b PASS; T4 blocked by H-2/T-23) |
 | **T4-PREP** | Wind rotation (H-2) + longitude clamp (T-23) | **DONE 2026-10-25** |
 | **T4** | First forced ERA5 run + diagnostics | **DONE 2026-10-25** (PASS; heat caveat T-34) |
-| **T5** | Time-stepping stability | **GO** (do not start in T4) |
+| **T5** | 90-day/180-day stability + T-34 | **DONE 2026-10-25** (FAIL; T-34 CLOSED) |
+| **T5-CORRECTIVE** | Long-run forced stability (storm-safe dissipation/Δtime stepping) | **BEFORE T6** |
 
 ### Stage 11.8.0 T3-PREP — EN4 Data Correction (T-20, T-22)
 
@@ -590,6 +591,25 @@ day-30 geostrophic field dominates (+22°). **Energy:** mean wind work
 **T4 PASS** on stability/Ekman/wind/volume/salt; heat caveat documented.
 **T5 GO**; implementation not started. Report:
 `docs/validation/stage11.8.0_T4_wind_forcing.md`.
+
+### Stage 11.8.0 T5 — Long-Run Stability + T-34
+
+**90-day January: FAIL.** Bounded through day 45, then KE30 6.704e14 J →
+KE60 **1.178e19 J** (ratio **17,568**), Umax **488 m/s**, CA input inversion
+2.50e2 in 10,625/10,966 columns; **SIGFPE at day 61**. Q1 March storm forcing
+is the trigger; no heat-budget cause.
+
+**April 30-day: PASS** for stability/seasonal consistency: max |U| 0.866 m/s,
+KE30/KE15 **1.541**, KE30 ratio vs January 0.752, max-U ratio 0.893; Ekman
+rightward signal not observed at day 15 (spring geostrophic dominance).
+
+**T-34 CLOSED (physical, tentative):** stable 30-day heat drift corresponds to
+−3.94 W/m² (Jan) and −9.81 W/m² (Apr), plausible Arctic cooling; volume 0,
+salt <1e-3. No surface-flux archive, hence tentative.
+
+**180-day not performed** (conditional on 90-day pass). **T5 overall FAIL;
+T6 NO-GO; T5-CORRECTIVE required.** Report:
+`docs/validation/stage11.8.0_T5_time_stepping_stability.md`.
 
 ### Stage 11.8 Prerequisite: Ocean Stabilization (MANDATORY GATE)
 

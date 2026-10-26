@@ -471,3 +471,11 @@ not added.
 - **April 30-day with fixes:** PASS (KE30/KE15 1.530, max |U| 0.853).
 - **Decision:** hard tracer caps are not a valid density fix; they create nonphysical S=0/T=30 states. **T6 NO-GO; T5-CORRECTIVE-4** must address density/thermodynamic coupling. No production default change; switches OFF.
 - **Report:** `docs/validation/stage11.8.0_T5-CORRECTIVE-3_monotone_advection.md`.
+
+## D-43. T5-CORRECTIVE-4 density repair fails; accept 30-day forced limitation (Stage 11.8.0, 2026-10-25)
+
+- **Implementation:** hard T caps removed; `STAGE118_DENSITY_REPAIR` (default OFF) adjusts the less-sensitive tracer (dRO/dT vs dRO/dS) to make RO≥0 after advection, before CA. Unit test PASS (RO −0.0242→+2.39e-4 g/cm³, S 0→0.0326).
+- **90-day Config1:** repair touches ~139,620 cells/day, but CA/B200 recreate negative density (day65 RO min −416, 25 cells); NaN appears day69; max |U| 34,027 m/s -> FAIL. April 30-day with repair PASS (KE30/KE15 1.530, max |U| 0.853, RO min 0).
+- **References:** `Iceberg_1.docx` and `Iceberg_Voxel_Thermal_Model.docx` absent; the available voxel PDF covers only iceberg heat-conduction stability, not ocean density/RO.
+- **Decision:** no storm-safe long-run configuration. **ACCEPT LIMITATION: 30-day forced runs only; T6 NO-GO.** Density repair/tracer caps are not promoted; switches default OFF. No EOS formula/scheduler change.
+- **Report:** `docs/validation/stage11.8.0_T5-CORRECTIVE-4_density_repair.md`.

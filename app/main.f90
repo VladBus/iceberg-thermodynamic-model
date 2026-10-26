@@ -49,6 +49,7 @@ program main
     use convective_adjustment
     use stage118_physics_switches
     use stage118_boundary_sponge, only: apply_boundary_sponge, apply_sponge_boundary
+    use stage118_density_repair, only: repair_density
     use run_config
     use thermal_wind_init
     use stage86_diagnostics
@@ -1273,6 +1274,7 @@ program main
                         if (.not. s115h_prod_active()) call s115c3_seq(kkk, iii, 'AFTER_advt')
 
                         ! Stage 8.6 diagnostics: E = after ocean advection
+                        if (s118_density_repair) call repair_density()
                         call capture_state('E_after_adv', kkk, iii, u2, v2, w, t2, s2, ro)
 
                         ! Диагностика этапа 4.3 (ТОЛЬКО чтение, не влияет на физику):

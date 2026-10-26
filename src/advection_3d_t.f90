@@ -319,12 +319,23 @@ contains
 
     subroutine monotone_range_t()
         integer :: i, j, k, ki
+        real :: tmax_old
+        tmax_old = -huge(1.0)
         do j = 1, js
             do i = 1, is
                 ki = kt1(i, j)
                 if (ki .eq. 0) cycle
                 do k = 1, ki
-                    t2(i, j, k) = min(max(t2(i, j, k), -2.0), 30.0)
+                    tmax_old = max(tmax_old, t1(i, j, k))
+                end do
+            end do
+        end do
+        do j = 1, js
+            do i = 1, is
+                ki = kt1(i, j)
+                if (ki .eq. 0) cycle
+                do k = 1, ki
+                    t2(i, j, k) = min(t2(i, j, k), tmax_old)
                 end do
             end do
         end do

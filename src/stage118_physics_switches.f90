@@ -26,6 +26,7 @@ module stage118_physics_switches
     logical, save, public :: s118_monotone_advection = .false.
     logical, save, public :: s118_sponge_boundary = .false.
     real, save, public :: s118_sponge_alpha = 1.0
+    logical, save, public :: s118_density_repair = .false.
 
 contains
 
@@ -61,6 +62,10 @@ contains
         if (len_trim(env) .gt. 0 .and. (trim(env) .eq. 'true' .or. &
             trim(env) .eq. '1' .or. trim(env) .eq. 'TRUE')) s118_lon_clamp = .true.
 
+        call get_environment_variable('STAGE118_DENSITY_REPAIR', env)
+        if (len_trim(env) .gt. 0 .and. (trim(env) .eq. 'true' .or. &
+            trim(env) .eq. '1' .or. trim(env) .eq. 'TRUE')) s118_density_repair = .true.
+
         call get_environment_variable('STAGE118_MONOTONE_ADVECTION', env)
         if (len_trim(env) .gt. 0 .and. (trim(env) .eq. 'true' .or. &
             trim(env) .eq. '1' .or. trim(env) .eq. 'TRUE')) s118_monotone_advection = .true.
@@ -86,7 +91,7 @@ contains
         if (s118_ro_prognostic .or. s118_ca_potential .or. s118_ca_f64_n2 .or. &
             s118_boundary_sponge .or. s118_t3_keep_tw .or. s118_lap_visc .or. &
             s118_wind_rotation .or. s118_lon_clamp .or. s118_monotone_advection .or. &
-            s118_sponge_boundary) then
+            s118_sponge_boundary .or. s118_density_repair) then
             print *, '>>> STAGE 11.8.0 T3-CORRECTIVE-3 physics branch: ', &
                 'RO_PROGNOSTIC=', s118_ro_prognostic, &
                 ' CA_POTENTIAL=', s118_ca_potential, &
@@ -95,7 +100,7 @@ contains
                 ' LAP_VISC=', s118_lap_visc, ' AH=', s118_ah_m2s, &
                 ' WIND_ROT=', s118_wind_rotation, ' LON_CLAMP=', s118_lon_clamp, &
                 ' MONOTONE=', s118_monotone_advection, ' SPONGE_BND=', s118_sponge_boundary, &
-                ' ALPHA=', s118_sponge_alpha
+                ' ALPHA=', s118_sponge_alpha, ' DENSITY_REPAIR=', s118_density_repair
         else
             print *, '>>> STAGE 11.8.0 T3-CORRECTIVE-3 physics branch: LEGACY-FROZEN (all switches OFF)'
         end if

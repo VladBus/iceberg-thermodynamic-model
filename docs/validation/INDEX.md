@@ -118,6 +118,8 @@ Stage 10 reports have been archived to `docs/wiki/stages/stage10/`. See the arch
 
 | `stage11.8.0_T5-CORRECTIVE-3_monotone_advection.md` (monotone+sponge, RO<0) | 11.8.0 T5-CORRECTIVE-3 | COMPLETE (FAIL: RO<0) | Reference: original/current FCT already Zalesak; BC no-gradient. Added `STAGE118_MONOTONE_ADVECTION` (S positivity/no-new-max, T∈[−2,30]) + `STAGE118_SPONGE_BOUNDARY` (5 cells, α=1/day); tests PASS. 90-day: no NaN, max |U| 1.141, KE90/KE60 0.975, S≥0, T∈[−2,30], **RO min −24.24 / 3,187 cells** -> FAIL. April 30d PASS (KE30/KE15 1.530). Hard caps unphysical; T6 NO-GO; T5-CORRECTIVE-4. | `docs/validation/stage11.8.0_T5-CORRECTIVE-3_monotone_advection.md` |
 
+| `stage11.8.0_T5-CORRECTIVE-4_density_repair.md` (density repair; FAIL 90d) | 11.8.0 T5-CORRECTIVE-4 | COMPLETE (FAIL; accept 30-day limitation) | Hard T caps removed; `STAGE118_DENSITY_REPAIR` (default OFF) adjusts T/S to RO≥0 after advection. Test RO −0.0242→+2.39e-4, S 0→0.0326 PASS. 90-day: repair adjusts ~139,620 cells/day but CA/B200 recreate negative RO (day65 −416), NaN day69, max |U| 34,027 -> FAIL. April 30-day PASS (KE30/KE15 1.530, max |U| 0.853, RO 0). .docx absent; PDF only iceberg conduction. **ACCEPT LIMITATION; T6 NO-GO.** | `docs/validation/stage11.8.0_T5-CORRECTIVE-4_density_repair.md` |
+
 ## Rules
 
 - Reports here are not rewritten after stage completion (exception: technical navigational fixes).

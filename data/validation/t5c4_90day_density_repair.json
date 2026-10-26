@@ -1,0 +1,37 @@
+{
+  "run": "t5c4_90day",
+  "days": 90,
+  "first_nan_day": 69,
+  "max_u_m_s": 34027.48828125,
+  "max_v_m_s": 32047.978515625,
+  "max_w_m_s": 666.5952758789062,
+  "ke30_j": 515546905439692.3,
+  "ke60_j": 610577423110673.8,
+  "ke90_j": 423067323176.2291,
+  "ke90_over_ke60": 0.000692897095704673,
+  "bounds_day65": {
+    "T_min": -3.62469482421875,
+    "T_max": 168.74978637695312,
+    "S_min_psu": 0.0,
+    "S_max_psu": 57.12882995605469,
+    "RO_min": -416.1062927246094,
+    "RO_negative_cells": 25,
+    "nan_cells": 0
+  },
+  "bounds_day90": {
+    "T_min": -28026.4609375,
+    "T_max": 2.7650146484375,
+    "S_min_psu": 13.481674194335938,
+    "S_max_psu": 37.07408142089844,
+    "RO_min": 0.0,
+    "RO_negative_cells": 0,
+    "nan_cells": 0
+  },
+  "conservation": {
+    "volume_rel": 0.0,
+    "heat_rel": 0.41696203265503196,
+    "salt_rel": 0.27030892163663206
+  },
+  "PASS": false,
+  "reason": "NaN from day69; density repair before CA does not prevent RO<0/NaN; max |U| 34027"
+}

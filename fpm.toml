@@ -95,3 +95,7 @@ main = "test_monotone_advection.f90"
 [test.test_sponge_boundary]
 source-dir = "test"
 main = "test_sponge_boundary.f90"
+
+[test.test_density_repair]
+source-dir = "test"
+main = "test_density_repair.f90"

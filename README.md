@@ -35,7 +35,7 @@ under atmospheric, oceanic, bathymetric, and sea-ice forcing.
 
 ## 📑 Project status
 
-- **Current stage:** Stage 11.8.0 T5-CORRECTIVE-3 COMPLETE — **FAIL**: monotone+sponge gives no NaN, max |U| 1.141, KE90/KE60 0.975, but hard S/T caps create RO<0 (−24.24, 3,187 cells). T6 NO-GO; next T5-CORRECTIVE-4.
+- **Current stage:** Stage 11.8.0 T5-CORRECTIVE-4 COMPLETE — **FAIL**: density repair before CA is overwhelmed by CA/B200 (NaN day69, max |U| 34,027); April 30-day passes. ACCEPT LIMITATION (30-day forced only); **T6 NO-GO.**
   [Historical note from Stage 10.19, SUPERSEDED by Stage 10.20 restoration
   (full-coverage ERA5: 3-day gate PASS, residual characterized, NOT fixed):
   coupling recovery (completed: the Lagrangian iceberg module is now

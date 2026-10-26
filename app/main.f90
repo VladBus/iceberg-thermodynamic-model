@@ -48,7 +48,7 @@ program main
     use equation_of_state
     use convective_adjustment
     use stage118_physics_switches
-    use stage118_boundary_sponge, only: apply_boundary_sponge
+    use stage118_boundary_sponge, only: apply_boundary_sponge, apply_sponge_boundary
     use run_config
     use thermal_wind_init
     use stage86_diagnostics
@@ -1292,6 +1292,9 @@ program main
                         ! Stage 11.8.0 E1: prognostic RO (T/S -> RO) after CA,
                         ! before Block 200.  OFF default -> legacy bit-identical.
                         if (s118_ro_prognostic) call eos_update_ro()
+                        ! T5-CORRECTIVE-3: optional boundary sponge after
+                        ! advection/CA, before Block 200.  OFF default.
+                        if (s118_sponge_boundary) call apply_sponge_boundary(dt)
 
                         ! Stage 8.6 diagnostics: F = after convective adjustment
                         call capture_state('F_after_conv', kkk, iii, u2, v2, w, t2, s2, ro)

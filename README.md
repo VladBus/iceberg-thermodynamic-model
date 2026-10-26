@@ -35,7 +35,7 @@ under atmospheric, oceanic, bathymetric, and sea-ice forcing.
 
 ## 📑 Project status
 
-- **Current stage:** Stage 11.8.0 T5-CORRECTIVE-2 COMPLETE — root cause **ADVECTION_ERROR (negative salinity/RO) + BOUNDARY_REFLECTION amplifier**; CA secondary. Config1 corruption starts day29, collapses days63-65; stronger dt/Ah only delays. T6 NO-GO; next T5-CORRECTIVE-3.
+- **Current stage:** Stage 11.8.0 T5-CORRECTIVE-3 COMPLETE — **FAIL**: monotone+sponge gives no NaN, max |U| 1.141, KE90/KE60 0.975, but hard S/T caps create RO<0 (−24.24, 3,187 cells). T6 NO-GO; next T5-CORRECTIVE-4.
   [Historical note from Stage 10.19, SUPERSEDED by Stage 10.20 restoration
   (full-coverage ERA5: 3-day gate PASS, residual characterized, NOT fixed):
   coupling recovery (completed: the Lagrangian iceberg module is now

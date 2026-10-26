@@ -6,9 +6,34 @@
 ! ==============================================================================
 module stage118_boundary_sponge
     use param
+    use stage118_physics_switches, only: s118_sponge_boundary, s118_sponge_alpha
     implicit none
 
 contains
+
+    subroutine apply_sponge_boundary(dt_step)
+        real, intent(in) :: dt_step
+        integer :: i, j, k, ki, dist, width
+        real :: ramp, fac
+
+        width = 5
+        do j = 2, js
+            do i = 2, is
+                dist = min(i - 1, is - i, j - 1, js - j)
+                if (dist .gt. width) cycle
+                ki = kk1(i, j)
+                if (ki .eq. 0) cycle
+                ramp = real(width - dist + 1)/real(width)
+                fac = max(0.0, 1.0 - (s118_sponge_alpha/86400.0)*dt_step*ramp)
+                do k = 1, ki
+                    u2(i, j, k) = u2(i, j, k)*fac
+                    v2(i, j, k) = v2(i, j, k)*fac
+                end do
+                up2(i, j) = up2(i, j)*fac
+                vp2(i, j) = vp2(i, j)*fac
+            end do
+        end do
+    end subroutine apply_sponge_boundary
 
     subroutine apply_boundary_sponge(dt_step)
         real, intent(in) :: dt_step

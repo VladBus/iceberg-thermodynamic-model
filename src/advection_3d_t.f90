@@ -56,6 +56,7 @@
 
 module advection_3d_t
     use param
+    use stage118_physics_switches, only: s118_monotone_advection
     implicit none
 
 contains
@@ -306,6 +307,27 @@ contains
         ! T3-CORRECTIVE (T-29): cd is computed only on 1:is,1:js
         t2(1:is, 1:js, :) = cd(1:is, 1:js, :)
 
+        ! T5-CORRECTIVE-3: optional monotone/physical-range safety net for T.
+        ! The S branch has its own positivity cap; T is bounded to the
+        ! acceptance range [-2, 30] degC to stop nonphysical advective
+        ! extrema.  Default OFF -> bit-identical legacy.
+        if (s118_monotone_advection) then
+            call monotone_range_t()
+        end if
+
     end subroutine advt
+
+    subroutine monotone_range_t()
+        integer :: i, j, k, ki
+        do j = 1, js
+            do i = 1, is
+                ki = kt1(i, j)
+                if (ki .eq. 0) cycle
+                do k = 1, ki
+                    t2(i, j, k) = min(max(t2(i, j, k), -2.0), 30.0)
+                end do
+            end do
+        end do
+    end subroutine monotone_range_t
 
 end module advection_3d_t

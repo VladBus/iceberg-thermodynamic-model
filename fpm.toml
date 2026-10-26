@@ -87,3 +87,11 @@ main = "test_ca_compressibility.f90"
 [test.test_advection_boundary]
 source-dir = "test"
 main = "test_advection_boundary.f90"
+
+[test.test_monotone_advection]
+source-dir = "test"
+main = "test_monotone_advection.f90"
+
+[test.test_sponge_boundary]
+source-dir = "test"
+main = "test_sponge_boundary.f90"

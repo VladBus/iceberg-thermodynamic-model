@@ -462,3 +462,12 @@ not added.
 - **Storm timing:** Q1 peak 2020-03-16/day75 occurs after collapse; failure is cumulative advection error, not a single-storm trigger.
 - **Decision:** root cause = **MULTIPLE (ADVECTION_ERROR primary; BOUNDARY_REFLECTION amplifier; CA secondary)**. No fixes implemented; **T6 NO-GO**; next **T5-CORRECTIVE-3** (monotone/positive salinity advection + boundary treatment). Reference originals absent; no storm guidance.
 - **Report:** `docs/validation/stage11.8.0_T5-CORRECTIVE-2_diagnostics.md`; literature `t5c2_literature_review.md`.
+
+## D-42. T5-CORRECTIVE-3 monotone/sponge fails on density; T6 NO-GO (Stage 11.8.0, 2026-10-25)
+
+- **Reference:** original/current advection is FCT with Zalesak limiter, not central; original BCs are no-gradient (no radiation/sponge).
+- **Implementation:** `STAGE118_MONOTONE_ADVECTION` adds hard S positivity/no-new-max and T∈[−2,30] safety bounds; `STAGE118_SPONGE_BOUNDARY` adds 5-cell, α=1/day damping. Both default OFF; tests PASS.
+- **90-day Config1 (dt900/Ah20000, both ON):** no NaN, max |U| 1.141, KE90/KE60 0.975, S≥0, T∈[−2,30], **RO min −24.24 / 3,187 negative cells** -> FAIL. Without the T bound the run returns NaN.
+- **April 30-day with fixes:** PASS (KE30/KE15 1.530, max |U| 0.853).
+- **Decision:** hard tracer caps are not a valid density fix; they create nonphysical S=0/T=30 states. **T6 NO-GO; T5-CORRECTIVE-4** must address density/thermodynamic coupling. No production default change; switches OFF.
+- **Report:** `docs/validation/stage11.8.0_T5-CORRECTIVE-3_monotone_advection.md`.

@@ -1,0 +1,4079 @@
+модель написанная Дмитреевым Н.Е. 1995 - 2000 г. точнее сказать это то что у меня есть от этой модели.
+
+      SUBROUTINE ADV2D(IS,JS,IS1,JS1,DT,DX,C2,KT1,IT,
+     *IDX,IDY,U,V,AN3,APX2,APY2,CD2)
+C
+      REAL U(IS1,JS1),V(IS1,JS1),AN3(IS1,JS1),
+     *CD2(IS1,JS1),APX2(IS1,JS1),APY2(IS1,JS1)
+      INTEGER KT1(IS1,JS1),IDX(IS1,JS1),IDY(IS1,JS1),IT(IS1,JS1)
+      IJS1=IS1*JS1
+C
+      DO I=1,IJS1
+      APX2(I,1)=0.
+      APY2(I,1)=0.
+      ENDDO
+C*************************************************
+      DO 11 I=1,IS
+      DO 11 J=1,JS
+C--------------------------------------------------
+      IF(KT1(I,J).EQ.0.OR.IT(I,J).NE.0) GOTO 11
+      I1=I+1
+      J1=J+1
+      UP=50.*(U(I,J1)+U(I1,J1))
+      UM=50.*(U(I,J)+U(I1,J))
+      UU=0.5*(UP+UM)
+      VP=50.*(V(I1,J)+V(I1,J1))
+      VM=50.*(V(I,J)+V(I,J1))
+      VV=0.5*(VP+VM)
+      IY1=IDY(I1,J)
+      IX1=IDX(I,J1)
+C--------------------------------------------------
+      CC=AN3(I,J)
+      IF(IY1.EQ.0) THEN
+      CI1=0.
+      I3=I1
+      ELSE
+      CI1=AN3(I1,J)
+      I3=I+2
+      ENDIF
+      IF(IDY(I,J).EQ.0) THEN
+      CI2=0.
+      ELSE
+      CI2=AN3(I-1,J)
+      ENDIF
+      IF(IX1.EQ.0) THEN
+      CJ1=0.
+      J3=J1
+      ELSE
+      CJ1=AN3(I,J1)
+      J3=J+2
+      ENDIF
+      IF(IDX(I,J).EQ.0) THEN
+      CJ2=0.
+      ELSE
+      CJ2=AN3(I,J-1)
+      ENDIF
+C-----------------------------------------------------
+      CDX=0.
+      IF(UU.GT.0.) THEN
+      CDX=(CC-CJ2)*UU
+      ELSE
+      CDX=(CJ1-CC)*UU
+      ENDIF
+      IF(CDX.NE.0.) GOTO 201
+      IF(UM.GT.0.)  CDX=(CC-CJ2)*UM
+      IF(UP.LT.0.)  CDX=(CJ1-CC)*UP
+  201 CONTINUE
+      CDX=CDX+CC*(UP-UM)*0.5
+C-----------------------------------------------------
+      CDY=0.
+      IF(VV.GT.0.) THEN
+      CDY=(CC-CI1)*VV
+      ELSE
+      CDY=(CI2-CC)*VV
+      ENDIF
+      IF(CDY.NE.0.) GOTO 202
+      IF(VP.GT.0.)  CDY=(CC-CI1)*VP
+      IF(VM.LT.0.)  CDY=(CI2-CC)*VM
+  202 CONTINUE
+      CDY=CDY+CC*(VM-VP)*0.5
+C-------------------------------------------------------
+      CD2(I,J)=CC-DT*(CDX+CDY)/DX
+C----------------------------------------------------
+      IF(IX1.NE.0) THEN
+      IF(UP.LT.0.) THEN
+      FLXP=CJ1*UP
+      ELSE
+      FLXP=CC*UP
+      ENDIF
+      IF(J.NE.JS) THEN
+      J3=J+2
+      IF(IDX(I,J3).NE.0) THEN
+      CJ3=AN3(I,J3)
+      ELSE
+      CJ3=0.
+      ENDIF
+      ENDIF
+      APX2(I,J1)=(UP*(7.*(CC+CJ1)-(CJ2+CJ3))/12.-FLXP)*C2
+      ENDIF
+      IF(IY1.NE.0) THEN
+         IF(VP.LT.0.) THEN
+         FLYP=CC*VP
+         ELSE
+         FLYP=CI1*VP
+         ENDIF
+         IF(I.NE.IS) THEN
+         I3=I+2
+         IF(IDY(I3,J).NE.0) THEN
+         CI3=AN3(I3,J)
+         ELSE
+         CI3=0.
+         ENDIF
+         ENDIF
+         APY2(I1,J)=(VP*(7.*(CC+CI1)-(CI2+CI3))/12.-FLYP)*C2
+      ENDIF
+   11 CONTINUE
+C********************************************************
+      DO 91 I=1,IS
+      DO 91 J=1,JS
+      IF(IDX(I,J).EQ.0) GOTO 91
+      J1=J+1
+      J2=J-1
+      IX1=IDX(I,J1)
+      IX2=IDX(I,J2)
+      IF(IX1.EQ.0) THEN
+      A1=0.
+      ELSE
+      A1=CD2(I,J1)-CD2(I,J)
+      ENDIF
+      IF(IX2.EQ.0) THEN
+      B1=0.
+      ELSE
+      B1=CD2(I,J2)-CD2(I,J-2)
+      ENDIF
+      A=APX2(I,J)
+      B=SIGN(1.,A)
+      APX2(I,J)=B*AMAX1(0.,AMIN1(ABS(A),B*A1,B*B1))
+   91 CONTINUE
+C**********************************************************
+      DO 191 J=1,JS
+      J1=J+1
+      DO 191 I=1,IS
+      IF(KT1(I,J).EQ.0.OR.IT(I,J).NE.0) GOTO 191
+      CD2(I,J)=CD2(I,J)-(APX2(I,J1)-APX2(I,J))
+  191 CONTINUE
+C******* y-COORDINATE
+      DO 391 I=1,IS
+      DO 391 J=1,JS
+      IF(IDY(I,J).EQ.0) GOTO 391
+      I1=I+1
+      I2=I-1
+      IY1=IDY(I1,J)
+      IY2=IDY(I2,J)
+      IF(IY1.EQ.0) THEN
+      A1=0.
+      ELSE
+      A1=CD2(I,J)-CD2(I1,J)
+      ENDIF
+      IF(IY2.EQ.0) THEN
+      B1=0.
+      ELSE
+      B1=CD2(I-2,J)-CD2(I2,J)
+      ENDIF
+      A=APY2(I,J)
+      B=SIGN(1.,A)
+      APY2(I,J)=B*AMAX1(0.,AMIN1(ABS(A),B*A1,B*B1))
+  391 CONTINUE
+C**********************************************************
+      DO 392 I=1,IS
+      I1=I+1
+      DO 392 J=1,JS
+      IF(KT1(I,J).EQ.0.OR.IT(I,J).NE.0) GOTO 392
+      AN3(I,J)=CD2(I,J)-(APY2(I,J)-APY2(I1,J))
+  392 CONTINUE
+C*******************************************************
+      DO 400 I=1,IS
+      DO 400 J=1,JS
+      KI=IT(I,J)
+      IF(KI.EQ.0.OR.KI.EQ.9) GOTO 400
+      IF(KI.EQ.1) THEN
+      AN3(I,J)=0.5*(AN3(I,J+1)+AN3(I+1,J))
+      GOTO 400
+      ENDIF
+      IF(KI.EQ.2) THEN
+      AN3(I,J)=0.5*(AN3(I,J-1)+AN3(I+1,J))
+      GOTO 400
+      ENDIF
+      IF(KI.EQ.3) THEN
+      AN3(I,J)=0.5*(AN3(I,J-1)+AN3(I-1,J))
+      GOTO 400
+      ENDIF
+      IF(KI.EQ.4) THEN
+      AN3(I,J)=0.5*(AN3(I,J+1)+AN3(I-1,J))
+      GOTO 400
+      ENDIF
+  400 CONTINUE
+C******************************************************  
+      RETURN
+      END
+
+
+      SUBROUTINE ADVS(IS,JS,KS,IS1,JS1,KS1,DT,DX,C2,U2,V2,
+     *HT,Z,KT1,IDX,IDY,DZ,DZ1,W,S1,S2,APX,APY,APZ,ADX,ADY,CD,TT)
+C
+      DIMENSION S1(IS1,JS1,KS),
+     *HT(IS1,JS1),CD(IS1,JS1,KS),W(IS1,JS1,KS1),DZ1(KS),DZ(KS1),
+     *Z(KS),APX(IS1,JS1,KS),APY(IS1,JS1,KS),APZ(IS1,JS1,KS1),
+     *S2(IS1,JS1,KS),TT(KS),U2(IS1,JS1,KS),V2(IS1,JS1,KS),
+     *ADX(IS1,JS1,KS1),ADY(IS1,JS1,KS1)
+      INTEGER KT1(IS1,JS1),IDX(IS1,JS1),IDY(IS1,JS1)
+C**************************************************
+      IJKS=IS1*JS1*KS
+      DO I=1,IS1*JS1*KS1
+      APZ(I,1,1)=0.
+      ENDDO
+      DO I=1,IJKS
+      APX(I,1,1)=0.
+      APY(I,1,1)=0.
+      ENDDO
+C
+      DO 11 J=1,JS
+      J1=J+1
+      J2=J-1
+      DO 11 I=1,IS
+C--------------------------------------------------
+      KI=KT1(I,J)
+      IF(KI.EQ.0) GOTO 11
+      I1=I+1
+      I2=I-1
+      DO 10 K=1,KI
+C--------------------------------------------------
+      CC= S2(I,J,K)
+      CI1=S2(I1,J,K)
+      CI2=S2(I2,J,K)
+      CJ1=S2(I,J1,K)
+      CJ2=S2(I,J2,K)
+      UP=U2(I,J1,K)
+      UU=0.5*(UP+U2(I,J,K))
+      VP=V2(I1,J,K)
+      VV=0.5*(VP+V2(I,J,K))
+C-----------------------------------------------------
+      A=ABS(UU)
+      CDX=0.5*(UU+A)*ADX(I,J,K)*(CC-CJ2)
+     *+0.5*(UU-A)*ADX(I,J1,K)*(CJ1-CC)
+      A=ABS(VV)
+      CDY=0.5*(VV+A)*ADY(I1,J,K)*(CC-CI1)
+     *+0.5*(VV-A)*ADY(I,J,K)*(CI2-CC)
+      TT(K)=S1(I,J,K)-C2*(CDX+CDY)
+C------------------------------------------------------
+      A=ABS(UP)
+      FLXP=0.5*(UP+A)*CC+0.5*(UP-A)*CJ1
+      APX(I,J1,K)=ADX(I,J1,K)*(UP*0.5*(CC+CJ1)-FLXP)*C2
+      A=ABS(VP)       
+      FLYP=0.5*(VP+A)*CC+0.5*(VP-A)*CI1
+      APY(I+1,J,K)=ADY(I1,J,K)*(VP*0.5*(CC+CI1)-FLYP)*C2
+C-------------------------------------------------------
+   10 CONTINUE
+C-------------------------------------------------------
+      CK2=S2(I,J,1)
+      CC=CK2
+      WW1=W(I,J,1)
+      DO K=1,KI-1   
+      K1=K+1
+      WW2=W(I,J,K1)
+      WW=0.5*(WW1+WW2)
+      A=ABS(WW)     
+      CK1=S2(I,J,K1)
+      CD(I,J,K)=TT(K)-DT*
+     *(0.5*(WW+A)*(CC-CK2)/DZ(K)+0.5*(WW-A)*(CK1-CC)/DZ(K1))
+      CK2=CC
+      CC=CK1
+      WW1=WW2 
+      ENDDO  
+      CD(I,J,KI)=TT(KI) 
+      CC=S2(I,J,1)
+      DO K=2,KI
+      CK1=S2(I,J,K)
+      WW=W(I,J,K)
+      A=ABS(WW)
+      APZ(I,J,K)=0.5*WW*(CC+CK1)-0.5*(WW+A)*CC+0.5*(WW-A)*CK1
+      CC=CK1
+      ENDDO
+   11 CONTINUE
+C********************************************************
+      DO 91 J=1,JS
+      DO 91 I=1,IS
+      KI=IDX(I,J)
+      IF(KI.EQ.0)GO TO 91
+      J1=J+1
+      J2=J-1
+      DO K=1,KI
+      A1=ADX(I,J1,K)*(CD(I,J1,K)-CD(I,J,K))
+      B1=ADX(I,J2,K)*(CD(I,J2,K)-CD(I,J-2,K))
+      A=APX(I,J,K)
+      B=SIGN(1.,A)
+      APX(I,J,K)=B*AMAX1(0.,AMIN1(ABS(A),B*A1,B*B1))
+      ENDDO
+   91 CONTINUE
+C**********************************************************
+      DO 191 J=1,JS
+      J1=J+1
+      DO 191 I=1,IS
+      KI=KT1(I,J)
+      IF(KI.EQ.0)GO TO 191
+      DO K=1,KI
+      CD(I,J,K)=CD(I,J,K)-(APX(I,J1,K)-APX(I,J,K))
+      ENDDO
+  191 CONTINUE
+C******* y-COORDINATE
+      DO 391 I=1,IS
+      I1=I+1
+      I2=I-1
+      DO 391 J=1,JS
+      KI=IDY(I,J)
+      IF(KI.EQ.0)GO TO 391
+      DO K=1,KI
+      A1=ADY(I1,J,K)*(CD(I,J,K)-CD(I1,J,K))
+      B1=ADY(I2,J,K)*(CD(I-2,J,K)-CD(I2,J,K))
+      A=APY(I,J,K)
+      B=SIGN(1.,A)
+      APY(I,J,K)=B*AMAX1(0.,AMIN1(ABS(A),B*A1,B*B1))
+      ENDDO
+  391 CONTINUE
+C**********************************************************
+      DO 392 I=1,IS 
+      I1=I+1
+      DO 392 J=1,JS
+      KI=KT1(I,J)
+      IF(KI.EQ.0)GO TO 392
+      DO K=1,KI
+      CD(I,J,K)=CD(I,J,K)-(APY(I,J,K)-APY(I1,J,K))
+      ENDDO
+  392 CONTINUE
+C*******************************************************
+      DO 491 I=1,IS
+      DO 491 J=1,JS
+      KI=KT1(I,J)
+      IF(KI.EQ.0)GO TO 491
+      B1=(CD(I,J,3)-CD(I,J,2))*DZ1(2)/DT
+      A=APZ(I,J,2)
+      B=SIGN(1.,A)
+      APZ(I,J,2)=B*AMAX1(0.,AMIN1(ABS(A),B*B1))
+      DO K=3,KI-1
+      A1=(CD(I,J,K-1)-CD(I,J,K-2))*DZ1(K-1)/DT
+      B1=(CD(I,J,K+1)-CD(I,J,K))*DZ1(K)/DT
+      A=APZ(I,J,K)
+      B=SIGN(1.,A)
+      APZ(I,J,K)=B*AMAX1(0.,AMIN1(ABS(A),B*A1,B*B1))
+      ENDDO
+      A1=(CD(I,J,KI-1)-CD(I,J,KI-2))*DZ1(KI-1)/DT
+      A=APZ(I,J,KI)
+      B=SIGN(1.,A)
+      APZ(I,J,KI)=B*AMAX1(0.,AMIN1(ABS(A),B*A1))
+  491 CONTINUE
+C**********************************************************
+      DO 591 I=1,IS
+      DO 591 J=1,JS
+      KI=KT1(I,J)
+      IF(KI.EQ.0)GO TO 591
+      DO K=2,KI-1
+      CD(I,J,K)=CD(I,J,K)-(APZ(I,J,K+1)-APZ(I,J,K))*DT/DZ1(K)
+      ENDDO
+  591 CONTINUE
+C
+      DO I=1,IJKS
+      S2(I,1,1)=CD(I,1,1)
+      ENDDO
+C*******************************************************
+      RETURN
+      END
+
+
+      SUBROUTINE ADVSH(IS,JS,IS1,JS1,IS2,JS2,DT1,DX,C10,
+     *HU,HV,KUSH,KVSH,UP2,VP2,APX2,APY2,CD2)
+C
+      REAL UP2(IS1,JS1),VP2(IS1,JS1),HU(IS1,JS1),HV(IS1,JS1),
+     *CD2(IS1,JS1),APX2(IS1,JS1),APY2(IS1,JS1)
+      INTEGER KUSH(IS1,JS1),KVSH(IS1,JS1)
+      IJS1=IS1*JS1
+C
+      DO I=1,IJS1
+      CD2(I,1)=0.
+      APX2(I,1)=0.
+      APY2(I,1)=0.
+      ENDDO
+C*************************************************
+      DO 11 I=2,IS2
+      I1=I+1
+      I2=I-1
+      DO 11 J=3,JS2
+C--------------------------------------------------
+      HHT=HU(I,J)
+      IF(HHT.EQ.8888.) GOTO 11
+      J1=J+1
+      J2=J-1
+      UIJ=UP2(I,J)
+      UU1=UP2(I,J1)
+      UU2=UP2(I,J2)
+      UU3=UP2(I2,J)
+      UU4=UP2(I1,J)
+      IF(KUSH(I,J).NE.0) THEN
+      V11=VP2(I,J)/HV(I,J)+VP2(I,J2)/HV(I,J2)
+      V12=VP2(I1,J)/HV(I1,J)+VP2(I1,J2)/HV(I1,J2)
+      A=UIJ/HHT
+      U11=UU1/HU(I,J1)+A
+      U12=A+UU2/HU(I,J2)
+      CDX=U11*(UIJ+UU1)+ABS(U11)*(UIJ-UU1)-
+     *U12*(UIJ+UU2)-ABS(U12)*(UU2-UIJ)
+      CDY=V11*(UIJ+UU3)+ABS(V11)*(UIJ-UU3)-
+     *V12*(UIJ+UU4)-ABS(V12)*(UU4-UIJ)
+      CD2(I,J)=UIJ-C10*0.5*(CDX+CDY*0.)
+      ENDIF
+C----------------------------------------------------
+      IF(J.NE.JS) THEN
+      IF(UJP.GE.0.) THEN
+      FLXP=UJP*UU
+      ELSE
+      FLXP=UJP*UJ1
+      ENDIF
+      APX2(I,J1)=(UJP*UJP-FLXP)*A
+      ENDIF
+         IF(I.NE.IS) THEN
+         IF(VIP.GE.0.) THEN
+         FLYP=VIP*UI1
+         ELSE
+         FLYP=VIP*UU
+         ENDIF
+         APY2(I1,J)=(UIP*VIP-FLYP)*A
+         ENDIF
+   11 CONTINUE
+C********************************************************
+      DO 21 I=2,IS2
+      DO 21 J=3,JS
+      J2=J-1
+      A2=HU(I,J)
+      B2=HU(I,J2)
+      IF(A2.EQ.8888..OR.B2.EQ.8888.) THEN
+      APX2(I,J)=0.
+      ELSE
+      A1=CD2(I,J+1)-CD2(I,J)
+      B1=CD2(I,J2)-CD2(I,J-2)
+      A=APX2(I,J)
+      B=SIGN(1.,A)
+      APX2(I,J)=B*AMAX1(0.,AMIN1(ABS(A),B*A1,B*B1))
+      ENDIF
+   21 CONTINUE
+C**********************************************************
+      DO 31 J=3,JS2
+      J1=J+1
+      DO 31 I=2,IS2
+      IF(KUSH(I,J).EQ.0) GOTO 31
+      CD2(I,J)=CD2(I,J)-(APX2(I,J1)-APX2(I,J))
+   31 CONTINUE
+C******* y-COORDINATE
+      DO 41 I=3,IS2
+      I2=I-1
+      DO 41 J=3,JS2
+      A2=HU(I,J)
+      B2=HU(I2,J)
+      IF(A2.EQ.8888..OR.B2.EQ.8888.) THEN
+      APY2(I,J)=0.
+      ELSE
+      A1=CD2(I,J)-CD2(I1,J)
+      B1=CD2(I-2,J)-CD2(I2,J)
+      A=APY2(I,J)
+      B=SIGN(1.,A)
+      APY2(I,J)=B*AMAX1(0.,AMIN1(ABS(A),B*A1,B*B1))
+      ENDIF
+   41 CONTINUE
+C**********************************************************
+      DO 51 I=2,IS2
+      I1=I+1
+      DO 51 J=3,JS2
+      IF(KUSH(I,J).EQ.0) GOTO 51
+      UP2(I,J)=CD2(I,J)-(APY2(I,J)-APY2(I1,J))
+   51 CONTINUE
+C******************************************************  
+      DO I=1,IJS1
+      CD2(I,1)=0.
+      APX2(I,1)=0.
+      APY2(I,1)=0.
+      ENDDO
+C*************************************************
+      DO 111 I=3,IS2
+      I1=I+1
+      I2=I-1
+      DO 111 J=2,JS2
+C--------------------------------------------------
+      HHT=HV(I,J)
+      IF(HHT.EQ.8888.) GOTO 111
+      J1=J+1
+      J2=J-1
+      VIJ=VP2(I,J)
+      VV1=VP2(I2,J)
+      VV2=VP2(I1,J)
+      VV3=VP2(I,J1)
+      VV4=VP2(I,J2)
+      IF(KVSH(I,J).NE.0) THEN
+      U11=UP2(I2,J1)/HU(I2,J1)+UP2(I,J1)/HU(I,J1)
+      U12=UP2(I,J)/HU(I,J)+UP2(I2,J)/HU(I2,J)
+      A=VIJ/HHT
+      V11=VV1/HV(I2,J)+A
+      V12=A+VV2/HV(I1,J)
+      CDX=U11*(VIJ+VV3)+ABS(U11)*(VIJ-VV3)-
+     *U12*(VIJ+VV4)-ABS(U12)*(VV4-VIJ)
+      CDY=V11*(VIJ+VV1)+ABS(V11)*(VIJ-VV1)-
+     *V12*(VIJ+VV2)-ABS(V12)*(VV2-VIJ)
+      CD2(I,J)=VIJ-C10*0.5*(CDX+CDY)
+      ENDIF
+C----------------------------------------------------
+      IF(J.NE.JS) THEN
+      IF(UJP.GE.0.) THEN
+      FLXP=UJP*VV
+      ELSE
+      FLXP=UJP*VJ1
+      ENDIF
+      APX2(I,J1)=(UJP*VJP-FLXP)*A
+      ENDIF
+         IF(I.NE.IS) THEN
+         IF(VIP.GE.0.) THEN
+         FLYP=VIP*VV
+         ELSE
+         FLYP=VIP*VI2
+         ENDIF
+         APY2(I1,J)=(VIP*VIP-FLYP)*A
+         ENDIF
+  111 CONTINUE
+C********************************************************
+      DO 121 I=3,IS2
+      DO 121 J=3,JS2
+      J2=J-1
+      A2=HV(I,J)
+      B2=HV(I,J2)
+      IF(A2.EQ.8888..OR.B2.EQ.8888.) THEN
+      APX2(I,J)=0.
+      ELSE
+      A1=CD2(I,J+1)-CD2(I,J)
+      B1=CD2(I,J2)-CD2(I,J-2)
+      A=APX2(I,J)
+      B=SIGN(1.,A)
+      APX2(I,J)=B*AMAX1(0.,AMIN1(ABS(A),B*A1,B*B1))
+      ENDIF
+  121 CONTINUE
+C**********************************************************
+      DO 131 J=2,JS2
+      J1=J+1
+      DO 131 I=3,IS2
+      IF(KVSH(I,J).EQ.0) GOTO 131
+      CD2(I,J)=CD2(I,J)-(APX2(I,J1)-APX2(I,J))
+  131 CONTINUE
+C******* y-COORDINATE
+      DO 141 I=3,IS
+      I2=I-1
+      DO 141 J=2,JS2
+      A2=HV(I,J)
+      B2=HV(I2,J)
+      IF(A2.EQ.8888..OR.B2.EQ.8888.) THEN
+      APY2(I,J)=0.
+      ELSE
+      A1=CD2(I,J)-CD2(I1,J)
+      B1=CD2(I-2,J)-CD2(I2,J)
+      A=APY2(I,J)
+      B=SIGN(1.,A)
+      APY2(I,J)=B*AMAX1(0.,AMIN1(ABS(A),B*A1,B*B1))
+      ENDIF
+  141 CONTINUE
+C**********************************************************
+      DO 151 I=3,IS2
+      I1=I+1
+      DO 151 J=2,JS2
+      IF(KVSH(I,J).EQ.0) GOTO 151
+      VP2(I,J)=CD2(I,J)-(APY2(I,J)-APY2(I1,J))
+  151 CONTINUE
+C******************************************************  
+      RETURN
+      END
+
+
+      SUBROUTINE ADVT(IS,JS,KS,IS1,JS1,KS1,DT,DX,C2,U2,V2,
+     *HT,Z,KT1,IDX,IDY,DZ,DZ1,W,T1,T2,APX,APY,APZ,ADX,ADY,CD,TT)
+C
+      DIMENSION T1(IS1,JS1,KS),
+     *HT(IS1,JS1),CD(IS1,JS1,KS),W(IS1,JS1,KS1),DZ1(KS),DZ(KS1),
+     *Z(KS),APX(IS1,JS1,KS),APY(IS1,JS1,KS),APZ(IS1,JS1,KS1),
+     *T2(IS1,JS1,KS),TT(KS),U2(IS1,JS1,KS),V2(IS1,JS1,KS),
+     *ADX(IS1,JS1,KS1),ADY(IS1,JS1,KS1)
+      INTEGER KT1(IS1,JS1),IDX(IS1,JS1),IDY(IS1,JS1)
+C**************************************************
+      IJKS=IS1*JS1*KS
+      DO I=1,IS1*JS1*KS1
+      APZ(I,1,1)=0.
+      ENDDO
+      DO I=1,IJKS
+      APX(I,1,1)=0.
+      APY(I,1,1)=0.
+      ENDDO
+C
+      DO 11 J=1,JS
+      J1=J+1
+      J2=J-1
+      DO 11 I=1,IS
+C--------------------------------------------------
+      KI=KT1(I,J)
+      IF(KI.EQ.0) GOTO 11
+      I1=I+1
+      I2=I-1
+      DO 10 K=1,KI
+C--------------------------------------------------
+      CC= T2(I,J,K)
+      CI1=T2(I1,J,K)
+      CI2=T2(I2,J,K)
+      CJ1=T2(I,J1,K)
+      CJ2=T2(I,J2,K)
+      UP=U2(I,J1,K)
+      UU=0.5*(UP+U2(I,J,K))
+      VP=V2(I1,J,K)
+      VV=0.5*(VP+V2(I,J,K))
+C-----------------------------------------------------
+      A=ABS(UU)
+      CDX=0.5*(UU+A)*ADX(I,J,K)*(CC-CJ2)
+     *+0.5*(UU-A)*ADX(I,J1,K)*(CJ1-CC)
+      A=ABS(VV)
+      CDY=0.5*(VV+A)*ADY(I1,J,K)*(CC-CI1)
+     *+0.5*(VV-A)*ADY(I,J,K)*(CI2-CC)
+      TT(K)=T1(I,J,K)-C2*(CDX+CDY)
+C------------------------------------------------------
+      A=ABS(UP)
+      FLXP=0.5*(UP+A)*CC+0.5*(UP-A)*CJ1
+      APX(I,J1,K)=ADX(I,J1,K)*(UP*0.5*(CC+CJ1)-FLXP)*C2
+      A=ABS(VP)       
+      FLYP=0.5*(VP+A)*CC+0.5*(VP-A)*CI1
+      APY(I+1,J,K)=ADY(I1,J,K)*(VP*0.5*(CC+CI1)-FLYP)*C2
+C-------------------------------------------------------
+   10 CONTINUE
+C-------------------------------------------------------
+      CK2=T2(I,J,1)
+      CC=CK2
+      WW1=W(I,J,1)
+      DO K=1,KI-1   
+      K1=K+1
+      WW2=W(I,J,K1)
+      WW=0.5*(WW1+WW2)
+      A=ABS(WW)     
+      CK1=T2(I,J,K1)
+      CD(I,J,K)=TT(K)-DT*
+     *(0.5*(WW+A)*(CC-CK2)/DZ(K)+0.5*(WW-A)*(CK1-CC)/DZ(K1))
+      CK2=CC
+      CC=CK1
+      WW1=WW2 
+      ENDDO  
+      CD(I,J,KI)=TT(KI) 
+      CC=T2(I,J,1)
+      DO K=2,KI
+      CK1=T2(I,J,K)
+      WW=W(I,J,K)
+      A=ABS(WW)
+      APZ(I,J,K)=0.5*WW*(CC+CK1)-0.5*(WW+A)*CC+0.5*(WW-A)*CK1
+      CC=CK1
+      ENDDO
+   11 CONTINUE
+C********************************************************
+      DO 91 J=1,JS
+      DO 91 I=1,IS
+      KI=IDX(I,J)
+      IF(KI.EQ.0) GOTO 91
+      J1=J+1
+      J2=J-1
+      DO K=1,KI
+      A1=ADX(I,J1,K)*(CD(I,J1,K)-CD(I,J,K))
+      B1=ADX(I,J2,K)*(CD(I,J2,K)-CD(I,J-2,K))
+      A=APX(I,J,K)
+      B=SIGN(1.,A)
+      APX(I,J,K)=B*AMAX1(0.,AMIN1(ABS(A),B*A1,B*B1))
+      ENDDO
+   91 CONTINUE
+C**********************************************************
+      DO 191 J=1,JS
+      J1=J+1
+      DO 191 I=1,IS
+      KI=KT1(I,J)
+      IF(KI.EQ.0) GOTO 191
+      DO K=1,KI
+      CD(I,J,K)=CD(I,J,K)-(APX(I,J1,K)-APX(I,J,K))
+      ENDDO
+  191 CONTINUE
+C******* y-COORDINATE
+      DO 391 I=1,IS
+      I1=I+1
+      I2=I-1
+      DO 391 J=1,JS
+      KI=IDY(I,J)
+      IF(KI.EQ.0) GOTO 391
+      DO K=1,KI
+      A1=ADY(I1,J,K)*(CD(I,J,K)-CD(I1,J,K))
+      B1=ADY(I2,J,K)*(CD(I-2,J,K)-CD(I2,J,K))
+      A=APY(I,J,K)
+      B=SIGN(1.,A)
+      APY(I,J,K)=B*AMAX1(0.,AMIN1(ABS(A),B*A1,B*B1))
+      ENDDO
+  391 CONTINUE
+C**********************************************************
+      DO 392 I=1,IS 
+      I1=I+1
+      DO 392 J=1,JS
+      KI=KT1(I,J)
+      IF(KI.EQ.0) GOTO 392
+      DO K=1,KI
+      CD(I,J,K)=CD(I,J,K)-(APY(I,J,K)-APY(I1,J,K))
+      ENDDO
+  392 CONTINUE
+C*******************************************************
+      DO 491 I=1,IS
+      DO 491 J=1,JS
+      KI=KT1(I,J)
+      IF(KI.EQ.0) GOTO 491
+      B1=(CD(I,J,3)-CD(I,J,2))*DZ1(2)/DT
+      A=APZ(I,J,2)
+      B=SIGN(1.,A)
+      APZ(I,J,2)=B*AMAX1(0.,AMIN1(ABS(A),B*B1))
+      DO K=3,KI-1
+      A1=(CD(I,J,K-1)-CD(I,J,K-2))*DZ1(K-1)/DT
+      B1=(CD(I,J,K+1)-CD(I,J,K))*DZ1(K)/DT
+      A=APZ(I,J,K)
+      B=SIGN(1.,A)
+      APZ(I,J,K)=B*AMAX1(0.,AMIN1(ABS(A),B*A1,B*B1))
+      ENDDO
+      A1=(CD(I,J,KI-1)-CD(I,J,KI-2))*DZ1(KI-1)/DT
+      A=APZ(I,J,KI)
+      B=SIGN(1.,A)
+      APZ(I,J,KI)=B*AMAX1(0.,AMIN1(ABS(A),B*A1))
+  491 CONTINUE
+C**********************************************************
+      DO 591 I=1,IS
+      DO 591 J=1,JS
+      KI=KT1(I,J)
+      IF(KI.EQ.0) GOTO 591
+      DO K=2,KI-1
+      CD(I,J,K)=CD(I,J,K)-(APZ(I,J,K+1)-APZ(I,J,K))*DT/DZ1(K)
+      ENDDO
+  591 CONTINUE
+C
+      DO I=1,IJKS
+      T2(I,1,1)=CD(I,1,1)
+      ENDDO
+C*******************************************************
+      RETURN
+      END
+
+
+      SUBROUTINE coup1(IS1,JS1,KS,KS1,HT,MAP,HU,HV,FI,DL,FU,FV,FKU,
+     *Z,DZ,DZ1,KK1,KT1,IDX,IDY,IT,KUSH,KVSH,DX,DT1,S2,T2,ADX,ADY)
+      REAL HT(IS1,JS1),MAP(IS1,JS1),HU(IS1,JS1),HV(IS1,JS1),
+     *Z(KS),DZ(KS1),DZ1(KS),S2(IS1,JS1,KS),T2(IS1,JS1,KS)
+      REAL FI(IS1,JS1),DL(IS1,JS1),FU(IS1,JS1),FV(IS1,JS1),
+     *FKU(IS1,JS1),ADX(IS1,JS1,KS1),ADY(IS1,JS1,KS1)
+      INTEGER KK1(IS1,JS1),KT1(IS1,JS1),IDX(IS1,JS1),
+     *IDY(IS1,JS1),IT(IS1,JS1),KUSH(IS1,JS1),KVSH(IS1,JS1)
+      REAL MAPP
+      IS=IS1-1
+      JS=JS1-1
+      IS2=IS-1
+      JS2=JS-1
+      KS2=KS-1
+      IJS1=IS1*JS1
+      IJKS=IJS1*KS1
+      write(2,*)' copl-1'
+C
+      OPEN(UNIT=1,FILE='hhh.bar')
+      J1=1
+      J2=15
+      DO JJJ=1,7
+      READ(1,1011)
+      READ(1,1010)((KT1(I,J),J=J1,J2),I=1,IS1)
+      J1=J1+15
+      J2=J2+15
+      ENDDO
+      CLOSE(1)
+      WRITE(2,*)' KT1'
+ 1011 FORMAT(1X)
+ 1010 FORMAT(15I5)
+ 1012 FORMAT(15F5.0)
+C
+      DO I=1,IS1
+      DO J=1,JS1
+      HT(I,J)=KT1(I,J)
+      ENDDO
+      ENDDO
+C
+c      DO I=1,15
+c      HT(I,94)=8888.
+c      ENDDO
+C
+C      DO I=1,IS1
+C      HT(I,JS1)=8888.
+C      HT(I,1)=8888.              !
+C      DO J=1,JS1
+C      HT(1,J)=8888.              !
+C      SSS=S2(I,J,1)
+C      IF(SSS.LE.0.)HT(I,J)=8888.
+C      ENDDO
+C      ENDDO
+      write(2,*)' hu hv'
+C
+      DO I=1,IS1
+      DO J=1,JS1
+C      IF(HT(I,J).LE.10..AND.HT(I,J).GT.5.)THEN
+C      S2(I,J,3)=S2(I,J,2)
+C      T2(I,J,3)=T2(I,J,2)
+C      HT(I,J)=10.
+C      ENDIF
+      IF(HT(I,J).LE.3.)HT(I,J)=3.
+      IF(HT(I,J).NE.8888.)HT(I,J)=HT(I,J)*100.
+      ENDDO
+      ENDDO
+C
+C      DO I=1,IS1
+C      DO 430 J=1,JS1
+C      KUU=0
+C      HHT=HT(I,J)
+C      IF(HHT.EQ.8888.) GOTO 430
+C      DO 431 K=1,KS
+C      IF(HHT.LT.Z(K)) GOTO 432
+C      KUU=K
+C  431 CONTINUE
+C  432 CONTINUE
+C      DO K=1,KUU
+C      IF(S2(I,J,K).LE.0.)THEN
+C      HT(I,J)=Z(K-1)
+C      GO TO 430
+C      ENDIF
+C      ENDDO
+C  430 CONTINUE
+C      ENDDO
+C
+      DO I=1,IJS1
+      HU(I,1)=8888.
+      HV(I,1)=8888.
+      ENDDO
+C
+      DO 13 I=1,IS1
+      DO 13 J=2,JS1
+      H11=HT(I,J)
+      H22=HT(I,J-1)
+      IF(H11.NE.8888..AND.H22.NE.8888.)THEN
+      HU(I,J)=(H11+H22)/2.
+      ENDIF
+   13 CONTINUE
+C
+      DO 14 I=2,IS1
+      DO 14 J=1,JS1
+      H11=HT(I,J)
+      H22=HT(I-1,J)
+      IF(H11.NE.8888..AND.H22.NE.8888.)THEN
+      HV(I,J)=(H11+H22)/2.
+      ENDIF
+   14 CONTINUE
+C
+      DO I=1,IS1
+      HU(I,1)=8888.
+      HU(I,JS1)=8888.
+      KT1(I,1)=8
+      ENDDO
+C
+      DO J=1,JS1
+      HV(1,J)=8888.
+      HV(IS1,J)=8888.
+      KT1(IS1,J)=8
+      KT1(1,J)=8
+      ENDDO
+C
+      WRITE(2,*)' HT-2'
+      J1=1
+      J2=15
+      DO JJJ=1,7
+      WRITE(2,1011)
+      WRITE(2,1012)((HT(I,J)/100.,J=J1,J2),I=1,IS1)
+      J1=J1+15
+      J2=J2+15
+      ENDDO
+C
+      WRITE(2,*)' HU'
+      J1=1
+      J2=15
+      DO JJ=1,7
+      WRITE(2,1011)
+      WRITE(2,1012)((HU(I,J)/100.,J=J1,J2),I=1,IS1)
+      J1=J1+15
+      J2=J2+15
+      ENDDO
+C     
+      WRITE(2,*)' HV'
+      J1=1
+      J2=15
+      DO JJ=1,7
+      WRITE(2,1011)
+      WRITE(2,1012)((HV(I,J)/100.,J=J1,J2),I=1,IS1)
+      J1=J1+15
+      J2=J2+15
+      ENDDO
+C
+      write(2,*)' huhv'
+C
+C***** Calculation of KK1  array
+C
+C
+      DO I=1,IS1
+      DO J=1,JS1
+      IF(HT(I,J).NE.8888.)KT1(I,J)=1
+      IF(HT(I,J).EQ.8888.)KT1(I,J)=8
+      ENDDO
+      ENDDO
+C
+      WRITE(2,709)((KT1(I,J),J=1,105),I=1,133)
+709   FORMAT(105I1)
+C
+C      DO 15 I=1,IS
+C      I1=I+1
+C      DO 15 J=1,JS
+C      IF(KT1(I,J).EQ.8) GOTO 15
+C      J1=J+1
+C      AF=4.
+C      IF(HU(I,J).EQ.8888.) GOTO 16
+C      HHT=HU(I,J)
+C      GOTO 17
+C   16 AF=AF-1.
+C      HHT=0.
+C   17 IF(HU(I,J1).EQ.8888.) GOTO 18
+C      HHT=HHT+HU(I,J1)
+C      GOTO 19
+C   18 AF=AF-1.
+C   19 IF(HV(I,J).EQ.8888.) GOTO 20
+C      HHT=HHT+HV(I,J)
+C      GOTO 21
+C   20 AF=AF-1.
+C   21 IF(HV(I1,J).EQ.8888.) GOTO 22
+C      HT(I,J)=(HHT+HV(I1,J))/AF
+C      GOTO 15
+C   22 HT(I,J)=HHT/(AF-1.)
+C   15 CONTINUE
+C
+      DO I=1,IS1
+      DO J=1,JS1
+      KK1(I,J)=0
+      ENDDO
+      ENDDO
+C
+      DO 24 I=2,IS
+      I2=I-1
+      DO 24 J=2,JS
+      J2=J-1
+      IF(KT1(I,J).EQ.8.OR.KT1(I,J2).EQ.8.OR.KT1(I2,J).EQ.8.
+     *OR.KT1(I2,J2).EQ.8) GOTO 24
+      KK1(I,J)=1
+   24 CONTINUE
+      write(2,*)' kk1'
+C
+      DO 25 I=1,IS1
+      DO 25 J=1,JS1
+   25 MAP(I,J)=8888.
+      DO 26 I=2,IS
+      I2=I-1
+      DO 26 J=2,JS
+      IF(KK1(I,J).EQ.0) GOTO 26
+      J2=J-1
+      HHT=HT(I,J)
+      HHIJ1=HT(I,J2)
+      HHI1J=HT(I2,J)
+      HHI1J1=HT(I2,J2)
+      MAPP=MAP(I,J)
+      IF(HHT.NE.8888.) MAPP=HHT*0.25
+      IF(HHIJ1.EQ.8888.) GOTO 27
+      IF(MAPP.EQ.8888.) GOTO 28
+      MAPP=MAPP+HHIJ1*0.25
+      GOTO 27
+   28 CONTINUE
+      MAPP=HHIJ1*0.25
+   27 CONTINUE
+      IF(HHI1J.EQ.8888.) GOTO 29
+      IF(MAPP.EQ.8888.) GOTO 30
+      MAPP=MAPP+HHI1J*0.25
+      GOTO 29
+   30 CONTINUE
+      MAPP=HHI1J*0.25
+   29 CONTINUE
+      IF(HHI1J1.EQ.8888.) GOTO 31
+      IF(MAPP.EQ.8888.) GOTO 32
+      MAPP=MAPP+HHI1J1*0.25
+      GOTO 31
+   32 CONTINUE
+      MAPP=HHI1J1*0.25
+   31 CONTINUE
+      MAP(I,J)=MAPP
+   26 CONTINUE
+C
+      WRITE(2,*)' MAP'
+      J1=1
+      J2=15
+      DO JJJ=1,7
+      WRITE(2,1011)
+      WRITE(2,1012)((MAP(I,J)/100.,J=J1,J2),I=1,IS1)
+      J1=J1+15
+      J2=J2+15
+      ENDDO
+C***** calculation of DZ, DZ1, KT1 arrays (point T,S)
+      DO 34 K=1,KS
+      DZ1(K)=8888.
+   34 DZ(K)=8888.
+      DZ(KS1)=8888.
+      DZ1(1)=0.5*(Z(2)+Z(1))
+      DO 36 K=2,KS2
+      DZ1(K)=0.5*(Z(K+1)-Z(K-1))
+   36 CONTINUE
+      DZ1(KS)=0.5*(Z(KS)-Z(KS2))
+      DZ(1)=Z(1)
+      DO 41 K=2,KS
+      DZ(K)=Z(K)-Z(K-1)
+   41 CONTINUE
+      DO 43 I=1,IS1
+      DO 43 J=1,JS1
+      KT1(I,J)=0
+      HHT=HT(I,J)
+      IF(HHT.EQ.8888.) GOTO 43
+      KT1(I,J)=1
+      DO 44 K=2,KS
+      IF(HHT.LT.Z(K)) GOTO 43
+   44 KT1(I,J)=K
+   43 CONTINUE
+C*****   calculation of  IDX,  IDY  arrays
+      DO 50 I=1,IS
+      DO 50 J=1,JS1
+   50 IDX(I,J)=0
+      DO 51 I=1,IS1
+      DO 51 J=1,JS
+   51 IDY(I,J)=0
+      DO 52 J=2,JS
+      J2=J-1
+      IF(MAP(2,J).EQ.8888.) GOTO 53
+      IF(KT1(1,J2).LT.KT1(1,J)) GOTO 54
+      KI=KT1(1,J)
+      GOTO 55
+   54 KI=KT1(1,J2)
+   55 IDX(1,J)=KI
+   53 CONTINUE
+      IF(MAP(IS,J).EQ.8888.) GOTO 52
+      IF(KT1(IS,J2).LT.KT1(IS,J)) GOTO 56
+      KI=KT1(IS,J)
+      GOTO 57
+   56 KI=KT1(IS,J2)
+   57 CONTINUE
+      IDX(IS,J)=KI
+   52 CONTINUE
+      DO 58 I=2,IS2
+      I1=I+1
+      I2=I-1
+      DO 58 J=2,JS
+      J1=J+1
+      J2=J-1
+      IF(MAP(I,J).EQ.8888..AND.MAP(I1,J).EQ.8888.) GOTO 58
+      IF(KT1(I,J2).LT.KT1(I,J)) GOTO 59
+      KI=KT1(I,J)
+      GOTO 60
+   59 KI=KT1(I,J2)
+   60 IDX(I,J)=KI
+   58 CONTINUE
+      DO 61 I=2,IS
+      I2=I-1
+      IF(MAP(I,2).EQ.8888.) GOTO 62
+      IF(KT1(I2,1).LT.KT1(I,1)) GOTO 63
+      KI=KT1(I,1)
+      GOTO 64
+   63 KI=KT1(I2,1)
+   64 IDY(I,1)=KI
+   62 CONTINUE
+      IF(MAP(I,JS).EQ.8888.) GOTO 61
+      IF(KT1(I2,JS).LT.KT1(I,JS)) GOTO 65
+      KI=KT1(I,JS)
+      GOTO 66
+   65 KI=KT1(I2,JS)
+   66 IDY(I,JS)=KI
+   61 CONTINUE
+      DO 67 J=2,JS2
+      J1=J+1
+      J2=J-1
+      DO 67 I=2,IS
+      I1=I+1
+      I2=I-1
+      IF(MAP(I,J).EQ.8888..AND.MAP(I,J1).EQ.8888.) GOTO 67
+      IF(KT1(I2,J).LT.KT1(I,J)) GOTO 68
+      KI=KT1(I,J)
+      GOTO 69
+   68 KI=KT1(I2,J)
+   69 IDY(I,J)=KI
+   67 CONTINUE
+      write(2,*)' kt1'
+C***  calculation of the  KK1 array   (point  U,V)
+      DO 110 I=2,IS
+      I2=I-1
+      DO 110 J=2,JS
+      J2=J-1
+      IF(KK1(I,J).EQ.0) GOTO 110
+      KK1(I,J)=KT1(I,J)
+      IF(KK1(I,J).GT.KT1(I2,J)) KK1(I,J)=KT1(I2,J)
+      IF(KK1(I,J).GT.KT1(I2,J2)) KK1(I,J)=KT1(I2,J2)
+      IF(KK1(I,J).GT.KT1(I,J2)) KK1(I,J)=KT1(I,J2)
+  110 CONTINUE
+      DO 111 I=1,IS1
+      KK1(I,1)=0
+  111 KK1(I,JS1)=0
+      DO 112 J=1,JS1
+      KK1(1,J)=0
+  112 KK1(IS1,J)=0
+C
+      WRITE(2,*)' KK1'
+      WRITE(2,1013)((KK1(I,J),J=1,35),I=1,133)
+      WRITE(2,1011)
+      WRITE(2,1013)((KK1(I,J),J=36,70),I=1,133)
+      WRITE(2,1011)
+      WRITE(2,1013)((KK1(I,J),J=71,105),I=1,133)
+C
+      DO I=1,133
+      DO J=1,105
+      IF(KK1(I,J).EQ.0)THEN
+      WRITE(2,229)FI(I,J),DL(I,J)
+ 229  FORMAT(2F7.2)
+      ENDIF
+      ENDDO
+      ENDDO
+C
+      WRITE(2,*)' KT1'
+      WRITE(2,1013)((KT1(I,J),J=1,35),I=1,133)
+      WRITE(2,1011)
+      WRITE(2,1013)((KT1(I,J),J=36,70),I=1,133)
+      WRITE(2,1011)
+      WRITE(2,1013)((KT1(I,J),J=71,105),I=1,133)
+1013  FORMAT(35I3)
+C
+C**** calculation of IT array (identificator for the ice adv.)
+      DO I=1,IJS1
+      IT(I,1)=9
+      ENDDO
+      DO 200 I=1,IS
+      I1=I+1
+      DO 200 J=1,JS
+      IF(KT1(I,J).EQ.0) GOTO 200
+      J1=J+1
+      IX1=IDX(I,J)
+      IX2=IDX(I,J1)
+      IY1=IDY(I,J)
+      IY2=IDY(I1,J)
+      IF(IX1.EQ.0.AND.IY1.EQ.0.AND.IX2.EQ.0) GOTO 200
+      IF(IY1.EQ.0.AND.IX2.EQ.0.AND.IY2.EQ.0) GOTO 200
+      IF(IX2.EQ.0.AND.IY2.EQ.0.AND.IX1.EQ.0) GOTO 200
+      IF(IY2.EQ.0.AND.IX1.EQ.0.AND.IY1.EQ.0) GOTO 200
+      IF(IX1.EQ.0.AND.IY1.EQ.0) GOTO 201
+      GOTO 202
+  201 IT(I,J)=1
+      GOTO 200
+  202 IF(IY1.EQ.0.AND.IX2.EQ.0) GOTO 203
+      GOTO 204
+  203 IT(I,J)=2
+      GOTO 200
+  204 IF(IX2.EQ.0.AND.IY2.EQ.0) GOTO 205
+      GOTO 206
+  205 IT(I,J)=3
+      GOTO 200
+  206 IF(IY2.EQ.0.AND.IX1.EQ.0) GOTO 207
+      GOTO 208
+  207 IT(I,J)=4
+      GOTO 200
+  208 IT(I,J)=0
+  200 CONTINUE
+C*****  calculation of  H1, H2, H3, H4  arrays
+C      CC=981./DX
+C      CC1=0.0026*DT1
+C      DO 180 I=1,IS
+C      DO 180 J=1,JS1
+C      HHT=HU(I,J)
+C      H1(I,J)=CC*HHT
+C  180 H2(I,J)=CC1/(HHT*HHT)
+C      DO 181 I=1,IS1
+C      DO 181 J=1,JS
+C      HHT=HV(I,J)
+C      H3(I,J)=CC*HHT
+C  181 H4(I,J)=CC1/(HHT*HHT)
+C  CALCULATION OF THE CORIOLIS PARAMETERS ARRAYS
+      OM=2.*7.29E-5
+      DO 150 I=1,IS1
+      DO 150 J=1,JS1
+      FKU(I,J)=OM*SIN(FI(I,J)/57.3)
+  150 CONTINUE
+      DO J=1,JS1
+      DO I=1,IS
+      FU(I,J)=0.5*(FKU(I,J)+FKU(I+1,J))
+      ENDDO
+      ENDDO
+      DO I=1,IS1
+      DO J=1,JS
+      FV(I,J)=0.5*(FKU(I,J)+FKU(I,J+1))
+      ENDDO
+      ENDDO
+C  CALCULATION OF IDENTIFICATOR ARRAYS FOR SHALLOW WATER
+      DO I=1,IS
+      I1=I+1
+      I2=I-1
+      DO J=1,JS
+      J1=J+1
+      J2=J-1
+      KUSH(I,J)=0
+      KVSH(I,J)=0
+      IF(HU(I,J).NE.8888.) THEN
+      IF(HU(I,J1).NE.8888..AND.HU(I,J2).NE.8888..AND.
+     *HU(I1,J).NE.8888..AND.HU(I2,J).NE.8888.) KUSH(I,J)=1
+      ENDIF
+      IF(HV(I,J).NE.8888.) THEN
+      IF(HV(I,J1).NE.8888..AND.HV(I,J2).NE.8888..AND.
+     *HV(I1,J).NE.8888..AND.HV(I2,J).NE.8888.) KVSH(I,J)=1
+      ENDIF
+      ENDDO
+      ENDDO
+C
+      DO I=1,IJKS
+      ADX(I,1,1)=0.
+      ADY(I,1,1)=0.
+      ENDDO
+      DO I=2,IS
+      DO J=2,JS
+      DO K=1,IDX(I,J)
+      ADX(I,J,K)=1.
+      ENDDO
+      DO K=1,IDY(I,J)
+      ADY(I,J,K)=1.
+      ENDDO
+      ENDDO
+      ENDDO   
+C      DO K=1,KS1
+C      WRITE(2,*)' '
+C      WRITE(2,222)((ADX(I,J,K),J=1,JS1),I=1,IS1)
+C      ENDDO
+C 222  FORMAT(105F2.0)
+C
+      RETURN
+      END
+
+      PARAMETER (IS=132,JS=104,KS=18,IS1=133,JS1=105,KS1=19)
+      PARAMETER (IS3=134,JS3=106,NGR=5,NGR1=6)
+      PARAMETER (LI=4,LJ=35)
+C  ocean block arrays
+      REAL MAP(IS1,JS1),Z(KS),DZ(KS1),DZ1(KS),
+     *U1(IS1,JS1,KS),U2(IS1,JS1,KS),V1(IS1,JS1,KS),V2(IS1,JS1,KS),
+     *FKU(IS1,JS1),DRX(IS1,JS1),DRY(IS1,JS1),SKZ(IS1,JS1)
+C
+      DOUBLE PRECISION UCA(KS1),UNU(KS1),VCA(KS1),VNU(KS1)
+C
+      REAL HU(IS1,JS1),HV(IS1,JS1),Y1(IS1,JS1),Y2(IS1,JS1),
+     *UP1(IS1,JS1),UP2(IS1,JS1),VP1(IS1,JS1),VP2(IS1,JS1),
+     *FI(IS1,JS1),DL(IS1,JS1),FU(IS1,JS1),FV(IS1,JS1),
+     *YM1(IS1,JS1),YM2(IS1,JS1),ADX(IS1,JS1,KS1),ADY(IS1,JS1,KS1),
+     *AMP(LI,LJ),FAZ(LI,LJ),QQ(LI),Q(LI),YYV(5000),V00(LI)
+     *,AMP1(133,4),FAZ1(133,4)
+     *,AMP2(105,4),FAZ2(105,4)
+     *,AMP3(133,4),FAZ3(133,4)
+     *,UF1(5000),VF1(5000)
+     *,UF2(5000),VF2(5000)
+     *,UUF(5000),VVF(5000)
+     *,APN(5000,NGR1),WIU(5000),WIV(5000)
+C
+      REAL T1(IS1,JS1,KS),T2(IS1,JS1,KS),S1(IS1,JS1,KS),S2(IS1,JS1,KS)
+C
+      REAL HT(IS1,JS1),RO(IS1,JS1,KS),
+     *W(IS1,JS1,KS1),TT(KS1),SS(KS1),RR(KS1),SKT(IS1,JS1),
+     *CD(IS1,JS1,KS),APX(IS1,JS1,KS),APY(IS1,JS1,KS),APZ(IS1,JS1,KS1)
+C
+      INTEGER KK1(IS1,JS1),KT1(IS1,JS1),IDX(IS1,JS1),IDY(IS1,JS1),
+     *IT(IS1,JS1),KUSH(IS1,JS1),KVSH(IS1,JS1),IKU(IS1,JS1),IKV(IS1,JS1)
+     *,IIP(IS1,JS1)
+C   ice block arrays
+      REAL U0(IS1,JS1),V0(IS1,JS1),U(IS1,JS1),V(IS1,JS1),
+     *WICE1(IS1,JS1,NGR),AN1(IS1,JS1,NGR1),HICE(IS1,JS1,NGR),
+     *AN3(IS1,JS1),WICES(IS1,JS1),HICES(IS1,JS1),ANS(IS1,JS1),
+     *CD2(IS1,JS1),TXIC(IS1,JS1),TYIC(IS1,JS1),
+     *APX2(IS1,JS1),APY2(IS1,JS1),EXX(IS1,JS1),EYY(IS1,JS1),
+     *EXY(IS1,JS1),EPR(IS3,JS3),SXX(IS1,JS1),SYY(IS1,JS1),SXY(IS1,JS1),
+     *HSNOW(IS1,JS1,NGR),TPAR(NGR1),SPAR(NGR1),
+     *ANP(NGR),DANP(NGR),HSNP(NGR),HICP(NGR),
+     *SICST(NGR),HST(NGR),HMAX(NGR),ALSN(12)
+C   meteorological data arrays
+      REAL TX(IS1,JS1),TY(IS1,JS1),DPX(IS1,JS1),DPY(IS1,JS1),
+     *TX1(IS1,JS1),TY1(IS1,JS1),DPX1(IS1,JS1),DPY1(IS1,JS1),
+C     *TATM1(IS1,JS1,12),TATM(IS1,JS1),CLOUD1(IS1,JS1,12),
+C     *CLOUD(IS1,JS1),HUMID(IS1,JS1),PATM(IS1,JS1),WIND(IS1,JS1),
+     *WMONTH(12),SFAL(12),
+     *WINDX1(IS1,JS1),WINDY1(IS1,JS1),WINDX(IS1,JS1),
+     *WINDY(IS1,JS1),
+C
+     *P(1420,100),PP(1420),X01(1330),Y01(1330),
+     *TC1(IS1,KS),SC1(IS1,KS),
+     *TC2(JS1,KS),SC2(JS1,KS),
+     *TC3(15,KS),SC3(15,KS),
+     *TC4(3,KS),SC4(3,KS)
+C
+      INTEGER NP(135,107),NP1(1330,4),NAT(LI)
+      CHARACTER*20 VIX1,VIX2,NAM
+C
+      data Z/250.,500.,1000.,1500.,2000.,2500.,3000.,4000.,
+     *5000.,7500.,10000.,15000.,20000.,25000.,
+     *30000.,40000.,50000.,60000./
+C
+      data HST/0.2,0.5,0.95,1.6,2.5/
+      data HMAX/0.3,0.7,1.20,2.0,50./
+      data SICST/10.E-3,6.E-3,5.E-3,4.5E-3,4.E-3/
+      data ALSN/0.85,0.85,0.83,0.81,0.82,0.78,0.64,0.69,0.84,
+     *0.85,0.85,0.85/
+C---------------------
+      GOD=1998.
+      MES=4
+      DEN=16.
+      HOUR=0.
+C---------------------
+      NAT(1)=GOD
+      NAT(2)=MES
+      NAT(3)=DEN
+      NAT(4)=HOUR
+      OPEN(2,FILE='COMPL.WTR')
+C-----------------------------------------------------------------
+      KL1=0                ! KL1=1 if you need in
+      NOM=1                ! reading initial data
+C-----------------------------------------------------------------
+      DT1=120.             ! barotropic mode time step
+      DT=3600.             ! baroclinic  mode time step
+      MM1=60               ! number of simulation cicles (days)
+      MM2=12               ! number of steps with DT
+      MM3=30               ! number of steps with DT1 (DT/DT1)
+      MM4=1                ! number of months
+      MM5=1                ! number of years
+      DX=1389000.          ! spatial step (cm)
+      KKB=1
+C--------------------------------------------------------------------
+      AH=7.5E6
+      AHT=7.5E6
+      AHS=7.5E6
+      G=981.
+      ROC=1.
+      CP=0.958
+      IS2=IS-1
+      JS2=JS-1
+      KS2=KS-1
+      IJS1=IS1*JS1
+      IJKS1=IJS1*KS
+C***** constants for ocean block
+      C1=G/ROC
+      C2=DT/DX
+      C3=AH/DX/DX
+      C4=AHT/DX/DX*DT
+      C5=AHS/DX/DX*DT
+      C8=0.25/DX
+      C9=0.5/DX
+      C10=DT1/DX
+C***** constants for ice dynamics block
+      C11=G/DX*0.005
+      C15=COS(15./57.3)
+      C16=SIN(15./57.3)
+      C17=0.0055*1000./910.
+C-------------------------------------------------
+      OPEN(UNIT=3,FILE='GRM2')
+      READ(3,*)(AMP1(I,1),I=1,133)
+      READ(3,*)(FAZ1(I,1),I=1,133)
+      READ(3,*)
+      READ(3,*)(AMP2(I,1),I=1,105)
+      READ(3,*)(FAZ2(I,1),I=1,105)
+      READ(3,*)
+      READ(3,*)(AMP3(I,1),I=1,133)
+      READ(3,*)(FAZ3(I,1),I=1,133)
+      CLOSE(3)
+      OPEN(UNIT=3,FILE='GRS2')
+      READ(3,*)(AMP1(I,2),I=1,133)
+      READ(3,*)(FAZ1(I,2),I=1,133)
+      READ(3,*)
+      READ(3,*)(AMP2(I,2),I=1,105)
+      READ(3,*)(FAZ2(I,2),I=1,105)
+      READ(3,*)
+      READ(3,*)(AMP3(I,2),I=1,133)
+      READ(3,*)(FAZ3(I,2),I=1,133)
+      CLOSE(3)
+      OPEN(UNIT=3,FILE='GRK1')
+      READ(3,*)(AMP1(I,3),I=1,133)
+      READ(3,*)(FAZ1(I,3),I=1,133)
+      READ(3,*)
+      READ(3,*)(AMP2(I,3),I=1,105)
+      READ(3,*)(FAZ2(I,3),I=1,105)
+      READ(3,*)
+      READ(3,*)(AMP3(I,3),I=1,133)
+      READ(3,*)(FAZ3(I,3),I=1,133)
+      CLOSE(3)
+      OPEN(UNIT=3,FILE='GRO1')
+      READ(3,*)(AMP1(I,4),I=1,133)
+      READ(3,*)(FAZ1(I,4),I=1,133)
+      READ(3,*)
+      READ(3,*)(AMP2(I,4),I=1,105)
+      READ(3,*)(FAZ2(I,4),I=1,105)
+      READ(3,*)
+      READ(3,*)(AMP3(I,4),I=1,133)
+      READ(3,*)(FAZ3(I,4),I=1,133)
+      CLOSE(3)
+      write(2,*)' gran'
+C--------------------------------------------
+      QQ(1)=28.9841042     ! - M2
+      QQ(2)=30.            ! - S2
+      QQ(3)=15.041069      ! - K1
+      QQ(4)=13.943036      ! - O1
+C--------------------------------------------
+      CALL DATTE(V00,LI,NAT)
+C--------------------------------------------
+      DO  J=1,4
+      Q(J)=QQ(J)*DT1/3600./57.2958
+      ENDDO
+C----------------------------------------------------------------
+      OPEN(1,FILE='KOORD.DAT')
+      READ(1)FI,DL
+      CLOSE(1)
+C-------------------------------------------------------------------
+      WRITE(*,*)' to coup1'
+      WRITE(2,*)' to coup1'
+      CALL coup1(IS1,JS1,KS,KS1,HT,MAP,HU,HV,FI,DL,FU,FV,FKU,
+     *Z,DZ,DZ1,KK1,KT1,IDX,IDY,IT,KUSH,KVSH,DX,DT1,S2,T2,ADX,ADY)
+      write(2,*)' coup1'
+      write(*,*)' coup1'
+C-------------------------------------------------------------------
+      CALL IKUV(IS1,JS1,HU,HV,IKU,IKV)
+      write(*,*)' ikuv'
+      write(2,*)' ikuv'
+C-------------------------------------------------------------------
+C                       initial conditions
+C-----------------------------------------------------------------
+C
+C********** atmospheric pressure and wind stresses ***************
+C
+      OPEN(1,FILE='DAV4_5.98')
+      READ(1,*)MM1
+      DO J=1,MM1+1
+      READ(1,1009)
+      DO I=1,1420
+      READ(1,*)A,A,A,P(I,J)
+      ENDDO
+      ENDDO
+      write(*,*)' dav'
+      CLOSE(1)
+ 1009 FORMAT(1X)
+C
+      OPEN(1,FILE='intdav')
+      READ(1,*)((NP1(I,J),J=1,4),I=1,1330)
+      READ(1,*)(X01(I),I=1,1330)
+      READ(1,*)(Y01(I),I=1,1330)
+      CLOSE(1)
+C
+      OPEN(UNIT=1,FILE='NP1')
+      READ(1) NP
+      CLOSE(1)
+C
+      WRITE(*,*)' patm'
+C------------------------------------------------------
+C************ initial ice thickness ************
+      OPEN(1,FILE='1_1.ice')
+      DO I=1,IS1
+      READ(1,*)(AN1(I,J,2),J=1,JS1)
+      ENDDO
+      CLOSE(1)
+C
+      OPEN(1,FILE='1_2.ICE')
+      DO I=1,IS1
+      READ(1,*)(AN1(I,J,3),J=1,JS1)
+      ENDDO
+      CLOSE(1)
+C
+      OPEN(1,FILE='1_3.ICE')
+      DO I=1,IS1
+      READ(1,*)(AN1(I,J,4),J=1,JS1)
+      ENDDO
+      CLOSE(1)
+C
+      OPEN(1,FILE='1_4.ICE')
+      DO I=1,IS1
+      READ(1,*)(AN1(I,J,5),J=1,JS1)
+      ENDDO
+      CLOSE(1)
+C
+      OPEN(1,FILE='1_5.ICE')
+      DO I=1,IS1
+      READ(1,*)(AN1(I,J,6),J=1,JS1)
+      ENDDO
+      CLOSE(1)
+C
+      DO I=1,IS1
+      DO J=1,JS1
+      DO K=2,NGR1
+      IF(AN1(I,J,K).EQ.9.99)AN1(I,J,K)=0.
+      IF(AN1(I,J,K).GE.1.)AN1(I,J,K)=1.
+      ENDDO
+      ENDDO
+      ENDDO
+C
+      DO I=1,IS1
+      DO J=1,JS1
+       DO K=2,NGR1
+       SAS=SAS+AN1(I,J,K)
+       ENDDO
+        IF(SAS.EQ.0.)THEN
+        AN1(I,J,1)=1.
+        SAS=0.
+        ENDIF
+      ENDDO
+      ENDDO
+C
+      DO I=1,IS1
+      DO J=1,JS1
+      WICE1(I,J,1)=0.20*AN1(I,J,2)
+      WICE1(I,J,2)=0.40*AN1(I,J,3)
+      WICE1(I,J,3)=0.95*AN1(I,J,4)
+      WICE1(I,J,4)=1.60*AN1(I,J,5)
+      WICE1(I,J,5)=2.50*AN1(I,J,6)
+      ENDDO
+      ENDDO
+C
+      VIX1='1.PRO'
+      VIX2='SHTOK.1'
+C---------------------------------------------------------
+      call REDIS(IS1,JS1,KT1,NGR,NGR1,WICE1,AN1,HICE,
+     *WICES,ANS,HICES,HSNOW,HSNP,HST,HMAX)
+C---------------------------------------------------------
+      IF(KL1.NE.0) THEN
+      open(UNIT=15,FILE='CLIM.PRO')
+      READ(15) KKB,U2,V2,RO,T2,S2,UP2,VP2,Y2,YM1,YM2,TTT,U,V,
+     *EXX,EYY,EXY,SXX,SYY,SXY,AN1,HICE,WICE1,ANS,WICES,HICES,HSNOW,
+     *TX1,TY1,SKT,KMM
+      KKB=KKB+1
+      CLOSE(15)
+      ENDIF
+C***************************************************************************
+C     the beginning of time integration loop
+C***************************************************************************
+      DO I=1,1420
+      PP(I)=P(I,KKB)
+      ENDDO
+C------------------------------------------------------------
+      CALL WIND1(PP,TX1,TY1,DPX1,DPY1,WINDX1,WINDY1,HT,
+     *NP,NP1,X01,Y01,DX,IS1,JS1)
+      write(*,*)' wind'
+C------------------------------------------------------------
+C      GO TO 2222
+C------------------------------------------------------------
+      DO 1000 MMM=1,MM5           ! year loop
+      NDAY=0
+C***************************************************************************
+      DO 1001 LLL=1,MM4           ! month loop
+C***************************************************************************
+      DO 555 KKK=KKB,MM1        ! loop inside month, MM1 - number of days
+      NDAY=NDAY+1
+      NDAY1=NDAY1+1
+C
+      IF(NDAY1.EQ.42)go to 8999
+      IF(NDAY.EQ.14)THEN
+      NDAY=0
+      WRITE(*,506)
+506   FORMAT(' Введи имя выходного файла *.pro -',$)
+      READ(*,504)VIX1
+507   FORMAT(' Введи имя выходного файла shtok.* -',$)
+      WRITE(*,507)
+      READ(*,504)VIX2
+C
+      DO II=1,5
+      WRITE(*,505)II
+505   FORMAT(I3,' Введи имя файла сплоченности -',$)
+      READ(*,504)NAM
+504   FORMAT(A20)
+      OPEN(1,FILE=NAM)
+      DO I=1,IS1
+      READ(1,*)(AN1(I,J,II+1),J=1,JS1)
+      ENDDO
+      CLOSE(1)
+C
+      ENDDO
+      ENDIF
+C-----------------------------------------
+      DO I=1,IS1
+      DO J=1,JS1
+      DO K=2,NGR1
+      IF(AN1(I,J,K).EQ.9.99)AN1(I,J,K)=0.
+      IF(AN1(I,J,K).GE.1.)AN1(I,J,K)=1.
+      ENDDO
+      ENDDO
+      ENDDO
+C
+      DO I=1,IS1
+      DO J=1,JS1
+       DO K=2,NGR1
+       SAS=SAS+AN1(I,J,K)
+       ENDDO
+        IF(SAS.EQ.0.)THEN
+        AN1(I,J,1)=1.
+        SAS=0.
+        ENDIF
+      ENDDO
+      ENDDO
+C
+      DO I=1,IS1
+      DO J=1,JS1
+      WICE1(I,J,1)=0.20*AN1(I,J,2)
+      WICE1(I,J,2)=0.40*AN1(I,J,3)
+      WICE1(I,J,3)=0.95*AN1(I,J,4)
+      WICE1(I,J,4)=1.60*AN1(I,J,5)
+      WICE1(I,J,5)=2.50*AN1(I,J,6)
+      ENDDO
+      ENDDO
+8999  CONTINUE            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+C
+      ESS=EUU-ECC
+      write(*,*) ' Day',KKK,' Month',LLL,' EUU= ',EUU
+      ECC=EUU
+      EUU=0.
+C
+      DO I=1,IS1
+      DO J=1,JS1
+      DPX(I,J)=DPX1(I,J)
+      DPY(I,J)=DPY1(I,J)
+      WINDX(I,J)=WINDX1(I,J)
+      WINDY(I,J)=WINDY1(I,J)
+      TX(I,J)=TX1(I,J)
+      TY(I,J)=TY1(I,J)
+      ENDDO
+      ENDDO
+C
+      DO I=1,1420
+      PP(I)=P(I,KKK+1)
+      ENDDO
+C--------------------------------------------------------
+      CALL WIND1(PP,TX1,TY1,DPX1,DPY1,WINDX1,WINDY1,HT,
+     *NP,NP1,X01,Y01,DX,IS1,JS1)
+      write(*,*)' wind1'
+C********************************************************************
+      DO 333 III=1,MM2                 ! daily loop with DT
+C********************************************************************
+C
+C*****  time interpolation block for wind stresses
+C
+      IF(III.EQ.1) GOTO 226
+      B=MM2-III+2
+      DO I=1,IS1
+      DO J=1,JS1
+      A=TX(I,J)
+      TX(I,J)=A+(TX1(I,J)-A)/B
+      A=TY(I,J)
+      TY(I,J)=A+(TY1(I,J)-A)/B
+      A=DPX(I,J)
+      DPX(I,J)=A+(DPX1(I,J)-A)/B
+      A=DPY(I,J)
+      DPY(I,J)=A+(DPY1(I,J)-A)/B
+      A=WINDX(I,J)
+      WINDX(I,J)=A+(WINDX1(I,J)-A)/B
+      A=WINDY(I,J)
+      WINDY(I,J)=A+(WINDY1(I,J)-A)/B
+      ENDDO
+      ENDDO
+  226 CONTINUE
+C*****   arrays redetermination block
+      DO I=1,IJKS1
+C      T1(I,1,1)=T2(I,1,1)
+C      S1(I,1,1)=S2(I,1,1)
+      V1(I,1,1)=V2(I,1,1)
+      U1(I,1,1)=U2(I,1,1)
+      ENDDO
+C========================================================================
+C    ice dynamical and thermodynamical block
+C========================================================================
+C**** heat fluxes, melting and freezing calculation
+      KCC=KCC+1
+C      IF(KCC.EQ.80) THEN  !????????
+C      KCC=0
+C      call HEAT(III/10,IS1,JS1,KS,KS1,NGR,NGR1,NDAY,8.*3600.,KT1,AN1,
+C      call HEAT(III,IS1,JS1,KS,KS1,NGR,NGR1,NDAY,DT,KT1,AN1,ANS,WICE1,
+C     *WICES,HICE,HICES,HSNOW,TPAR,SPAR,ANP,DANP,HSNP,HICP,SICST,T1,S1,
+C     *SKT,DZ,DZ1,FI,PATM,TATM,WIND,CLOUD,HUMID,ALSN,SFAL,LLL)
+C      ENDIF
+C
+C===================================
+C      Ice dynamical block
+C===================================
+C      GOTO 5009   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+C-----------------------------------
+C      Drift velocity  calculation
+C-----------------------------------
+      DO 777 JJJ=1,MM3
+C
+      DO I=1,IJS1
+      U0(I,1)=U(I,1)
+      V0(I,1)=V(I,1)
+      TXIC(I,1)=0.
+      TYIC(I,1)=0.
+      ENDDO
+C----------------------------------------------------------------
+      call STRESS(IS,JS,IS1,JS1,IJS1,IS3,JS3,NGR,NGR1,DX,DT1,KT1,
+     *ANS,AN1,HST,U,V,CD2,EXX,EYY,EXY,EPR,SXX,SYY,SXY)
+C----------------------------------------------------------------
+      DO 300 I=2,IS
+      I1=I+1
+      I2=I-1
+      DO 300 J=2,JS
+      IF(KK1(I,J).EQ.0) GOTO 300
+      J1=J+1
+      J2=J-1
+      HHT=0.25*(HICES(I,J)+HICES(I,J2)+HICES(I2,J)+HICES(I2,J2))
+      IF(HHT.LT.0.01) GOTO 301
+      UIJ=U0(I,J)
+      VIJ=V0(I,J)
+      A=0.
+      A1=U2(I,J,1)/100.
+      B1=V2(I,J,1)/100.
+      A=A1-UIJ
+      B=B1-VIJ
+      A=C17*SQRT(B*B+A*A)/HHT
+      TXIC(I,J)=A*(A1*C15-B1*C16)
+      TYIC(I,J)=A*(B1*C15+A1*C16)
+      A3=0.25*(ANS(I,J)+ANS(I,J2)+ANS(I2,J)+ANS(I2,J2))
+      IF(A3.GT.2.) GOTO 302
+C**** stresses
+      A4=SXY(I2,J)-SXY(I,J2)
+      B4=SXY(I,J)-SXY(I2,J2)
+      FIX=(SXX(I2,J)+SXX(I,J)-SXX(I2,J2)-SXX(I,J2)+A4-B4)*C12
+      FIY=(SYY(I2,J2)+SYY(I2,J)-SYY(I,J2)-SYY(I,J)+A4+B4)*C12
+C*****
+      B3=HHT*9100.
+      A2=UIJ+DT1*(TX(I,J)/B3+TXIC(I,J)*A3+FKU(I,J)*VIJ-
+     *C11*(YM2(I2,J)-YM2(I2,J2)+YM2(I,J)-YM2(I,J2))+FIX/910.)
+      B2=VIJ+DT1*(TY(I,J)/B3+TYIC(I,J)*A3-FKU(I,J)*UIJ-
+     *C11*(YM2(I2,J2)-YM2(I,J2)+YM2(I2,J)-YM2(I,J))+FIY/910.)
+      B1=DT1*A*C16
+      A1=1.+DT1*A*C15
+      AA=A1*A1+B1*B1
+      U(I,J)=(A1*A2+B1*B2)/AA
+      V(I,J)=(A1*B2-B1*A2)/AA
+  302 IF(JJJ.NE.MM3) GOTO 300
+      B3=HHT*9100.
+      TXIC(I,J)=-(TXIC(I,J)-A*(U(I,J)*C15-V(I,J)*C16))*B3
+      TYIC(I,J)=-(TYIC(I,J)-A*(V(I,J)*C15+U(I,J)*C16))*B3
+      GOTO 300
+  301 U(I,J)=0.
+      V(I,J)=0.
+  300 CONTINUE
+C----------------------- Граничные условия для льда ----------------
+      DO I=1,IS1
+      U(I,1)=U(I,2)
+      V(I,1)=V(I,2)
+      ENDDO
+      DO I=1,IS1
+      U(I,JS1)=U(I,JS)
+      V(I,JS1)=V(I,JS)
+      ENDDO
+      DO J=1,JS1
+      U(1,J)=U(2,J)
+      V(1,J)=V(2,J)
+      ENDDO
+C----------------------------
+  777 CONTINUE
+C*****  ice concentration and thickness forcasting
+      DO K=1,NGR
+      K1=K+1
+      DO 310 I=1,IS1
+      DO 310 J=1,JS1
+  310 AN3(I,J)=AN1(I,J,K1)
+C-------------------------------------------------
+      call ADV2D(IS,JS,IS1,JS1,DT,DX,C2,KT1,IT,
+     *IDX,IDY,U,V,AN3,APX2,APY2,CD2)
+C-------------------------------------------------
+      DO I=1,IS1
+      AN3(I,JS)=AN1(I,JS,K1)
+      ENDDO
+      DO J=1,JS1
+      AN3(1,J)=AN1(1,J,K1)
+      ENDDO
+C
+      DO 312 I=1,IS1
+      DO 312 J=1,JS1
+      AN1(I,J,K1)=AN3(I,J)
+  312 AN3(I,J)=WICE1(I,J,K)
+C-------------------------------------------------
+      call ADV2D(IS,JS,IS1,JS1,DT,DX,C2,KT1,IT,
+     *IDX,IDY,U,V,AN3,APX2,APY2,CD2)
+C-------------------------------------------------
+      DO I=1,IS1
+      AN3(I,JS)=WICE1(I,JS,K)
+      ENDDO
+      DO J=1,JS1
+      AN3(1,J)=WICE1(1,J,K)
+      ENDDO
+C
+      DO 313 I=1,IS1
+      DO 313 J=1,JS1
+  313 WICE1(I,J,K)=AN3(I,J)
+      ENDDO
+C----------------- control of the ice categories -------------------
+C
+      call REDIS(IS1,JS1,KT1,NGR,NGR1,WICE1,AN1,HICE,
+     *WICES,ANS,HICES,HSNOW,HSNP,HST,HMAX)
+C-------------------------------------------------------------------
+ 5009 CONTINUE
+C-----------------Vertical speed W -----------------------
+      DO 30 I=1,IS
+      I1=I+1
+      I2=I-1
+      IX1=IDX(I,1)
+      DO 30 J=1,JS
+      J1=J+1
+      IX2=IDX(I,J1)
+      KI=KT1(I,J)
+      IF(KI.EQ.0) GOTO 48
+      J2=J-1
+      IY1=IDY(I,J)
+      IY2=IDY(I1,J)
+      DO 40 K=1,KI
+      K1=K+1
+      A=U1(I,J,K)+U1(I1,J,K)
+      AA=U1(I,J1,K)+U1(I1,J1,K)
+      IF(K.EQ.1) AU=A+AA
+c      IF(IX1.LT.K.OR.IX2.LT.K) GOTO 37
+      TT(K)=AA-A
+      GOTO 38
+   37 TT(K)=0.
+   38 B=V1(I,J,K)+V1(I,J1,K)
+      BB=V1(I1,J,K)+V1(I1,J1,K)
+      IF(K.EQ.1) AV=B+BB
+c      IF(IY1.LT.K.OR.IY2.LT.K) GOTO 39
+      SS(K)=B-BB
+      GOTO 40
+   39 SS(K)=0.
+   40 CONTINUE
+C
+      YMM=YM2(I,J)
+      IF(IX1.NE.0) GOTO 31
+      IF(IX2.EQ.0) GOTO 42
+      HH1=YM2(I,J1)-YMM
+      GOTO 32
+   42 HH1=0.
+      GOTO 32
+   31 CONTINUE
+      IF(IX2.NE.0) GOTO 33
+      IF(IX1.EQ.0) GOTO 43
+      HH1=YMM-YM2(I,J2)
+      GOTO 32
+   43 HH1=0.
+      GOTO 32
+   33 HH1=0.5*(YM2(I,J1)-YM2(I,J2))
+   32 CONTINUE
+      IF(IY1.NE.0) GOTO 34
+      IF(IY2.EQ.0) GOTO 44
+      HH2=YM2(I2,J)-YMM
+      GOTO 35
+   44 HH2=0.
+      GOTO 35
+   34 CONTINUE
+      IF(IY2.NE.0) GOTO 36
+      IF(IY1.EQ.0) GOTO 45
+      HH2=YMM-YM2(I1,J)
+      GOTO 35
+   45 HH2=0.
+      GOTO 35
+   36 HH2=0.5*(YM2(I2,J)-YM2(I1,J))
+   35 A=-(YMM-YM1(I,J))/DT-(HH1*AU+HH2*AV)*C8
+      W(I,J,1)=A
+      YM1(I,J)=YMM
+      IF(KI.LT.2) GOTO 48
+      DO 46 K=2,KI
+      K2=K-1
+      A=A-(TT(K2)+SS(K2))*DZ1(K2)*C9
+   46 W(I,J,K)=A
+C
+   48 IX1=IX2
+   30 CONTINUE
+      write(*,*)' w'
+      GO TO 888                            !!!!!!!!!!!!!!!!!
+C==========================================================
+C    Calculation of temperature, salinity and density
+C
+C******************  T and S advection ***************
+c      CALL ADVS(IS,JS,KS,IS1,JS1,KS1,DT,DX,C2,             ! Old
+c     *HT,Z,KT1,IDX,IDY,DZ,DZ1,W,U1,V1,S1,APX,APY,APZ,CD)
+c      CALL ADVT(IS,JS,KS,IS1,JS1,KS1,DT,DX,C2,
+c     *HT,Z,KT1,IDX,IDY,DZ,DZ1,W,U1,V1,T1,APX,APY,APZ,CD)
+C
+C      call advS(IS,JS,KS,IS1,JS1,KS1,DT,DX,C2,U2,V2,        ! New
+C     *HT,Z,KT1,IDX,IDY,DZ,DZ1,W,S1,S2,APX,APY,APZ,ADX,ADY,CD,TT)
+C      write(2,*)' adv S'
+C      call advT(IS,JS,KS,IS1,JS1,KS1,DT,DX,C2,U2,V2,
+C     *HT,Z,KT1,IDX,IDY,DZ,DZ1,W,T1,T2,APX,APY,APZ,ADX,ADY,CD,TT)
+C      write(2,*)' adv T'
+C
+c-----------------------------------
+      DO I=1,IS1
+      DO K=1,KS
+      S1(I,1,K)=SC1(I,K)
+      T1(I,1,K)=TC1(I,K)
+      ENDDO
+      ENDDO
+      DO J=1,JS1
+      DO K=1,KS
+      S1(1,J,K)=SC2(J,K)
+      T1(1,J,K)=TC2(J,K)
+      ENDDO
+      ENDDO
+      DO I=1,15
+      DO K=1,KS
+      S1(I,94,K)=SC3(I,K)
+      T1(I,94,K)=TC3(I,K)
+      ENDDO
+      ENDDO
+      DO J=91,93
+      DO K=1,KS
+      S1(72,J,K)=SC4(J-90,K)
+      T1(72,J,K)=TC4(J-90,K)
+      ENDDO
+      ENDDO
+C**** horisontal heat and salt diffusion ****
+      DO 60 I=1,IS
+      I1=I+1
+      I2=I-1
+      DO 60 J=1,JS
+      KI=KT1(I,J)
+      IF(KI.EQ.0) GOTO 60
+      J1=J+1
+      J2=J-1
+      IX1=IDX(I,J)
+      IX2=IDX(I,J1)
+      IY1=IDY(I,J)
+      IY2=IDY(I1,J)
+      DO 80 K=1,KI
+      TT0=T1(I,J,K)
+      SS0=S1(I,J,K)
+      IF(IX2.LT.K) GOTO 81
+      TT1=T1(I,J1,K)
+      SS1=S1(I,J1,K)
+      GOTO 82
+   81 TT1=TT0
+      SS1=SS0
+   82 IF(IX1.LT.K) GOTO 83
+      TT2=T1(I,J2,K)
+      SS2=S1(I,J2,K)
+      GOTO 84
+   83 TT2=TT0
+      SS2=SS0
+   84 IF(IY2.LT.K) GOTO 85
+      TT3=T1(I1,J,K)
+      SS3=S1(I1,J,K)
+      GOTO 86
+   85 TT3=TT0
+      SS3=SS0
+   86 IF(IY1.LT.K) GOTO 87
+      TT4=T1(I2,J,K)
+      SS4=S1(I2,J,K)
+      GOTO 88
+   87 TT4=TT0
+      SS4=SS0
+   88 CONTINUE
+      T2(I,J,K)=TT0+C4*(TT1+TT2+TT3+TT4-4.*TT0)
+      S2(I,J,K)=SS0+C5*(SS1+SS2+SS3+SS4-4.*SS0)
+   80 CONTINUE
+   60 CONTINUE
+      write(*,*)' horizontal diff'
+c
+      DO I=1,IS1
+      DO K=1,KS
+      S2(I,1,K)=SC1(I,K)
+      T2(I,1,K)=TC1(I,K)
+      ENDDO
+      ENDDO
+      DO J=1,JS1
+      DO K=1,KS
+      S2(1,J,K)=SC2(J,K)
+      T2(1,J,K)=TC2(J,K)
+      ENDDO
+      ENDDO
+      DO I=1,15
+      DO K=1,KS
+      S2(I,94,K)=SC3(I,K)
+      T2(I,94,K)=TC3(I,K)
+      ENDDO
+      ENDDO
+      DO J=91,93
+      DO K=1,KS
+      S2(72,J,K)=SC4(J-90,K)
+      T2(72,J,K)=TC4(J-90,K)
+      ENDDO
+      ENDDO
+C***  vertical salt and heat diffusion ***
+c
+      DO 65 I=1,IS
+      I1=I+1
+      DO 65 J=1,JS
+      KI=KT1(I,J)
+      IF(KI.EQ.0) GOTO 65
+      J1=J+1
+      IF(KI.EQ.1) GOTO 65
+      HHT=HT(I,J)
+      YYY=YM2(I,J)
+      UIJ=(U1(I,J,1)+U1(I1,J1,1)+U1(I1,J,1)+U1(I,J1,1))*0.25
+      VIJ=(V1(I,J,1)+V1(I1,J1,1)+V1(I1,J,1)+V1(I,J1,1))*0.25
+      TT(1)=0.1+0.025*(SKZ(I,J)+SKZ(I1,J)+SKZ(I,J1)+SKZ(I1,J1))
+      SS(1)=TT(1)
+      SKT(I,J)=TT(1)
+      DO 61 K=2,KI
+      K2=K-1
+      DZZ=DZ(K+1)
+      UU=(U1(I,J,K)+U1(I1,J1,K)+U1(I1,J,K)+U1(I,J1,K))*0.25
+      VV=(V1(I,J,K)+V1(I1,J1,K)+V1(I1,J,K)+V1(I,J1,K))*0.25
+      FF=HHT-Z(K)+2.
+      FF1=Z(K)-YYY
+C*************************Scale of turbulense****************************
+      SL=0.4/HHT*FF*FF1*(1.-1.2*FF*FF1/HHT/HHT)/(4.*FF1/5000.+1.)
+      SL=SL*SL
+      DU=((SQRT(UU*UU+VV*VV)-SQRT(UIJ*UIJ+VIJ*VIJ))/DZZ)**2
+      A=DU+0.0068*(T2(I,J,K)-T2(I,J,K2))/DZZ
+      IF(A.GT.0.) THEN
+      TT(K)=0.1*0.0324*SL*SQRT(A)+0.1
+      ELSE
+      TT(K)=0.1
+      ENDIF
+      A=DU-73.33*(S2(I,J,K)-S2(I,J,K2))/DZZ
+      IF(A.GT.0.) THEN
+      SS(K)=0.1*0.0324*SL*SQRT(A)+0.1
+      ELSE
+      SS(K)=0.1
+      ENDIF
+      UIJ=UU
+      VIJ=VV
+   61 CONTINUE
+      UCA(1)=1.
+      UNU(1)=0.
+      VCA(1)=1.
+      VNU(1)=0.
+      IF(KI.EQ.2) GOTO 71
+      A=DT/DZ(1)
+      A1=A*TT(1)
+      B1=A*SS(1)
+      DO 72 K=1,KI
+      K1=K+1
+      K2=K-1
+      A=DT/DZ(K1)
+      A2=A*TT(K1)
+      B2=A*SS(K1)
+      A=-A1/DZ1(K)
+      A3=-A2/DZ1(K)
+      AA=-1.+A+A3-UCA(K)*A
+      UCA(K1)=A3/AA
+      UNU(K1)=(A*UNU(K)-T2(I,J,K))/AA
+      B=-B1/DZ1(K)
+      B3=-B2/DZ1(K)
+      BB=-1.+B+B3-VCA(K)*B
+      VCA(K1)=B3/BB
+      VNU(K1)=(B*VNU(K)-S2(I,J,K))/BB
+      A1=A2
+      B1=B2
+   72 CONTINUE
+   71 KI1=KI+1
+      T2(I,J,KI1)=UNU(KI1)/(1.-UCA(KI1))
+      S2(I,J,KI1)=VNU(KI1)/(1.-VCA(KI1))
+      DO K=KI,1,-1
+      K1=K+1
+      T2(I,J,K)=UCA(K1)*T1(I,J,K1)+UNU(K1)
+      S2(I,J,K)=VCA(K1)*S1(I,J,K1)+VNU(K1)
+      ENDDO
+   65 CONTINUE
+c
+      DO I=1,IS1
+      DO K=1,KS
+      S2(I,1,K)=SC1(I,K)
+      T2(I,1,K)=TC1(I,K)
+      ENDDO
+      ENDDO
+      DO J=1,JS1
+      DO K=1,KS
+      S2(1,J,K)=SC2(J,K)
+      T2(1,J,K)=TC2(J,K)
+      ENDDO
+      ENDDO
+      DO I=1,15
+      DO K=1,KS
+      S2(I,94,K)=SC3(I,K)
+      T2(I,94,K)=TC3(I,K)
+      ENDDO
+      ENDDO
+      DO J=91,93
+      DO K=1,KS
+      S2(72,J,K)=SC4(J-90,K)
+      T2(72,J,K)=TC4(J-90,K)
+      ENDDO
+      ENDDO
+      write(2,*)' vertical diff'
+C
+C******************  T and S advection **************************
+      call advS(IS,JS,KS,IS1,JS1,KS1,DT,DX,C2,U2,V2,
+     *HT,Z,KT1,IDX,IDY,DZ,DZ1,W,S1,S2,APX,APY,APZ,ADX,ADY,CD,TT)
+      write(2,*)' adv S'
+      call advT(IS,JS,KS,IS1,JS1,KS1,DT,DX,C2,U2,V2,
+     *HT,Z,KT1,IDX,IDY,DZ,DZ1,W,T1,T2,APX,APY,APZ,ADX,ADY,CD,TT)
+      write(2,*)' adv T'
+C-----------------------------------------------------------------
+      DO I=1,IS1
+      DO K=1,KS
+      S2(I,1,K)=SC1(I,K)
+      T2(I,1,K)=TC1(I,K)
+      ENDDO
+      ENDDO
+      DO J=1,JS1
+      DO K=1,KS
+      S2(1,J,K)=SC2(J,K)
+      T2(1,J,K)=TC2(J,K)
+      ENDDO
+      ENDDO
+      DO I=1,15
+      DO K=1,KS
+      S2(I,94,K)=SC3(I,K)
+      T2(I,94,K)=TC3(I,K)
+      ENDDO
+      ENDDO
+      DO J=91,93
+      DO K=1,KS
+      S2(72,J,K)=SC4(J-90,K)
+      T2(72,J,K)=TC4(J-90,K)
+      ENDDO
+      ENDDO
+C***********   density calculation   ***********
+      DO 120 I=1,IS
+      DO 120 J=1,JS
+      KI=KT1(I,J)
+      IF(KI.EQ.0) GOTO 120
+      DO 121 K=1,KI
+      TT(K)=T2(I,J,K)
+      SS(K)=S2(I,J,K)
+      RR(K)=1./(0.698+(1779.5+(11.25-0.0745*TT(K))*TT(K)-(3800.
+     *+10.*TT(K))*SS(K))/(5891.+3000.*SS(K)
+     *+(38.-0.375*TT(K))*TT(K)))-1.02
+  121 CONTINUE
+      IF(KI.EQ.1) GOTO 124
+  122 DZZ=DZ1(1)
+      KI2=KI-1
+      A1=0.
+      DO 123 K=1,KI2
+      K1=K+1
+      DZZ1=DZ1(K1)
+      DZ1Z=DZZ+DZZ1
+      A=RR(K)-RR(K1)
+      IF(A.LE.0.9E-7) GOTO 125
+      A1=A1+1.
+      TT(K)=(TT(K)*DZZ+TT(K1)*DZZ1)/DZ1Z
+      SS(K)=(SS(K)*DZZ+SS(K1)*DZZ1)/DZ1Z
+      TT(K1)=TT(K)
+      SS(K1)=SS(K)
+      AA=1779.5+(11.25-0.0745*TT(K))*TT(K)-(3800.+10.*TT(K))*SS(K)
+      BB=5891.+3000.*SS(K)+(38.-0.375*TT(K))*TT(K)
+      RR(K)=1./(0.698+AA/BB)-1.02
+      RR(K1)=RR(K)
+  125 DZZ=DZZ1
+  123 CONTINUE
+      IF(A1.NE.0.) GOTO 122
+  124 CONTINUE
+      DO 130 K=1,KI
+      T2(I,J,K)=TT(K)
+      S2(I,J,K)=SS(K)
+      RO(I,J,K)=RR(K)
+  130 CONTINUE
+  120 CONTINUE
+C-------------------------------------------------
+      DO I=1,IS1
+      DO K=1,KS
+      S2(I,1,K)=SC1(I,K)
+      T2(I,1,K)=TC1(I,K)
+      ENDDO
+      ENDDO
+      DO J=1,JS1
+      DO K=1,KS
+      S2(1,J,K)=SC2(J,K)
+      T2(1,J,K)=TC2(J,K)
+      ENDDO
+      ENDDO
+      DO I=1,15
+      DO K=1,KS
+      S2(I,94,K)=SC3(I,K)
+      T2(I,94,K)=TC3(I,K)
+      ENDDO
+      ENDDO
+      DO J=91,93
+      DO K=1,KS
+      S2(72,J,K)=SC4(J-90,K)
+      T2(72,J,K)=TC4(J-90,K)
+      ENDDO
+      ENDDO
+      write(2,*)' density'
+C
+ 888  CONTINUE                !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+C==========================================================
+C   current velocities: horizontal component U' and V'
+C==========================================================
+      DO 200 I=2,IS
+      I1=I+1
+      I2=I-1
+      DO 200 J=2,JS
+      KI=KK1(I,J)
+      IF(KI.EQ.0) GOTO 200
+      J1=J+1
+      J2=J-1
+      HHT=MAP(I,J)
+      SUM=0.
+      SUM1=0.
+      ASA1=FKU(I,J)*0.5*DT
+      ASA=1.+ASA1*ASA1
+C      RI2J=RO(I2,J,1)
+C      RIJ=RO(I,J,1)
+C      RI2J2=RO(I2,J2,1)
+C      RIJ2=RO(I,J2,1)
+C      A=RI2J+RIJ-RI2J2-RIJ2
+C      B=RI2J2+RI2J-RIJ2-RIJ
+      DZZ=DZ(1)
+      ADZ1=W(I2,J2,1)+W(I2,J,1)+W(I,J2,1)+W(I,J,1)
+C******
+      DO 201 K=1,KI
+      K2=K-1
+      IF(HHT.EQ.Z(K)) GOTO 202
+      K1=K+1
+      DZZ1=DZ(K1)
+      UIJ=U1(I,J,K)
+      VIJ=V1(I,J,K)
+C**** integral of DRO/DX and DRO/DY calculation
+C      RI2J=RO(I2,J,K)
+C      RIJ2=RO(I,J2,K)
+C      RIJ=RO(I,J,K)
+C      RI2J2=RO(I2,J2,K)
+C      A1=RI2J+RIJ-RI2J2-RIJ2
+C      B1=RI2J2+RI2J-RIJ2-RIJ
+C      CC=C8*DZZ
+C      SUM=SUM+(A+A1)*CC
+C      SUM1=SUM1+(B+B1)*CC
+C*** Laplasian of  U' and  V'  calculation
+      SLAPU=U1(I,J2,K)+U1(I,J1,K)+U1(I2,J,K)+U1(I1,J,K)-4.*UIJ
+      SLAPV=V1(I1,J,K)+V1(I2,J,K)+V1(I,J1,K)+V1(I,J2,K)-4.*VIJ
+C**********
+      AUU=UIJ+ASA1*VIJ+DT*(-C1*SUM-DPX(I,J)+C3*SLAPU)
+      AVV=VIJ-ASA1*UIJ+DT*(-C1*SUM1-DPY(I,J)+C3*SLAPV)
+      U2(I,J,K)=(AUU+AVV*ASA1)/ASA
+      V2(I,J,K)=(AVV-AUU*ASA1)/ASA
+      A=A1
+      B=B1
+      DZZ=DZZ1
+      GOTO 201
+  202 U2(I,J,K)=0.
+      V2(I,J,K)=0.
+  201 CONTINUE
+  200 CONTINUE
+      write(*,*)' U & V'
+      write(2,*)' U & V'
+C
+C*******   vertical viscosity *************
+C
+      DO 210 I=2,IS
+      I2=I-1
+      DO 210 J=2,JS
+      KI=KK1(I,J)
+      IF(KI.EQ.0) GOTO 210
+      J2=J-1
+      HHT=MAP(I,J)
+      KI1=KI+1
+      KI2=KI-1
+C
+C****** calculation of viscosity coefficients NU=L*L*dU/dz
+C
+      YYY=0.25*(YM2(I2,J2)+YM2(I,J2)+YM2(I2,J)+YM2(I,J))
+      UIJ=U2(I,J,1)
+      VIJ=V2(I,J,1)
+      A=SQRT(UIJ*UIJ+VIJ*VIJ)
+      DO 211 K=1,KI
+      K1=K+1
+      UIJ=U2(I,J,K1)
+      VIJ=V2(I,J,K1)
+      B=SQRT(UIJ*UIJ+VIJ*VIJ)
+      FF=HHT-Z(K)+2.
+      FF1=Z(K)-YYY-2.
+      SL=0.4/HHT*FF*FF1*(1.-1.2*FF*FF1/HHT/HHT)/(4.*FF1/5000.+1.)
+      IF(K.NE.KI) THEN
+      RR(K)=SL*SL*ABS(B-A)/DZ(K1)
+      ELSE
+      RR(K)=SL*SL*ABS(B-A)/(HHT-Z(KI)+50.)
+      ENDIF
+      A=B
+  211 CONTINUE
+      SKZ(I,J)=RR(1)
+C       d i r e c t    s t e p
+      IF(KI.NE.1) THEN
+      DZZ=DZ1(1)
+      DZZZ=DZ(2)
+      ELSE
+      DZZ=HHT
+      DZZZ=HHT-Z(1)+50.
+      ENDIF
+      B=DT/DZZ/DZZZ*RR(1)
+      A=1.+B
+      UCA(1)=B/A
+      A1=0.25*(ANS(I,J)+ANS(I,J2)+ANS(I2,J)+ANS(I2,J2))
+      UNU(1)=(U2(I,J,1)+DT/DZZ*((1.-A1)*TX(I,J)+A1*TXIC(I,J)))/A
+      VCA(1)=UCA(1)
+      VNU(1)=(V2(I,J,1)+DT/DZZ*((1.-A1)*TY(I,J)+A1*TYIC(I,J)))/A
+      IF(KI.EQ.1) GOTO 212
+      IF(KI.EQ.2) GOTO 214
+      DO 215 K=2,KI2
+      K2=K-1
+      AA=DT/DZ1(K)
+      A=-AA/DZ(K)*RR(K2)
+      B=-AA/DZ(K+1)*RR(K)
+      A1=-1.+A+B
+      AA=A1-UCA(K2)*A
+      UCA(K)=B/AA
+      UNU(K)=(A*UNU(K2)-U2(I,J,K))/AA
+      AA=A1-VCA(K2)*A
+      VCA(K)=B/AA
+  215 VNU(K)=(A*VNU(K2)-V2(I,J,K))/AA
+C    i n v e r s e    s t e p
+  214 DZZ=HHT-0.5*(Z(KI)+Z(KI2))
+      DZZZ=HHT-Z(KI)+50.
+      B=DT/DZZ/DZ(KI)*RR(KI2)
+      A=1.+B+DT/DZZ/DZZZ*RR(KI)
+      BB=B/A
+      U2(I,J,KI)=(U2(I,J,KI)/A+BB*UNU(KI2))/(1.-BB*UCA(KI2))
+      V2(I,J,KI)=(V2(I,J,KI)/A+BB*VNU(KI2))/(1.-BB*VCA(KI2))
+      DO 213 K=1,KI2
+      KK=KI-K
+      K1=KK+1
+      U2(I,J,KK)=UCA(KK)*U2(I,J,K1)+UNU(KK)
+  213 V2(I,J,KK)=VCA(KK)*V2(I,J,K1)+VNU(KK)
+      GOTO 210
+  212 U2(I,J,KI)=UCA(KI)*U2(I,J,KI1)+UNU(KI)
+      V2(I,J,KI)=VCA(KI)*V2(I,J,KI1)+VNU(KI)
+  210 CONTINUE
+      write(2,*)' vertical viscosity'
+      write(*,*)' vertical viscosity'
+C========================================================================
+C    calculation of the vertically mean currents
+C========================================================================
+      CALL shal(IS,JS,KS,IS1,JS1,IS2,JS2,LI,LJ,DT1,DX,C1,C3,C9,C10,MM3,
+     *HT,HU,HV,KT1,KUSH,KVSH,Y2,UP1,UP2,VP1,VP2,YM2,
+     *FU,FV,DZ1,DRX,DRY,RO,TX,TY,DPX,DPY,TXIC,TYIC,ANS,APX2,APY2,CD2,
+     *EUU,IKU,IKV,Q,JJQ,NOM,AMP,FAZ,IIP,V00,AMP1,AMP2,AMP3,FAZ1,
+     *FAZ2,FAZ3)
+      write(*,*)' shallow'
+      write(2,*)' shallow'
+C========================================================================
+C      calculation of current velocities  U and  V
+C========================================================================
+      DO 280 I=2,IS
+      I2=I-1
+      DO 280 J=2,JS
+      KI=KK1(I,J)
+      IF(KI.EQ.0) GOTO 280
+      J2=J-1
+      SUM=0.
+      SUM1=0.
+      HHT=MAP(I,J)
+      DO K=1,KI
+      K1=K+1
+      IF(K.EQ.KI) THEN
+      IF(KI.NE.1) THEN
+      DZZ=HHT-0.5*(Z(KI)+Z(KI-1))
+      ELSE
+      DZZ=HHT
+      ENDIF
+      ELSE
+      DZZ=DZ1(K)
+      ENDIF
+      SUM=U2(I,J,K)*DZZ+SUM
+      SUM1=V2(I,J,K)*DZZ+SUM1
+      ENDDO
+      SUM=(-SUM+0.5*(UP2(I,J)+UP2(I2,J)))/HHT
+      SUM1=(-SUM1+0.5*(VP2(I,J)+VP2(I,J2)))/HHT
+      DO K=1,KI
+      U2(I,J,K)=U2(I,J,K)+SUM
+      V2(I,J,K)=V2(I,J,K)+SUM1
+      ENDDO
+  280 CONTINUE
+C---------------------- BOUNDARY CONDISIONS ---------------
+      DO I=1,IS1
+      DO K=1,KS
+      U2(I,1,K)=U2(I,2,K)
+      V2(I,1,K)=V2(I,2,K)
+      ENDDO
+      ENDDO
+      DO I=1,IS1
+      DO K=1,KS
+      U2(I,JS1,K)=U2(I,JS,K)
+      V2(I,JS1,K)=V2(I,JS,K)
+      ENDDO
+      ENDDO
+      DO J=1,JS1
+      DO K=1,KS
+      U2(1,J,K)=U2(2,J,K)
+      V2(1,J,K)=V2(2,J,K)
+      ENDDO
+      ENDDO
+C*******************************************************************
+      IKKK=IKKK+1
+      YYV(IKKK)=Y2(56,53)
+      UF1(IKKK)=U(56,53)
+      VF1(IKKK)=V(56,53)
+      UF2(IKKK)=U(57,53)
+      VF2(IKKK)=V(57,53)
+      UUF(IKKK)=U2(57,53,1)
+      VVF(IKKK)=V2(57,53,1)
+      WIU(IKKK)=WINDX(57,53)
+      WIV(IKKK)=WINDY(57,53)
+      DO I=1,NGR1
+      APN(IKKK,I)=AN1(56,53,I)
+      ENDDO
+  333 CONTINUE
+C
+ 
+ 2000 OPEN(15,FILE=VIX1)
+      WRITE(15) KKB,U2,V2,RO,T2,S2,UP2,VP2,Y2,YM1,YM2,TTT,U,V,YYV
+     *,EXX,EYY,EXY,SXX,SYY,SXY,AN1,HICE,WICE1,ANS,WICES,HICES,HSNOW
+      CLOSE(15)
+C
+      OPEN(1,FILE=VIX2)
+      DO I=1,IKKK
+      WRITE(1,2009)YYV(I),UF1(I)*100.,VF1(I)*100.,UF2(I)*100.,
+     *VF2(I)*100.,UUF(I),VVF(I),WIU(I)/100.,WIV(I)/100.,
+     *APN(I,2)*10.,APN(I,3)*10.,APN(I,4)*10.,
+     *APN(I,5)*10.,APN(I,6)*10. 
+      ENDDO
+      CLOSE(1)
+ 2009 FORMAT(14F8.1)
+C
+  555 CONTINUE
+C
+ 1001 CONTINUE
+ 1000 CONTINUE
+      close(2)
+C
+ 2222 continue
+C
+      END
+
+
+      SUBROUTINE DEFORM(IS,JS,IS1,JS1,IS3,JS3,IJS1,DX,DT1,KT1,
+     *EPR,U,V,CD2,KL)
+      REAL EPR(IS3,JS3),U(IS1,JS1),V(IS1,JS1),CD2(IS1,JS1)
+      INTEGER KT1(IS1,JS1)
+C
+      DO 1 J=1,JS
+      J1=J+1
+      A1=0.
+      DO 1 I=1,IS
+      IF(KT1(I,J).EQ.0) GOTO 1
+      I1=I+1
+      V1=V(I,J)
+      V2=V(I,J1)
+      V3=V(I1,J)
+      V4=V(I1,J1)
+      IF(KL-2) 2,3,4
+    2 CD2(I,J)=50.*(U(I,J1)+U(I1,J1)-U(I,J)-U(I1,J))/DX
+      GOTO 5
+    3 CD2(I,J)=50.*(V1+V2-V3-V4)/DX
+      GOTO 5
+    4 CD2(I,J)=25.*(U(I,J)+U(I,J1)-U(I1,J)-U(I1,J1)+V2+V4-V1-V3)/DX
+    5 B=0.25*(V1+V2+V3+V4)
+      B1=0.25*(U(I,J)+U(I,J1)+U(I1,J1)+U(I1,J))
+      A=EPR(I1,J1)
+      IF(B1.GE.0.) THEN
+      A1=B1*(A-EPR(I1,J))
+      ELSE
+      A1=B1*(EPR(I1,J+2)-A)
+      ENDIF
+      IF(B.GE.0.) THEN
+      A2=B*(A-EPR(I+2,J))
+      ELSE
+      A2=B*(EPR(I,J1)-A)
+      ENDIF
+      EPR(I1,J1)=A-DT1*(100./DX*(A1+A2)-CD2(I,J))
+    1 CONTINUE
+C
+      RETURN
+      END
+
+
+      subroutine HEAT(III,IS1,JS1,KS,KS1,NGR,NGR1,NDAY,DT,KT1,AN1,ANS,
+     *WICE1,WICES,HICE,HICES,HSNOW,TPAR,SPAR,ANP,DANP,HSNP,HICP,SICST,
+     *T1,S1,SKT,DZ,DZ1,FI,PATM,TATM,WIND,CLOUD,HUMID,ALSN,SFAL,LLL,fw)
+C
+      REAL DZ(KS1),DZ1(KS),FI(IS1,JS1),T1(IS1,JS1,KS),S1(IS1,JS1,KS),
+     *SKT(IS1,JS1),WICE1(IS1,JS1,NGR),AN1(IS1,JS1,NGR1),
+     *HICE(IS1,JS1,NGR),WICES(IS1,JS1),HICES(IS1,JS1),ANS(IS1,JS1),
+     *HSNOW(IS1,JS1,NGR),TPAR(NGR1),SPAR(NGR1),SICST(NGR),ALSN(12),
+     *SFAL(12),ANP(NGR),DANP(NGR),HSNP(NGR),HICP(NGR)
+      REAL CLOUD(IS1,JS1),HUMID(IS1,JS1),PATM(IS1,JS1),
+     *TATM(IS1,JS1),WIND(IS1,JS1)
+      INTEGER KT1(IS1,IS1)
+C
+      DZZ=DZ1(1)/100.
+      DTZ=DT/(DZZ*4.19E6)
+      JS=JS1-1
+      IS=IS1-1
+      DO 1 I=1,IS
+      DO 1 J=1,JS
+      IF(KT1(I,J).EQ.0.OR.ANS(I,J).EQ.9.) GOTO 1
+C calculation of solar radiation
+      TTAC=TATM(I,J)                    ! air temperature (C)
+      TTA=TTAC+273.15                   ! air temperature (K)
+      PPATM=PATM(I,J)*100.              ! atm.pressure (Pask)
+      RATM=PPATM/287./TTA               ! air density
+      TWAC=T1(I,J,1)                    ! water temperature (C)
+      TWA=TWAC+273.15                   ! water temperature (K)
+      HHUM=HUMID(I,J)                   ! humidity (parts of unit)
+      WW=WIND(I,J)                      ! geostr. wind  (m/s)
+      CCLO=CLOUD(I,J)                   ! cloudiness
+      A=S1(I,J,1)
+      DO K=1,NGR
+      ANP(K)=AN1(I,J,K+1)
+      IF(ANP(K).NE.0.) THEN
+      HICP(K)=WICE1(I,J,K)/ANP(K)
+      HSNP(K)=HSNOW(I,J,K)
+      ELSE
+      HICP(K)=0.
+      HSNP(K)=0.
+      ENDIF
+      ENDDO
+      DO K=1,NGR1
+      SPAR(K)=A
+      TPAR(K)=TWA
+      ENDDO
+      ANSUM=ANS(I,J)
+      TFR=-54.*SPAR(1)                  ! freezing temperature (C)
+      FW=1028.*4.1868E3*SKT(I,J)*(T1(I,J,1)-TFR)/DZ(1)
+      IF(FW.LE.0.) FW=0.
+      TFR=TFR+273.15                    ! freezing temperature (K)
+      A1=FI(I,J)/57.3                   ! constants for solar radiation
+      A2=SIN(A1)
+      B2=COS(A1)
+      B=23.44*COS((172-NDAY)/57.3)/57.3
+      A3=SIN(B)
+      B3=COS(B)
+      CZ=0.
+C      DO K=III-7,III       ! THAT IS FOR 1-HOUR TIME STEP DT
+      B1=A2*A3+B2*B3*COS((12-K)*0.2617994) ! THAT IS AS WELL
+      B1=A2*A3+B2*B3*COS((12-(III*8-4))*0.2617994)
+      IF(B1.LT.0.) B1=0.
+      CZ=CZ+B1
+C      ENDDO
+C      CZ=CZ/8.              ! THAT IS FOR 1-HOUR TIME STEP DT
+      A1=1353.*CZ*CZ*(1.-0.6*CCLO*CCLO*CCLO)
+      B1=(CZ+2.7)*1.E-5
+      B2=1.085*CZ+0.1
+      E=HHUM*610.78*10**(8.61503*(TTA-273.15)/TTA) ! vapor pressure
+      SW=A1/(B1*E+B2)                  ! solar radiation (f-lae 1.4,1.5)
+      B3=RATM*1.7068*WW                ! constant for SH
+      A3=0.6650735*RATM/PPATM*WW       ! constant for EL
+      WL=5.4999E-8*TTA**4*(1.-0.261*EXP
+     *(-7.77E-4*((273.15-TTA)**2)))*
+     *(1.+0.275*CCLO)                  ! incoming longwave rad.F (f-la 1.3)
+C+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+C     fluxes and possible formation of ice (no ice is initial)
+C+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+      HFIRST=0.
+      ANN1=AN1(I,J,1)
+      IF(ANN1.EQ.0.) GOTO 11
+      SH1=B3*(TTA-TWA)                            ! SH (f-la 1.2)
+      EL1=A3*2.5E6*(HHUM*10**(7.63*TTAC/(241.9+TTAC))-
+     *10**(7.63*TWAC/(241.9+TWAC)))               ! LE (f-la 1.1)
+      AAA=-0.97*5.67E-8*(TWA**4)
+      QN=SH1+EL1+0.97*WL+0.9*SW-0.97*5.67E-8*(TWA**4)
+C
+      IF(QN.GT.0.) THEN
+      TPAR(1)=TPAR(1)+DTZ*ANN1*QN                 ! ANN1 - for leads
+      ELSE
+      TPAR(1)=TPAR(1)+DTZ*QN
+      ENDIF
+      IF(TPAR(1).GE.TFR) THEN
+      IF(TPAR(1).GT.TTA.AND.QN.GT.0.) TPAR(1)=TTA ! no ice formation
+      ELSE
+      TPAR(1)=TFR                                 !  ice formation
+      HFIRST=0.01
+      ENDIF
+C
+   11 CONTINUE
+C@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+C                     fluxes with ice
+C@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+      DO 20 K=1,NGR
+      K1=K+1
+      IF(ANP(K).LT.0.001) GOTO 20
+C
+      DHSN=0.
+      DHIC1=0.
+      TTS=0.5*(TTA+TWA)
+      EL=A3*2.834E6*(HHUM*10**(9.5*TTAC/(265.5+TTAC))-
+     *10**(9.5*(TTS-273.15)/(TTS-7.65)))      ! EL (f-la 1.1)
+      HHIC1=1./HICP(K)
+      IF(HSNP(K).NE.0.) GOTO 30
+C****************** ice without snow    *******************
+      B=2.04*HHIC1
+      ERR=100.
+      KU=O
+      DO WHILE(ERR.GE.0.25)
+      SH=B3*(TTA-TTS)                         ! SH (f-la 1.2)
+      A=5.4999E-8*TTS**3                      ! 5.4999E-8=(0.97*5.67E-8)
+      A1=SH+EL+0.466*SW+0.97*WL
+      DTTS=(A1-A*TTS+B*(TFR-TTS))/(4.*A+B)
+      A=TTS+DTTS                              ! new surface temperature
+      ERR1=ERR
+      ERR=ABS(DTTS)
+      IF(ERR.GE.ERR1) GOTO 40
+      TTS=A
+      ENDDO
+      GOTO 41
+   40 TTS=TTA
+   41 CONTINUE
+C****  processes at the surface "ice-air"
+      IF(TTS.LE.273.15) GOTO 25
+C    melting at the ice surface
+      TTS=273.15
+      DHIC1=-DT/302.E6*(A1-5.4999E-8*TTS**4+B*(TFR-TTS))
+      HICP(K)=HICP(K)+DHIC1
+      IF(HICP(K).LT.0.01) HICP(K)=0.
+      GOTO 26
+C    snow fall parameterization
+   25 DHSN=DT*SFAL(LLL)
+      HSNP(K)=DHSN
+C****  processes at the surface "ice-water"
+   26 DHIC=-DT/302.E6*(FW-B*(TFR-TTS))
+      HICP(K)=HICP(K)+DHIC
+      DHIC=DHIC+DHIC1
+      IF(HICP(K).LT.0.01) THEN
+      HICP(K)=0.
+      HSNP(K)=0.
+      ENDIF
+      GOTO 21
+C******************  ice with snow ************************
+   30 CONTINUE
+      B1=0.31*HICP(K)
+      B2=2.04*HSNP(K)
+      B4=B1+B2
+      B=0.6324/B4                           ! 0.6324=2.04*0.31
+      ERR=100.
+      DO WHILE(ERR.GE.0.25)
+      SH=B3*(TTA-TTS)                       ! SH (f-la 1.2)
+      A=5.6133E-8*TTS**3                    ! 5.6133E-8=(0.99*5.67E-8)
+      A1=SH+EL+(1.-ALSN(LLL))*SW+0.99*WL
+      DTTS=(A1-A*TTS+B*(TFR-TTS))/(4.*A+B)
+      A=TTS+DTTS                            ! new snow Tsur
+      ERR1=ERR
+      ERR=ABS(DTTS)
+      IF(ERR.GE.ERR1) GOTO 45
+      TTS=A
+      ENDDO
+      GOTO 46
+   45 TTS=TTA
+   46 CONTINUE
+C**** processes at the surface "snow-air"
+      IF(TTS.LE.273.15) THEN
+      DHSN=SFAL(LLL)*DT                             ! snow fall
+      TTI=(B1*TTS+B2*TFR)/B4                        ! new ice Tsfc
+      ELSE
+      TTS=273.15                                    !snow melting
+      TTI=(B1*273.15+B2*TFR)/B4                     ! new ice Tsfc
+      DHSN=-DT/110.E6*(A1-5.6133E-8*TTS**4+
+     *0.31/HSNP(K)*(TTI-TTS))                       ! f-la (2.14)
+      ENDIF
+C**** processes at the surface "ice-water"
+      DHIC=DT/302.E6*(2.04*(TFR-TTI)/HICP(K)-FW)    ! f-la (2.15) !!!!!!!!!
+      HICP(K)=HICP(K)+DHIC
+      IF(HICP(K).GE.0.01) THEN
+      A=0.1*HICP(K)
+      HSNP(K)=HSNP(K)+DHSN
+      IF(HSNP(K).GT.A) THEN
+      HSNP(K)=A
+      ELSE
+      IF(HSNP(K).LT.0.) HSNP(K)=0.
+      ENDIF
+      ELSE
+      HICP(K)=0.
+      HSNP(K)=0.
+      ENDIF
+C********* new water temperature and salinity values *********
+   21 A=0.88*DHIC
+      B=DZZ-A
+      IF(DHIC.LT.0.) THEN
+         IF(DHSN.LT.0.) THEN                          ! melting of
+         A1=0.3*DHSN                                  ! ice + snow
+         B=B-A1
+         B1=273.15*A1
+         ELSE
+         B1=0.
+         A1=0.
+         ENDIF
+         SPAR(K1)=(SPAR(K1)*(DZZ+A+A1)-SICST(K)*A)/DZZ   ! when melting
+         TFR=-54.*SPAR(K1)+273.15
+         TPAR(K1)=(TFR*DZZ-B1)/(DZZ-A1)                  ! when melting
+      ELSE
+         SPAR(K1)=(SPAR(K1)*DZZ-SICST(K)*A)/B         ! when freezing
+         TFR=-54.*SPAR(K1)+273.15
+         TPAR(K1)=TFR
+      ENDIF
+      HSNOW(I,J,K)=HSNP(K)
+      HICE(I,J,K)=HICP(K)
+      IF(HICP(K).EQ.0.) THEN
+      ANN1=ANN1+ANP(K)
+      AN1(I,J,K1)=0.
+      ANP(K)=0.
+      ENDIF
+   20 CONTINUE
+C
+      IF(ANN1.GT.0..AND.ANN1.LT.1..AND.QN.GT.0.) THEN
+C************ decreasing of ice area due to melting in leads *******
+         A=ANN1*QN*DT
+         B=0.
+         A3=0.
+         B3=0.
+         DO 55 K=1,NGR
+         IF(HICP(K).NE.0.) THEN
+         K1=K+1
+         DANP(K)=ANP(K)*A/(302.E6*HICP(K)+110.E6*HSNP(K))   ! f-la 3.1
+         ANP(K)=ANP(K)-DANP(K)                              ! f-la 3.2
+         B=B+DANP(K)
+         A3=A3+ANP(K)*TPAR(K1)
+         B3=B3+ANP(K)*SPAR(K1)
+         ELSE
+         DANP(K)=0.
+         ENDIF
+   55    CONTINUE
+         ANN2=ANN1+B                                        ! f-la 3.3
+         A2=0.
+         B2=0.
+         DO 60 K=1,NGR
+         K1=K+1
+         TFR=-54.*SICST(K)+273.15                           ! f-la 3.5
+         A=0.88*HICP(K)
+         A1=DANP(K)/(A+DZZ)
+         A2=A2+(TPAR(K1)*DZZ+TFR*A)*A1                      ! f-la 3.4
+         B2=B2+(SPAR(K1)*DZZ+SICST(K)*A)*A1                ! f-la 3.4
+   60    CONTINUE
+         TPAR(1)=(TPAR(1)*ANN1+A2)/ANN2                     ! f-la 3.6
+         SPAR(1)=(SPAR(1)*ANN1+B2)/ANN2                     ! f-la 3.6
+         AN1(I,J,1)=ANN2
+         T1(I,J,1)=ANN2*TPAR(1)+A3-273.15                   ! f-la 3.7
+         S1(I,J,1)=ANN2*SPAR(1)+B3                          ! f-la 3.7
+      ELSE
+C****  new water temperature and salinity without lateral melting ***
+         A1=ANN1*TPAR(1)
+         B1=ANN1*SPAR(1)
+         DO K=1,NGR
+         K1=K+1
+         A1=A1+ANP(K)*TPAR(K1)
+         B1=B1+ANP(K)*SPAR(K1)
+         ENDDO
+         T1(I,J,1)=A1-273.15
+         S1(I,J,1)=B1
+         IF(HFIRST.GT.0.) THEN
+         A2=AN1(I,J,2)
+         A1=ANN1+A2
+         HICP(1)=(0.01*ANN1+HICP(1)*A2)/A1
+         AN1(I,J,1)=0.
+         ANP(1)=A1
+         ENDIF
+         ENDIF
+C      AN1(I,J,1)=ANN1
+      DO K=1,NGR
+      HICE(I,J,K)=HICP(K)
+      HSNOW(I,J,K)=HSNP(K)
+      AN1(I,J,K+1)=ANP(K)
+      IF(ANP(K).NE.0.) THEN
+      WICE1(I,J,K)=HICE(I,J,K)*ANP(K)
+      ELSE
+      WICE1(I,J,K)=0.
+      ENDIF
+      ENDDO
+C
+    1 CONTINUE
+C
+      RETURN
+      END
+
+
+      subroutine REDIS(IS1,JS1,KT1,NGR,NGR1,WICE1,AN1,HICE,
+     *WICES,ANS,HICES,HSNOW,HSNP,HST,HMAX)
+      REAL WICE1(IS1,JS1,NGR),AN1(IS1,JS1,NGR1),HICE(IS1,JS1,NGR),
+     *WICES(IS1,JS1),HICES(IS1,JS1),ANS(IS1,JS1),HSNOW(IS1,JS1,NGR),
+     *HST(NGR),HMAX(NGR),HSNP(NGR),ANPR(5),WICPR(5),HPR(5)
+      INTEGER KT1(IS1,JS1)
+C*******
+      WRITE(*,*) 'REDIS'
+      NGR2=NGR-1
+      IS=IS1-1
+      JS=JS1-1
+      DO 314 I=1,IS
+      DO 314 J=1,JS
+      IF(KT1(I,J).EQ.0) GOTO 314
+C CALCULATION WITH H-GRADE CONTROL
+      DO K=1,NGR
+      HICE(I,J,K)=0.
+      WICPR(K)=WICE1(I,J,K)
+      ANPR(K)=AN1(I,J,K+1)
+      HSNP(K)=HSNOW(I,J,K)
+      IF(WICPR(K).LE.0..OR.ANPR(K).LE.0.) THEN
+      WICPR(K)=0.
+      ANPR(K)=0.
+      HSNP(K)=0.
+      ENDIF
+      ENDDO
+      DO K=1,NGR2
+      K1=K+1
+      IF(WICPR(K).NE.0.) THEN
+      IF(ANPR(K).EQ.0.) ANPR(K)=WICPR(K)/HST(K)
+      IF(WICPR(K)/ANPR(K).GT.HMAX(K)) THEN
+      ANPR(K1)=ANPR(K1)+ANPR(K)
+      WICPR(K1)=WICPR(K1)+WICPR(K)
+      HSNP(K1)=HSNP(K1)+HSNP(K)
+      WICPR(K)=0.
+      ANPR(K)=0.
+      HSNP(K)=0.
+      ENDIF
+      ENDIF
+      ENDDO
+C
+      DO K=NGR,2,-1
+      IF(WICPR(K).GT.0.) THEN
+      K2=K-1
+      IF(WICPR(K)/ANPR(K).LT.HMAX(K2)) THEN
+      WICPR(K2)=WICPR(K2)+WICPR(K)
+      ANPR(K2)=ANPR(K2)+ANPR(K)
+      WICPR(K)=0.
+      ANPR(K)=0.
+      ENDIF
+      ENDIF
+      ENDDO
+C
+      DO K=1,NGR
+      IF(ANPR(K).NE.0.) THEN
+      HPR(K)=WICPR(K)/ANPR(K)
+      ELSE
+      HPR(K)=0.
+      ENDIF
+      ENDDO
+C
+  319 A1=0.
+      DO K=1,NGR
+      A1=A1+ANPR(K)
+      ENDDO
+      IF(A1.LE.1.) GOTO 315
+      DD=A1-1.
+      A3=WICPR(1)
+      B3=1.
+      DO K=2,NGR
+      B3=B3-ANPR(K)
+      ENDDO
+      DO 317 K=1,NGR2
+      K1=K+1
+      A3=A3+WICPR(K1)
+      B3=B3+ANPR(K1)
+      IF(ANPR(K).EQ.0.) GOTO 317
+      IF(ANPR(K1).EQ.0.) THEN
+      IF(DD.LT.ANPR(K)) THEN
+      ANPR(K)=ANPR(K)-DD
+      GOTO 315
+      ELSE
+      WICPR(K1)=WICPR(K)
+      ANPR(K1)=WICPR(K)/HST(K1)
+      HPR(K1)=WICPR(K1)/ANPR(K1)
+      WICPR(K)=0.
+      ANPR(K)=0.
+      HPR(K)=0.
+      ENDIF
+      GOTO 319
+      ENDIF
+      A=HPR(K)-HPR(K1)
+      B2=(A3-HPR(K1)*B3)/A
+      A2=(HPR(K)*B3-A3)/A
+          IF(B2.LT.0..OR.A2.LT.0.) THEN
+          ANPR(K)=0.
+          ELSE
+          ANPR(K)=B2
+          ANPR(K1)=A2
+          GOTO 315
+          ENDIF
+  317 CONTINUE
+      ANPR(NGR)=1.
+      WICPR(NGR)=A3
+  315 A1=0.
+      B1=0.
+        DO K=1,NGR
+        IF(ANPR(K).EQ.0.) WICPR(K)=0.
+        A1=A1+ANPR(K)
+        B1=B1+WICPR(K)
+        AN1(I,J,K+1)=ANPR(K)
+        WICE1(I,J,K)=WICPR(K)
+        HSNOW(I,J,K)=HSNP(K)
+        IF(ANPR(K).NE.0.) HICE(I,J,K)=WICPR(K)/ANPR(K)
+        ENDDO
+C
+      DO K=NGR,2,-1
+      K2=K-1
+      IF(HICE(I,J,K).LT.HMAX(K2)) THEN
+      K1=K+1
+      A=AN1(I,J,K)+AN1(I,J,K1)
+      AN1(I,J,K)=A
+      B=WICE1(I,J,K2)+WICE1(I,J,K)
+      WICE1(I,J,K2)=B
+      IF(A.NE.0.) HICE(I,J,K2)=B/A
+      AN1(I,J,K1)=0.
+      WICE1(I,J,K)=0.
+      HICE(I,J,K)=0.
+      ENDIF
+      ENDDO
+C
+      ANS(I,J)=A1
+      WICES(I,J)=B1
+      IF(A1.GE.0.005) THEN
+      HICES(I,J)=B1/A1
+      ELSE
+      ANS(I,J)=0.
+      HICES(I,J)=0.
+      WICES(I,J)=0.
+      ENDIF
+      AN1(I,J,1)=1.-A1
+  314 CONTINUE
+C=========================================================================
+      RETURN
+      END
+
+
+      subroutine shal(IS,JS,KS,IS1,JS1,IS2,JS2,LI,LJ,DT1,DX,
+     *C1,C3,C9,C10,MM3,HT,HU,HV,KT1,KUSH,KVSH,Y2,UP1,UP2,
+     *VP1,VP2,YM2,FU,FV,DZ1,DRX,DRY,RO,TX,TY,DPX,DPY,TXIC,TYIC,
+     *ANS,APX2,APY2,CD2,EUU,IKU,IKV,Q,JJQ,NOM,AMP,FAZ,IIP,V00
+     *,AMP1,AMP2,AMP3,FAZ1,FAZ2,FAZ3)
+C
+      REAL HT(IS1,JS1),HU(IS1,JS1),HV(IS1,JS1),
+     *Y2(IS1,JS1),UP1(IS1,JS1),UP2(IS1,JS1),
+     *VP1(IS1,JS1),VP2(IS1,JS1),FU(IS1,JS1),FV(IS1,JS1),
+     *YM2(IS1,JS1),DRX(IS1,JS1),DRY(IS1,JS1),
+     *DPX(IS1,JS1),DPY(IS1,JS1),TXIC(IS1,JS1),TYIC(IS1,JS1),
+     *ANS(IS1,JS1),APX2(IS1,JS1),APY2(IS1,JS1),CD2(IS1,JS1),
+     *CCC(4),BBB(4),TX(IS1,JS1),TY(IS1,JS1),
+     *RO(IS1,JS1,KS),DZ1(KS),Q(LI),AMP(LI,LJ),FAZ(LI,LJ)
+     *,OM(4),V00(LI)
+     *,AMP1(IS1,LI),AMP2(JS1,LI),AMP3(IS1,LI)
+     *,FAZ1(IS1,LI),FAZ2(JS1,LI),FAZ3(IS1,LI)
+C
+      INTEGER KT1(IS1,JS1),IKU(IS1,JS1),IKV(IS1,JS1),IIP(IS1,JS1),
+     *KUSH(IS1,JS1),KVSH(IS1,JS1)
+      IJS1=IS1*JS1
+C
+C=======================================================================
+C    computation of fluxes U,V and sea level Y ("shallow water")
+C=======================================================================
+      DO I=1,IJS1
+      YM2(I,1)=0.
+      ENDDO
+C
+      GO TO 900           !!!!!!!!!!!!!!!!!!!!
+C
+      DO 150 I=2,IS2
+      DO 150 J=2,JS2
+      HHT=HU(I,J)
+      IF(HHT.EQ.8888.) GOTO 150
+      J2=J-1
+      A=0.
+      B=0.
+      A1=0.
+      A2=0.
+      KI=MIN(KT1(I,J),KT1(I,J2))
+      DO K=1,KI
+      IF(K.EQ.KI) THEN
+      B2=HHT-A2
+      ELSE
+      B2=DZ1(K)
+      A2=A2+B2
+      ENDIF
+      B=B+(RO(I,J,K)-RO(I,J2,K))*B2*C9
+      A1=A1+(A+B)*B2*0.5
+      A=B
+      ENDDO
+      DRX(I,J)=C1*A1
+  150 CONTINUE
+      DO 160 I=2,IS2
+      DO 160 J=2,JS2
+      HHT=HV(I,J)
+      IF(HHT.EQ.8888.) GOTO 160
+      I2=I-1
+      A=0.
+      B=0.
+      A1=0.
+      A2=0.
+      KI=MIN(KT1(I,J),KT1(I2,J))
+      DO K=1,KI
+      IF(K.EQ.KI) THEN
+      B2=HHT-A2
+      ELSE
+      B2=DZ1(K)
+      A2=A2+B2
+      ENDIF
+      B=B+(RO(I2,J,K)-RO(I,J,K))*B2*C9
+      A1=A1+(A+B)*B2*0.5
+      A=B
+      ENDDO
+      DRY(I,J)=C1*A1
+  160 CONTINUE
+C-----------------------------------------------
+ 900  CONTINUE
+C-----------------------------------------------
+      AA1=981./DX
+      AA2=0.0026*DT1
+      AA3=0.0055*DT1
+C
+      DO 444 JJJ=1,MM3
+      JJQ=JJQ+1
+      DO I=1,4
+      OM(I)=Q(I)*JJQ
+      ENDDO
+C*** redeterming of arrays
+      DO I=1,IJS1
+      UP1(I,1)=UP2(I,1)
+      VP1(I,1)=VP2(I,1)
+      ENDDO
+C*** computation of sea level  Y
+      DO 50 I=2,IS
+      DO 50 J=2,JS
+      IF(HT(I,J).EQ.8888.) GOTO 50
+      Y2(I,J)=Y2(I,J)-C10*(UP1(I,J+1)-UP1(I,J)+VP1(I,J)-VP1(I+1,J))
+   50 CONTINUE
+C-----------------------------------
+C      TIDE  ON BOUNDARES
+C-----------------------------------
+      DO I=1,133
+      Y2(I,1)=AMP1(I,1)*COS(OM(1)+(V00(1)-FAZ1(I,1))/57.3)+
+     *AMP1(I,2)*COS(OM(2)+(V00(2)-FAZ1(I,2))/57.3)+
+     *AMP1(I,3)*COS(OM(3)+(V00(3)-FAZ1(I,3))/57.3)+
+     *AMP1(I,4)*COS(OM(4)+(V00(4)-FAZ1(I,4))/57.3)
+      ENDDO
+      DO I=1,105
+      Y2(1,I)=AMP2(I,1)*COS(OM(1)+(V00(1)-FAZ2(I,1))/57.3)+
+     *AMP2(I,2)*COS(OM(2)+(V00(2)-FAZ2(I,2))/57.3)+
+     *AMP2(I,3)*COS(OM(3)+(V00(3)-FAZ2(I,3))/57.3)+
+     *AMP2(I,4)*COS(OM(4)+(V00(4)-FAZ2(I,4))/57.3)
+      ENDDO
+      DO I=1,133
+      Y2(I,JS)=AMP3(I,1)*COS(OM(1)+(V00(1)-FAZ3(I,1))/57.3)+
+     *AMP3(I,2)*COS(OM(2)+(V00(2)-FAZ3(I,2))/57.3)+
+     *AMP3(I,3)*COS(OM(3)+(V00(3)-FAZ3(I,3))/57.3)+
+     *AMP3(I,4)*COS(OM(4)+(V00(4)-FAZ3(I,4))/57.3)
+      ENDDO
+C
+      DO I=1,IS1
+      DO J=1,JS1
+      YM2(I,J)=YM2(I,J)+Y2(I,J)
+      ENDDO
+      ENDDO
+C------------------------------------
+C     DO I=1,NI
+C     DO K=1,NK
+C     IF(MAP(I,K).EQ.8888.)GO TO 8000
+C      CT1=24.3*FI1(I,K)*COS(D(1)+2.*DL(I,K))     ! - M2
+C      CT2=11.3*FI1(I,K)*COS(D(2)+2.*DL(I,K))     ! - S2
+C      CT3=14.5*FI2(I,K)*COS(D(3)+DL(I,K))        ! - K1
+C      CT4=10.1*FI2(I,K)*COS(D(4)+DL(I,K))        ! - O1
+C     YS(I,K)=CT1+CT2+CT3+CT4
+C8000 CONTINUE
+C     ENDDO
+C     ENDDO
+
+
+C
+      DO 251 J=2,JS
+      J1=J+1
+      J2=J-1
+      DO 251 I=2,IS
+      HHT=HU(I,J)
+      IF(HHT.EQ.8888.) GOTO 251
+      UUK=IKU(I,J)
+      I1=I+1
+      I2=I-1
+      BBB(1)=HV(I,J2)
+      BBB(2)=HV(I,J)
+      BBB(3)=HV(I1,J2)
+      BBB(4)=HV(I1,J)
+      CCC(1)=VP1(I,J2)
+      CCC(2)=VP1(I,J)
+      CCC(3)=VP1(I1,J2)
+      CCC(4)=VP1(I1,J)
+      VS=0.
+      DO 252 IJ=1,4
+      IF(BBB(IJ).EQ.8888.) GOTO 252
+      A=CCC(IJ)/BBB(IJ)
+      VS=VS+(BBB(IJ)+HHT)*A
+  252 CONTINUE
+      UIJ=UP1(I,J)
+      IF(I.EQ.IS) GOTO 253
+      IF(HU(I1,J).EQ.8888.) GOTO 253
+      UU1=UP1(I1,J)
+      GOTO 254
+  253 UU1=UIJ
+  254 IF(I.EQ.1) GOTO 255
+      IF(HU(I2,J).EQ.8888.) GOTO 255
+      UU2=UP1(I2,J)
+      GOTO 256
+  255 UU2=UIJ
+  256 A=(CCC(1)+CCC(2)+CCC(3)+CCC(4))/UUK
+C      IIIP=(IIP(I,J)+IIP(I,J2))/2
+C      A1=0.5*(ANS(I,J)+ANS(I,J2))
+      YY1=Y2(I,J)
+      YY2=Y2(I,J2)
+      HH1=HHT+(YY1+YY2)*0.5
+      IF(HH1.LE.50.)HH1=50.
+      H1=AA1*HH1
+      H2=AA2/HH1/HH1
+C      IF(IIIP.NE.0)H2=AA3/HH1/HH1
+      UUP=(UIJ+DT1*(-(YY1-YY2)*H1
+     *-HH1*0.5*(DPX(I,J)+DPX(I1,J))
+C     *-DRX(I,J)
+     *+0.125*FU(I,J)*VS
+     *+(1.-A1)*0.5*(TX(I,J)+TX(I1,J))
+     *+C3*(UU1+UU2+UP1(I,J1)+UP1(I,J2)-4.*UIJ)))
+     */(1.+H2*SQRT(UIJ*UIJ+A*A))
+      EUU=EUU+UUP*UUP
+      UP2(I,J)=UUP
+  251 CONTINUE
+C
+c      DO 278 I=1,IS
+c      HHT=HT(I,1)
+cc      HHT=HU(I,2)
+c      IF(HHT.EQ.8888.) GOTO 278
+c      UP2(I,1)=-Y2(I,1)*SQRT(981.*HHT)
+cC      UP2(I,1)=UP2(I,2)
+c  278 CONTINUE
+c      DO I=1,15
+c      HHT=HT(I,94)
+c      UP2(I,95)=Y2(I,94)*SQRT(981.*HHT)
+cC      UP2(I,95)=UP2(I,94)
+c      ENDDO
+C
+      DO 361 J=2,JS
+      J1=J+1
+      J2=J-1
+      DO 361 I=2,IS
+      HHT=HV(I,J)
+      IF(HHT.EQ.8888.) GOTO 361
+      UUK=IKV(I,J)
+      I1=I+1
+      I2=I-1
+      BBB(1)=HU(I,J)
+      BBB(2)=HU(I2,J)
+      BBB(3)=HU(I2,J1)
+      BBB(4)=HU(I,J1)
+      CCC(1)=UP2(I,J)
+      CCC(2)=UP2(I2,J)
+      CCC(3)=UP2(I2,J1)
+      CCC(4)=UP2(I,J1)
+      US=0.
+      DO 362 IJ=1,4
+      IF(BBB(IJ).EQ.8888.) GOTO 362
+      A=CCC(IJ)/BBB(IJ)
+      US=US+(BBB(IJ)+HHT)*A
+  362 CONTINUE
+      VIJ=VP1(I,J)
+      IF(J.EQ.JS) GOTO 363
+      IF(HV(I,J1).EQ.8888.) GOTO 363
+      VV1=VP1(I,J1)
+      GOTO 364
+  363 VV1=VIJ
+  364 IF(J.EQ.1) GOTO 365
+      IF(HV(I,J2).EQ.8888.) GOTO 365
+      VV2=VP1(I,J2)
+      GOTO 366
+  365 VV2=VIJ
+  366 A=(CCC(1)+CCC(2)+CCC(3)+CCC(4))/UUK
+C      A1=0.5*(ANS(I,J)+ANS(I2,J))
+C      IIIP=(IIP(I,J)+IIP(I2,J))/2
+      YY1=Y2(I2,J)
+      YY2=Y2(I,J)
+      HH1=HHT+(YY1+YY2)*0.5
+      IF(HH1.LE.50.)HH1=50.
+      H1=AA1*HH1
+      H2=AA2/HH1/HH1
+c      IF(IIIP.NE.0)H2=AA3/HH1/HH1
+      UUP=(VIJ+DT1*((YY2-YY1)*H1
+     *-HH1*0.5*(DPY(I,J)+DPY(I,J1))
+C     *-DRY(I,J)
+     *-0.125*FV(I,J)*US
+     *+(1.-A1)*0.5*(TY(I,J)+TY(I,J1))
+     *+C3*(VV1+VV2+VP1(I1,J)+VP1(I2,J)-4.*VIJ)))
+     */(1.+H2*SQRT(VIJ*VIJ+A*A))
+      EUU=EUU+UUP*UUP
+      VP2(I,J)=UUP
+  361 CONTINUE
+C
+c      DO 277 J=1,JS
+c      HHT=HT(1,J)
+cC      HHT=HV(2,J)
+c      IF(HHT.EQ.8888.) GOTO 277
+c      VP2(1,J)=Y2(1,J)*SQRT(981.*HHT)
+cC      VP2(1,J)=VP2(2,J)
+c  277 CONTINUE
+c      DO J=91,93
+c      VP2(73,J)=Y2(73,J)*SQRT(981.*HT(73,J))
+cc      VP2(73,J)=VP2(74,J)
+c      ENDDO
+C
+c      call ADVSH(IS,JS,IS1,JS1,IS2,JS2,DT1,DX,C10,
+c     *HU,HV,KUSH,KVSH,UP2,VP2,APX2,APY2,CD2)
+C
+  444 CONTINUE
+C
+      DO I=1,IJS1
+      YM2(I,1)=YM2(I,1)/MM3
+      ENDDO
+C
+      RETURN
+      END
+
+
+      subroutine STRESS(IS,JS,IS1,JS1,IJS1,IS3,JS3,NGR,NGR1,DX,DT1,KT1,
+     *ANS,AN1,HST,U,V,CD2,EXX,EYY,EXY,EPR,SXX,SYY,SXY)
+c
+      real ANS(IS1,JS1),AN1(IS1,JS1,NGR1),HST(NGR),
+     *EXX(IS1,JS1),EYY(IS1,JS1),EXY(IS1,JS1),
+     *EPR(IS3,JS3),U(IS1,JS1),V(IS1,JS1),CD2(IS1,JS1),
+     *SXX(IS1,JS1),SYY(IS1,JS1),SXY(IS1,JS1)
+      integer KT1(IS1,JS1)
+C
+      DO I=1,IS
+      I1=I+1
+      DO J=1,JS
+      EPR(I1,J+1)=EXX(I,J)
+      ENDDO
+      ENDDO
+      CALL DEFORM(IS,JS,IS1,JS1,IS3,JS3,IJS1,DX,DT1,KT1,EPR,U,V,CD2,1)
+      DO I=1,IS
+      I1=I+1
+      DO J=1,JS
+      J1=J+1
+      EXX(I,J)=EPR(I1,J1)
+      EPR(I1,J1)=EYY(I,J)
+      ENDDO
+      ENDDO
+      CALL DEFORM(IS,JS,IS1,JS1,IS3,JS3,IJS1,DX,DT1,KT1,EPR,U,V,CD2,2)
+      DO I=1,IS
+      I1=I+1
+      DO J=1,JS
+      J1=J+1
+      EYY(I,J)=EPR(I1,J1)
+      EPR(I1,J1)=EXY(I,J)
+      ENDDO
+      ENDDO
+      CALL DEFORM(IS,JS,IS1,JS1,IS3,JS3,IJS1,DX,DT1,KT1,EPR,U,V,CD2,3)
+      DO I=1,IS
+      I1=I+1
+      DO J=1,JS
+      EXY(I,J)=EPR(I1,J+1)
+      ENDDO
+      ENDDO
+C
+      DO 1 I=1,IS
+      DO 1 J=1,JS
+      IF(KT1(I,J).EQ.0) GOTO 1
+      IF(ANS(I,J).LT.0.95) GOTO 3
+C
+      A=EXX(I,J)+EYY(I,J)
+      B=(SXX(I,J)+SYY(I,J))*0.5
+      IF(A.GT.0..AND.B.GE.0.) GOTO 3
+C
+      SSXX=EXX(I,J)*1.E7
+      SSYY=EYY(I,J)*1.E7
+      SSXY=EXY(I,J)*1.E7
+      A=(SSXX+SSYY)*0.5
+      B1=(SSXX-SSYY)*0.5
+      B2=SQRT(B1*B1+SSXY*SSXY)
+      A1=A+B2
+      A2=A-B2
+c
+      DO K=2,NGR
+      IF(AN1(I,J,K+1).GT.0.05) GOTO 5
+      ENDDO
+    5 SCRIT=-0.43E5*HST(K)**2
+      IF(A2.GT.SCRIT.AND.A1.LT..0) GOTO 4
+      IF(A2.LT.SCRIT) A2=SCRIT
+      IF(A1.LT.SCRIT) A1=SCRIT
+      IF(A1.GT.0.) A1=0.
+      IF(A2.GT.0.) A2=0.       !!!!!!!!!!!!!!!!
+      ANGL=ATAN2(SSXY,B1)*0.5
+      COR=COS(-ANGL)
+      SOR=SIN(-ANGL)
+      SXX(I,J)=A1*COR*COR+A2*SOR*SOR
+      SYY(I,J)=A1*SOR*SOR+A2*COR*COR
+      SXY(I,J)=-(A1-A2)*COR*SOR
+      EXX(I,J)=SXX(I,J)*1.E-7
+      EYY(I,J)=SYY(I,J)*1.E-7
+      EXY(I,J)=SXY(I,J)*1.E-7
+      GOTO 1
+    3 EXX(I,J)=0.
+      EYY(I,J)=0.
+      EXY(I,J)=0.
+      SXX(I,J)=0.
+      SYY(I,J)=0.
+      SXY(I,J)=0.
+      GOTO 1
+ 4    SXX(I,J)=SSXX
+      SYY(I,J)=SSYY
+      SXY(I,J)=SSXY
+    1 CONTINUE
+C
+      RETURN
+      END
+
+
+      PARAMETER (IS=132,JS=104,KS=18,IS1=133,JS1=105,KS1=19)
+      PARAMETER (IS3=134,JS3=106,NGR=5,NGR1=6)
+      PARAMETER (LI=4,LJ=35)
+C  ocean block arrays
+      REAL MAP(IS1,JS1),Z(KS),DZ(KS1),DZ1(KS),
+     *U1(IS1,JS1,KS),U2(IS1,JS1,KS),V1(IS1,JS1,KS),V2(IS1,JS1,KS),
+     *FKU(IS1,JS1),DRX(IS1,JS1),DRY(IS1,JS1),SKZ(IS1,JS1)
+C
+      DOUBLE PRECISION UCA(KS1),UNU(KS1),VCA(KS1),VNU(KS1)
+C
+      REAL HU(IS1,JS1),HV(IS1,JS1),Y1(IS1,JS1),Y2(IS1,JS1),
+     *UP1(IS1,JS1),UP2(IS1,JS1),VP1(IS1,JS1),VP2(IS1,JS1),
+     *FI(IS1,JS1),DL(IS1,JS1),FU(IS1,JS1),FV(IS1,JS1),
+     *YM1(IS1,JS1),YM2(IS1,JS1),ADX(IS1,JS1,KS1),ADY(IS1,JS1,KS1),
+     *AMP(LI,LJ),FAZ(LI,LJ),QQ(LI),Q(LI),YYV(5000),V00(LI)
+     *,YMAX(IS1,JS1)
+     *,AMP1(133,4),FAZ1(133,4)
+     *,AMP2(105,4),FAZ2(105,4)
+     *,AMP3(133,4),FAZ3(133,4)
+     *,UF1(5000,KS),VF1(5000,KS)
+     *,UF2(5000),VF2(5000)
+     *,UUF(5000),VVF(5000)
+C
+      REAL T1(IS1,JS1,KS),T2(IS1,JS1,KS),S1(IS1,JS1,KS),S2(IS1,JS1,KS)
+C
+      REAL HT(IS1,JS1),RO(IS1,JS1,KS),
+     *W(IS1,JS1,KS1),TT(KS1),SS(KS1),RR(KS1),SKT(IS1,JS1),
+     *CD(IS1,JS1,KS),APX(IS1,JS1,KS),APY(IS1,JS1,KS),APZ(IS1,JS1,KS1)
+C
+      INTEGER KK1(IS1,JS1),KT1(IS1,JS1),IDX(IS1,JS1),IDY(IS1,JS1),
+     *IT(IS1,JS1),KUSH(IS1,JS1),KVSH(IS1,JS1),IKU(IS1,JS1),IKV(IS1,JS1)
+     *,IIP(IS1,JS1)
+C   ice block arrays
+      REAL U0(IS1,JS1),V0(IS1,JS1),U(IS1,JS1),V(IS1,JS1),
+     *WICE1(IS1,JS1,NGR),AN1(IS1,JS1,NGR1),HICE(IS1,JS1,NGR),
+     *AN3(IS1,JS1),WICES(IS1,JS1),HICES(IS1,JS1),ANS(IS1,JS1),
+     *CD2(IS1,JS1),TXIC(IS1,JS1),TYIC(IS1,JS1),
+     *APX2(IS1,JS1),APY2(IS1,JS1),EXX(IS1,JS1),EYY(IS1,JS1),
+     *EXY(IS1,JS1),EPR(IS3,JS3),SXX(IS1,JS1),SYY(IS1,JS1),SXY(IS1,JS1),
+     *HSNOW(IS1,JS1,NGR),TPAR(NGR1),SPAR(NGR1),
+     *ANP(NGR),DANP(NGR),HSNP(NGR),HICP(NGR),
+     *SICST(NGR),HST(NGR),HMAX(NGR),ALSN(12)
+C   meteorological data arrays
+      REAL TX(IS1,JS1),TY(IS1,JS1),DPX(IS1,JS1),DPY(IS1,JS1),
+     *TX1(IS1,JS1),TY1(IS1,JS1),DPX1(IS1,JS1),DPY1(IS1,JS1),
+C     *TATM1(IS1,JS1,12),TATM(IS1,JS1),CLOUD1(IS1,JS1,12),
+C     *CLOUD(IS1,JS1),HUMID(IS1,JS1),PATM(IS1,JS1),WIND(IS1,JS1),
+     *WMONTH(12),SFAL(12),
+     *WINDX1(IS1,JS1),WINDY1(IS1,JS1),WINDX(IS1,JS1),
+     *WINDY(IS1,JS1),
+C
+     *P(1420,100),PP(1420),X01(1330),Y01(1330),
+     *TC1(IS1,KS),SC1(IS1,KS),
+     *TC2(JS1,KS),SC2(JS1,KS),
+     *TC3(15,KS),SC3(15,KS),
+     *TC4(3,KS),SC4(3,KS)
+C
+      INTEGER NP(135,107),NP1(1330,4),NAT(LI)
+C
+      data Z/250.,500.,1000.,1500.,2000.,2500.,3000.,4000.,
+     *5000.,7500.,10000.,15000.,20000.,25000.,
+     *30000.,40000.,50000.,60000./
+C
+      data HST/0.2,0.5,0.95,1.6,2.5/
+      data HMAX/0.3,0.7,1.20,2.0,50./
+      data SICST/10.E-3,6.E-3,5.E-3,4.5E-3,4.E-3/
+      data ALSN/0.85,0.85,0.83,0.81,0.82,0.78,0.64,0.69,0.84,
+     *0.85,0.85,0.85/
+C---------------------
+      GOD=2000.
+      MES=8
+      DEN=19.
+      HOUR=0.
+C---------------------
+      NAT(1)=GOD
+      NAT(2)=MES
+      NAT(3)=DEN
+      NAT(4)=HOUR
+      OPEN(2,FILE='COMPL.WTR')
+C-----------------------------------------------------------------
+      KL1=0                ! KL1=1 if you need in
+      NOM=1                ! reading initial data
+C-----------------------------------------------------------------
+      DT1=120.             ! barotropic mode time step
+      DT=3600.             ! baroclinic  mode time step
+      MM1=60               ! number of simulation cicles (days)
+      MM2=24               ! number of steps with DT
+      MM3=30               ! number of steps with DT1 (DT/DT1)
+      MM4=1                ! number of months
+      MM5=1                ! number of years
+      DX=1389000.          ! spatial step (cm)
+      KKB=1
+C--------------------------------------------------------------------
+      AH=7.5E6
+      AHT=7.5E6
+      AHS=7.5E6
+      G=981.
+      ROC=1.
+      CP=0.958
+      IS2=IS-1
+      JS2=JS-1
+      KS2=KS-1
+      IJS1=IS1*JS1
+      IJKS1=IJS1*KS
+C***** constants for ocean block
+      C1=G/ROC
+      C2=DT/DX
+      C3=AH/DX/DX
+      C4=AHT/DX/DX*DT
+      C5=AHS/DX/DX*DT
+      C8=0.25/DX
+      C9=0.5/DX
+      C10=DT1/DX
+C***** constants for ice dynamics block
+      C11=G/DX*0.005
+      C15=COS(15./57.3)
+      C16=SIN(15./57.3)
+      C17=0.0055*1000./910.
+C-------------------------------------------------
+      OPEN(UNIT=3,FILE='GRM2')
+      READ(3,*)(AMP1(I,1),I=1,133)
+      READ(3,*)(FAZ1(I,1),I=1,133)
+      READ(3,*)
+      READ(3,*)(AMP2(I,1),I=1,105)
+      READ(3,*)(FAZ2(I,1),I=1,105)
+      READ(3,*)
+      READ(3,*)(AMP3(I,1),I=1,133)
+      READ(3,*)(FAZ3(I,1),I=1,133)
+      CLOSE(3)
+      OPEN(UNIT=3,FILE='GRS2')
+      READ(3,*)(AMP1(I,2),I=1,133)
+      READ(3,*)(FAZ1(I,2),I=1,133)
+      READ(3,*)
+      READ(3,*)(AMP2(I,2),I=1,105)
+      READ(3,*)(FAZ2(I,2),I=1,105)
+      READ(3,*)
+      READ(3,*)(AMP3(I,2),I=1,133)
+      READ(3,*)(FAZ3(I,2),I=1,133)
+      CLOSE(3)
+      OPEN(UNIT=3,FILE='GRK1')
+      READ(3,*)(AMP1(I,3),I=1,133)
+      READ(3,*)(FAZ1(I,3),I=1,133)
+      READ(3,*)
+      READ(3,*)(AMP2(I,3),I=1,105)
+      READ(3,*)(FAZ2(I,3),I=1,105)
+      READ(3,*)
+      READ(3,*)(AMP3(I,3),I=1,133)
+      READ(3,*)(FAZ3(I,3),I=1,133)
+      CLOSE(3)
+      OPEN(UNIT=3,FILE='GRO1')
+      READ(3,*)(AMP1(I,4),I=1,133)
+      READ(3,*)(FAZ1(I,4),I=1,133)
+      READ(3,*)
+      READ(3,*)(AMP2(I,4),I=1,105)
+      READ(3,*)(FAZ2(I,4),I=1,105)
+      READ(3,*)
+      READ(3,*)(AMP3(I,4),I=1,133)
+      READ(3,*)(FAZ3(I,4),I=1,133)
+      CLOSE(3)
+      write(2,*)' gran'
+C--------------------------------------------
+      QQ(1)=28.9841042     ! - M2
+      QQ(2)=30.            ! - S2
+      QQ(3)=15.041069      ! - K1
+      QQ(4)=13.943036      ! - O1
+C--------------------------------------------
+      CALL DATTE(V00,LI,NAT)
+C--------------------------------------------
+      DO  J=1,4
+      Q(J)=QQ(J)*DT1/3600./57.2958
+      ENDDO
+C----------------------------------------------------------------
+      OPEN(1,FILE='KOORD.DAT')
+      READ(1)FI,DL
+      CLOSE(1)
+C-------------------------------------------------------------------
+      WRITE(*,*)' to coup1'
+      WRITE(2,*)' to coup1'
+      CALL coup1(IS1,JS1,KS,KS1,HT,MAP,HU,HV,FI,DL,FU,FV,FKU,
+     *Z,DZ,DZ1,KK1,KT1,IDX,IDY,IT,KUSH,KVSH,DX,DT1,S2,T2,ADX,ADY)
+      write(2,*)' coup1'
+      write(*,*)' coup1'
+C-------------------------------------------------------------------
+      CALL IKUV(IS1,JS1,HU,HV,IKU,IKV)
+      write(*,*)' ikuv'
+      write(2,*)' ikuv'
+C-------------------------------------------------------------------
+C                       initial conditions
+C-----------------------------------------------------------------
+      GO TO 9090
+C********** atmospheric pressure and wind stresses ***************
+C
+      OPEN(1,FILE='DAV3_4.66')
+      READ(1,*)MM1
+      DO J=1,MM1+1
+      READ(1,1009)
+      DO I=1,1420
+      READ(1,*)A,A,A,P(I,J)
+      ENDDO
+      ENDDO
+      write(*,*)' dav'
+      CLOSE(1)
+ 1009 FORMAT(1X)
+C
+      OPEN(1,FILE='intdav')
+      READ(1,*)((NP1(I,J),J=1,4),I=1,1330)
+      READ(1,*)(X01(I),I=1,1330)
+      READ(1,*)(Y01(I),I=1,1330)
+      CLOSE(1)
+C
+      OPEN(UNIT=1,FILE='NP1')
+      READ(1) NP
+      CLOSE(1)
+C
+      WRITE(*,*)' patm'
+C------------------------------------------------------
+ 9090 CONTINUE
+C---------------------------------------------------------
+      IF(KL1.NE.0) THEN
+      open(UNIT=15,FILE='CLIM.PRO')
+      READ(15) KKB,U2,V2,RO,T2,S2,UP2,VP2,Y2,YM1,YM2,TTT,U,V,
+     *EXX,EYY,EXY,SXX,SYY,SXY,AN1,HICE,WICE1,ANS,WICES,HICES,HSNOW,
+     *TX1,TY1,SKT,KMM
+      KKB=KKB+1
+      CLOSE(15)
+      ENDIF
+C***************************************************************************
+C     the beginning of time integration loop
+C***************************************************************************
+c      DO I=1,1420
+c      PP(I)=P(I,KKB)
+c      ENDDO
+C------------------------------------------------------------
+C      CALL WIND1(PP,TX1,TY1,DPX1,DPY1,WINDX1,WINDY1,HT,
+C     *NP,NP1,X01,Y01,DX,IS1,JS1)
+C      write(*,*)' wind'
+C------------------------------------------------------------
+C      GO TO 2222
+C------------------------------------------------------------
+      DO 1000 MMM=1,MM5           ! year loop
+      NDAY=0
+C***************************************************************************
+      DO 1001 LLL=1,MM4           ! month loop
+C***************************************************************************
+      DO 555 KKK=KKB,MM1        ! loop inside month, MM1 - number of days
+      NDAY=NDAY+1
+      ESS=EUU-ECC
+      write(*,*) ' Day',KKK,' Month',LLL,' EUU= ',EUU
+      ECC=EUU
+      EUU=0.
+C
+C      DO I=1,IS1
+C      DO J=1,JS1
+C      DPX(I,J)=DPX1(I,J)
+C      DPY(I,J)=DPY1(I,J)
+C      WINDX(I,J)=WINDX1(I,J)
+C      WINDY(I,J)=WINDY1(I,J)
+C      TX(I,J)=TX1(I,J)
+C      TY(I,J)=TY1(I,J)
+C      ENDDO
+C      ENDDO
+CC
+C      DO I=1,1420
+C      PP(I)=P(I,KKK+1)
+C      ENDDO
+C--------------------------------------------------------
+C      CALL WIND1(PP,TX1,TY1,DPX1,DPY1,WINDX1,WINDY1,HT,
+C     *NP,NP1,X01,Y01,DX,IS1,JS1)
+C      write(*,*)' wind1'
+C********************************************************************
+      DO 333 III=1,MM2                 ! daily loop with DT
+C********************************************************************
+C
+C*****  time interpolation block for wind stresses
+      GO TO 226  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+C
+      IF(III.EQ.1) GOTO 226
+      B=MM2-III+2
+      DO I=1,IS1
+      DO J=1,JS1
+      A=TX(I,J)
+      TX(I,J)=A+(TX1(I,J)-A)/B
+      A=TY(I,J)
+      TY(I,J)=A+(TY1(I,J)-A)/B
+      A=DPX(I,J)
+      DPX(I,J)=A+(DPX1(I,J)-A)/B
+      A=DPY(I,J)
+      DPY(I,J)=A+(DPY1(I,J)-A)/B
+      A=WINDX(I,J)
+      WINDX(I,J)=A+(WINDX1(I,J)-A)/B
+      A=WINDY(I,J)
+      WINDY(I,J)=A+(WINDY1(I,J)-A)/B
+      ENDDO
+      ENDDO
+  226 CONTINUE
+C*****   arrays redetermination block
+      DO I=1,IJKS1
+      V1(I,1,1)=V2(I,1,1)
+      U1(I,1,1)=U2(I,1,1)
+      ENDDO
+C========================================================================
+C    ice dynamical and thermodynamical block
+C========================================================================
+C**** heat fluxes, melting and freezing calculation
+      KCC=KCC+1
+C===================================
+C      Ice dynamical block
+C===================================
+C      Drift velocity  calculation
+C-----------------------------------
+      GO TO 5009
+C
+      DO 777 JJJ=1,MM3
+C
+      DO I=1,IJS1
+      U0(I,1)=U(I,1)
+      V0(I,1)=V(I,1)
+      TXIC(I,1)=0.
+      TYIC(I,1)=0.
+      ENDDO
+C----------------------------------------------------------------
+C      call STRESS(IS,JS,IS1,JS1,IJS1,IS3,JS3,NGR,NGR1,DX,DT1,KT1,
+C     *ANS,AN1,HST,U,V,CD2,EXX,EYY,EXY,EPR,SXX,SYY,SXY)
+C----------------------------------------------------------------
+      DO 300 I=2,IS
+      I1=I+1
+      I2=I-1
+      DO 300 J=2,JS
+      IF(KK1(I,J).EQ.0) GOTO 300
+      J1=J+1
+      J2=J-1
+      HHT=0.25*(HICES(I,J)+HICES(I,J2)+HICES(I2,J)+HICES(I2,J2))
+      IF(HHT.LT.0.01) GOTO 301
+      UIJ=U0(I,J)
+      VIJ=V0(I,J)
+      A=0.
+      A1=U2(I,J,1)/100.
+      B1=V2(I,J,1)/100.
+      A=A1-UIJ
+      B=B1-VIJ
+      A=C17*SQRT(B*B+A*A)/HHT
+      TXIC(I,J)=A*(A1*C15-B1*C16)
+      TYIC(I,J)=A*(B1*C15+A1*C16)
+      A3=0.25*(ANS(I,J)+ANS(I,J2)+ANS(I2,J)+ANS(I2,J2))
+      IF(A3.GT.2.) GOTO 302
+C**** stresses
+      A4=SXY(I2,J)-SXY(I,J2)
+      B4=SXY(I,J)-SXY(I2,J2)
+      FIX=(SXX(I2,J)+SXX(I,J)-SXX(I2,J2)-SXX(I,J2)+A4-B4)*C12
+      FIY=(SYY(I2,J2)+SYY(I2,J)-SYY(I,J2)-SYY(I,J)+A4+B4)*C12
+C*****
+      B3=HHT*9100.
+      A2=UIJ+DT1*(TX(I,J)/B3+TXIC(I,J)*A3+FKU(I,J)*VIJ-
+     *C11*(YM2(I2,J)-YM2(I2,J2)+YM2(I,J)-YM2(I,J2))+FIX/910.)
+      B2=VIJ+DT1*(TY(I,J)/B3+TYIC(I,J)*A3-FKU(I,J)*UIJ-
+     *C11*(YM2(I2,J2)-YM2(I,J2)+YM2(I2,J)-YM2(I,J))+FIY/910.)
+      B1=DT1*A*C16
+      A1=1.+DT1*A*C15
+      AA=A1*A1+B1*B1
+      U(I,J)=(A1*A2+B1*B2)/AA
+      V(I,J)=(A1*B2-B1*A2)/AA
+  302 IF(JJJ.NE.MM3) GOTO 300
+      B3=HHT*9100.
+      TXIC(I,J)=-(TXIC(I,J)-A*(U(I,J)*C15-V(I,J)*C16))*B3
+      TYIC(I,J)=-(TYIC(I,J)-A*(V(I,J)*C15+U(I,J)*C16))*B3
+      GOTO 300
+  301 U(I,J)=0.
+      V(I,J)=0.
+  300 CONTINUE
+C----------------------- Граничные условия для льда ----------------
+      DO I=1,IS1
+      U(I,1)=U(I,2)
+      V(I,1)=V(I,2)
+      ENDDO
+      DO I=1,IS1
+      U(I,JS1)=U(I,JS)
+      V(I,JS1)=V(I,JS)
+      ENDDO
+      DO J=1,JS1
+      U(1,J)=U(2,J)
+      V(1,J)=V(2,J)
+      ENDDO
+C----------------------------
+  777 CONTINUE
+C*****  ice concentration and thickness forcasting
+      DO K=1,NGR
+      K1=K+1
+      DO 310 I=1,IS1
+      DO 310 J=1,JS1
+  310 AN3(I,J)=AN1(I,J,K1)
+C-------------------------------------------------
+      call ADV2D(IS,JS,IS1,JS1,DT,DX,C2,KT1,IT,
+     *IDX,IDY,U,V,AN3,APX2,APY2,CD2)
+C-------------------------------------------------
+      DO I=1,IS1
+      AN3(I,JS)=AN1(I,JS,K1)
+      ENDDO
+      DO J=1,JS1
+      AN3(1,J)=AN1(1,J,K1)
+      ENDDO
+C
+      DO 312 I=1,IS1
+      DO 312 J=1,JS1
+      AN1(I,J,K1)=AN3(I,J)
+  312 AN3(I,J)=WICE1(I,J,K)
+C-------------------------------------------------
+      call ADV2D(IS,JS,IS1,JS1,DT,DX,C2,KT1,IT,
+     *IDX,IDY,U,V,AN3,APX2,APY2,CD2)
+C-------------------------------------------------
+      DO I=1,IS1
+      AN3(I,JS)=WICE1(I,JS,K)
+      ENDDO
+      DO J=1,JS1
+      AN3(1,J)=WICE1(1,J,K)
+      ENDDO
+C
+      DO 313 I=1,IS1
+      DO 313 J=1,JS1
+  313 WICE1(I,J,K)=AN3(I,J)
+      ENDDO
+C----------------- control of the ice categories -------------------
+      call REDIS(IS1,JS1,KT1,NGR,NGR1,WICE1,AN1,HICE,
+     *WICES,ANS,HICES,HSNOW,HSNP,HST,HMAX)
+C-------------------------------------------------------------------
+ 5009 CONTINUE
+C-----------------Vertical speed W -----------------------
+      DO 30 I=1,IS
+      I1=I+1
+      I2=I-1
+      IX1=IDX(I,1)
+      DO 30 J=1,JS
+      J1=J+1
+      IX2=IDX(I,J1)
+      KI=KT1(I,J)
+      IF(KI.EQ.0) GOTO 48
+      J2=J-1
+      IY1=IDY(I,J)
+      IY2=IDY(I1,J)
+      DO 40 K=1,KI
+      K1=K+1
+      A=U1(I,J,K)+U1(I1,J,K)
+      AA=U1(I,J1,K)+U1(I1,J1,K)
+      IF(K.EQ.1) AU=A+AA
+c      IF(IX1.LT.K.OR.IX2.LT.K) GOTO 37
+      TT(K)=AA-A
+      GOTO 38
+   37 TT(K)=0.
+   38 B=V1(I,J,K)+V1(I,J1,K)
+      BB=V1(I1,J,K)+V1(I1,J1,K)
+      IF(K.EQ.1) AV=B+BB
+c      IF(IY1.LT.K.OR.IY2.LT.K) GOTO 39
+      SS(K)=B-BB
+      GOTO 40
+   39 SS(K)=0.
+   40 CONTINUE
+C
+      YMM=YM2(I,J)
+      IF(IX1.NE.0) GOTO 31
+      IF(IX2.EQ.0) GOTO 42
+      HH1=YM2(I,J1)-YMM
+      GOTO 32
+   42 HH1=0.
+      GOTO 32
+   31 CONTINUE
+      IF(IX2.NE.0) GOTO 33
+      IF(IX1.EQ.0) GOTO 43
+      HH1=YMM-YM2(I,J2)
+      GOTO 32
+   43 HH1=0.
+      GOTO 32
+   33 HH1=0.5*(YM2(I,J1)-YM2(I,J2))
+   32 CONTINUE
+      IF(IY1.NE.0) GOTO 34
+      IF(IY2.EQ.0) GOTO 44
+      HH2=YM2(I2,J)-YMM
+      GOTO 35
+   44 HH2=0.
+      GOTO 35
+   34 CONTINUE
+      IF(IY2.NE.0) GOTO 36
+      IF(IY1.EQ.0) GOTO 45
+      HH2=YMM-YM2(I1,J)
+      GOTO 35
+   45 HH2=0.
+      GOTO 35
+   36 HH2=0.5*(YM2(I2,J)-YM2(I1,J))
+   35 A=-(YMM-YM1(I,J))/DT-(HH1*AU+HH2*AV)*C8
+      W(I,J,1)=A
+      YM1(I,J)=YMM
+      IF(KI.LT.2) GOTO 48
+      DO 46 K=2,KI
+      K2=K-1
+      A=A-(TT(K2)+SS(K2))*DZ1(K2)*C9
+   46 W(I,J,K)=A
+C
+   48 IX1=IX2
+   30 CONTINUE
+      write(*,*)' w'
+C==========================================================
+C   current velocities: horizontal component U' and V'
+C==========================================================
+      DO 200 I=2,IS
+      I1=I+1
+      I2=I-1
+      DO 200 J=2,JS
+      KI=KK1(I,J)
+      IF(KI.EQ.0) GOTO 200
+      J1=J+1
+      J2=J-1
+      HHT=MAP(I,J)
+      SUM=0.
+      SUM1=0.
+      ASA1=FKU(I,J)*0.5*DT
+      ASA=1.+ASA1*ASA1
+C      RI2J=RO(I2,J,1)
+C      RIJ=RO(I,J,1)
+C      RI2J2=RO(I2,J2,1)
+C      RIJ2=RO(I,J2,1)
+C      A=RI2J+RIJ-RI2J2-RIJ2
+C      B=RI2J2+RI2J-RIJ2-RIJ
+      DZZ=DZ(1)
+      ADZ1=W(I2,J2,1)+W(I2,J,1)+W(I,J2,1)+W(I,J,1)
+C******
+      DO 201 K=1,KI
+      K2=K-1
+      IF(HHT.EQ.Z(K)) GOTO 202
+      K1=K+1
+      DZZ1=DZ(K1)
+      UIJ=U1(I,J,K)
+      VIJ=V1(I,J,K)
+C**** integral of DRO/DX and DRO/DY calculation
+C      RI2J=RO(I2,J,K)
+C      RIJ2=RO(I,J2,K)
+C      RIJ=RO(I,J,K)
+C      RI2J2=RO(I2,J2,K)
+C      A1=RI2J+RIJ-RI2J2-RIJ2
+C      B1=RI2J2+RI2J-RIJ2-RIJ
+C      CC=C8*DZZ
+C      SUM=SUM+(A+A1)*CC
+C      SUM1=SUM1+(B+B1)*CC
+C*** Laplasian of  U' and  V'  calculation
+      SLAPU=U1(I,J2,K)+U1(I,J1,K)+U1(I2,J,K)+U1(I1,J,K)-4.*UIJ
+      SLAPV=V1(I1,J,K)+V1(I2,J,K)+V1(I,J1,K)+V1(I,J2,K)-4.*VIJ
+C**********
+      AUU=UIJ+ASA1*VIJ+DT*(-C1*SUM-DPX(I,J)+C3*SLAPU)
+      AVV=VIJ-ASA1*UIJ+DT*(-C1*SUM1-DPY(I,J)+C3*SLAPV)
+      U2(I,J,K)=(AUU+AVV*ASA1)/ASA
+      V2(I,J,K)=(AVV-AUU*ASA1)/ASA
+      A=A1
+      B=B1
+      DZZ=DZZ1
+      GOTO 201
+  202 U2(I,J,K)=0.
+      V2(I,J,K)=0.
+  201 CONTINUE
+  200 CONTINUE
+      write(*,*)' U & V'
+      write(2,*)' U & V'
+C
+C*******   vertical viscosity *************
+C
+      DO 210 I=2,IS
+      I2=I-1
+      DO 210 J=2,JS
+      KI=KK1(I,J)
+      IF(KI.EQ.0) GOTO 210
+      J2=J-1
+      HHT=MAP(I,J)
+      KI1=KI+1
+      KI2=KI-1
+C
+C****** calculation of viscosity coefficients NU=L*L*dU/dz
+C
+      YYY=0.25*(YM2(I2,J2)+YM2(I,J2)+YM2(I2,J)+YM2(I,J))
+      UIJ=U2(I,J,1)
+      VIJ=V2(I,J,1)
+      A=SQRT(UIJ*UIJ+VIJ*VIJ)
+      DO 211 K=1,KI
+      K1=K+1
+      UIJ=U2(I,J,K1)
+      VIJ=V2(I,J,K1)
+      B=SQRT(UIJ*UIJ+VIJ*VIJ)
+      FF=HHT-Z(K)+2.
+      FF1=Z(K)-YYY-2.
+      SL=0.4/HHT*FF*FF1*(1.-1.2*FF*FF1/HHT/HHT)/(4.*FF1/5000.+1.)
+      IF(K.NE.KI) THEN
+      RR(K)=SL*SL*ABS(B-A)/DZ(K1)
+      ELSE
+      RR(K)=SL*SL*ABS(B-A)/(HHT-Z(KI)+50.)
+      ENDIF
+      A=B
+  211 CONTINUE
+      SKZ(I,J)=RR(1)
+C       d i r e c t    s t e p
+      IF(KI.NE.1) THEN
+      DZZ=DZ1(1)
+      DZZZ=DZ(2)
+      ELSE
+      DZZ=HHT
+      DZZZ=HHT-Z(1)+50.
+      ENDIF
+      B=DT/DZZ/DZZZ*RR(1)
+      A=1.+B
+      UCA(1)=B/A
+      A1=0.25*(ANS(I,J)+ANS(I,J2)+ANS(I2,J)+ANS(I2,J2))
+      UNU(1)=(U2(I,J,1)+DT/DZZ*((1.-A1)*TX(I,J)+A1*TXIC(I,J)))/A
+      VCA(1)=UCA(1)
+      VNU(1)=(V2(I,J,1)+DT/DZZ*((1.-A1)*TY(I,J)+A1*TYIC(I,J)))/A
+      IF(KI.EQ.1) GOTO 212
+      IF(KI.EQ.2) GOTO 214
+      DO 215 K=2,KI2
+      K2=K-1
+      AA=DT/DZ1(K)
+      A=-AA/DZ(K)*RR(K2)
+      B=-AA/DZ(K+1)*RR(K)
+      A1=-1.+A+B
+      AA=A1-UCA(K2)*A
+      UCA(K)=B/AA
+      UNU(K)=(A*UNU(K2)-U2(I,J,K))/AA
+      AA=A1-VCA(K2)*A
+      VCA(K)=B/AA
+  215 VNU(K)=(A*VNU(K2)-V2(I,J,K))/AA
+C    i n v e r s e    s t e p
+  214 DZZ=HHT-0.5*(Z(KI)+Z(KI2))
+      DZZZ=HHT-Z(KI)+50.
+      B=DT/DZZ/DZ(KI)*RR(KI2)
+      A=1.+B+DT/DZZ/DZZZ*RR(KI)
+      BB=B/A
+      U2(I,J,KI)=(U2(I,J,KI)/A+BB*UNU(KI2))/(1.-BB*UCA(KI2))
+      V2(I,J,KI)=(V2(I,J,KI)/A+BB*VNU(KI2))/(1.-BB*VCA(KI2))
+      DO 213 K=1,KI2
+      KK=KI-K
+      K1=KK+1
+      U2(I,J,KK)=UCA(KK)*U2(I,J,K1)+UNU(KK)
+  213 V2(I,J,KK)=VCA(KK)*V2(I,J,K1)+VNU(KK)
+      GOTO 210
+  212 U2(I,J,KI)=UCA(KI)*U2(I,J,KI1)+UNU(KI)
+      V2(I,J,KI)=VCA(KI)*V2(I,J,KI1)+VNU(KI)
+  210 CONTINUE
+      write(2,*)' vertical viscosity'
+      write(*,*)' vertical viscosity'
+C========================================================================
+C    calculation of the vertically mean currents
+C========================================================================
+      CALL shal(IS,JS,KS,IS1,JS1,IS2,JS2,LI,LJ,DT1,DX,C1,C3,C9,C10,MM3,
+     *HT,HU,HV,KT1,KUSH,KVSH,Y2,UP1,UP2,VP1,VP2,YM2,
+     *FU,FV,DZ1,DRX,DRY,RO,TX,TY,DPX,DPY,TXIC,TYIC,ANS,APX2,APY2,CD2,
+     *EUU,IKU,IKV,Q,JJQ,NOM,AMP,FAZ,IIP,V00,AMP1,AMP2,AMP3,FAZ1,
+     *FAZ2,FAZ3)
+      write(*,*)' shallow'
+      write(2,*)' shallow'
+C========================================================================
+C      calculation of current velocities  U and  V
+C========================================================================
+      DO 280 I=2,IS
+      I2=I-1
+      DO 280 J=2,JS
+      KI=KK1(I,J)
+      IF(KI.EQ.0) GOTO 280
+      J2=J-1
+      SUM=0.
+      SUM1=0.
+      HHT=MAP(I,J)
+      DO K=1,KI
+      K1=K+1
+      IF(K.EQ.KI) THEN
+      IF(KI.NE.1) THEN
+      DZZ=HHT-0.5*(Z(KI)+Z(KI-1))
+      ELSE
+      DZZ=HHT
+      ENDIF
+      ELSE
+      DZZ=DZ1(K)
+      ENDIF
+      SUM=U2(I,J,K)*DZZ+SUM
+      SUM1=V2(I,J,K)*DZZ+SUM1
+      ENDDO
+      SUM=(-SUM+0.5*(UP2(I,J)+UP2(I2,J)))/HHT
+      SUM1=(-SUM1+0.5*(VP2(I,J)+VP2(I,J2)))/HHT
+      DO K=1,KI
+      U2(I,J,K)=U2(I,J,K)+SUM
+      V2(I,J,K)=V2(I,J,K)+SUM1
+      ENDDO
+  280 CONTINUE
+C---------------------- BOUNDARY CONDISIONS ---------------
+      DO I=1,IS1
+      DO K=1,KS
+      U2(I,1,K)=U2(I,2,K)
+      V2(I,1,K)=V2(I,2,K)
+      ENDDO
+      ENDDO
+      DO I=1,IS1
+      DO K=1,KS
+      U2(I,JS1,K)=U2(I,JS,K)
+      V2(I,JS1,K)=V2(I,JS,K)
+      ENDDO
+      ENDDO
+      DO J=1,JS1
+      DO K=1,KS
+      U2(1,J,K)=U2(2,J,K)
+      V2(1,J,K)=V2(2,J,K)
+      ENDDO
+      ENDDO
+C*******************************************************************
+      JJ=37
+      II=86
+      IKKK=IKKK+1
+      YYV(IKKK)=Y2(II,JJ)
+      DO K=1,KS
+      UF1(IKKK,K)=U2(II,JJ,K)
+      VF1(IKKK,K)=V2(II,JJ,K)
+      ENDDO
+C---------------------------------------
+  333 CONTINUE
+C---------------------------------------
+      DO I=1,IS1
+      DO J=1,JS1
+      IF(Y2(I,J).GT.YMAX(I,J))YMAX(I,J)=Y2(I,J)
+      ENDDO
+      ENDDO
+C
+      LLK=LLK+1
+      IF(LLK.EQ.3)THEN
+      open(1,FILE='CLIM2.PRO')
+      WRITE(1) KKB,U2,V2,RO,T2,S2,UP2,VP2,Y2,YM1,YM2,TTT,U,V,YYV
+      CLOSE(1)
+      ENDIF
+        IF(LLK.EQ.12)THEN
+        open(1,FILE='CLIM1.PRO')
+        WRITE(1) KKB,U2,V2,RO,T2,S2,UP2,VP2,Y2,YM1,YM2,TTT,U,V,YYV
+        LLK=0
+        CLOSE(1)
+        ENDIF
+C
+      OPEN(1,FILE='KURSK.Y')
+      DO I=1,IKKK
+      WRITE(1,*)I,YYV(I)
+      ENDDO
+      CLOSE(1)
+      OPEN(1,FILE='KURSK.U')
+      DO I=1,IKKK
+      WRITE(1,2009)I,(UF1(I,K),K=1,KS)
+      ENDDO
+      CLOSE(1)
+      OPEN(1,FILE='KURSK.V')
+      DO I=1,IKKK
+      WRITE(1,2009)I,(VF1(I,K),K=1,KS)
+      ENDDO
+      CLOSE(1)
+      OPEN(1,FILE='YMAX')
+      DO I=1,IS1
+      DO J=1,JS1
+      WRITE(1)YMAX
+      ENDDO
+      ENDDO
+      CLOSE(1)
+ 2009 FORMAT(I4,18F6.1)
+C
+  555 CONTINUE
+C
+ 1001 CONTINUE
+ 1000 CONTINUE
+      close(2)
+C
+ 2222 continue
+C
+      END
+

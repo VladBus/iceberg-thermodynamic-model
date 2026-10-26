@@ -1,0 +1,39 @@
+{
+  "run": "t5c3_90day_tcap",
+  "days": 90,
+  "configuration": {
+    "dt": 900,
+    "Ah": 20000,
+    "monotone": true,
+    "sponge": true,
+    "alpha_per_day": 1.0
+  },
+  "max_u_m_s": 1.1411083936691284,
+  "max_v_m_s": 0.6819583773612976,
+  "max_w_m_s": 0.0024002473801374435,
+  "ke30_j": 515546919704575.25,
+  "ke60_j": 610608056923279.2,
+  "ke90_j": 595146422057529.1,
+  "ke60_over_ke30": 1.1843889151217837,
+  "ke90_over_ke60": 0.9746782986394612,
+  "bounds_day90": {
+    "T_min": -2.0,
+    "T_max": 30.0,
+    "S_min_psu": 0.0,
+    "S_max_psu": 37.07408142089844,
+    "RO_min": -24.241744995117188,
+    "RO_negative_cells": 3187
+  },
+  "nan_cells_day90": 0,
+  "conservation": {
+    "volume_rel": 0.0,
+    "heat_rel": 0.0059881962522615045,
+    "salt_rel": 0.005782334260040668
+  },
+  "pass_no_nan": true,
+  "pass_max_u": true,
+  "pass_ke_ratio": true,
+  "pass_bounds": false,
+  "result": "FAIL \u2014 RO_min <0 (hard S/T caps create nonphysical density); no NaN",
+  "PASS": false
+}

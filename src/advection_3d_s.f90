@@ -43,6 +43,7 @@
 
 module advection_3d_s
     use param
+    use stage118_physics_switches, only: s118_monotone_advection
     implicit none
 
 contains
@@ -263,6 +264,39 @@ contains
         ! T3-CORRECTIVE (T-29): cd is computed only on 1:is,1:js
         s2(1:is, 1:js, :) = cd(1:is, 1:js, :)
 
+        ! T5-CORRECTIVE-3: optional positivity/monotone safety net.  The
+        ! existing FCT already uses the Zalesak limiter; this switch adds the
+        ! explicit hard positivity and no-new-extrema bound requested for the
+        ! storm branch.  Default OFF -> bit-identical legacy.
+        if (s118_monotone_advection) then
+            call monotone_positivity_s()
+        end if
+
     end subroutine advs
+
+    subroutine monotone_positivity_s()
+        integer :: i, j, k, ki
+        real :: smax_old
+
+        smax_old = 0.0
+        do j = 1, js
+            do i = 1, is
+                ki = kt1(i, j)
+                if (ki .eq. 0) cycle
+                do k = 1, ki
+                    smax_old = max(smax_old, s1(i, j, k))
+                end do
+            end do
+        end do
+        do j = 1, js
+            do i = 1, is
+                ki = kt1(i, j)
+                if (ki .eq. 0) cycle
+                do k = 1, ki
+                    s2(i, j, k) = min(max(s2(i, j, k), 0.0), smax_old)
+                end do
+            end do
+        end do
+    end subroutine monotone_positivity_s
 
 end module advection_3d_s

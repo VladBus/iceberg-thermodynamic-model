@@ -116,6 +116,8 @@ Stage 10 reports have been archived to `docs/wiki/stages/stage10/`. See the arch
 
 | `stage11.8.0_T5-CORRECTIVE-2_diagnostics.md` (storm diagnostics/root cause) | 11.8.0 T5-CORRECTIVE-2 | COMPLETE (diagnostic; no fix) | Config1 dt900/Ah20000: RO<0 day29, S<0 day46, T>10 day57, collapse days63-65 (T 532°C, S −9,859 PSU, RO −2.9e7). Boundary max |U| > interior days60-64; CA nmix baseline (no spike); wind work 20-64 GW vs dissipation 24-102 GW. Q1 peak 2020-03-16/day75 after collapse. **Root cause: ADVECTION_ERROR primary + BOUNDARY_REFLECTION amplifier; CA secondary.** **T6 NO-GO; T5-CORRECTIVE-3.** | `docs/validation/stage11.8.0_T5-CORRECTIVE-2_diagnostics.md` |
 
+| `stage11.8.0_T5-CORRECTIVE-3_monotone_advection.md` (monotone+sponge, RO<0) | 11.8.0 T5-CORRECTIVE-3 | COMPLETE (FAIL: RO<0) | Reference: original/current FCT already Zalesak; BC no-gradient. Added `STAGE118_MONOTONE_ADVECTION` (S positivity/no-new-max, T∈[−2,30]) + `STAGE118_SPONGE_BOUNDARY` (5 cells, α=1/day); tests PASS. 90-day: no NaN, max |U| 1.141, KE90/KE60 0.975, S≥0, T∈[−2,30], **RO min −24.24 / 3,187 cells** -> FAIL. April 30d PASS (KE30/KE15 1.530). Hard caps unphysical; T6 NO-GO; T5-CORRECTIVE-4. | `docs/validation/stage11.8.0_T5-CORRECTIVE-3_monotone_advection.md` |
+
 ## Rules
 
 - Reports here are not rewritten after stage completion (exception: technical navigational fixes).

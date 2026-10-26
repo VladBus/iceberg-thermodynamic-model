@@ -9,7 +9,7 @@
 **Stage 11 is formally CLOSED.**
 
 **Base commit:** `531bbfa`
-**Closure commit:** _to be recorded in the closure commit metadata_
+**Closure commit:** `ab10490` (Stage 11 closure package)
 **Final review:** `docs/validation/stage11.9_final_review.md`
 
 ## Achievements

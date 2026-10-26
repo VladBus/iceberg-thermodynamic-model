@@ -1,9 +1,9 @@
 # Project Roadmap
 
 **Updated:** 2026-10-25
-**Current scientific stage:** Stage 11.8.0 T6-SEASONAL COMPLETE — T5 chain CLOSED with accepted 30-day limitation (T-38). Jul/Oct N=1 **PASS**; production scheduler **30/30 days, 720/720 fire-steps PASS** (historical 55/360 blocker resolved for 30-day); EOS80 production 10-day smoke PASS. **11.8A matrix GO**, specified but not executed.
+**Current scientific stage:** 11.8A Matrix Phase 1 (January) COMPLETE — all 4 cells (LEGACY/EOS80 × N1/PRODUCTION, real OSI-SAF ice) PASS; max |U| 0.511–0.794, KE30/KE15 1.479–1.494, RO≥0, no NaN. D-29 preliminary A/B/C satisfied; no interaction pathology. **Phase 2 (Apr/Jul/Oct) GO**, not started.
 **Stages 3–11.4.1: COMPLETED** (10.x iceberg modernization; 11.1 seasonal characterization; 11.2 CFL audit; 11.4-D21…D33 EN4 stabilization → ERA5-coverage fix → cleanup + Ocean Baseline 11.x; 11.3A execution-graph audit; 11.3B input-architecture audit + NetCDF contracts; 11.3C scheme audit + timestep matrix; 11.3C.1 semantics + CFL distributions; 11.3C.2 time-integration audit; 11.3C.3 loop-bound search (VERDICT D); 11.4 EOS-80 experiment + 11.4.1 impact validation (OPTIONAL, not default)).
-**Current status:** Stages 10.14-11.8.0 T6-SEASONAL committed. T0/T1/T2/T3/T4/T5/T5-CORRECTIVE-2/3/4/T6-SEASONAL COMPLETE. **T6-SEASONAL:** 11.8A GO; matrix not started.
+**Current status:** Stages 10.14-11.8A Phase 1 committed. T0/T1/T2/T3/T4/T5/T5-CORRECTIVE-2/3/4/T6-SEASONAL/11.8A Phase 1 COMPLETE. **11.8A Phase 1:** 4/4 PASS; Phase 2 GO.
 **Test suite:** 69 Fortran test source files (`ls test/*.f90 | wc -l`); 69 executable test targets (`grep -lE '^\s*program ' test/*.f90 | wc -l`). Counting method (Stage 11.8.0 T0): every current `test/*.f90` holds a top-level `program`, so file count == target count (verified 2026-10-24).
 **Stage 11.5H-RC COMPLETE** (release-candidate gate: self-contained production scheduler, docs synced D-22…D-28). Plan: 11.8.0 diagnostic ladder (T0–T6) → 11.8A validation → 11.8B audit → 11.9 closure → 12.0 voxel (blocked, D-28).
 
@@ -433,6 +433,7 @@ later corrected by v2 (hourly, 3600; T3-CORRECTIVE-3). Report:
 | **T5-CORRECTIVE-3** | Monotone/positive advection + sponge | **DONE 2026-10-25** (FAIL: RO<0) |
 | **T5-CORRECTIVE-4** | Density repair + .docx refs | **DONE 2026-10-25** (FAIL; T-38 accepted limitation) |
 | **T6-SEASONAL** | Jul/Oct 30-day + production scheduler retest + 11.8A spec | **DONE 2026-10-25** (11.8A GO) |
+| **11.8A Phase 1** | January 4 cells (EOS × scheduler) | **DONE 2026-10-25** (4/4 PASS; Phase 2 GO) |
 
 ### Stage 11.8.0 T3-PREP — EN4 Data Correction (T-20, T-22)
 
@@ -688,6 +689,23 @@ KE30/KE15 1.480, RO 0, no NaN) — historical 55/360 blocker **RESOLVED for
 **11.8A matrix GO**: 2 EOS ×2 schedulers ×4 seasons =16 cells, 30 days;
 spec `docs/validation/stage11.8A_matrix_plan.md`; storage ~4.8 GB; ice caveat
 Apr/Jul/Oct use January-derived diagnostic ice. Matrix execution not started.
+
+### 11.8A Matrix — Phase 1 (January)
+
+All four January cells executed with real OSI-SAF/C3S sea ice and the standard
+protective config:
+
+| Cell | EOS | Scheduler | max |U| | KE30/KE15 | S min | RO min | NaN |
+|---|---|---|---|---|---|---|
+| 1 | LEGACY | N1 | 0.794 | 1.486 | 24.88 | 0 | 0 |
+| 2 | EOS80 | N1 | 0.785 | 1.494 | 24.92 | 0 | 0 |
+| 3 | LEGACY | Prod | 0.511 | 1.479 | 24.88 | 0 | 0 |
+| 4 | EOS80 | Prod | 0.511 | 1.483 | 24.92 | 0 | 0 |
+
+EOS effect ≤1.1 % (KE/max-U), scheduler effect max |U| −35.6 % and ice extent
++65 % (STALE cadence, not instability); no interaction pathology. D-29
+preliminary A/B/C satisfied; final decision needs all seasons. **Phase 2 GO.**
+Report: `docs/validation/stage11.8A_phase1_january_results.md`.
 
 ### Stage 11.8 Prerequisite: Ocean Stabilization (MANDATORY GATE)
 

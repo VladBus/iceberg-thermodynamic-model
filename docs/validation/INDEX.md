@@ -123,6 +123,8 @@ Stage 10 reports have been archived to `docs/wiki/stages/stage10/`. See the arch
 | `stage11.8.0_T6-SEASONAL_validation.md` (seasonal + production retest) | 11.8.0 T6-SEASONAL | COMPLETE (11.8A GO) | T-38 accepted 90-day limitation. **Jul PASS** (max |U| 0.542, KE30/KE15 0.827, RO 0); **Oct PASS** (0.690, 2.152, RO 0); **production 30/30 d, 720/720 fire-steps PASS** (0.494, 1.480, RO 0) — 55/360 blocker resolved for 30-day; EOS80 production 10-day smoke PASS. **11.8A GO** (16 cells; matrix spec `stage11.8A_matrix_plan.md`). | `docs/validation/stage11.8.0_T6-SEASONAL_validation.md` |
 | `stage11.8A_matrix_plan.md` (11.8A matrix specification) | 11.8A | SPECIFIED, NOT EXECUTED | EOS {LEGACY,EOS80} × scheduler {N1,PRODUCTION} × season {Jan,Apr,Jul,Oct}, 30 d; gates; D-29 rule; ice caveat; ~4.8 GB storage. | `docs/validation/stage11.8A_matrix_plan.md` |
 
+| `stage11.8A_phase1_january_results.md` (January 4 cells) | 11.8A Phase 1 | COMPLETE (4/4 PASS; Phase 2 GO) | LEGACY/EOS80 × N1/PRODUCTION, real OSI-SAF ice. Cells: max |U| 0.794/0.785/0.511/0.511, KE30/KE15 1.486/1.494/1.479/1.483, S min ~24.9 PSU, RO min 0, NaN 0. EOS effect ≤1.1%; scheduler max |U| −35.6%, ice extent +65% (STALE), no interaction pathology. D-29 preliminary A/B/C satisfied. **Phase 2 GO.** | `docs/validation/stage11.8A_phase1_january_results.md` |
+
 ## Rules
 
 - Reports here are not rewritten after stage completion (exception: technical navigational fixes).

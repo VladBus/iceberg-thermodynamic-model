@@ -70,9 +70,9 @@ is recorded as **NOT MET** (honest closure per D-29 clarification). D-28
 
 | Season | N=1 LEGACY | Production LEGACY | EOS80 |
 |---|---|---|---|
-| Jan | PASS (T4) | **PASS (T6, 720/720)** | 10-day production smoke PASS (T6) |
+| Jan | **PASS (Phase 1)** | **PASS (Phase 1, 720/720)** | **PASS (Phase 1)** |
 | Apr | PASS (T5) | TO RUN | TO RUN |
 | Jul | **PASS (T6)** | TO RUN | TO RUN |
 | Oct | **PASS (T6)** | TO RUN | TO RUN |
 
-11.8A may proceed on this basis; matrix execution is not started.
+Phase 1 (January) complete: all 4 cells PASS. Phase 2 (Apr/Jul/Oct) is GO; not started.

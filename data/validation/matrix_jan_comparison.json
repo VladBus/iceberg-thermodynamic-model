@@ -1,0 +1,176 @@
+{
+  "matrix_jan_legacy_n1": {
+    "config": {
+      "EOS": "LEGACY",
+      "scheduler": "N1"
+    },
+    "days": 30,
+    "steps": "360/360 canonical steps",
+    "nan_cells": 0,
+    "max_u_m_s": 0.7937876582145691,
+    "max_v_m_s": 0.5840471386909485,
+    "max_w_m_s": 0.0024002473801374435,
+    "ke15_j": 435677175338312.25,
+    "ke30_j": 647460485922442.2,
+    "ke30_over_ke15": 1.4861014589981123,
+    "drift_T": 0.6965131942978215,
+    "drift_S_psu": 0.32729490442012377,
+    "conservation": {
+      "volume_rel": 0.0,
+      "heat_rel": 0.05348183795136097,
+      "salt_rel": 0.0008758010375599383
+    },
+    "bounds_day30": {
+      "T_min": -1.960479736328125,
+      "T_max": 7.077606201171875,
+      "S_min_psu": 24.880598068237305,
+      "S_max_psu": 37.07408142089844,
+      "RO_min": 0.0,
+      "RO_negative_cells": 0,
+      "nan_cells": 0
+    },
+    "ca": {
+      "total_nmix": 21147065,
+      "max_nmix_day": 2578232,
+      "guard_days": 0,
+      "min_nmix_day": 560627,
+      "maxiter_max": 133
+    },
+    "ice": {
+      "extent_cells": 3543,
+      "extent_area_km2": 683558.4303,
+      "ice_volume_km3": 408.49334716796875,
+      "mean_thickness_m": 0.5975983046902377
+    },
+    "PASS": true
+  },
+  "matrix_jan_eos80_n1": {
+    "config": {
+      "EOS": "EOS80",
+      "scheduler": "N1"
+    },
+    "days": 30,
+    "steps": "360/360 canonical steps",
+    "nan_cells": 0,
+    "max_u_m_s": 0.7850484848022461,
+    "max_v_m_s": 0.5840344429016113,
+    "max_w_m_s": 0.002320548053830862,
+    "ke15_j": 432705100142885.1,
+    "ke30_j": 646405650935981.4,
+    "ke30_over_ke15": 1.4938711162002236,
+    "drift_T": 0.6860263029323036,
+    "drift_S_psu": 0.32671092528904466,
+    "conservation": {
+      "volume_rel": 0.0,
+      "heat_rel": 0.05208707143295492,
+      "salt_rel": 0.000870470443414137
+    },
+    "bounds_day30": {
+      "T_min": -1.96044921875,
+      "T_max": 7.077606201171875,
+      "S_min_psu": 24.915294647216797,
+      "S_max_psu": 37.07408142089844,
+      "RO_min": 0.0,
+      "RO_negative_cells": 0,
+      "nan_cells": 0
+    },
+    "ca": {
+      "total_nmix": 18666594,
+      "max_nmix_day": 2537211,
+      "guard_days": 0,
+      "min_nmix_day": 495023,
+      "maxiter_max": 135
+    },
+    "ice": {
+      "extent_cells": 3563,
+      "extent_area_km2": 687417.0723,
+      "ice_volume_km3": 412.7770690917969,
+      "mean_thickness_m": 0.6004754185503519
+    },
+    "PASS": true
+  },
+  "matrix_jan_legacy_prod": {
+    "config": {
+      "EOS": "LEGACY",
+      "scheduler": "PRODUCTION"
+    },
+    "days": 30,
+    "steps": "720/720 fire-steps",
+    "nan_cells": 0,
+    "max_u_m_s": 0.5107141137123108,
+    "max_v_m_s": 0.49682044982910156,
+    "max_w_m_s": 0.002884617308154702,
+    "ke15_j": 521626895927085.5,
+    "ke30_j": 771603079813168.9,
+    "ke30_over_ke15": 1.479224107955173,
+    "drift_T": 1.5987425796003847,
+    "drift_S_psu": 0.3603227967209511,
+    "conservation": {
+      "volume_rel": 0.0,
+      "heat_rel": 0.3562958078140112,
+      "salt_rel": 0.0007778197134357286
+    },
+    "bounds_day30": {
+      "T_min": -1.956298828125,
+      "T_max": 7.077606201171875,
+      "S_min_psu": 24.88055992126465,
+      "S_max_psu": 37.07408142089844,
+      "RO_min": 0.0,
+      "RO_negative_cells": 0,
+      "nan_cells": 0
+    },
+    "ca": {
+      "available": false,
+      "note": "production path prints nmix=******** (numeric CA diagnostics suppressed); guard not available"
+    },
+    "ice": {
+      "extent_cells": 5851,
+      "extent_area_km2": 1128845.7171,
+      "ice_volume_km3": 566.560791015625,
+      "mean_thickness_m": 0.5018939333955152
+    },
+    "PASS": true
+  },
+  "matrix_jan_eos80_prod": {
+    "config": {
+      "EOS": "EOS80",
+      "scheduler": "PRODUCTION"
+    },
+    "days": 30,
+    "steps": "720/720 fire-steps",
+    "nan_cells": 0,
+    "max_u_m_s": 0.5114964842796326,
+    "max_v_m_s": 0.5003408789634705,
+    "max_w_m_s": 0.0027886175084859133,
+    "ke15_j": 515136228491930.8,
+    "ke30_j": 763691986369451.0,
+    "ke30_over_ke15": 1.4825049067218024,
+    "drift_T": 1.6024998846902159,
+    "drift_S_psu": 0.35456444750654054,
+    "conservation": {
+      "volume_rel": 0.0,
+      "heat_rel": 0.3464391220793109,
+      "salt_rel": 0.0007408879294150741
+    },
+    "bounds_day30": {
+      "T_min": -1.956268310546875,
+      "T_max": 7.077606201171875,
+      "S_min_psu": 24.916181564331055,
+      "S_max_psu": 37.07408142089844,
+      "RO_min": 0.0,
+      "RO_negative_cells": 0,
+      "nan_cells": 0
+    },
+    "ca": {
+      "available": false,
+      "note": "production path prints nmix=******** (numeric CA diagnostics suppressed); guard not available"
+    },
+    "ice": {
+      "extent_cells": 6129,
+      "extent_area_km2": 1182480.8409,
+      "ice_volume_km3": 577.67626953125,
+      "mean_thickness_m": 0.4885290543907027
+    },
+    "PASS": true
+  }
+}

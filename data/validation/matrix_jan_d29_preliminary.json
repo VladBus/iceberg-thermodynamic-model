@@ -1,0 +1,13 @@
+{
+  "stage": "11.8A Phase 1 January",
+  "criterion_A_all_eos80_pass": true,
+  "criterion_B_eos80_equiv_or_better": true,
+  "criterion_C_no_scheduler_pathology": true,
+  "relative_metrics": {
+    "eos_n1_vs_leg_n1_ke_ratio": 0.005228214503839729,
+    "eos_prod_vs_leg_prod_ke_ratio": 0.0022179186703255643,
+    "eos_n1_vs_leg_n1_maxu": 0.011009459925315076,
+    "eos_prod_vs_leg_prod_maxu": 0.0015319149134822867
+  },
+  "preliminary": "EOS80 currently equivalent within 10% on January; final decision requires all seasons."
+}

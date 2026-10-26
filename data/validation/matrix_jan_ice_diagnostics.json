@@ -1,0 +1,26 @@
+{
+  "matrix_jan_legacy_n1": {
+    "extent_cells": 3543,
+    "extent_area_km2": 683558.4303,
+    "ice_volume_km3": 408.49334716796875,
+    "mean_thickness_m": 0.5975983046902377
+  },
+  "matrix_jan_eos80_n1": {
+    "extent_cells": 3563,
+    "extent_area_km2": 687417.0723,
+    "ice_volume_km3": 412.7770690917969,
+    "mean_thickness_m": 0.6004754185503519
+  },
+  "matrix_jan_legacy_prod": {
+    "extent_cells": 5851,
+    "extent_area_km2": 1128845.7171,
+    "ice_volume_km3": 566.560791015625,
+    "mean_thickness_m": 0.5018939333955152
+  },
+  "matrix_jan_eos80_prod": {
+    "extent_cells": 6129,
+    "extent_area_km2": 1182480.8409,
+    "ice_volume_km3": 577.67626953125,
+    "mean_thickness_m": 0.4885290543907027
+  }
+}

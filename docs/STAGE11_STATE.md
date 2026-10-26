@@ -10,13 +10,13 @@ env-gated (default OFF) until D-33 approval.
 
 | Field | Value |
 |---|---|
-| Current stage | 11.8.0 T6-SEASONAL — COMPLETE (11.8A GO) |
+| Current stage | 11.8A Matrix Phase 1 (January) — COMPLETE |
 | Ocean rest state | **T3b PASS (bounded)** — max \|U\| **0.147 m/s**, KE30/KE15 **0.568** (dt=1800, Ah=10000, no sponge) |
 | T-19 snowfall | **FIXED** — v2 CDS probe R=1.009 (hourly); divisor 3600 |
 | T-25 potential CA | Implemented behind `STAGE118_CA_POTENTIAL` (OFF); no effect in LEGACY |
 | T-32 prognostic RO | Implemented behind `STAGE118_RO_PROGNOSTIC` (OFF); no effect (CA already refreshes RO) |
 | T-31 EUU | **FIXED diagnostically** — 3D KE printed as `KE3D(J)` |
-| Next step | **11.8A matrix execution** (specified, NOT started) |
+| Next step | **11.8A Phase 2** (Apr/Jul/Oct) — GO; not started |
 
 ## Seasonal coverage (30-day forced)
 
@@ -26,6 +26,17 @@ env-gated (default OFF) until D-33 approval.
 | Apr | PASS (T5) | TO RUN (11.8A) | TO RUN |
 | Jul | **PASS (T6)** | TO RUN | TO RUN |
 | Oct | **PASS (T6)** | TO RUN | TO RUN |
+
+### 11.8A Phase 1 — January (all 4 PASS)
+
+| Cell | EOS | Scheduler | max |U| | KE30/KE15 | RO min | NaN |
+|---|---|---|---|---|---|
+| 1 | LEGACY | N1 | 0.794 | 1.486 | 0 | 0 |
+| 2 | EOS80 | N1 | 0.785 | 1.494 | 0 | 0 |
+| 3 | LEGACY | Prod | 0.511 | 1.479 | 0 | 0 |
+| 4 | EOS80 | Prod | 0.511 | 1.483 | 0 | 0 |
+
+D-29 preliminary: A/B/C satisfied; no interaction pathology. **Phase 2 GO.**
 
 ## Issue table (T-01 … T-38)
 

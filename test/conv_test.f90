@@ -8,7 +8,7 @@
 !   5. уже устойчивая колонка не изменяется (идемпотентность).
 !
 ! Формула инверсии: Δρ = RO(T_холод, S_холод) - RO(T_тёпл, S_тёпл) > eps_density
-!   RO(T,S) = 1/(0.698 + aa/bb) - 1.02 [г/см³] — Eckart EOS
+!   RO(T,S) — active EOS (EOS-80 default since 11.8B; EOS_MODE=LEGACY fallback)
 !   eps_density = 0.9e-7 [г/см³] — порог устойчивости
 !
 ! Формула проверки сохранения:
@@ -18,7 +18,8 @@
 ! ==============================================================================
 
 program conv_test
-    use equation_of_state, only: density_anomaly
+    use param, only: z
+    use equation_of_state, only: eos_density
     use convective_adjustment, only: convect_column
     implicit none
 
@@ -52,8 +53,8 @@ program conv_test
     t_in(2) = 15.0; s_in(2) = 0.033   ! лёгкий снизу (тёплый + пресный)
     t_out = t_in
     s_out = s_in
-    r1 = density_anomaly(t_in(1), s_in(1))
-    r2 = density_anomaly(t_in(2), s_in(2))
+    r1 = eos_density(t_in(1), s_in(1), z(1)*0.01)
+    r2 = eos_density(t_in(2), s_in(2), z(2)*0.01)
     n_checks = n_checks + 1
     if (r1 - r2 .le. eps_density) then
         print '(A,F12.8,A,F12.8)', "ERROR: initial column not unstable: ", r1, " ", r2
@@ -72,8 +73,8 @@ program conv_test
     end if
 
     ! Инверсия после перемешивания должна быть <= порога
-    r1 = density_anomaly(t_out(1), s_out(1))
-    r2 = density_anomaly(t_out(2), s_out(2))
+    r1 = eos_density(t_out(1), s_out(1), z(1)*0.01)
+    r2 = eos_density(t_out(2), s_out(2), z(2)*0.01)
     n_checks = n_checks + 1
     if (r1 - r2 .gt. eps_density) then
         print '(A,F12.8,A,F12.8)', "ERROR: inversion not removed: ", r1, " ", r2
@@ -114,8 +115,8 @@ program conv_test
     ! Плотность после: монотонно невозрастающая сверху вниз (отсутствие инверсии)
     max_inv = 0.0
     do k = 1, ki - 1
-        r1 = density_anomaly(t_out(k), s_out(k))
-        r2 = density_anomaly(t_out(k + 1), s_out(k + 1))
+        r1 = eos_density(t_out(k), s_out(k), z(k)*0.01)
+        r2 = eos_density(t_out(k + 1), s_out(k + 1), z(k + 1)*0.01)
         max_inv = max(max_inv, r1 - r2)
     end do
     n_checks = n_checks + 1

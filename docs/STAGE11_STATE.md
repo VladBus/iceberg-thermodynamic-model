@@ -1,8 +1,7 @@
 # Stage 11 — Living State (≤150 lines)
 
 **Updated:** 2026-10-26
-**Base commit:** `2435176` (Phase 2 matrix); T-41 analysis changes in the
-current commit.
+**Base commit:** `3a249cb` (Stage 11.8A); Stage 11.8B changes in the current commit.
 **Branch policy:** `main` = legacy-frozen default; stage11-physics changes are
 env-gated (default OFF) until D-33 approval.
 
@@ -10,13 +9,15 @@ env-gated (default OFF) until D-33 approval.
 
 | Field | Value |
 |---|---|
-| Current stage | 11.8A Phase 2-ANALYSIS (T-41 gate correction) — COMPLETE; D-29 **PROMOTED** (N=1) |
+| Current stage | **11.8B — Production Release Audit + EOS-80 default** — COMPLETE |
+| EOS default | **EOS80** (`EOS_MODE` unset); `EOS_MODE=LEGACY` explicit fallback |
+| data/runs inventory | **82.583 GB / 289 runs**; 37.327 GB estimated savings; **not deleted** |
 | Ocean rest state | **T3b PASS (bounded)** — max \|U\| **0.147 m/s**, KE30/KE15 **0.568** (dt=1800, Ah=10000, no sponge) |
 | T-19 snowfall | **FIXED** — v2 CDS probe R=1.009 (hourly); divisor 3600 |
 | T-25 potential CA | Implemented behind `STAGE118_CA_POTENTIAL` (OFF); no effect in LEGACY |
 | T-32 prognostic RO | Implemented behind `STAGE118_RO_PROGNOSTIC` (OFF); no effect (CA already refreshes RO) |
 | T-31 EUU | **FIXED diagnostically** — 3D KE printed as `KE3D(J)` |
-| Next step | **Stage 11.8B** production release audit/cleanup; Stage 11.9 not started |
+| Next step | **Stage 11.9 closure** after data/runs cleanup approval; not started |
 
 ## Seasonal coverage (30-day forced)
 
@@ -24,7 +25,7 @@ env-gated (default OFF) until D-33 approval.
 |---|---|---|---|
 | Jan | **PASS** | BLOCKED (T-39) | **PASS** |
 | Apr | **PASS** | BLOCKED (T-39) | **PASS** |
-| Jul | **PASS** | BLOCKED (T-39) | **PASS (T-41 corrected)** |
+| Jul | **PASS** | BLOCKED (T-39) | **PASS** |
 | Oct | **PASS** | BLOCKED (T-39) | **PASS** |
 
 ### 11.8A Phase 1 — January (all 4 PASS)
@@ -47,12 +48,13 @@ env-gated (default OFF) until D-33 approval.
 | Oct LEGACY | LEGACY | 0.690 | 2.152 | 25.013 | 1.020000 | 0 | YES |
 | Oct EOS80 | EOS80 | 0.689 | 2.172 | 25.013 | 1.020000 | 0 | YES |
 
-Jan: LEGACY/EOS80 both PASS (Phase 1). **T-41 gate correction:** the July
+Jan: LEGACY/EOS80 both PASS (Phase 1). **T-41 gate correction:** July
 EOS80 raw anomaly is −2.504e-3 **kg/m³** = −2.504e-6 g/cm³; absolute density
-is 1.0199975 g/cm³. Raw RO≥0 was an invalid brackish-water gate; corrected
-gate is absolute density >1.0 g/cm³ (all 8 pass). D-29 final: **PROMOTED**
-(criterion A/B/C true for N=1; production BLOCKED T-39). Next: Stage 11.8B
-release audit/cleanup; Stage 11.9 not started.
+1.0199975 g/cm³. Corrected gate = absolute density >1.0 g/cm³. D-29
+**PROMOTED** (A/B/C true for N=1). **11.8B:** EOS80 is runtime default;
+default/explicit EOS80/matrix and LEGACY fallback/matrix are bit-identical.
+Production scheduler remains BLOCKED (T-39). Next: Stage 11.9 closure after
+cleanup approval.
 
 ## Issue table (T-01 … T-41)
 
@@ -96,7 +98,7 @@ release audit/cleanup; Stage 11.9 not started.
 | T-36 | OPEN | Salinity advection root; monotone/sponge caps not a density fix |
 | T-37 | CLOSED (accepted) | Density repair insufficient; covered by T-38 limitation |
 | T-38 | ACCEPTED LIMITATION | 90-day storm runs unstable; 30-day Jan/Apr/Jul/Oct validated |
-| T-39 | OPEN | Production scheduler ice artifact (+65% extent, −269 W/m²); production matrix BLOCKED; N=1 sufficient for 30-day validation |
+| T-39 | OPEN | Production scheduler ice artifact (+65% extent, −269 W/m²); production matrix BLOCKED; future work, not an N=1 closure blocker |
 | T-40 | OPEN | CA nmix I8 console overflow; CA runs, CSV authoritative |
 | T-41 | **CLOSED (false positive)** | Raw anomaly is kg/m³; July absolute density 1.0199975 g/cm³; gate corrected to absolute density >1.0; all 8 pass; D-29 promoted |
 | H-2 | FIXED | `STAGE118_WIND_ROTATION`; alpha median 50.18°, max 81.28°; dir error 2.8e-14° |
@@ -130,10 +132,11 @@ release audit/cleanup; Stage 11.9 not started.
 - T-19: `data/validation/t19_cds_probe_v2.json`, `snowfall_period_result.json`
 - Sponge tests: `t3c3_sponge_results.json`, `t3c3_sponge2_results.json`,
   `t3c3_sponge3_results.json`
+- 11.8B: `default_eos80_verification.json`, `reproducibility_audit.json`, `runs_inventory_final.json`; `docs/MIGRATION_GUIDE_EOS80_DEFAULT.md`, `docs/STAGE11_SUMMARY.md`, `docs/STAGE11_CLOSURE_CHECKLIST.md`
 - Regression: full `fpm test` battery + strict build; Python suites.
 
 ## Next action
 
-1. **11.8A Phase 2 complete**: 8/8 PASS under corrected absolute-density gate; D-29 **PROMOTED** (N=1); T-41 closed false positive.
-2. **Next: Stage 11.8B** production release audit/cleanup (data/runs inventory, final docs, production-default declaration). Stage 11.9 not started.
-3. **T-39** production scheduler ice/cadence artifact remains future work; production matrix BLOCKED.
+1. **11.8B complete**: EOS80 default; 8/8 matrix; default/fallback/reproducibility bit-identical; inventory 82.583 GB / 289 runs.
+2. **Cleanup pending approval**: archive 153 historical runs (est. 13.52 GB after ~3× gzip), review/delete 44 temporary and 6 duplicates; total est. 36.41 GB savings. **Nothing deleted.**
+3. **Next: Stage 11.9 closure** after cleanup approval; not started. T-39 production scheduler remains BLOCKED (future work).

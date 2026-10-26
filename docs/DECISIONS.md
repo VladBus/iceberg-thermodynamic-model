@@ -331,7 +331,7 @@ Format: `ID | stage/date | status` + short description. Details — via links.
 
 - **Stage:** 11.6 | **Status:** DECIDED (re-decide at 11.8A with sea-ice gate evidence)
 - **Problem:** under the corrected criterion (physical correctness + reference tests + numerical stability + impact on model — NOT "improvement vs observations"), should the validated EOS-80 pathway become production default?
-- **Decision:** OPTIONAL (`EOS_MODE=EOS80` opt-in; default LEGACY untouched, OFF bit-identical incl. Jan NDIFF=0).
+- **Decision:** OPTIONAL (`EOS_MODE=EOS80` opt-in; default LEGACY untouched, OFF bit-identical incl. Jan NDIFF=0). **Historical: superseded by D-47/D-48 (EOS80 promoted and made default in Stage 11.8B).**
 - **Why:** FOR — correctness (UNESCO compressibility), 28/28 reference tests, 4/4 April + 4/4 Jan green (0 NaN, CA converges maxiter 20–29/guard 0, salt 10× better at STALE, heat nearer legacy at STALE, 6.5× faster at STALE). AGAINST — ice response large (+36% N1 / +58% STALE d7, +96% d29 N1) and UNVALIDATED vs observations; April EUU process review (11.4) still open; per-cell velocity maps unavailable. Matches 11.4's recommendation.
 - **Sources:** `docs/archive/stage11/stage11.6_eos80_integration_rebaseline.md` §§1–5, `test/eos80_reference.f90` (28/28), April A/B/C/D + Jan JA–JD runs.
 - **Limitations:** EOS dimension joins scheduler dimension in the 11.8A sea-ice gate; no EOS-80 production claims until then.
@@ -516,3 +516,12 @@ not added.
 - **D-29:** Criterion A true (all four EOS80 seasons pass); B true (mean max |U| −0.14 %, KE +0.33 %, CA −12.85 %); C true for N=1. **PROMOTED** for the N=1 30-day validated model. Production scheduler remains BLOCKED (T-39); no Fortran/EOS/scheduler code changed. The runtime default declaration is deferred to Stage 11.8B.
 - **Next:** Stage 11.8B production release audit/cleanup; Stage 11.9 not started.
 - **Evidence:** `data/validation/t41_physics_verification.json`, `python/analysis/stage11.8A_t41_physics.py`, `docs/validation/stage11.8A_phase2_seasonal_results.md`.
+
+## D-48. EOS-80 runtime default; breaking change (Stage 11.8B, 2026-10-26)
+
+- **Change:** `EOS_MODE` unset/empty now selects **EOS80** in `src/equation_of_state.f90`; `EOS_MODE=LEGACY` (or `legacy`/`Eckart`/`false`/`0`) selects the historical Eckart fallback. Unknown non-empty values select EOS80 with a warning. This is a **breaking change**: pre-11.8B default-legacy runs are not bit-identical to new default runs.
+- **Basis:** D-29/D-47 — EOS80 validated in all 8 N=1 matrix cells; T-41 was a gate-definition error; July absolute density is 1.0199975–1.0199999 g/cm³.
+- **Verification:** default = explicit EOS80 = matrix EOS80 (32/32 NetCDF MD5 identical); explicit LEGACY = matrix LEGACY (32/32 identical); representative Jan/Apr/Jul/Oct re-runs bit-identical (32/32 each).
+- **Scope:** production scheduler NOT changed and remains BLOCKED (T-39); no scheduler cells were run. Stage 11.8B audit: 289 runs / 82.583 GB; cleanup recommendations only (37.327 GB estimated savings), nothing deleted.
+- **Docs:** `docs/MIGRATION_GUIDE_EOS80_DEFAULT.md`, `README.md` breaking-change notice, `docs/STAGE11_SUMMARY.md`, `docs/STAGE11_CLOSURE_CHECKLIST.md`.
+- **Next:** Stage 11.9 closure after data/runs cleanup approval; not started.

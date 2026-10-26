@@ -54,7 +54,7 @@ The ocean freezing temperature uses the EOS-80/UNESCO pressure-dependent polynom
 
 `Tf = (A0 + A1 sqrt(S) - A2 S) S + BP P`,
 
-where practical salinity is represented in PSU and pressure is approximated hydrostatically from depth. The freezing-point calculation uses EOS-80 coefficients. A complete EOS-80 seawater density equation of state is implemented as an **optional** path (selectable via `EOS_MODE=EOS80`; default `EOS_MODE=LEGACY` uses the legacy Eckart density). TEOS-10 is not implemented.
+where practical salinity is represented in PSU and pressure is approximated hydrostatically from depth. The freezing-point calculation uses EOS-80 coefficients. UNESCO EOS-80 is the **runtime default** since Stage 11.8B (`EOS_MODE` unset); the historical Eckart density is available with `EOS_MODE=LEGACY`. The promotion is validated for the N=1 30-day matrix (D-29/D-47); production scheduler remains blocked (T-39). TEOS-10 is not implemented.
 
 ### 7.2 Relative-flow heat transfer
 

@@ -15,7 +15,7 @@
 ! Точность: всё real64 внутри; вызывающие приводят к своей точности.
 ! Pure functions — безопасны для вызова из convective_adjustment.
 ! В модель НЕ вшито: подключение через диспетчер equation_of_state
-! (eos_density/eos_density_f64) за флагом EOS_MODE (default LEGACY).
+! (eos_density/eos_density_f64) за флагом EOS_MODE (default EOS80 since 11.8B; LEGACY explicit).
 ! ==============================================================================
 
 module eos80_unesco

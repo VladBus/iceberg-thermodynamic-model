@@ -1,0 +1,2068 @@
+{
+  "stage": "11.8B",
+  "total_size_gb": 82.583066,
+  "total_runs": 289,
+  "root_files_mb": 0.711,
+  "classification_policy": {
+    "CRITICAL": "current baselines, current matrix, T3/T4/T5/T6 validation, 11.7E4",
+    "ARCHIVE": "historical stage 11.0-11.7 runs (compress recommendation)",
+    "TEMPORARY": "tests/probes/smokes/default checks/preliminary runs",
+    "DUPLICATES": "curated rerun candidates; keep newest after approval"
+  },
+  "critical": {
+    "count": 83,
+    "size_gb": 31.734235,
+    "runs": [
+      {
+        "name": "default_eos80_verify",
+        "size_mb": 313.13,
+        "size_gb": 0.31313,
+        "class": "CRITICAL",
+        "reason": "11.8B runtime/reproducibility evidence"
+      },
+      {
+        "name": "explicit_eos80_verify",
+        "size_mb": 313.13,
+        "size_gb": 0.31313,
+        "class": "CRITICAL",
+        "reason": "11.8B runtime/reproducibility evidence"
+      },
+      {
+        "name": "legacy_fallback_verify",
+        "size_mb": 313.13,
+        "size_gb": 0.31313,
+        "class": "CRITICAL",
+        "reason": "11.8B runtime/reproducibility evidence"
+      },
+      {
+        "name": "matrix_apr_eos80_n1",
+        "size_mb": 313.128,
+        "size_gb": 0.313128,
+        "class": "CRITICAL",
+        "reason": "current 11.8A matrix cell"
+      },
+      {
+        "name": "matrix_apr_legacy_n1",
+        "size_mb": 313.128,
+        "size_gb": 0.313128,
+        "class": "CRITICAL",
+        "reason": "current 11.8A matrix cell"
+      },
+      {
+        "name": "matrix_jan_eos80_n1",
+        "size_mb": 313.091,
+        "size_gb": 0.313091,
+        "class": "CRITICAL",
+        "reason": "current 11.8A matrix cell"
+      },
+      {
+        "name": "matrix_jan_eos80_prod",
+        "size_mb": 313.091,
+        "size_gb": 0.313091,
+        "class": "CRITICAL",
+        "reason": "current 11.8A matrix cell"
+      },
+      {
+        "name": "matrix_jan_legacy_n1",
+        "size_mb": 313.091,
+        "size_gb": 0.313091,
+        "class": "CRITICAL",
+        "reason": "current 11.8A matrix cell"
+      },
+      {
+        "name": "matrix_jan_legacy_prod",
+        "size_mb": 313.091,
+        "size_gb": 0.313091,
+        "class": "CRITICAL",
+        "reason": "current 11.8A matrix cell"
+      },
+      {
+        "name": "matrix_jul_eos80_n1",
+        "size_mb": 313.13,
+        "size_gb": 0.31313,
+        "class": "CRITICAL",
+        "reason": "current 11.8A matrix cell"
+      },
+      {
+        "name": "matrix_jul_legacy_n1",
+        "size_mb": 313.13,
+        "size_gb": 0.31313,
+        "class": "CRITICAL",
+        "reason": "current 11.8A matrix cell"
+      },
+      {
+        "name": "matrix_oct_eos80_n1",
+        "size_mb": 313.129,
+        "size_gb": 0.313129,
+        "class": "CRITICAL",
+        "reason": "current 11.8A matrix cell"
+      },
+      {
+        "name": "matrix_oct_legacy_n1",
+        "size_mb": 313.129,
+        "size_gb": 0.313129,
+        "class": "CRITICAL",
+        "reason": "current 11.8A matrix cell"
+      },
+      {
+        "name": "repro_apr_eos80",
+        "size_mb": 313.128,
+        "size_gb": 0.313128,
+        "class": "CRITICAL",
+        "reason": "11.8B runtime/reproducibility evidence"
+      },
+      {
+        "name": "repro_jul_legacy",
+        "size_mb": 313.13,
+        "size_gb": 0.31313,
+        "class": "CRITICAL",
+        "reason": "11.8B runtime/reproducibility evidence"
+      },
+      {
+        "name": "repro_oct_eos80",
+        "size_mb": 313.129,
+        "size_gb": 0.313129,
+        "class": "CRITICAL",
+        "reason": "11.8B runtime/reproducibility evidence"
+      },
+      {
+        "name": "stage11.7E4_A",
+        "size_mb": 29.373,
+        "size_gb": 0.029373,
+        "class": "CRITICAL",
+        "reason": "11.7E4 sea-ice provenance/validation baseline"
+      },
+      {
+        "name": "stage11.7E4_A7",
+        "size_mb": 88.183,
+        "size_gb": 0.088183,
+        "class": "CRITICAL",
+        "reason": "11.7E4 sea-ice provenance/validation baseline"
+      },
+      {
+        "name": "stage11.7E4_B",
+        "size_mb": 29.373,
+        "size_gb": 0.029373,
+        "class": "CRITICAL",
+        "reason": "11.7E4 sea-ice provenance/validation baseline"
+      },
+      {
+        "name": "stage11.7E4_B7",
+        "size_mb": 88.183,
+        "size_gb": 0.088183,
+        "class": "CRITICAL",
+        "reason": "11.7E4 sea-ice provenance/validation baseline"
+      },
+      {
+        "name": "stage11.7E4_C",
+        "size_mb": 29.374,
+        "size_gb": 0.029374,
+        "class": "CRITICAL",
+        "reason": "11.7E4 sea-ice provenance/validation baseline"
+      },
+      {
+        "name": "stage11.7E4_C7",
+        "size_mb": 88.187,
+        "size_gb": 0.088187,
+        "class": "CRITICAL",
+        "reason": "11.7E4 sea-ice provenance/validation baseline"
+      },
+      {
+        "name": "t3_eos80_canonical",
+        "size_mb": 313.116,
+        "size_gb": 0.313116,
+        "class": "CRITICAL",
+        "reason": "T3/T4/T5/T6 validation evidence"
+      },
+      {
+        "name": "t3_legacy_canonical",
+        "size_mb": 313.617,
+        "size_gb": 0.313617,
+        "class": "CRITICAL",
+        "reason": "T3/T4/T5/T6 validation evidence"
+      },
+      {
+        "name": "t3_legacy_rebuild",
+        "size_mb": 313.618,
+        "size_gb": 0.313618,
+        "class": "CRITICAL",
+        "reason": "T3/T4/T5/T6 validation evidence"
+      },
+      {
+        "name": "t3_with_fixes",
+        "size_mb": 313.088,
+        "size_gb": 0.313088,
+        "class": "CRITICAL",
+        "reason": "T3/T4/T5/T6 validation evidence"
+      },
+      {
+        "name": "t3c2_ctl_30",
+        "size_mb": 313.617,
+        "size_gb": 0.313617,
+        "class": "CRITICAL",
+        "reason": "T3/T4/T5/T6 validation evidence"
+      },
+      {
+        "name": "t3c2_dt1800",
+        "size_mb": 313.617,
+        "size_gb": 0.313617,
+        "class": "CRITICAL",
+        "reason": "T3/T4/T5/T6 validation evidence"
+      },
+      {
+        "name": "t3c2_dt7200",
+        "size_mb": 225.4,
+        "size_gb": 0.2254,
+        "class": "CRITICAL",
+        "reason": "T3/T4/T5/T6 validation evidence"
+      },
+      {
+        "name": "t3c2_eos80_ro_30",
+        "size_mb": 313.116,
+        "size_gb": 0.313116,
+        "class": "CRITICAL",
+        "reason": "T3/T4/T5/T6 validation evidence"
+      },
+      {
+        "name": "t3c2_eos80_ts_30",
+        "size_mb": 313.1,
+        "size_gb": 0.3131,
+        "class": "CRITICAL",
+        "reason": "T3/T4/T5/T6 validation evidence"
+      },
+      {
+        "name": "t3c2_freeze_ro",
+        "size_mb": 901.634,
+        "size_gb": 0.901634,
+        "class": "CRITICAL",
+        "reason": "T3/T4/T5/T6 validation evidence"
+      },
+      {
+        "name": "t3c2_freeze_ro_ds",
+        "size_mb": 901.634,
+        "size_gb": 0.901634,
+        "class": "CRITICAL",
+        "reason": "T3/T4/T5/T6 validation evidence"
+      },
+      {
+        "name": "t3c2_freeze_ts",
+        "size_mb": 900.131,
+        "size_gb": 0.900131,
+        "class": "CRITICAL",
+        "reason": "T3/T4/T5/T6 validation evidence"
+      },
+      {
+        "name": "t3c2_freeze_tw",
+        "size_mb": 901.634,
+        "size_gb": 0.901634,
+        "class": "CRITICAL",
+        "reason": "T3/T4/T5/T6 validation evidence"
+      },
+      {
+        "name": "t3c2_ro_30",
+        "size_mb": 313.617,
+        "size_gb": 0.313617,
+        "class": "CRITICAL",
+        "reason": "T3/T4/T5/T6 validation evidence"
+      },
+      {
+        "name": "t3c2_ts_30",
+        "size_mb": 313.1,
+        "size_gb": 0.3131,
+        "class": "CRITICAL",
+        "reason": "T3/T4/T5/T6 validation evidence"
+      },
+      {
+        "name": "t3c2_tw_30",
+        "size_mb": 313.617,
+        "size_gb": 0.313617,
+        "class": "CRITICAL",
+        "reason": "T3/T4/T5/T6 validation evidence"
+      },
+      {
+        "name": "t3c3_all",
+        "size_mb": 313.088,
+        "size_gb": 0.313088,
+        "class": "CRITICAL",
+        "reason": "T3/T4/T5/T6 validation evidence"
+      },
+      {
+        "name": "t3c3_all_sponge",
+        "size_mb": 313.088,
+        "size_gb": 0.313088,
+        "class": "CRITICAL",
+        "reason": "T3/T4/T5/T6 validation evidence"
+      },
+      {
+        "name": "t3c3_all_sponge2",
+        "size_mb": 313.088,
+        "size_gb": 0.313088,
+        "class": "CRITICAL",
+        "reason": "T3/T4/T5/T6 validation evidence"
+      },
+      {
+        "name": "t3c3_all_sponge3",
+        "size_mb": 313.088,
+        "size_gb": 0.313088,
+        "class": "CRITICAL",
+        "reason": "T3/T4/T5/T6 validation evidence"
+      },
+      {
+        "name": "t3c3_balanced",
+        "size_mb": 313.088,
+        "size_gb": 0.313088,
+        "class": "CRITICAL",
+        "reason": "T3/T4/T5/T6 validation evidence"
+      },
+      {
+        "name": "t3c3_default_1d",
+        "size_mb": 313.59,
+        "size_gb": 0.31359,
+        "class": "CRITICAL",
+        "reason": "T3/T4/T5/T6 validation evidence"
+      },
+      {
+        "name": "t3c3_default_1d_v2",
+        "size_mb": 313.59,
+        "size_gb": 0.31359,
+        "class": "CRITICAL",
+        "reason": "T3/T4/T5/T6 validation evidence"
+      },
+      {
+        "name": "t3c3_default_final",
+        "size_mb": 313.59,
+        "size_gb": 0.31359,
+        "class": "CRITICAL",
+        "reason": "T3/T4/T5/T6 validation evidence"
+      },
+      {
+        "name": "t3c3_e1",
+        "size_mb": 313.59,
+        "size_gb": 0.31359,
+        "class": "CRITICAL",
+        "reason": "T3/T4/T5/T6 validation evidence"
+      },
+      {
+        "name": "t3c3_e2",
+        "size_mb": 313.59,
+        "size_gb": 0.31359,
+        "class": "CRITICAL",
+        "reason": "T3/T4/T5/T6 validation evidence"
+      },
+      {
+        "name": "t3c3_e3",
+        "size_mb": 313.088,
+        "size_gb": 0.313088,
+        "class": "CRITICAL",
+        "reason": "T3/T4/T5/T6 validation evidence"
+      },
+      {
+        "name": "t3c3_e3_sponge",
+        "size_mb": 313.088,
+        "size_gb": 0.313088,
+        "class": "CRITICAL",
+        "reason": "T3/T4/T5/T6 validation evidence"
+      },
+      {
+        "name": "t3c3_eos80_all",
+        "size_mb": 313.088,
+        "size_gb": 0.313088,
+        "class": "CRITICAL",
+        "reason": "T3/T4/T5/T6 validation evidence"
+      },
+      {
+        "name": "t3c3_fix_1d",
+        "size_mb": 313.088,
+        "size_gb": 0.313088,
+        "class": "CRITICAL",
+        "reason": "T3/T4/T5/T6 validation evidence"
+      },
+      {
+        "name": "t3c3_noca",
+        "size_mb": 313.089,
+        "size_gb": 0.313089,
+        "class": "CRITICAL",
+        "reason": "T3/T4/T5/T6 validation evidence"
+      },
+      {
+        "name": "t3c3_thr0",
+        "size_mb": 313.59,
+        "size_gb": 0.31359,
+        "class": "CRITICAL",
+        "reason": "T3/T4/T5/T6 validation evidence"
+      },
+      {
+        "name": "t3c4_dt1800",
+        "size_mb": 313.088,
+        "size_gb": 0.313088,
+        "class": "CRITICAL",
+        "reason": "T3/T4/T5/T6 validation evidence"
+      },
+      {
+        "name": "t3c4_dt1800_ah10000",
+        "size_mb": 313.088,
+        "size_gb": 0.313088,
+        "class": "CRITICAL",
+        "reason": "T3/T4/T5/T6 validation evidence"
+      },
+      {
+        "name": "t3c4_dt1800_ah20000",
+        "size_mb": 313.088,
+        "size_gb": 0.313088,
+        "class": "CRITICAL",
+        "reason": "T3/T4/T5/T6 validation evidence"
+      },
+      {
+        "name": "t3c4_dt1800_ah5000",
+        "size_mb": 313.088,
+        "size_gb": 0.313088,
+        "class": "CRITICAL",
+        "reason": "T3/T4/T5/T6 validation evidence"
+      },
+      {
+        "name": "t3c4_dt900",
+        "size_mb": 313.088,
+        "size_gb": 0.313088,
+        "class": "CRITICAL",
+        "reason": "T3/T4/T5/T6 validation evidence"
+      },
+      {
+        "name": "t3c_eos80_canonical",
+        "size_mb": 313.116,
+        "size_gb": 0.313116,
+        "class": "CRITICAL",
+        "reason": "T3/T4/T5/T6 validation evidence"
+      },
+      {
+        "name": "t3c_legacy_canonical",
+        "size_mb": 313.617,
+        "size_gb": 0.313617,
+        "class": "CRITICAL",
+        "reason": "T3/T4/T5/T6 validation evidence"
+      },
+      {
+        "name": "t4_wind_forcing",
+        "size_mb": 313.088,
+        "size_gb": 0.313088,
+        "class": "CRITICAL",
+        "reason": "T3/T4/T5/T6 validation evidence"
+      },
+      {
+        "name": "t4prep_rot_off",
+        "size_mb": 48.97,
+        "size_gb": 0.04897,
+        "class": "CRITICAL",
+        "reason": "T3/T4/T5/T6 validation evidence"
+      },
+      {
+        "name": "t4prep_rot_on",
+        "size_mb": 48.97,
+        "size_gb": 0.04897,
+        "class": "CRITICAL",
+        "reason": "T3/T4/T5/T6 validation evidence"
+      },
+      {
+        "name": "t5_30day_apr",
+        "size_mb": 303.304,
+        "size_gb": 0.303304,
+        "class": "CRITICAL",
+        "reason": "T3/T4/T5/T6 validation evidence"
+      },
+      {
+        "name": "t5_30day_apr30",
+        "size_mb": 313.088,
+        "size_gb": 0.313088,
+        "class": "CRITICAL",
+        "reason": "T3/T4/T5/T6 validation evidence"
+      },
+      {
+        "name": "t5_90day_jan",
+        "size_mb": 596.826,
+        "size_gb": 0.596826,
+        "class": "CRITICAL",
+        "reason": "T3/T4/T5/T6 validation evidence"
+      },
+      {
+        "name": "t5c2_config1_detailed",
+        "size_mb": 753.63,
+        "size_gb": 0.75363,
+        "class": "CRITICAL",
+        "reason": "T3/T4/T5/T6 validation evidence"
+      },
+      {
+        "name": "t5c3_90day",
+        "size_mb": 900.55,
+        "size_gb": 0.90055,
+        "class": "CRITICAL",
+        "reason": "T3/T4/T5/T6 validation evidence"
+      },
+      {
+        "name": "t5c3_90day_range",
+        "size_mb": 900.135,
+        "size_gb": 0.900135,
+        "class": "CRITICAL",
+        "reason": "T3/T4/T5/T6 validation evidence"
+      },
+      {
+        "name": "t5c3_90day_tcap",
+        "size_mb": 900.131,
+        "size_gb": 0.900131,
+        "class": "CRITICAL",
+        "reason": "T3/T4/T5/T6 validation evidence"
+      },
+      {
+        "name": "t5c3_april",
+        "size_mb": 313.088,
+        "size_gb": 0.313088,
+        "class": "CRITICAL",
+        "reason": "T3/T4/T5/T6 validation evidence"
+      },
+      {
+        "name": "t5c4_90day",
+        "size_mb": 900.133,
+        "size_gb": 0.900133,
+        "class": "CRITICAL",
+        "reason": "T3/T4/T5/T6 validation evidence"
+      },
+      {
+        "name": "t5c4_90day_postca",
+        "size_mb": 900.139,
+        "size_gb": 0.900139,
+        "class": "CRITICAL",
+        "reason": "T3/T4/T5/T6 validation evidence"
+      },
+      {
+        "name": "t5c4_april",
+        "size_mb": 313.088,
+        "size_gb": 0.313088,
+        "class": "CRITICAL",
+        "reason": "T3/T4/T5/T6 validation evidence"
+      },
+      {
+        "name": "t5c_config1",
+        "size_mb": 626.178,
+        "size_gb": 0.626178,
+        "class": "CRITICAL",
+        "reason": "T3/T4/T5/T6 validation evidence"
+      },
+      {
+        "name": "t5c_config2",
+        "size_mb": 900.52,
+        "size_gb": 0.90052,
+        "class": "CRITICAL",
+        "reason": "T3/T4/T5/T6 validation evidence"
+      },
+      {
+        "name": "t5c_config3",
+        "size_mb": 900.471,
+        "size_gb": 0.900471,
+        "class": "CRITICAL",
+        "reason": "T3/T4/T5/T6 validation evidence"
+      },
+      {
+        "name": "t5c_config4",
+        "size_mb": 900.415,
+        "size_gb": 0.900415,
+        "class": "CRITICAL",
+        "reason": "T3/T4/T5/T6 validation evidence"
+      },
+      {
+        "name": "t6s_jan_prod_eos80",
+        "size_mb": 117.408,
+        "size_gb": 0.117408,
+        "class": "CRITICAL",
+        "reason": "T3/T4/T5/T6 validation evidence"
+      },
+      {
+        "name": "t6s_jan_production",
+        "size_mb": 313.089,
+        "size_gb": 0.313089,
+        "class": "CRITICAL",
+        "reason": "T3/T4/T5/T6 validation evidence"
+      },
+      {
+        "name": "t6s_jul_legacy",
+        "size_mb": 313.088,
+        "size_gb": 0.313088,
+        "class": "CRITICAL",
+        "reason": "T3/T4/T5/T6 validation evidence"
+      },
+      {
+        "name": "t6s_oct_legacy",
+        "size_mb": 313.088,
+        "size_gb": 0.313088,
+        "class": "CRITICAL",
+        "reason": "T3/T4/T5/T6 validation evidence"
+      }
+    ]
+  },
+  "archive": {
+    "count": 153,
+    "size_gb": 40.562951,
+    "runs": [
+      {
+        "name": "e2_fatal_test",
+        "size_mb": 0.0,
+        "size_gb": 0.0,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "e2_synth_test",
+        "size_mb": 509.316,
+        "size_gb": 0.509316,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "e2_synthpresent_test",
+        "size_mb": 401.794,
+        "size_gb": 0.401794,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.1_apr7",
+        "size_mb": 171.07,
+        "size_gb": 0.17107,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.1_frozen_jan7",
+        "size_mb": 248.704,
+        "size_gb": 0.248704,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.1_jan7",
+        "size_mb": 194.391,
+        "size_gb": 0.194391,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.1_jul7",
+        "size_mb": 171.07,
+        "size_gb": 0.17107,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.1_oct7",
+        "size_mb": 171.07,
+        "size_gb": 0.17107,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.2_cfl_test",
+        "size_mb": 716.676,
+        "size_gb": 0.716676,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.3C1_AprA",
+        "size_mb": 241.461,
+        "size_gb": 0.241461,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.3C1_AprB",
+        "size_mb": 241.457,
+        "size_gb": 0.241457,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.3C1_AprC",
+        "size_mb": 241.457,
+        "size_gb": 0.241457,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.3C1_AprD",
+        "size_mb": 241.461,
+        "size_gb": 0.241461,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.3C1_AprE",
+        "size_mb": 241.461,
+        "size_gb": 0.241461,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.3C1_jan7off",
+        "size_mb": 249.221,
+        "size_gb": 0.249221,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.3C_AprA",
+        "size_mb": 241.416,
+        "size_gb": 0.241416,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.3C_AprB",
+        "size_mb": 241.416,
+        "size_gb": 0.241416,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.3C_AprC",
+        "size_mb": 241.416,
+        "size_gb": 0.241416,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.3C_AprD",
+        "size_mb": 241.416,
+        "size_gb": 0.241416,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.3C_AprE",
+        "size_mb": 241.416,
+        "size_gb": 0.241416,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.4_d24_apr7ev",
+        "size_mb": 241.496,
+        "size_gb": 0.241496,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.4_d32_apr7fix",
+        "size_mb": 241.416,
+        "size_gb": 0.241416,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.4_d32_jan7fix",
+        "size_mb": 249.205,
+        "size_gb": 0.249205,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.4_d32_jul7fix",
+        "size_mb": 249.078,
+        "size_gb": 0.249078,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.4_d32_oct7fix",
+        "size_mb": 249.205,
+        "size_gb": 0.249205,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.4_d33_apr30",
+        "size_mb": 241.416,
+        "size_gb": 0.241416,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.4_d33_jan30",
+        "size_mb": 249.205,
+        "size_gb": 0.249205,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.4_d33_jul30",
+        "size_mb": 249.078,
+        "size_gb": 0.249078,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.4_d33_oct30",
+        "size_mb": 249.205,
+        "size_gb": 0.249205,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.4_eosApr",
+        "size_mb": 303.343,
+        "size_gb": 0.303343,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.4_eosJan",
+        "size_mb": 313.125,
+        "size_gb": 0.313125,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.4_eosJul",
+        "size_mb": 313.128,
+        "size_gb": 0.313128,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.4_eosOct",
+        "size_mb": 313.128,
+        "size_gb": 0.313128,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.4_legApr",
+        "size_mb": 303.827,
+        "size_gb": 0.303827,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.4_legJan",
+        "size_mb": 313.626,
+        "size_gb": 0.313626,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.4_legJul",
+        "size_mb": 313.503,
+        "size_gb": 0.313503,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.4_legOct",
+        "size_mb": 313.629,
+        "size_gb": 0.313629,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5B_AprA",
+        "size_mb": 303.818,
+        "size_gb": 0.303818,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5B_AprB",
+        "size_mb": 303.834,
+        "size_gb": 0.303834,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5B_AprC",
+        "size_mb": 303.834,
+        "size_gb": 0.303834,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5B_AprD",
+        "size_mb": 303.814,
+        "size_gb": 0.303814,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5B_AprE",
+        "size_mb": 303.83,
+        "size_gb": 0.30383,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5B_AprF",
+        "size_mb": 303.83,
+        "size_gb": 0.30383,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5B_AprG",
+        "size_mb": 303.814,
+        "size_gb": 0.303814,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5B_AprH",
+        "size_mb": 303.83,
+        "size_gb": 0.30383,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5B_AprI",
+        "size_mb": 303.83,
+        "size_gb": 0.30383,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5C1_AprN1trace",
+        "size_mb": 303.889,
+        "size_gb": 0.303889,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5C1_AprN24freeze",
+        "size_mb": 305.604,
+        "size_gb": 0.305604,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5C1_AprN24trace",
+        "size_mb": 305.603,
+        "size_gb": 0.305603,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5C1_janOFF2",
+        "size_mb": 901.694,
+        "size_gb": 0.901694,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5C2_AprA_gain",
+        "size_mb": 306.609,
+        "size_gb": 0.306609,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5C2_AprB_cplfreeze",
+        "size_mb": 306.606,
+        "size_gb": 0.306606,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5C2_AprC_heatfreeze",
+        "size_mb": 306.523,
+        "size_gb": 0.306523,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5C2_janOFF",
+        "size_mb": 313.286,
+        "size_gb": 0.313286,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5C3_AprA_ctrl",
+        "size_mb": 305.603,
+        "size_gb": 0.305603,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5C3_AprB_tsfreeze",
+        "size_mb": 308.067,
+        "size_gb": 0.308067,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5C3_AprC_reg",
+        "size_mb": 308.023,
+        "size_gb": 0.308023,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5C3_janOFF",
+        "size_mb": 313.609,
+        "size_gb": 0.313609,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5C4_AprA_ctrl",
+        "size_mb": 308.023,
+        "size_gb": 0.308023,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5C4_Apr_ANS",
+        "size_mb": 308.203,
+        "size_gb": 0.308203,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5C4_Apr_HICE",
+        "size_mb": 308.207,
+        "size_gb": 0.308207,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5C4_Apr_HSNOW",
+        "size_mb": 308.205,
+        "size_gb": 0.308205,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5C4_Apr_UV",
+        "size_mb": 308.205,
+        "size_gb": 0.308205,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5C4_Apr_UV_HICE",
+        "size_mb": 308.205,
+        "size_gb": 0.308205,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5C4_janOFF",
+        "size_mb": 313.625,
+        "size_gb": 0.313625,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5C5_AprN1",
+        "size_mb": 304.091,
+        "size_gb": 0.304091,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5C5_AprN24",
+        "size_mb": 310.455,
+        "size_gb": 0.310455,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5C5_janOFF",
+        "size_mb": 313.609,
+        "size_gb": 0.313609,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5C6R_AprN24",
+        "size_mb": 108.781,
+        "size_gb": 0.108781,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5C6R_janOFF",
+        "size_mb": 313.612,
+        "size_gb": 0.313612,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5C6_AprN24",
+        "size_mb": 303.922,
+        "size_gb": 0.303922,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5C6_fast",
+        "size_mb": 303.922,
+        "size_gb": 0.303922,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5C7_janOFF",
+        "size_mb": 313.609,
+        "size_gb": 0.313609,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5C7_terms",
+        "size_mb": 168.092,
+        "size_gb": 0.168092,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5C7_track",
+        "size_mb": 129.3,
+        "size_gb": 0.1293,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5C81_AprN24",
+        "size_mb": 59.067,
+        "size_gb": 0.059067,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5C81_janOFF",
+        "size_mb": 313.609,
+        "size_gb": 0.313609,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5C82_AprN24",
+        "size_mb": 147.73,
+        "size_gb": 0.14773,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5C82_janOFF",
+        "size_mb": 313.609,
+        "size_gb": 0.313609,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5C8_AprN24",
+        "size_mb": 306.15,
+        "size_gb": 0.30615,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5C8_janOFF",
+        "size_mb": 313.609,
+        "size_gb": 0.313609,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5C_AprA",
+        "size_mb": 303.833,
+        "size_gb": 0.303833,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5C_AprB",
+        "size_mb": 303.848,
+        "size_gb": 0.303848,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5C_AprC",
+        "size_mb": 303.899,
+        "size_gb": 0.303899,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5C_AprD",
+        "size_mb": 304.05,
+        "size_gb": 0.30405,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5C_AprE",
+        "size_mb": 304.277,
+        "size_gb": 0.304277,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5C_janOFF",
+        "size_mb": 313.573,
+        "size_gb": 0.313573,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5D1_AprLegacy",
+        "size_mb": 303.811,
+        "size_gb": 0.303811,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5D1_AprN1",
+        "size_mb": 303.931,
+        "size_gb": 0.303931,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5D1_AprN12",
+        "size_mb": 305.202,
+        "size_gb": 0.305202,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5D1_AprN2",
+        "size_mb": 304.045,
+        "size_gb": 0.304045,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5D1_AprN24",
+        "size_mb": 306.594,
+        "size_gb": 0.306594,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5D1_AprN4",
+        "size_mb": 304.289,
+        "size_gb": 0.304289,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5D1_AprN6",
+        "size_mb": 304.5,
+        "size_gb": 0.3045,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5D1_JanN1",
+        "size_mb": 313.733,
+        "size_gb": 0.313733,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5D1_JanN24",
+        "size_mb": 316.487,
+        "size_gb": 0.316487,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5D2_ExpB",
+        "size_mb": 205.912,
+        "size_gb": 0.205912,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5D2_ExpC",
+        "size_mb": 128.17,
+        "size_gb": 0.12817,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5D2_ExpD",
+        "size_mb": 68.86,
+        "size_gb": 0.06886,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5D2_janOFF",
+        "size_mb": 313.609,
+        "size_gb": 0.313609,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5D3_JanDT150",
+        "size_mb": 78.697,
+        "size_gb": 0.078697,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5D3_JanN1",
+        "size_mb": 313.609,
+        "size_gb": 0.313609,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5D3_dt150full",
+        "size_mb": 304.883,
+        "size_gb": 0.304883,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5D3_dt1800",
+        "size_mb": 49.026,
+        "size_gb": 0.049026,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5D3_dt225",
+        "size_mb": 88.427,
+        "size_gb": 0.088427,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5D3_dt225full",
+        "size_mb": 304.522,
+        "size_gb": 0.304522,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5D3_dt450",
+        "size_mb": 98.136,
+        "size_gb": 0.098136,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5D3_dt450full",
+        "size_mb": 304.16,
+        "size_gb": 0.30416,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5D3_dt450x",
+        "size_mb": 176.638,
+        "size_gb": 0.176638,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5D3_dt900",
+        "size_mb": 98.074,
+        "size_gb": 0.098074,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5E_JanDT150",
+        "size_mb": 98.364,
+        "size_gb": 0.098364,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5E_JanDT225",
+        "size_mb": 88.426,
+        "size_gb": 0.088426,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5E_JanN1",
+        "size_mb": 313.608,
+        "size_gb": 0.313608,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5F_F3",
+        "size_mb": 88.539,
+        "size_gb": 0.088539,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5F_JanDT150",
+        "size_mb": 68.867,
+        "size_gb": 0.068867,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5F_JanN1",
+        "size_mb": 313.608,
+        "size_gb": 0.313608,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5G_B150SKZ",
+        "size_mb": 108.202,
+        "size_gb": 0.108202,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5G_JanDT150",
+        "size_mb": 88.522,
+        "size_gb": 0.088522,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5G_JanN1",
+        "size_mb": 313.608,
+        "size_gb": 0.313608,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5HRC_JanN1",
+        "size_mb": 313.609,
+        "size_gb": 0.313609,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5HRC_Smoke",
+        "size_mb": 68.842,
+        "size_gb": 0.068842,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5H_JanN1",
+        "size_mb": 313.608,
+        "size_gb": 0.313608,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5H_JanProd",
+        "size_mb": 78.697,
+        "size_gb": 0.078697,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5H_LegApr",
+        "size_mb": 303.81,
+        "size_gb": 0.30381,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.5H_ProdApr",
+        "size_mb": 88.539,
+        "size_gb": 0.088539,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.6_A",
+        "size_mb": 303.81,
+        "size_gb": 0.30381,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.6_B",
+        "size_mb": 303.326,
+        "size_gb": 0.303326,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.6_C",
+        "size_mb": 88.539,
+        "size_gb": 0.088539,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.6_D",
+        "size_mb": 304.398,
+        "size_gb": 0.304398,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.6_JA",
+        "size_mb": 313.608,
+        "size_gb": 0.313608,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.6_JB",
+        "size_mb": 313.107,
+        "size_gb": 0.313107,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.6_JC",
+        "size_mb": 98.376,
+        "size_gb": 0.098376,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.6_JD",
+        "size_mb": 314.217,
+        "size_gb": 0.314217,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.7B1_JanN1",
+        "size_mb": 313.609,
+        "size_gb": 0.313609,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.7B2_JanN1",
+        "size_mb": 313.609,
+        "size_gb": 0.313609,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.7B3_JanN1",
+        "size_mb": 313.609,
+        "size_gb": 0.313609,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.7B_JanN1",
+        "size_mb": 313.608,
+        "size_gb": 0.313608,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.7C_AprN1",
+        "size_mb": 303.81,
+        "size_gb": 0.30381,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.7C_JanN1",
+        "size_mb": 313.608,
+        "size_gb": 0.313608,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.7D.1_JanN1",
+        "size_mb": 313.609,
+        "size_gb": 0.313609,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.7D2_JanN1",
+        "size_mb": 313.609,
+        "size_gb": 0.313609,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.7D_AprN1",
+        "size_mb": 303.81,
+        "size_gb": 0.30381,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.7D_JanN1",
+        "size_mb": 313.608,
+        "size_gb": 0.313608,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.7E_APROFF",
+        "size_mb": 303.81,
+        "size_gb": 0.30381,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.7E_APRON",
+        "size_mb": 303.81,
+        "size_gb": 0.30381,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.7E_JANOFF",
+        "size_mb": 313.609,
+        "size_gb": 0.313609,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage11.7E_JANON",
+        "size_mb": 313.609,
+        "size_gb": 0.313609,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage117e1cp_evidence",
+        "size_mb": 0.057,
+        "size_gb": 5.7e-05,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage117e2_APROFF",
+        "size_mb": 303.812,
+        "size_gb": 0.303812,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage117e2_APRON",
+        "size_mb": 303.812,
+        "size_gb": 0.303812,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage117e2_JANOFF",
+        "size_mb": 313.61,
+        "size_gb": 0.31361,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage117e2_JANON",
+        "size_mb": 313.61,
+        "size_gb": 0.31361,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      },
+      {
+        "name": "stage117e2_evidence",
+        "size_mb": 0.006,
+        "size_gb": 6e-06,
+        "class": "ARCHIVE",
+        "reason": "historical stage 11.0-11.7 run"
+      }
+    ],
+    "estimated_compressed_gb": 13.520984
+  },
+  "temporary": {
+    "count": 47,
+    "size_gb": 8.629359,
+    "runs": [
+      {
+        "name": "default_eos_smoke",
+        "size_mb": 313.088,
+        "size_gb": 0.313088,
+        "class": "TEMPORARY",
+        "reason": "test/probe/smoke/default-check run"
+      },
+      {
+        "name": "eos_default_legacy_md5",
+        "size_mb": 313.59,
+        "size_gb": 0.31359,
+        "class": "TEMPORARY",
+        "reason": "unclassified/forensic run; review before cleanup"
+      },
+      {
+        "name": "eos_default_legacy_md5_2",
+        "size_mb": 313.59,
+        "size_gb": 0.31359,
+        "class": "TEMPORARY",
+        "reason": "unclassified/forensic run; review before cleanup"
+      },
+      {
+        "name": "matrix_apr_eos80_n1_29d_prelim",
+        "size_mb": 303.343,
+        "size_gb": 0.303343,
+        "class": "TEMPORARY",
+        "reason": "preliminary matrix/extrapolation run; not a matrix cell"
+      },
+      {
+        "name": "matrix_apr_eos80_n1_30d_4step_prelim",
+        "size_mb": 313.128,
+        "size_gb": 0.313128,
+        "class": "TEMPORARY",
+        "reason": "preliminary matrix/extrapolation run; not a matrix cell"
+      },
+      {
+        "name": "matrix_apr_legacy_n1_29d_prelim",
+        "size_mb": 303.343,
+        "size_gb": 0.303343,
+        "class": "TEMPORARY",
+        "reason": "preliminary matrix/extrapolation run; not a matrix cell"
+      },
+      {
+        "name": "matrix_apr_legacy_n1_30d_4step_prelim",
+        "size_mb": 313.128,
+        "size_gb": 0.313128,
+        "class": "TEMPORARY",
+        "reason": "preliminary matrix/extrapolation run; not a matrix cell"
+      },
+      {
+        "name": "matrix_default_check",
+        "size_mb": 313.59,
+        "size_gb": 0.31359,
+        "class": "TEMPORARY",
+        "reason": "test/probe/smoke/default-check run"
+      },
+      {
+        "name": "phase1a_default_check",
+        "size_mb": 313.59,
+        "size_gb": 0.31359,
+        "class": "TEMPORARY",
+        "reason": "test/probe/smoke/default-check run"
+      },
+      {
+        "name": "phase2_default_check",
+        "size_mb": 313.59,
+        "size_gb": 0.31359,
+        "class": "TEMPORARY",
+        "reason": "test/probe/smoke/default-check run"
+      },
+      {
+        "name": "scripts",
+        "size_mb": 0.044,
+        "size_gb": 4.4e-05,
+        "class": "TEMPORARY",
+        "reason": "test/probe/smoke/default-check run"
+      },
+      {
+        "name": "stage11.5C4_probe_HICE",
+        "size_mb": 186.304,
+        "size_gb": 0.186304,
+        "class": "TEMPORARY",
+        "reason": "test/probe/smoke/default-check run"
+      },
+      {
+        "name": "t3_smoke_legacy",
+        "size_mb": 29.368,
+        "size_gb": 0.029368,
+        "class": "TEMPORARY",
+        "reason": "test/probe/smoke/default-check run"
+      },
+      {
+        "name": "t3c3_probe_e1",
+        "size_mb": 313.59,
+        "size_gb": 0.31359,
+        "class": "TEMPORARY",
+        "reason": "test/probe/smoke/default-check run"
+      },
+      {
+        "name": "t3c4_default_check",
+        "size_mb": 313.59,
+        "size_gb": 0.31359,
+        "class": "TEMPORARY",
+        "reason": "test/probe/smoke/default-check run"
+      },
+      {
+        "name": "t3c_smoke",
+        "size_mb": 29.368,
+        "size_gb": 0.029368,
+        "class": "TEMPORARY",
+        "reason": "test/probe/smoke/default-check run"
+      },
+      {
+        "name": "t41_default_check",
+        "size_mb": 313.59,
+        "size_gb": 0.31359,
+        "class": "TEMPORARY",
+        "reason": "test/probe/smoke/default-check run"
+      },
+      {
+        "name": "t4prep_default_check",
+        "size_mb": 313.59,
+        "size_gb": 0.31359,
+        "class": "TEMPORARY",
+        "reason": "test/probe/smoke/default-check run"
+      },
+      {
+        "name": "t5c3_default_check",
+        "size_mb": 313.59,
+        "size_gb": 0.31359,
+        "class": "TEMPORARY",
+        "reason": "test/probe/smoke/default-check run"
+      },
+      {
+        "name": "t5c4_default_check",
+        "size_mb": 313.59,
+        "size_gb": 0.31359,
+        "class": "TEMPORARY",
+        "reason": "test/probe/smoke/default-check run"
+      },
+      {
+        "name": "t6s_default_check",
+        "size_mb": 313.59,
+        "size_gb": 0.31359,
+        "class": "TEMPORARY",
+        "reason": "test/probe/smoke/default-check run"
+      },
+      {
+        "name": "test_ocean_init",
+        "size_mb": 0.0,
+        "size_gb": 0.0,
+        "class": "TEMPORARY",
+        "reason": "test/probe/smoke/default-check run"
+      },
+      {
+        "name": "test_ocean_init_allowed",
+        "size_mb": 0.0,
+        "size_gb": 0.0,
+        "class": "TEMPORARY",
+        "reason": "test/probe/smoke/default-check run"
+      },
+      {
+        "name": "test_ocean_init_en4",
+        "size_mb": 0.0,
+        "size_gb": 0.0,
+        "class": "TEMPORARY",
+        "reason": "test/probe/smoke/default-check run"
+      },
+      {
+        "name": "test_ocean_init_force",
+        "size_mb": 0.0,
+        "size_gb": 0.0,
+        "class": "TEMPORARY",
+        "reason": "test/probe/smoke/default-check run"
+      },
+      {
+        "name": "test_ocean_init_force2",
+        "size_mb": 0.0,
+        "size_gb": 0.0,
+        "class": "TEMPORARY",
+        "reason": "test/probe/smoke/default-check run"
+      },
+      {
+        "name": "test_prov_allowed",
+        "size_mb": 0.0,
+        "size_gb": 0.0,
+        "class": "TEMPORARY",
+        "reason": "test/probe/smoke/default-check run"
+      },
+      {
+        "name": "test_prov_allowed2",
+        "size_mb": 460.342,
+        "size_gb": 0.460342,
+        "class": "TEMPORARY",
+        "reason": "test/probe/smoke/default-check run"
+      },
+      {
+        "name": "test_prov_allowed3",
+        "size_mb": 548.547,
+        "size_gb": 0.548547,
+        "class": "TEMPORARY",
+        "reason": "test/probe/smoke/default-check run"
+      },
+      {
+        "name": "test_prov_attr_1_default_strict",
+        "size_mb": 225.033,
+        "size_gb": 0.225033,
+        "class": "TEMPORARY",
+        "reason": "test/probe/smoke/default-check run"
+      },
+      {
+        "name": "test_prov_attr_2_override_strict",
+        "size_mb": 166.329,
+        "size_gb": 0.166329,
+        "class": "TEMPORARY",
+        "reason": "test/probe/smoke/default-check run"
+      },
+      {
+        "name": "test_prov_attr_3_force_synthetic",
+        "size_mb": 136.975,
+        "size_gb": 0.136975,
+        "class": "TEMPORARY",
+        "reason": "test/probe/smoke/default-check run"
+      },
+      {
+        "name": "test_prov_attr_4_eos80",
+        "size_mb": 68.488,
+        "size_gb": 0.068488,
+        "class": "TEMPORARY",
+        "reason": "test/probe/smoke/default-check run"
+      },
+      {
+        "name": "test_prov_attr_5_legacy",
+        "size_mb": 19.585,
+        "size_gb": 0.019585,
+        "class": "TEMPORARY",
+        "reason": "test/probe/smoke/default-check run"
+      },
+      {
+        "name": "test_prov_en4",
+        "size_mb": 245.014,
+        "size_gb": 0.245014,
+        "class": "TEMPORARY",
+        "reason": "test/probe/smoke/default-check run"
+      },
+      {
+        "name": "test_prov_final",
+        "size_mb": 509.63,
+        "size_gb": 0.50963,
+        "class": "TEMPORARY",
+        "reason": "test/probe/smoke/default-check run"
+      },
+      {
+        "name": "test_prov_force",
+        "size_mb": 460.342,
+        "size_gb": 0.460342,
+        "class": "TEMPORARY",
+        "reason": "test/probe/smoke/default-check run"
+      },
+      {
+        "name": "test_prov_invalid",
+        "size_mb": 0.0,
+        "size_gb": 0.0,
+        "class": "TEMPORARY",
+        "reason": "test/probe/smoke/default-check run"
+      },
+      {
+        "name": "test_prov_off2",
+        "size_mb": 29.368,
+        "size_gb": 0.029368,
+        "class": "TEMPORARY",
+        "reason": "test/probe/smoke/default-check run"
+      },
+      {
+        "name": "test_prov_on2",
+        "size_mb": 29.368,
+        "size_gb": 0.029368,
+        "class": "TEMPORARY",
+        "reason": "test/probe/smoke/default-check run"
+      },
+      {
+        "name": "test_prov_strict",
+        "size_mb": 0.0,
+        "size_gb": 0.0,
+        "class": "TEMPORARY",
+        "reason": "test/probe/smoke/default-check run"
+      },
+      {
+        "name": "test_provenance",
+        "size_mb": 29.368,
+        "size_gb": 0.029368,
+        "class": "TEMPORARY",
+        "reason": "test/probe/smoke/default-check run"
+      },
+      {
+        "name": "test_provenance_off",
+        "size_mb": 29.368,
+        "size_gb": 0.029368,
+        "class": "TEMPORARY",
+        "reason": "test/probe/smoke/default-check run"
+      },
+      {
+        "name": "test_run",
+        "size_mb": 0.0,
+        "size_gb": 0.0,
+        "class": "TEMPORARY",
+        "reason": "test/probe/smoke/default-check run"
+      },
+      {
+        "name": "test_run_on",
+        "size_mb": 0.0,
+        "size_gb": 0.0,
+        "class": "TEMPORARY",
+        "reason": "test/probe/smoke/default-check run"
+      },
+      {
+        "name": "test_seaice_prov_off",
+        "size_mb": 39.135,
+        "size_gb": 0.039135,
+        "class": "TEMPORARY",
+        "reason": "test/probe/smoke/default-check run"
+      },
+      {
+        "name": "test_seaice_prov_on",
+        "size_mb": 78.273,
+        "size_gb": 0.078273,
+        "class": "TEMPORARY",
+        "reason": "test/probe/smoke/default-check run"
+      }
+    ]
+  },
+  "duplicates": {
+    "count": 6,
+    "size_gb": 1.65581,
+    "runs": [
+      {
+        "name": "stage11.5C1_janOFF3",
+        "size_mb": 313.609,
+        "size_gb": 0.313609,
+        "class": "DUPLICATES",
+        "reason": "rerun of stage11.5C1_janOFF2; keep newest"
+      },
+      {
+        "name": "stage11.5C2_AprA_gain2",
+        "size_mb": 306.611,
+        "size_gb": 0.306611,
+        "class": "DUPLICATES",
+        "reason": "rerun of stage11.5C2_AprA_gain; keep newest"
+      },
+      {
+        "name": "stage11.5C2_AprB_cplfreeze2",
+        "size_mb": 306.612,
+        "size_gb": 0.306612,
+        "class": "DUPLICATES",
+        "reason": "rerun of stage11.5C2_AprB_cplfreeze; keep newest"
+      },
+      {
+        "name": "stage11.5C2_AprC_heatfreeze2",
+        "size_mb": 306.597,
+        "size_gb": 0.306597,
+        "class": "DUPLICATES",
+        "reason": "rerun of stage11.5C2_AprC_heatfreeze; keep newest"
+      },
+      {
+        "name": "stage11.5C2_janOFF2",
+        "size_mb": 313.609,
+        "size_gb": 0.313609,
+        "class": "DUPLICATES",
+        "reason": "rerun of stage11.5C2_janOFF; keep newest"
+      },
+      {
+        "name": "stage11.5C6R_AprN24b",
+        "size_mb": 108.772,
+        "size_gb": 0.108772,
+        "class": "DUPLICATES",
+        "reason": "rerun of stage11.5C6R_AprN24; keep newest"
+      }
+    ]
+  },
+  "estimated_space_savings_gb": 37.327136,
+  "recommendations": [
+    "ARCHIVE: tar + gzip (assume ~3x; estimated compressed size shown); requires user approval.",
+    "TEMPORARY: delete after user review; no deletion performed in this stage.",
+    "DUPLICATES: keep the newest, delete older rerun after user approval.",
+    "CRITICAL: retain active; do not delete/archive.",
+    "No data/runs files were deleted, moved, compressed, or archived."
+  ]
+}

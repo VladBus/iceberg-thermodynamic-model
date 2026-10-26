@@ -1,0 +1,60 @@
+{
+  "stage": "11.8B",
+  "scope": "One representative cell per season: Jan LEGACY, Apr EOS80, Jul LEGACY, Oct EOS80; plus Jan EOS80 default check.",
+  "cases": [
+    {
+      "season": "Jan",
+      "eos": "LEGACY",
+      "rerun": "legacy_fallback_verify",
+      "matrix": "matrix_jan_legacy_n1",
+      "nc_files": 32,
+      "all_md5_identical": true,
+      "day01_md5": "c35e5679c56af0c5f28d73bd351a3826",
+      "day30_md5": "20b7fe2453d56029dce294f855092694"
+    },
+    {
+      "season": "Jan",
+      "eos": "EOS80",
+      "rerun": "default_eos80_verify",
+      "matrix": "matrix_jan_eos80_n1",
+      "nc_files": 32,
+      "all_md5_identical": true,
+      "day01_md5": "cb5846b263029c4628943a22166af657",
+      "day30_md5": "2e4426a54047a93a75e5f910c718784e"
+    },
+    {
+      "season": "Apr",
+      "eos": "EOS80",
+      "rerun": "repro_apr_eos80",
+      "matrix": "matrix_apr_eos80_n1",
+      "nc_files": 32,
+      "all_md5_identical": true,
+      "day01_md5": "0fced0bbeb3f6f4d19cd1bc104f6dd40",
+      "day30_md5": "4f255d048a2361b99d0a6299db2a8180"
+    },
+    {
+      "season": "Jul",
+      "eos": "LEGACY",
+      "rerun": "repro_jul_legacy",
+      "matrix": "matrix_jul_legacy_n1",
+      "nc_files": 32,
+      "all_md5_identical": true,
+      "day01_md5": "be54a3634e85d03108b16d6883c3f8ee",
+      "day30_md5": "da2b82231fda39852987a358b915b8af"
+    },
+    {
+      "season": "Oct",
+      "eos": "EOS80",
+      "rerun": "repro_oct_eos80",
+      "matrix": "matrix_oct_eos80_n1",
+      "nc_files": 32,
+      "all_md5_identical": true,
+      "day01_md5": "61cfa8798d0b534bcf9f3e035a08381d",
+      "day30_md5": "932c24d5c7f18b2b24060794af5a9914"
+    }
+  ],
+  "all_identical": true,
+  "tolerance": "bit-identical (MD5 of every results_day_*.nc); no tolerance accepted",
+  "note": "Re-runs used the same standard protective config and input files; no production scheduler cells.",
+  "PASS": true
+}

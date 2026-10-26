@@ -5,11 +5,12 @@ Stage 11.7E.2.3 — Provenance Attributes Verification
 Verifies that NetCDF output contains correct provenance metadata attributes
 written at day_00 (initial state output).
 
-Four scenarios tested:
+Five scenarios tested:
   1. Default path, STRICT mode (OCEAN_INIT_MODE=STRICT, no override)
   2. Override path, STRICT mode (ICEBERG_OCEAN_INIT_FILE set to different path)
   3. FORCE_SYNTHETIC mode (OCEAN_INIT_MODE=FORCE_SYNTHETIC)
-  4. EOS-80 mode (EOS_MODE=EOS80)
+  4. Explicit EOS-80 mode (EOS_MODE=EOS80)
+  5. Explicit legacy fallback (EOS_MODE=LEGACY)
 
 The test runs the model binary with a short timeout (enough for day_00 output),
 reads the global attributes from results_day_00.nc, and verifies them.
@@ -206,7 +207,7 @@ def scenario_default_strict(binary):
         'initialization_file': DEFAULT_EN4_FILE_REL,
         'initialization_attempted_file': DEFAULT_EN4_FILE_REL,
         'initialization_mode_actual': 'EN4_REAL',
-        'eos_mode': 'LEGACY',
+        'eos_mode': 'EOS80',
         'scheduler_mode': 'N1_LEGACY',
         'seaice_reader_mode': 'legacy',
         'seaice_source_file': 'legacy_1_*.ice',
@@ -243,7 +244,7 @@ def scenario_override_strict(binary):
             'initialization_file': override_rel,
             'initialization_attempted_file': override_rel,
             'initialization_mode_actual': 'EN4_REAL',
-            'eos_mode': 'LEGACY',
+            'eos_mode': 'EOS80',
             'scheduler_mode': 'N1_LEGACY',
         }
         verify_attributes(day00, expected, "scenario_2_override_strict")
@@ -267,10 +268,30 @@ def scenario_force_synthetic(binary):
         'initialization_file': 'NONE',
         'initialization_attempted_file': 'SKIPPED_BY_MODE',
         'initialization_mode_actual': 'SYNTHETIC',
-        'eos_mode': 'LEGACY',
+        'eos_mode': 'EOS80',
         'scheduler_mode': 'N1_LEGACY',
     }
     verify_attributes(day00, expected, "scenario_3_force_synthetic")
+    return True
+
+
+def scenario_legacy(binary):
+    """Scenario 5: explicit LEGACY fallback."""
+    env = {
+        'EOS_MODE': 'LEGACY',
+    }
+    day00 = run_model(binary, "test_prov_attr_5_legacy", env)
+    if day00 is None:
+        return False
+    expected = {
+        'initialization_source': 'EN4',
+        'initialization_file': DEFAULT_EN4_FILE_REL,
+        'initialization_attempted_file': DEFAULT_EN4_FILE_REL,
+        'initialization_mode_actual': 'EN4_REAL',
+        'eos_mode': 'LEGACY',
+        'scheduler_mode': 'N1_LEGACY',
+    }
+    verify_attributes(day00, expected, "scenario_5_legacy")
     return True
 
 
@@ -320,6 +341,7 @@ def main():
         ("Scenario 2: Override STRICT", scenario_override_strict),
         ("Scenario 3: FORCE_SYNTHETIC", scenario_force_synthetic),
         ("Scenario 4: EOS-80", scenario_eos80),
+        ("Scenario 5: LEGACY fallback", scenario_legacy),
     ]
 
     for name, func in scenarios:

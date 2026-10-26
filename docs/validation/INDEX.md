@@ -129,6 +129,14 @@ Stage 10 reports have been archived to `docs/wiki/stages/stage10/`. See the arch
 
 | `stage11.8A_phase2_seasonal_results.md` (N=1 seasonal matrix + T-41 correction) | 11.8A Phase 2-ANALYSIS | COMPLETE (8/8 PASS; D-29 PROMOTED; T-41 false positive) | Apr/Jul/Oct × LEGACY/EOS80 30 d; Jan reused. July EOS80 raw anomaly −2.504e-3 kg/m³ = −2.504e-6 g/cm³; absolute density 1.0199975 g/cm³; model−UNESCO residual ≤1.2e-9. Old RO≥0 gate invalid; corrected absolute-density gate passes all 8. D-29 A/B/C true for N=1 → **PROMOTED**; production BLOCKED (T-39). Next: Stage 11.8B. | `docs/validation/stage11.8A_phase2_seasonal_results.md` |
 
+| `stage11.8B_runs_inventory.md` (data/runs inventory) | 11.8B | COMPLETE (recommendations only; no deletion) | **82.583 GB / 289 runs**: CRITICAL 83 (31.734 GB), ARCHIVE 153 (40.563 GB; est. 13.521 GB after ~3× gzip), TEMPORARY 47 (8.629 GB), DUPLICATES 6 (1.656 GB); estimated savings **37.327 GB**. Cleanup requires approval; nothing deleted. | `docs/validation/stage11.8B_runs_inventory.md`, `data/validation/runs_inventory_final.json` |
+
+| `MIGRATION_GUIDE_EOS80_DEFAULT.md` (EOS-80 default) | 11.8B | COMPLETE (breaking change) | `EOS_MODE` unset → EOS80; `EOS_MODE=LEGACY` fallback; default/explicit EOS80/matrix and LEGACY/matrix bit-identical (32/32); migration steps and impact. | `docs/MIGRATION_GUIDE_EOS80_DEFAULT.md`, `data/validation/default_eos80_verification.json` |
+
+| `STAGE11_SUMMARY.md` (Stage 11 summary) | 11.8B | COMPLETE | Ocean stabilization, T4–T6 forcing, EOS-80 validation/promotion, 8/8 matrix, runtime default, inventory; limitations T-38/T-39/seasonal ice; future work. | `docs/STAGE11_SUMMARY.md` |
+
+| `STAGE11_CLOSURE_CHECKLIST.md` (closure checklist) | 11.8B | COMPLETE (GO conditional on cleanup) | All technical items checked; data/runs cleanup pending approval; Stage 11.9 not started. | `docs/STAGE11_CLOSURE_CHECKLIST.md` |
+
 ## Rules
 
 - Reports here are not rewritten after stage completion (exception: technical navigational fixes).

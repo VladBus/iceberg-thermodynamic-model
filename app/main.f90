@@ -606,7 +606,7 @@ program main
     end if
     call ca_configure(ca_f64_mode, ca_f64_mix, ca_f64_scope, ca_eps_value)
     call eos_configure(ca_f64_scope)
-    ! Stage 11.4: EOS-80 selector (env EOS_MODE; default LEGACY = bit-identical).
+    ! Stage 11.8B: EOS-80 is default; EOS_MODE=LEGACY is the explicit fallback.
     call eos80_configure()
     ! Stage 11.8.0 T3-CORRECTIVE-3: D-33 physics-branch switches (all OFF default).
     call s118_init()

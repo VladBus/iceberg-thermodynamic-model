@@ -1,9 +1,9 @@
 # Project Roadmap
 
 **Updated:** 2026-10-26
-**Current scientific stage:** **11.8A COMPLETE** — N=1 seasonal matrix **8/8 PASS after T-41 gate correction**; D-29 **PROMOTED** for N=1 validation. Production scheduler ice artifact remains BLOCKED (T-39); CA print overflow T-40. **Next: Stage 11.8B** production release audit/cleanup; Stage 11.9 not started.
+**Current scientific stage:** **11.8B COMPLETE** — EOS-80 is the runtime default (breaking change); N=1 matrix 8/8 PASS; production scheduler remains BLOCKED (T-39). data/runs inventory complete (79.78 GB; cleanup pending approval). **Next: Stage 11.9 closure** (not started).
 **Stages 3–11.4.1: COMPLETED** (10.x iceberg modernization; 11.1 seasonal characterization; 11.2 CFL audit; 11.4-D21…D33 EN4 stabilization → ERA5-coverage fix → cleanup + Ocean Baseline 11.x; 11.3A execution-graph audit; 11.3B input-architecture audit + NetCDF contracts; 11.3C scheme audit + timestep matrix; 11.3C.1 semantics + CFL distributions; 11.3C.2 time-integration audit; 11.3C.3 loop-bound search (VERDICT D); 11.4 EOS-80 experiment + 11.4.1 impact validation (OPTIONAL, not default)).
-**Current status:** Stages 10.14-11.8A Phase 2-ANALYSIS committed. **11.8A:** 8 N=1 cells, 8 PASS after T-41 gate correction; production blocked (T-39); D-29 PROMOTED (N=1).
+**Current status:** Stages 10.14-11.8B committed. **11.8B:** EOS80 default; 8/8 matrix; default/fallback/reproducibility bit-identical; inventory 79.78 GB with 36.41 GB estimated savings (not executed).
 **Test suite:** 69 Fortran test source files (`ls test/*.f90 | wc -l`); 69 executable test targets (`grep -lE '^\s*program ' test/*.f90 | wc -l`). Counting method (Stage 11.8.0 T0): every current `test/*.f90` holds a top-level `program`, so file count == target count (verified 2026-10-24).
 **Stage 11.5H-RC COMPLETE** (release-candidate gate: self-contained production scheduler, docs synced D-22…D-28). Plan: 11.8.0 diagnostic ladder (T0–T6) → 11.8A validation → 11.8B audit → 11.9 closure → 12.0 voxel (blocked, D-28).
 
@@ -79,7 +79,7 @@ no NaN; CA guard saturation DT-independent (quantization floor).
 ### Stage 11.4 — EOS-80 A/B Experiment (COMPLETED) + 11.4.1 Impact Validation
 
 Controlled density-EOS experiment (legacy Eckart vs EOS-80): UNESCO EOS-80
-implemented opt-in (`EOS_MODE=EOS80`, LEGACY default bit-identical —
+implemented opt-in (`EOS_MODE=EOS80`; LEGACY was default until Stage 11.8B —
 127/127 md5); 8/8 reference checks; all 4 seasons clean; CA transformed
 (maxiter ~90 vs 1001); April EUU −7% (gradual circulation adjustment);
 RECOMMENDATION: OPTIONAL, not default. Runs at reference cadence A
@@ -691,6 +691,8 @@ KE30/KE15 0.827, RO 0, no NaN); **October PASS** (0.690, 2.152, RO 0, no NaN).
 **Production scheduler 30/30 days, 720/720 fire-steps PASS** (max |U| 0.494,
 KE30/KE15 1.480, RO 0, no NaN) — historical 55/360 blocker **RESOLVED for
 30-day runs**. EOS80 production 10-day smoke PASS (max |U| 0.405, RO 0).
+**Runtime default update (11.8B):** EOS80 is now the default; LEGACY is an
+explicit fallback (D-48).
 **11.8A matrix GO**: 2 EOS ×2 schedulers ×4 seasons =16 cells, 30 days;
 spec `docs/validation/stage11.8A_matrix_plan.md`; storage ~4.8 GB; ice caveat
 Apr/Jul/Oct use January-derived diagnostic ice. Matrix execution not started.
@@ -746,6 +748,26 @@ BLOCKED (T-39); April forcing used one persisted boundary slice to reach
 30 days. Report: `docs/validation/stage11.8A_phase2_seasonal_results.md`.
 **Next: Stage 11.8B** production release audit/cleanup; Stage 11.9 not
 started.
+
+### Stage 11.8B — Production Release Audit & EOS-80 runtime default
+
+**Status: COMPLETE (2026-10-26).** BREAKING CHANGE: `EOS_MODE` unset now
+selects **EOS80**; `EOS_MODE=LEGACY` is the explicit Eckart fallback. No
+production scheduler change (T-39 remains BLOCKED).
+
+- Default vs explicit EOS80 vs matrix Jan EOS80: **32/32 NetCDF files MD5
+  identical**; LEGACY fallback vs matrix Jan LEGACY: **32/32 identical**.
+- Reproducibility: Jan LEGACY, Jan EOS80, Apr EOS80, Jul LEGACY, Oct EOS80
+  re-runs are **bit-identical** to matrix outputs (32/32 each).
+- data/runs: **82.583 GB / 289 runs**; CRITICAL 83 (31.734 GB), ARCHIVE 153
+  (40.563 GB), TEMPORARY 47 (8.629 GB), DUPLICATES 6 (1.656 GB); estimated
+  savings **37.327 GB**. **No deletion/archival performed.**
+- Migration: `docs/MIGRATION_GUIDE_EOS80_DEFAULT.md`.
+- Inventory: `docs/validation/stage11.8B_runs_inventory.md`,
+  `data/validation/runs_inventory_final.json`.
+- Stage summary: `docs/STAGE11_SUMMARY.md`; checklist:
+  `docs/STAGE11_CLOSURE_CHECKLIST.md`.
+- Next: Stage 11.9 closure after data/runs cleanup approval.
 
 ### Stage 11.8 Prerequisite: Ocean Stabilization (MANDATORY GATE)
 

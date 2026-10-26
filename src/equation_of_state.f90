@@ -56,31 +56,41 @@ module equation_of_state
     logical, save :: eos_f64_mode = .false.
 
     ! ==========================================================================
-    ! Stage 11.4: селектор EOS-80 (runtime, по умолчанию LEGACY = OFF).
+    ! Stage 11.8B: EOS-80 is the DEFAULT runtime EOS (D-29/D-47).
     !
-    !   eos80_mode = .true.  → диспетчеры eos_density/eos_density_f64 считают
-    !                            плотность по UNESCO EOS-80 (давление-зависимо).
-    !   eos80_mode = .false. → бит-идентичный legacy Эккарт (тот же вызов).
+    !   eos80_mode = .true.  → UNESCO EOS-80 (pressure-dependent; default).
+    !   eos80_mode = .false. → historical Eckart, bit-identical legacy.
     !
-    !   Управляется из main.f90 через eos80_configure() (env EOS_MODE:
-    !   'EOS80'/'eos80'/'true'/'1' → ON; всё остальное/пусто → OFF/LEGACY).
-    !   Конвенция выхода сохранена: аномалия rho-1.02 [г/см³]; S модели
-    !   (массовая доля) ×1000 → PSU; p [дбар] передаётся вызывающим
-    !   (глубина уровня в метрах: z[см]×0.01).
+    !   EOS_MODE environment override:
+    !     unset/empty      → EOS80 (default; BREAKING CHANGE, Stage 11.8B)
+    !     EOS80/eos80/true/1 → EOS80
+    !     LEGACY/legacy/Eckart/false/0 → legacy Eckart fallback
+    !   Unknown non-empty values → EOS80 with a warning (never silently legacy).
+    !   The convention remains rho-1.02 [g/cm3]; S is mass fraction ×1000 PSU.
     ! ==========================================================================
-    logical, save :: eos80_mode = .false.
+    logical, save :: eos80_mode = .true.
 
     contains
 
     subroutine eos80_configure()
-        character(len=256) :: env_str
+        character(len=256) :: env_str = ''
         call get_environment_variable('EOS_MODE', env_str)
-        if (len_trim(env_str) .gt. 0 .and. (env_str .eq. 'EOS80' .or. &
-            env_str .eq. 'eos80' .or. env_str .eq. 'true' .or. env_str .eq. '1')) then
+        if (len_trim(env_str) .eq. 0) then
             eos80_mode = .true.
-            print *, '>>> Stage 11.4: EOS_MODE=EOS80 (UNESCO 1983 density)'
+            print *, '>>> Stage 11.8B: EOS_MODE unset -> default EOS80 (UNESCO 1983)'
+        else if (trim(env_str) .eq. 'LEGACY' .or. trim(env_str) .eq. 'legacy' .or. &
+                 trim(env_str) .eq. 'Eckart' .or. trim(env_str) .eq. 'eckart' .or. &
+                 trim(env_str) .eq. 'false' .or. trim(env_str) .eq. '0') then
+            eos80_mode = .false.
+            print *, '>>> Stage 11.8B: EOS_MODE=LEGACY (explicit Eckart fallback)'
+        else if (trim(env_str) .eq. 'EOS80' .or. trim(env_str) .eq. 'eos80' .or. &
+                 trim(env_str) .eq. 'true' .or. trim(env_str) .eq. '1') then
+            eos80_mode = .true.
+            print *, '>>> Stage 11.8B: EOS_MODE=EOS80 (UNESCO 1983 density)'
         else
-            print *, '>>> Stage 11.4: EOS_MODE=LEGACY (Eckart, bit-identical)'
+            eos80_mode = .true.
+            print *, '>>> Stage 11.8B: WARNING unknown EOS_MODE="', trim(env_str), &
+                     '" -> default EOS80'
         end if
     end subroutine eos80_configure
 

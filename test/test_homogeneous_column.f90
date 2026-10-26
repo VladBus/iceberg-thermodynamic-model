@@ -16,8 +16,8 @@
 ! EOS modes, so PASS is the expected outcome; the CA defect target is the
 ! weak-inversion test (test_weak_inversion.f90, T2 core).
 !
-! EOS MODE: selected by the EOS_MODE environment variable (LEGACY default,
-! EOS80 opt-in) via equation_of_state::eos80_configure().
+! EOS MODE: selected by EOS_MODE (EOS80 default since Stage 11.8B;
+! EOS_MODE=LEGACY explicit fallback) via eos80_configure().
 !
 ! EXIT CODE: 0 = PASS (invariant holds); 1 = FAIL (invariant violated, written
 ! to JSON first) or execution error. The process exit code therefore GENUINELY
@@ -48,7 +48,7 @@ program test_homogeneous_column
     write (*, '(A)') "=== Homogeneous Column CA Smoke Test ==="
     write (*, '(A)') "T = 4.0 degC, S = 35.0 PSU (0.035 mass fraction), all levels"
 
-    ! Select EOS mode from the environment (LEGACY default).
+    ! Select EOS mode from the environment (EOS80 default; LEGACY explicit).
     call eos80_configure()
     eos_mode = trim(get_active_eos_mode())
     json_file = "data/validation/homogeneous_column_fortran_" // trim(eos_mode) // ".json"

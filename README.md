@@ -35,7 +35,8 @@ under atmospheric, oceanic, bathymetric, and sea-ice forcing.
 
 ## 📑 Project status
 
-- **Current stage:** Stage 11.8.0 T6-SEASONAL COMPLETE — Jul/Oct N=1 PASS; production scheduler 30/30 days (720/720 fire-steps) PASS, historical 55/360 blocker resolved for 30-day; T-38 accepted 90-day limitation. **11.8A matrix GO** (specified, not executed).
+- **Current stage:** **Stage 11.8B COMPLETE** — EOS-80 promoted to runtime default; 8/8 N=1 seasonal matrix PASS; production scheduler remains BLOCKED (T-39). Next: Stage 11.9 closure after data/runs cleanup approval.
+- **BREAKING CHANGE (Stage 11.8B):** `EOS_MODE` unset now selects **EOS80**, not LEGACY. Set `EOS_MODE=LEGACY` to restore the historical Eckart fallback. See `docs/MIGRATION_GUIDE_EOS80_DEFAULT.md`.
   [Historical note from Stage 10.19, SUPERSEDED by Stage 10.20 restoration
   (full-coverage ERA5: 3-day gate PASS, residual characterized, NOT fixed):
   coupling recovery (completed: the Lagrangian iceberg module is now
@@ -71,8 +72,11 @@ fpm test --flag "-I/usr/include"
 # Strict build
 fpm build --flag "-I/usr/include -Wall -Wextra -fcheck=all -ffpe-trap=invalid,zero,overflow"
 
-# Run
+# Run (EOS-80 is the default from Stage 11.8B)
 fpm run --flag "-I/usr/include" -- <run_id> [era5_file]
+
+# Legacy regression / comparison
+EOS_MODE=LEGACY fpm run --flag "-I/usr/include" -- <run_id> [era5_file]
 
 # After a fresh clone, regenerate the real-grid inputs (three steps:
 # 0 conditional, then 1 and 2):

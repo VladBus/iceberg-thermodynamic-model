@@ -1,11 +1,11 @@
 # Project Roadmap
 
-**Updated:** 2026-10-26
-**Current scientific stage:** **11.8B COMPLETE** — EOS-80 is the runtime default (breaking change); N=1 matrix 8/8 PASS; production scheduler remains BLOCKED (T-39). data/runs inventory complete (79.78 GB; cleanup pending approval). **Next: Stage 11.9 closure** (not started).
+**Updated:** 2026-10-27
+**Current scientific stage:** **STAGE 11 CLOSED** (2026-10-27) — EOS-80 runtime default; N=1 matrix 8/8 PASS; production scheduler remains BLOCKED (T-39). data/runs inventory 82.583 GB (cleanup optional). **Next: Stage 12 preparation** (voxel iceberg; implementation not started).
 **Stages 3–11.4.1: COMPLETED** (10.x iceberg modernization; 11.1 seasonal characterization; 11.2 CFL audit; 11.4-D21…D33 EN4 stabilization → ERA5-coverage fix → cleanup + Ocean Baseline 11.x; 11.3A execution-graph audit; 11.3B input-architecture audit + NetCDF contracts; 11.3C scheme audit + timestep matrix; 11.3C.1 semantics + CFL distributions; 11.3C.2 time-integration audit; 11.3C.3 loop-bound search (VERDICT D); 11.4 EOS-80 experiment + 11.4.1 impact validation (OPTIONAL, not default)).
-**Current status:** Stages 10.14-11.8B committed. **11.8B:** EOS80 default; 8/8 matrix; default/fallback/reproducibility bit-identical; inventory 79.78 GB with 36.41 GB estimated savings (not executed).
+**Current status:** Stages 10.14-11.9 committed. **11.9:** Stage 11 formally closed; closure declaration and final review committed. **11.8B:** EOS80 default; 8/8 matrix; reproducibility bit-identical; inventory 82.583 GB with 37.327 GB optional cleanup (not executed).
 **Test suite:** 69 Fortran test source files (`ls test/*.f90 | wc -l`); 69 executable test targets (`grep -lE '^\s*program ' test/*.f90 | wc -l`). Counting method (Stage 11.8.0 T0): every current `test/*.f90` holds a top-level `program`, so file count == target count (verified 2026-10-24).
-**Stage 11.5H-RC COMPLETE** (release-candidate gate: self-contained production scheduler, docs synced D-22…D-28). Plan: 11.8.0 diagnostic ladder (T0–T6) → 11.8A validation → 11.8B audit → 11.9 closure → 12.0 voxel (blocked, D-28).
+**Stage 11.5H-RC COMPLETE** (release-candidate gate: self-contained production scheduler, docs synced D-22…D-28). Plan: 11.8.0 diagnostic ladder (T0–T6) → 11.8A validation → 11.8B audit → 11.9 closure → 12.0 voxel (planning open; implementation not started, D-28).
 
 ## Completed foundation
 
@@ -156,7 +156,7 @@ deferred to Stage 11.8A observational validation; legacy EOS is retained
 permanently as regression baseline and is NOT scheduled for removal."
 Report: `docs/archive/stage11/stage11.6_eos80_integration_rebaseline.md`.
 
-> **Final 11.8A update:** D-47 (2026-10-26) promotes EOS80 for the N=1
+> **Final 11.8A update:** D-47 (2026-10-27) promotes EOS80 for the N=1
 > 30-day validated matrix after the T-41 gate correction; production scheduler
 > remains BLOCKED (T-39). Stage 11.6's "OPTIONAL" status is historical.
 
@@ -751,7 +751,7 @@ started.
 
 ### Stage 11.8B — Production Release Audit & EOS-80 runtime default
 
-**Status: COMPLETE (2026-10-26).** BREAKING CHANGE: `EOS_MODE` unset now
+**Status: COMPLETE (2026-10-27).** BREAKING CHANGE: `EOS_MODE` unset now
 selects **EOS80**; `EOS_MODE=LEGACY` is the explicit Eckart fallback. No
 production scheduler change (T-39 remains BLOCKED).
 
@@ -767,7 +767,24 @@ production scheduler change (T-39 remains BLOCKED).
   `data/validation/runs_inventory_final.json`.
 - Stage summary: `docs/STAGE11_SUMMARY.md`; checklist:
   `docs/STAGE11_CLOSURE_CHECKLIST.md`.
-- Next: Stage 11.9 closure after data/runs cleanup approval.
+- Status: **Stage 11.9 CLOSED**; see closure declaration.
+
+### Stage 11.9 — Final Closure (COMPLETE)
+
+**Status: CLOSED (2026-10-27).** Formal declaration:
+`docs/STAGE11_CLOSURE_DECLARATION.md`; final review:
+`docs/validation/stage11.9_final_review.md`.
+
+- Technical objectives met: ocean stabilization, T4–T6 forcing validation,
+  8/8 N=1 matrix, EOS-80 D-29 promotion and runtime default, bit-identical
+  reproducibility.
+- Known limitations are non-blocking: T-38 (90-day), T-39 (production
+  scheduler ice artifact), seasonal Apr/Jul/Oct diagnostic ice, April forcing
+  boundary extension.
+- data/runs cleanup is an optional recommendation (37.327 GB estimated
+  savings), pending user approval; no deletion performed.
+- Stage 12 preparation: `docs/STAGE12_PREPARATION.md`; implementation not
+  started.
 
 ### Stage 11.8 Prerequisite: Ocean Stabilization (MANDATORY GATE)
 
@@ -870,7 +887,9 @@ them only after full validation. Sequencing note (11.7E.1-CP/11.7E.2):
 the sea-ice gate (D-27) are 11.8 outputs.
 Risk: irreversible, only after full validation.
 
-### Stage 11.9 — Stage 11 Closure
+### Stage 11.9 — Stage 11 Closure (COMPLETE)
+
+**Closed 2026-10-27.** See `docs/STAGE11_CLOSURE_DECLARATION.md`.
 
 Stage-11 COMPLETE criteria (11.5G §5.4, reaffirmed 11.5H §8): numerical +
 physical + software + reproducibility — i.e. (1) numerical: validated
@@ -883,16 +902,16 @@ NetCDF I/O contracts verified for every input class, legacy inputs removed
 executable + input contract reproduces the run (11.8B). Only then does the
 Stage-12 gate open (D-28).
 
-**Remediation note:** If 11.8A stability criteria are not met, a remediation
-iteration is required before closing 11.9. This may involve addressing the
-known production ocean instability (55/360 steps) or other identified
-issues. Stage 12 (voxel iceberg) remains blocked until all Stage 11.9
-criteria are satisfied.
+**Outcome:** Stage 11 is formally **CLOSED** for the validated N=1 30-day
+scope. T-38 (90-day), T-39 (production ice/cadence), and diagnostic seasonal
+ice remain documented non-blocking limitations. Stage 12 planning is open;
+implementation has NOT started.
 
-### Stage 12.0 — Voxel Iceberg Thermodynamics (BLOCKED until Stage 11 complete)
+### Stage 12.0 — Voxel Iceberg Thermodynamics (PLANNED; preparation only)
 
-3D internal iceberg model (explicitly out of scope until 11.9 lands and
-the D-28 entry gate opens).
+3D internal iceberg model. Stage 11.9 has closed and the D-28 entry gate is
+open for **planning**, but implementation has NOT started. See
+`docs/STAGE12_PREPARATION.md`.
 
 ### Stage 11.2 — EN4 Initial Condition Stabilization (SUPERSEDED — archive)
 

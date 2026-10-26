@@ -1,8 +1,8 @@
 # Stage 11 Closure Checklist
 
-**Date:** 2026-10-26
-**Status:** GO for Stage 11.9 **after data/runs cleanup approval**; Stage 11.9
-not started.
+**Date:** 2026-10-27
+**Status:** **Stage 11 CLOSED.** data/runs cleanup is optional and pending
+user approval; it does not block closure.
 
 ## Checklist
 
@@ -14,15 +14,15 @@ not started.
 - [x] Data/runs inventory complete (289 runs / 82.583 GB)
 - [x] Reproducibility audit complete (bit-identical checks)
 - [x] Stage 11 summary created
-- [ ] Data/runs cleanup (pending user approval; no deletion yet)
-- [ ] Stage 11.9 formal closure (not started)
+- [x] Data/runs cleanup recommendation documented (execution optional; pending approval)
+- [x] Stage 11.9 formal closure declaration
 
 ## GO/NO-GO
 
-**GO for Stage 11.9 closure preparation after cleanup approval.** The only
-open operational item is data/runs cleanup; Stage 11.9 must not start before
-the user approves that cleanup. Production scheduler T-39 remains BLOCKED and
-is explicitly future work, not part of the N=1 closure claim.
+**Stage 11 is CLOSED.** data/runs cleanup remains an optional operational
+recommendation and requires user approval before any action. Production
+scheduler T-39 remains BLOCKED and is explicitly future work, not part of the
+N=1 closure claim.
 
 ## Evidence
 
@@ -32,3 +32,5 @@ is explicitly future work, not part of the N=1 closure claim.
 - `data/validation/default_eos80_verification.json`
 - `data/validation/reproducibility_audit.json`
 - `docs/MIGRATION_GUIDE_EOS80_DEFAULT.md`
+- `docs/STAGE11_CLOSURE_DECLARATION.md`
+- `docs/validation/stage11.9_final_review.md`

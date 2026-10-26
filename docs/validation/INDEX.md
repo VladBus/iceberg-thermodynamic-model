@@ -135,7 +135,15 @@ Stage 10 reports have been archived to `docs/wiki/stages/stage10/`. See the arch
 
 | `STAGE11_SUMMARY.md` (Stage 11 summary) | 11.8B | COMPLETE | Ocean stabilization, T4–T6 forcing, EOS-80 validation/promotion, 8/8 matrix, runtime default, inventory; limitations T-38/T-39/seasonal ice; future work. | `docs/STAGE11_SUMMARY.md` |
 
-| `STAGE11_CLOSURE_CHECKLIST.md` (closure checklist) | 11.8B | COMPLETE (GO conditional on cleanup) | All technical items checked; data/runs cleanup pending approval; Stage 11.9 not started. | `docs/STAGE11_CLOSURE_CHECKLIST.md` |
+| `STAGE11_CLOSURE_CHECKLIST.md` (closure checklist) | 11.9 | **COMPLETE (Stage 11 CLOSED)** | All technical items checked; cleanup recommendation documented as optional (execution pending approval); formal closure declaration completed. | `docs/STAGE11_CLOSURE_CHECKLIST.md` |
+
+| `stage11.9_final_review.md` (final Stage 11 document audit) | 11.9 | COMPLETE (READY FOR CLOSURE) | Reviewed 10 Stage 11 documents + JSON evidence; fixed cleanup-as-blocker contradiction, stale inventory numbers, and stale current-stage/Stage-12 wording; no code/physics changes. | `docs/validation/stage11.9_final_review.md` |
+
+| `STAGE11_CLOSURE_DECLARATION.md` (Stage 11 closure) | 11.9 | **STAGE 11 CLOSED (2026-10-27)** | Formal declaration: ocean stabilization, T4–T6, EOS-80 D-29 promotion/default, 8/8 matrix, reproducibility; T-38/T-39/seasonal ice non-blocking; cleanup optional. | `docs/STAGE11_CLOSURE_DECLARATION.md` |
+
+| `STAGE12_PREPARATION.md` (voxel iceberg preparation) | 11.9 | COMPLETE (preparation only) | Voxel grid `T/φ`, finite-volume conduction, Stefan/3-equation water, air-surface flux, erosion/waterline, dynamic coupling, stability; PDF reviewed; DOCX absent; implementation not started. | `docs/STAGE12_PREPARATION.md` |
+
+| `DATA_RUNS_CLEANUP_RECOMMENDATION.md` (data/runs cleanup) | 11.9 | RECOMMENDATION ONLY (no deletion) | 82.583 GB / 289 runs; archive 153 / 40.563 GB; temporary 47 / 8.629 GB; duplicates 6 / 1.656 GB; estimated savings 37.327 GB; user approval required. | `docs/DATA_RUNS_CLEANUP_RECOMMENDATION.md` |
 
 ## Rules
 

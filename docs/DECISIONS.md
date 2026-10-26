@@ -319,6 +319,8 @@ Format: `ID | stage/date | status` + short description. Details — via links.
 
 ## D-28. Stage 12 (voxel iceberg thermodynamics) blocked until Stage 11 complete (Stage 11.5H-RC, 2026-10-08)
 
+> **Status update 2026-10-27:** Stage 11 is CLOSED; Stage 12 planning is open. Implementation has not started (D-49).
+
 - **Stage:** 11.5H-RC | **Status:** DECIDED (entry gate locked)
 - **Problem:** premature voxel work on an unvalidated temporal/thermodynamic interface risks building on a regime-change artifact.
 - **Decision:** Stage 12 may start ONLY after Stage-11 COMPLETE: validated production ocean core + defined interface semantics + active CFL monitoring + validated NetCDF I/O + removed legacy inputs + closed validation baseline (11.5G §5.5 criteria, reaffirmed).
@@ -524,4 +526,12 @@ not added.
 - **Verification:** default = explicit EOS80 = matrix EOS80 (32/32 NetCDF MD5 identical); explicit LEGACY = matrix LEGACY (32/32 identical); representative Jan/Apr/Jul/Oct re-runs bit-identical (32/32 each).
 - **Scope:** production scheduler NOT changed and remains BLOCKED (T-39); no scheduler cells were run. Stage 11.8B audit: 289 runs / 82.583 GB; cleanup recommendations only (37.327 GB estimated savings), nothing deleted.
 - **Docs:** `docs/MIGRATION_GUIDE_EOS80_DEFAULT.md`, `README.md` breaking-change notice, `docs/STAGE11_SUMMARY.md`, `docs/STAGE11_CLOSURE_CHECKLIST.md`.
-- **Next:** Stage 11.9 closure after data/runs cleanup approval; not started.
+- **Next:** Stage 11.9 closure after data/runs cleanup approval; not started. **Superseded by D-49: Stage 11 CLOSED; cleanup optional.**
+
+## D-49. Stage 11 formally closed; cleanup optional; Stage 12 preparation only (2026-10-27)
+
+- **Status:** Stage 11 **CLOSED** for the validated N=1 30-day scope. Declaration: `docs/STAGE11_CLOSURE_DECLARATION.md`; final review: `docs/validation/stage11.9_final_review.md`.
+- **Achievements:** T3-CORRECTIVE stabilization; T4–T6 forcing validation; 8/8 N=1 seasonal matrix PASS; EOS-80 D-29 promotion and EOS_MODE=EOS80 default; bit-identical reproducibility.
+- **Non-blocking limitations:** T-38 (90-day), T-39 (production scheduler ice/cadence), Jan-derived Apr/Jul/Oct ice, April forcing boundary extension.
+- **data/runs:** 82.583 GB / 289 runs; 37.327 GB optional cleanup recommendation; no deletion/move/compression performed. Cleanup does **not** block closure and remains pending user approval.
+- **Next:** Stage 12 voxel iceberg **preparation only**; implementation not started. No physics/EOS/scheduler code change in Stage 11.9.

@@ -1,8 +1,8 @@
 # Stage 11 — Summary
 
-**Status:** Stage 11.8B COMPLETE; Stage 11.9 closure preparation (not started).
-**Date:** 2026-10-26
-**Base:** `3a249cb`; EOS-80 runtime default implemented in the current commit.
+**Status:** **Stage 11 CLOSED**.
+**Date:** 2026-10-27
+**Base:** `531bbfa`; final closure declaration in the current commit.
 
 ## Key achievements
 
@@ -32,6 +32,8 @@
 
 ## Future work
 
+- Stage 12 voxel iceberg thermodynamics (preparation only; not started).
+
 - Redesign/validate the production scheduler to respect the original N=1
   coupling frequency (T-39).
 - Develop a 90-day storm-safe configuration (T-38).
@@ -39,6 +41,10 @@
 - Complete data/runs cleanup after approval.
 
 ## Evidence
+
+- `docs/STAGE11_CLOSURE_DECLARATION.md`
+- `docs/validation/stage11.9_final_review.md`
+- `docs/STAGE12_PREPARATION.md`
 
 - `docs/validation/stage11.8A_phase2_seasonal_results.md`
 - `docs/validation/stage11.8B_runs_inventory.md`

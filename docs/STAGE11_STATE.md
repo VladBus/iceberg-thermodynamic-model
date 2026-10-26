@@ -1,7 +1,7 @@
 # Stage 11 — Living State (≤150 lines)
 
-**Updated:** 2026-10-26
-**Base commit:** `3a249cb` (Stage 11.8A); Stage 11.8B changes in the current commit.
+**Updated:** 2026-10-27
+**Base commit:** `531bbfa` (Stage 11.8B); Stage 11.9 closure documentation in the current commit.
 **Branch policy:** `main` = legacy-frozen default; stage11-physics changes are
 env-gated (default OFF) until D-33 approval.
 
@@ -9,15 +9,15 @@ env-gated (default OFF) until D-33 approval.
 
 | Field | Value |
 |---|---|
-| Current stage | **11.8B — Production Release Audit + EOS-80 default** — COMPLETE |
+| Current stage | **Stage 11 — CLOSED** (formal closure declaration 2026-10-27) |
 | EOS default | **EOS80** (`EOS_MODE` unset); `EOS_MODE=LEGACY` explicit fallback |
-| data/runs inventory | **82.583 GB / 289 runs**; 37.327 GB estimated savings; **not deleted** |
+| data/runs inventory | **82.583 GB / 289 runs**; 37.327 GB optional cleanup; **not deleted** |
 | Ocean rest state | **T3b PASS (bounded)** — max \|U\| **0.147 m/s**, KE30/KE15 **0.568** (dt=1800, Ah=10000, no sponge) |
 | T-19 snowfall | **FIXED** — v2 CDS probe R=1.009 (hourly); divisor 3600 |
 | T-25 potential CA | Implemented behind `STAGE118_CA_POTENTIAL` (OFF); no effect in LEGACY |
 | T-32 prognostic RO | Implemented behind `STAGE118_RO_PROGNOSTIC` (OFF); no effect (CA already refreshes RO) |
 | T-31 EUU | **FIXED diagnostically** — 3D KE printed as `KE3D(J)` |
-| Next step | **Stage 11.9 closure** after data/runs cleanup approval; not started |
+| Next step | **Stage 12 preparation** (voxel iceberg); implementation not started |
 
 ## Seasonal coverage (30-day forced)
 
@@ -53,8 +53,8 @@ EOS80 raw anomaly is −2.504e-3 **kg/m³** = −2.504e-6 g/cm³; absolute densi
 1.0199975 g/cm³. Corrected gate = absolute density >1.0 g/cm³. D-29
 **PROMOTED** (A/B/C true for N=1). **11.8B:** EOS80 is runtime default;
 default/explicit EOS80/matrix and LEGACY fallback/matrix are bit-identical.
-Production scheduler remains BLOCKED (T-39). Next: Stage 11.9 closure after
-cleanup approval.
+Production scheduler remains BLOCKED (T-39). Stage 11 is CLOSED; next is
+Stage 12 preparation only.
 
 ## Issue table (T-01 … T-41)
 
@@ -137,6 +137,6 @@ cleanup approval.
 
 ## Next action
 
-1. **11.8B complete**: EOS80 default; 8/8 matrix; default/fallback/reproducibility bit-identical; inventory 82.583 GB / 289 runs.
-2. **Cleanup pending approval**: archive 153 historical runs (est. 13.52 GB after ~3× gzip), review/delete 44 temporary and 6 duplicates; total est. 36.41 GB savings. **Nothing deleted.**
-3. **Next: Stage 11.9 closure** after cleanup approval; not started. T-39 production scheduler remains BLOCKED (future work).
+1. **Stage 11 CLOSED** (2026-10-27): EOS80 default; 8/8 matrix; default/fallback/reproducibility bit-identical; inventory 82.583 GB / 289 runs.
+2. **Cleanup optional**: archive 153 historical runs, review/delete 47 temporary and 6 duplicates; est. 37.327 GB savings. **Nothing deleted.**
+3. **Next: Stage 12 preparation** (voxel iceberg); implementation not started. T-39 production scheduler remains BLOCKED (future work).

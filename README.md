@@ -35,7 +35,7 @@ under atmospheric, oceanic, bathymetric, and sea-ice forcing.
 
 ## 📑 Project status
 
-- **Current stage:** **Stage 11.8B COMPLETE** — EOS-80 promoted to runtime default; 8/8 N=1 seasonal matrix PASS; production scheduler remains BLOCKED (T-39). Next: Stage 11.9 closure after data/runs cleanup approval.
+- **Current stage:** **Stage 11 CLOSED** — EOS-80 runtime default; 8/8 N=1 seasonal matrix PASS; production scheduler remains BLOCKED (T-39). Next: Stage 12 preparation (voxel iceberg; not started).
 - **BREAKING CHANGE (Stage 11.8B):** `EOS_MODE` unset now selects **EOS80**, not LEGACY. Set `EOS_MODE=LEGACY` to restore the historical Eckart fallback. See `docs/MIGRATION_GUIDE_EOS80_DEFAULT.md`.
   [Historical note from Stage 10.19, SUPERSEDED by Stage 10.20 restoration
   (full-coverage ERA5: 3-day gate PASS, residual characterized, NOT fixed):

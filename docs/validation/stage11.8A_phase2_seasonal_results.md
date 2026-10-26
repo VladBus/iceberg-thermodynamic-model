@@ -151,7 +151,6 @@ in a dedicated stage before any EOS80 promotion.
 - Strict build (`-Wall -Wextra -fcheck=all -ffpe-trap=...`): exit 0.
 - Default legacy 1-day md5: `915b1903…` identical to canonical.
 - `git diff --check`: clean.
-- CI: GREEN (run `40349544010` from the base commit; Phase 2 CI run linked
-  after push).
+- CI: **GREEN** — Phase 2 run `40373305325` (both jobs success).
 
 **No physics/EOS/scheduler code changed. No production scheduler cells run.**

@@ -1,0 +1,63 @@
+{
+  "run": "matrix_jul_eos80_n1",
+  "season": "Jul",
+  "EOS": "EOS80",
+  "scheduler": "N1",
+  "ice_source": "legacy 1_*.ice (January-derived; not OSI-SAF-validated)",
+  "days": 30,
+  "steps": "1440/1440 N=1 thermo steps (48/day, dt=1800 s)",
+  "max_u_m_s": 0.543044,
+  "max_v_m_s": 0.554034,
+  "max_w_m_s": 0.002115,
+  "ke15_j": 231258586583869.47,
+  "ke30_j": 190996163582342.4,
+  "ke30_over_ke15": 0.8258986894442284,
+  "drift_T": 0.061689,
+  "drift_S_psu": 0.016428,
+  "conservation": {
+    "volume_rel": 0.0,
+    "heat_rel": 0.004711513322620685,
+    "salt_rel": 0.0004849043119768329
+  },
+  "implied_mean_heat_flux_w_m2": -4.405,
+  "bounds_day30": {
+    "T_min": -1.8627,
+    "T_max": 11.818,
+    "S_min_psu": 21.9079,
+    "S_max_psu": 35.2265,
+    "RO_min": -0.00250428,
+    "RO_negative_cells": 7,
+    "nan_cells": 0
+  },
+  "gates": {
+    "no_nan": true,
+    "max_u_lt_2": true,
+    "max_v_lt_2": true,
+    "ke_ratio_lt_5": true,
+    "s_nonnegative": true,
+    "ro_nonnegative": false,
+    "volume_zero": true,
+    "salt_lt_1e-3": true
+  },
+  "PASS": false,
+  "ca": {
+    "days": 30,
+    "total_nmix": 343189,
+    "max_nmix_day": 25231,
+    "min_nmix_day": 6849,
+    "guard_days": 0,
+    "maxiter_max": 54
+  },
+  "ice_day0": {
+    "extent_cells": 0,
+    "extent_area_km2": 0.0,
+    "ice_volume_km3": 0.0,
+    "mean_thickness_m": 0.0
+  },
+  "ice_day30": {
+    "extent_cells": 0,
+    "extent_area_km2": 0.0,
+    "ice_volume_km3": 0.0,
+    "mean_thickness_m": 0.0
+  }
+}

@@ -1,7 +1,7 @@
 # Stage 11.8A Matrix Specification — Seasonal EOS × Scheduler
 
-**Status:** SPECIFIED, NOT EXECUTED.
-**Date:** 2026-10-25
+**Status:** COMPLETE — 7/8 N=1 cells PASS; **D-29 NOT PROMOTED** (EOS80 July RO failure).
+**Date:** 2026-10-26
 **Config:** validated Stage 11.8 standard set (see below).
 
 ## Dimensions
@@ -13,10 +13,11 @@
 | Season | Jan, Apr, Jul, Oct |
 | Duration | 30 days per cell |
 
-**Cells:** 2 EOS × 4 seasons = **8 N=1 cells** are executable. The production
+**Cells:** 2 EOS × 4 seasons = **8 N=1 cells** executed. The production
 column is **BLOCKED**: Phase-1 analysis found a scheduler ice/cadence artifact
 (production +65 % extent, −269 W/m² implied cooling); production runs are
-diagnostic only until a scheduler fix.
+diagnostic only until a scheduler fix. **Production scheduler ice climatology
+is not validated; D-29 is based on N=1 only.**
 
 ## Standard configuration
 
@@ -72,9 +73,11 @@ is recorded as **NOT MET** (honest closure per D-29 clarification). D-28
 
 | Season | N=1 LEGACY | Production LEGACY | EOS80 |
 |---|---|---|---|
-| Jan | **PASS (Phase 1)** | **BLOCKED (artifact)** | **PASS (Phase 1, N1)** |
-| Apr | PASS (T5) | BLOCKED | TO RUN (N1) |
-| Jul | **PASS (T6)** | TO RUN | TO RUN |
-| Oct | **PASS (T6)** | TO RUN | TO RUN |
+| Jan | **PASS** | **BLOCKED (T-39)** | **PASS** |
+| Apr | **PASS (extended boundary)** | BLOCKED (T-39) | **PASS** |
+| Jul | **PASS** | BLOCKED (T-39) | **FAIL — RO min −2.5e-3 (T-41)** |
+| Oct | **PASS** | BLOCKED (T-39) | **PASS** |
 
-Phase 1 analysis: N1 cells valid; production column BLOCKED (scheduler ice/cadence artifact). Phase 2 N=1 GO; not started.
+Phase 2 complete: **7/8 cells PASS**. Production column BLOCKED (T-39);
+EOS80 July fails strict RO≥0 (T-41) → D-29 **NOT PROMOTED**. N=1 LEGACY
+remains default/validated. See `stage11.8A_phase2_seasonal_results.md`.

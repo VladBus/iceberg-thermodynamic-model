@@ -127,6 +127,8 @@ Stage 10 reports have been archived to `docs/wiki/stages/stage10/`. See the arch
 
 | `stage11.8A_phase1_analysis.md` (scheduler ice/CA/heat) | 11.8A Phase 1-ANALYSIS | COMPLETE (artifact; N1-only Phase 2 GO) | Ice effect ARTIFACT: +65% extent, 466k km² extra over open water, −269 vs −40 W/m²; cause cadence/STALE (576 CA passes/day vs 1), not init (day0 identical) or EOS. CA runs; nmix `********` = I8 print overflow. T-34 valid N1, invalid production. Production matrix BLOCKED (T-39); Phase 2 N=1 GO. | `docs/validation/stage11.8A_phase1_analysis.md` |
 
+| `stage11.8A_phase2_seasonal_results.md` (N=1 seasonal matrix, all 8 cells) | 11.8A Phase 2 | COMPLETE (7/8 PASS; D-29 NOT PROMOTED) | Apr/Jul/Oct × LEGACY/EOS80 30 d; Jan reused. Apr both PASS (extended boundary), Jul LEGACY PASS / EOS80 **FAIL RO min −2.504e-3 (T-41)**, Oct both PASS. EOS effect mean max |U| −0.14%, KE +0.33%, CA −12.85%. D-29 A false, B true, C true → **NOT PROMOTED**; EOS80 optional, LEGACY default. Production BLOCKED (T-39); Stage 11.9 NO-GO. | `docs/validation/stage11.8A_phase2_seasonal_results.md` |
+
 ## Rules
 
 - Reports here are not rewritten after stage completion (exception: technical navigational fixes).

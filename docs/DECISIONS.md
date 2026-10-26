@@ -496,3 +496,12 @@ not added.
 - **Heat:** T-34 closure valid for N1 (−40/−39 W/m²), invalid for production (−269/−261 W/m²).
 - **Decision:** production matrix cells **BLOCKED**; **Phase 2 (Apr/Jul/Oct) N=1 only GO**, not started. EOS80 remains candidate on N=1; no promotion. No physics/EOS/scheduler code change.
 - **Report:** `docs/validation/stage11.8A_phase1_analysis.md`.
+
+## D-46. 11.8A Phase 2 complete: D-29 NOT PROMOTED; Stage 11.9 NO-GO (2026-10-26)
+
+- **Scope:** N=1 only (production BLOCKED, T-39); 8 cells = Jan (Phase 1) + Apr/Jul/Oct new; 30-day standard protective set. April forcing required one persisted 1 May 00:00 boundary slice because the delivered April file has 120 slices (29 days).
+- **Results:** 7/8 PASS. April both PASS; July LEGACY PASS, **EOS80 FAIL** (RO min −2.504e-3 kg/m³, 7 surface cells, no NaN, T-41); October both PASS. All cells: max |U| <2 m/s, KE30/KE15 <5, S≥0, NaN 0; salt <1e-3; volume 0.
+- **EOS effect (mean 4 seasons):** max |U| **−0.14 %**, KE30/KE15 **+0.33 %**, CA nmix **−12.85 %** → equivalent dynamics, fewer CA mixings.
+- **D-29:** Criterion A **false** (July EOS80); B **true** (equivalent/better within 10%); C **true** for N=1 (production interaction not assessable). **Verdict: NOT PROMOTED**; EOS80 optional, LEGACY default; Stage 11 goal “EOS-80 in production” NOT MET.
+- **Stage 11.9:** **NO-GO at this time**; not started. Open items: 7/8 matrix (T-41 EOS80 July RO), 11.8B release audit. T-39 production ice/cadence is future work and is not a blocker for N=1 closure. No physics/EOS/scheduler code changed; no production cells run.
+- **Report:** `docs/validation/stage11.8A_phase2_seasonal_results.md`.

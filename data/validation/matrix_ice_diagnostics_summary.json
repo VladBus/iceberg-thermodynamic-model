@@ -1,0 +1,70 @@
+{
+  "caveat": "Only January uses real OSI-SAF/C3S ice. Apr/Jul/Oct use legacy 1_*.ice (January-derived/diagnostic) and are NOT OSI-SAF-validated.",
+  "note": "July/October have zero ice at day 30; April is a diagnostic January-derived ice state, not an observational April ice extent.",
+  "seasons": {
+    "Jan": {
+      "LEGACY": {
+        "source": "real OSI-SAF/C3S (11.7E.4)",
+        "extent_cells": 3543,
+        "extent_area_km2": 683558.4,
+        "ice_volume_km3": 408.493,
+        "mean_thickness_m": 0.5976
+      },
+      "EOS80": {
+        "source": "real OSI-SAF/C3S (11.7E.4)",
+        "extent_cells": 3563,
+        "extent_area_km2": 687417.1,
+        "ice_volume_km3": 412.777,
+        "mean_thickness_m": 0.6005
+      }
+    },
+    "Apr": {
+      "LEGACY": {
+        "source": "legacy 1_*.ice (January-derived; not OSI-SAF-validated)",
+        "extent_cells": 907,
+        "extent_area_km2": 174989.4,
+        "ice_volume_km3": 52.05,
+        "mean_thickness_m": 0.2974
+      },
+      "EOS80": {
+        "source": "legacy 1_*.ice (January-derived; not OSI-SAF-validated)",
+        "extent_cells": 1083,
+        "extent_area_km2": 208945.5,
+        "ice_volume_km3": 58.439,
+        "mean_thickness_m": 0.2797
+      }
+    },
+    "Jul": {
+      "LEGACY": {
+        "source": "legacy 1_*.ice (January-derived; not OSI-SAF-validated)",
+        "extent_cells": 0,
+        "extent_area_km2": 0.0,
+        "ice_volume_km3": 0.0,
+        "mean_thickness_m": 0.0
+      },
+      "EOS80": {
+        "source": "legacy 1_*.ice (January-derived; not OSI-SAF-validated)",
+        "extent_cells": 0,
+        "extent_area_km2": 0.0,
+        "ice_volume_km3": 0.0,
+        "mean_thickness_m": 0.0
+      }
+    },
+    "Oct": {
+      "LEGACY": {
+        "source": "legacy 1_*.ice (January-derived; not OSI-SAF-validated)",
+        "extent_cells": 0,
+        "extent_area_km2": 0.0,
+        "ice_volume_km3": 0.0,
+        "mean_thickness_m": 0.0
+      },
+      "EOS80": {
+        "source": "legacy 1_*.ice (January-derived; not OSI-SAF-validated)",
+        "extent_cells": 0,
+        "extent_area_km2": 0.0,
+        "ice_volume_km3": 0.0,
+        "mean_thickness_m": 0.0
+      }
+    }
+  }
+}

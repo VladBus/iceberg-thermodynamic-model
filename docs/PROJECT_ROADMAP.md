@@ -1,9 +1,9 @@
 # Project Roadmap
 
-**Updated:** 2026-10-25
-**Current scientific stage:** 11.8A Phase 1-ANALYSIS COMPLETE — production scheduler ice effect is an **ARTIFACT** (cadence/STALE): +65 % extent, 466k km² extra ice over open water, −269 W/m² implied cooling vs −40 N1; day-0 ice identical. Production matrix cells **BLOCKED** (T-39). CA runs; `nmix=********` is an I8 print overflow (T-40). T-34 valid for N1, invalid for production. **Phase 2 N=1 only GO**, not started.
+**Updated:** 2026-10-26
+**Current scientific stage:** **11.8A COMPLETE** — N=1 seasonal matrix 7/8 PASS; D-29 **NOT PROMOTED** (EOS80 July RO min −2.5e-3, T-41). Production scheduler ice artifact remains BLOCKED (T-39); CA print overflow T-40. N=1 LEGACY validated; EOS80 optional. **Stage 11.9: NO-GO at this time** (7/8 matrix, T-41; 11.8B not started).
 **Stages 3–11.4.1: COMPLETED** (10.x iceberg modernization; 11.1 seasonal characterization; 11.2 CFL audit; 11.4-D21…D33 EN4 stabilization → ERA5-coverage fix → cleanup + Ocean Baseline 11.x; 11.3A execution-graph audit; 11.3B input-architecture audit + NetCDF contracts; 11.3C scheme audit + timestep matrix; 11.3C.1 semantics + CFL distributions; 11.3C.2 time-integration audit; 11.3C.3 loop-bound search (VERDICT D); 11.4 EOS-80 experiment + 11.4.1 impact validation (OPTIONAL, not default)).
-**Current status:** Stages 10.14-11.8A Phase 1-ANALYSIS committed. **11.8A Phase 1 analysis:** production artifact; Phase 2 N=1 GO; production blocked.
+**Current status:** Stages 10.14-11.8A Phase 2 committed. **11.8A:** 8 N=1 cells, 7 PASS, 1 EOS80 FAIL; production blocked (T-39); D-29 NOT PROMOTED.
 **Test suite:** 69 Fortran test source files (`ls test/*.f90 | wc -l`); 69 executable test targets (`grep -lE '^\s*program ' test/*.f90 | wc -l`). Counting method (Stage 11.8.0 T0): every current `test/*.f90` holds a top-level `program`, so file count == target count (verified 2026-10-24).
 **Stage 11.5H-RC COMPLETE** (release-candidate gate: self-contained production scheduler, docs synced D-22…D-28). Plan: 11.8.0 diagnostic ladder (T0–T6) → 11.8A validation → 11.8B audit → 11.9 closure → 12.0 voxel (blocked, D-28).
 
@@ -719,6 +719,28 @@ vs 1), not initialization or EOS (≤1.1 %). **ARTIFACT** → T-39; production
 matrix cells **BLOCKED**, Phase 2 **N=1 only**. CA is active; `nmix=********`
 is an I8 print overflow (T-40, diagnostic). T-34 valid for N1, invalid for
 production. Report: `docs/validation/stage11.8A_phase1_analysis.md`.
+
+### 11.8A Phase 2 — N=1 seasonal matrix complete
+
+**Scope:** Apr/Jul/Oct × LEGACY/EOS80, 30 days, standard protective config;
+January reused from Phase 1 (real OSI-SAF ice). **7/8 PASS.**
+
+| Season | LEGACY max \|U\| / KE30/15 | EOS80 max \|U\| / KE30/15 | Verdict |
+|---|---|---|---|---|
+| Jan | 0.794 / 1.486 | 0.785 / 1.494 | both PASS |
+| Apr | 0.838 / 1.506 | 0.843 / 1.507 | both PASS |
+| Jul | 0.542 / 0.827 | 0.543 / 0.826 | **EOS80 FAIL: RO −2.5e-3** |
+| Oct | 0.690 / 2.152 | 0.689 / 2.172 | both PASS |
+
+EOS80 effect across seasons: max |U| **−0.14 %**, KE30/KE15 **+0.33 %**,
+CA nmix **−12.85 %** → equivalent on dynamics, fewer CA mixings. **D-29:
+NOT PROMOTED** because criterion A fails (July EOS80, 7 surface cells RO<0,
+T-41). EOS80 remains optional; LEGACY default. Production column remains
+BLOCKED (T-39); April forcing used one persisted boundary slice to reach
+30 days. Report: `docs/validation/stage11.8A_phase2_seasonal_results.md`.
+**Stage 11.9: NO-GO at this time** (not started; 7/8 matrix, T-41, 11.8B
+not started). T-39 production ice is future work and is not a blocker for
+N=1 closure.
 
 ### Stage 11.8 Prerequisite: Ocean Stabilization (MANDATORY GATE)
 

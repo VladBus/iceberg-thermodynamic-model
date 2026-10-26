@@ -1,0 +1,30 @@
+{
+  "stage": "11.8A Phase 2 \u2014 D-29 final",
+  "scheduler_scope": "N=1 only; production BLOCKED (T-39)",
+  "criterion_A_all_eos80_pass": false,
+  "criterion_B_eos80_equivalent_or_better": true,
+  "criterion_C_no_scheduler_pathology": true,
+  "criterion_C_scope": "N=1 only; production interaction not assessable (T-39)",
+  "criterion_A_failed_cells": [
+    "Jul"
+  ],
+  "verdict": "NOT PROMOTED",
+  "eos80_cells": {
+    "Jan": true,
+    "Apr": true,
+    "Jul": false,
+    "Oct": true
+  },
+  "eos_effect_mean_pct": {
+    "max_u": -0.1436823336499018,
+    "ke_ratio": 0.3301776576263758,
+    "ca_nmix": -12.845915340350212
+  },
+  "caveats": [
+    "Decision based on N=1 only (production scheduler ice climatology not validated, T-39)",
+    "Apr/Jul/Oct ice is January-derived/diagnostic, not OSI-SAF-validated",
+    "30-day runs only (90-day not validated, T-38)",
+    "April forcing uses a single persisted boundary time step (1 May 2020 00:00) to reach 30 days"
+  ],
+  "stage_11_9_gate": "NO-GO at this time: 7/8 cells pass; T-41 (EOS80 July RO) remains open and 11.8B is not started. T-39 production ice is future work, not a blocker for N=1 closure."
+}

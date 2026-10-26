@@ -1,0 +1,91 @@
+{
+  "metric_definition": "100*(EOS80-LEGACY)/LEGACY; positive=max-U/KE degradation; CA positive=more mixings",
+  "seasons": {
+    "Jan": {
+      "legacy": {
+        "max_u": 0.793788,
+        "ke_ratio": 1.4861014589981123,
+        "ca_nmix": 21147063,
+        "PASS": true
+      },
+      "eos80": {
+        "max_u": 0.785048,
+        "ke_ratio": 1.493871116200224,
+        "ca_nmix": 18666593,
+        "PASS": true
+      },
+      "eos_effect_pct": {
+        "max_u": -1.1010496505364253,
+        "ke_ratio": 0.5228214503840027,
+        "ca_nmix": -11.72961938024207
+      }
+    },
+    "Apr": {
+      "legacy": {
+        "max_u": 0.838141,
+        "ke_ratio": 1.5063717341394576,
+        "ca_nmix": 11329913,
+        "PASS": true
+      },
+      "eos80": {
+        "max_u": 0.842843,
+        "ke_ratio": 1.507220871435139,
+        "ca_nmix": 8503141,
+        "PASS": true
+      },
+      "eos_effect_pct": {
+        "max_u": 0.5610034588452282,
+        "ke_ratio": 0.05636970453156128,
+        "ca_nmix": -24.94963553559502
+      }
+    },
+    "Jul": {
+      "legacy": {
+        "max_u": 0.542209,
+        "ke_ratio": 0.8273500200312662,
+        "ca_nmix": 374271,
+        "PASS": true
+      },
+      "eos80": {
+        "max_u": 0.543044,
+        "ke_ratio": 0.8258986894442284,
+        "ca_nmix": 343189,
+        "PASS": false
+      },
+      "eos_effect_pct": {
+        "max_u": 0.15399965695883305,
+        "ke_ratio": -0.17541917591093897,
+        "ca_nmix": -8.30467762663952
+      }
+    },
+    "Oct": {
+      "legacy": {
+        "max_u": 0.690047,
+        "ke_ratio": 2.151983195646341,
+        "ca_nmix": 2628502,
+        "PASS": true
+      },
+      "eos80": {
+        "max_u": 0.688745,
+        "ke_ratio": 2.171715561341026,
+        "ca_nmix": 2460285,
+        "PASS": true
+      },
+      "eos_effect_pct": {
+        "max_u": -0.188682799867243,
+        "ke_ratio": 0.916938651500878,
+        "ca_nmix": -6.399728818924239
+      }
+    }
+  },
+  "mean_effect_pct": {
+    "max_u": -0.1436823336499018,
+    "ke_ratio": 0.3301776576263758,
+    "ca_nmix": -12.845915340350212
+  },
+  "classification": {
+    "max_u": "equivalent",
+    "ke_ratio": "equivalent",
+    "ca_nmix": "improvement"
+  }
+}

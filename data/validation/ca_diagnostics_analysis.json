@@ -1,0 +1,33 @@
+{
+  "test": "ca_diagnostics_suppression",
+  "CA_runs_in_production": true,
+  "explanation": "production CA is active: CA-PROBE lines present; nmix print field I8 overflows when daily total >99,999,999. CSV ca_nmix holds the real value.",
+  "actual": {
+    "matrix_jan_legacy_n1": {
+      "days": 30,
+      "total_nmix": 21147063.0,
+      "max_nmix_day": 2578230.0,
+      "min_nmix_day": 560627.0
+    },
+    "matrix_jan_eos80_n1": {
+      "days": 30,
+      "total_nmix": 18666593.0,
+      "max_nmix_day": 2537210.0,
+      "min_nmix_day": 495023.0
+    },
+    "matrix_jan_legacy_prod": {
+      "days": 30,
+      "total_nmix": 6629399000.0,
+      "max_nmix_day": 404924000.0,
+      "min_nmix_day": 145370000.0
+    },
+    "matrix_jan_eos80_prod": {
+      "days": 30,
+      "total_nmix": 5388838000.0,
+      "max_nmix_day": 346098000.0,
+      "min_nmix_day": 118372000.0
+    }
+  },
+  "format": "app/main.f90 daily diag uses I8 for total_nmix; production total 4.05e8/day exceeds 8 digits -> ********",
+  "verdict": "FEATURE/DIAGNOSTIC FORMATTING BUG \u2014 CA physics runs; print format only"
+}

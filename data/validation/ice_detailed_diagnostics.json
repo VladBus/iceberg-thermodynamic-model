@@ -1,0 +1,161 @@
+{
+  "matrix_jan_legacy_n1": {
+    "day0": {
+      "extent_cells": 4317,
+      "extent_area_km2": 832887.8757,
+      "ice_volume_km3": 450.2361755371094,
+      "mean_thickness_m": 0.5405723864639035,
+      "Ts_mean": 1.3118910789489746,
+      "Ts_min": -1.913665771484375,
+      "Ts_max": 6.6800537109375
+    },
+    "day15": {
+      "extent_cells": 3706,
+      "extent_area_km2": 715006.3626,
+      "ice_volume_km3": 412.69036865234375,
+      "mean_thickness_m": 0.5771842104276123,
+      "Ts_mean": 0.9877963066101074,
+      "Ts_min": -1.90655517578125,
+      "Ts_max": 6.5718994140625
+    },
+    "day30": {
+      "extent_cells": 3543,
+      "extent_area_km2": 683558.4303,
+      "ice_volume_km3": 408.49334716796875,
+      "mean_thickness_m": 0.5975983046902377,
+      "Ts_mean": 0.8811007142066956,
+      "Ts_min": -1.87701416015625,
+      "Ts_max": 6.621978759765625
+    }
+  },
+  "matrix_jan_eos80_n1": {
+    "day0": {
+      "extent_cells": 4317,
+      "extent_area_km2": 832887.8757,
+      "ice_volume_km3": 450.2361755371094,
+      "mean_thickness_m": 0.5405723864639035,
+      "Ts_mean": 1.3118910789489746,
+      "Ts_min": -1.913665771484375,
+      "Ts_max": 6.6800537109375
+    },
+    "day15": {
+      "extent_cells": 3717,
+      "extent_area_km2": 717128.6157,
+      "ice_volume_km3": 414.7156066894531,
+      "mean_thickness_m": 0.5783001821551771,
+      "Ts_mean": 0.9610430598258972,
+      "Ts_min": -1.907135009765625,
+      "Ts_max": 6.57110595703125
+    },
+    "day30": {
+      "extent_cells": 3563,
+      "extent_area_km2": 687417.0723,
+      "ice_volume_km3": 412.7770690917969,
+      "mean_thickness_m": 0.6004754185503519,
+      "Ts_mean": 0.8487885594367981,
+      "Ts_min": -1.897369384765625,
+      "Ts_max": 6.621307373046875
+    }
+  },
+  "matrix_jan_legacy_prod": {
+    "day0": {
+      "extent_cells": 4317,
+      "extent_area_km2": 832887.8757,
+      "ice_volume_km3": 450.2361755371094,
+      "mean_thickness_m": 0.5405723864639035,
+      "Ts_mean": 1.3118910789489746,
+      "Ts_min": -1.913665771484375,
+      "Ts_max": 6.6800537109375
+    },
+    "day15": {
+      "extent_cells": 5049,
+      "extent_area_km2": 974114.1729,
+      "ice_volume_km3": 484.5948486328125,
+      "mean_thickness_m": 0.497472326272936,
+      "Ts_mean": 0.34815841913223267,
+      "Ts_min": -1.907470703125,
+      "Ts_max": 6.34228515625
+    },
+    "day30": {
+      "extent_cells": 5851,
+      "extent_area_km2": 1128845.7171,
+      "ice_volume_km3": 566.560791015625,
+      "mean_thickness_m": 0.5018939333955152,
+      "Ts_mean": 0.11714723706245422,
+      "Ts_min": -1.914276123046875,
+      "Ts_max": 6.414642333984375
+    }
+  },
+  "matrix_jan_eos80_prod": {
+    "day0": {
+      "extent_cells": 4317,
+      "extent_area_km2": 832887.8757,
+      "ice_volume_km3": 450.2361755371094,
+      "mean_thickness_m": 0.5405723864639035,
+      "Ts_mean": 1.3118910789489746,
+      "Ts_min": -1.913665771484375,
+      "Ts_max": 6.6800537109375
+    },
+    "day15": {
+      "extent_cells": 5221,
+      "extent_area_km2": 1007298.4941,
+      "ice_volume_km3": 490.11871337890625,
+      "mean_thickness_m": 0.48656749922564985,
+      "Ts_mean": 0.2952395975589752,
+      "Ts_min": -1.90704345703125,
+      "Ts_max": 6.341796875
+    },
+    "day30": {
+      "extent_cells": 6129,
+      "extent_area_km2": 1182480.8409,
+      "ice_volume_km3": 577.67626953125,
+      "mean_thickness_m": 0.4885290543907027,
+      "Ts_mean": 0.058872614055871964,
+      "Ts_min": -1.91461181640625,
+      "Ts_max": 6.41314697265625
+    }
+  },
+  "initial_ice_identical": {
+    "sic_maxdiff_legacy_n1_vs_others": 0.0,
+    "sit_maxdiff": 0.0,
+    "note": "all four day-0 ice fields bit-identical"
+  },
+  "prod_extra_ice": {
+    "extra_cells": 2416,
+    "area_km2": 466123.9536,
+    "n1_sic_mean_at_extra": 0.012576843611896038,
+    "prod_sic_mean_at_extra": 0.9261441230773926,
+    "lat_min": 65.12779998779297,
+    "lat_max": 81.4197998046875,
+    "lon_min": 13.409199714660645,
+    "lon_max": 75.35279846191406,
+    "centroid_lat": 75.47132873535156,
+    "centroid_lon": 46.013912200927734
+  },
+  "heat": {
+    "matrix_jan_legacy_n1": {
+      "heat_day0_C_m3": 1043176823455744.0,
+      "heat_day30_C_m3": 987386003587072.0,
+      "delta_rel": -0.053481653332710266,
+      "implied_mean_surface_flux_w_m2": -40.323047201238005
+    },
+    "matrix_jan_eos80_n1": {
+      "heat_day0_C_m3": 1043176823455744.0,
+      "heat_day30_C_m3": 988841057976320.0,
+      "delta_rel": -0.05208682268857956,
+      "implied_mean_surface_flux_w_m2": -39.27140081102762
+    },
+    "matrix_jan_legacy_prod": {
+      "heat_day0_C_m3": 1043176823455744.0,
+      "heat_day30_C_m3": 671498540941312.0,
+      "delta_rel": -0.3562946021556854,
+      "implied_mean_surface_flux_w_m2": -268.6320165868182
+    },
+    "matrix_jan_eos80_prod": {
+      "heat_day0_C_m3": 1043176823455744.0,
+      "heat_day30_C_m3": 681780759756800.0,
+      "delta_rel": -0.3464379608631134,
+      "implied_mean_surface_flux_w_m2": -261.2005062774599
+    }
+  }
+}

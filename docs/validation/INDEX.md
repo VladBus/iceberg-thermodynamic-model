@@ -125,6 +125,8 @@ Stage 10 reports have been archived to `docs/wiki/stages/stage10/`. See the arch
 
 | `stage11.8A_phase1_january_results.md` (January 4 cells) | 11.8A Phase 1 | COMPLETE (4/4 PASS; Phase 2 GO) | LEGACY/EOS80 × N1/PRODUCTION, real OSI-SAF ice. Cells: max |U| 0.794/0.785/0.511/0.511, KE30/KE15 1.486/1.494/1.479/1.483, S min ~24.9 PSU, RO min 0, NaN 0. EOS effect ≤1.1%; scheduler max |U| −35.6%, ice extent +65% (STALE), no interaction pathology. D-29 preliminary A/B/C satisfied. **Phase 2 GO.** | `docs/validation/stage11.8A_phase1_january_results.md` |
 
+| `stage11.8A_phase1_analysis.md` (scheduler ice/CA/heat) | 11.8A Phase 1-ANALYSIS | COMPLETE (artifact; N1-only Phase 2 GO) | Ice effect ARTIFACT: +65% extent, 466k km² extra over open water, −269 vs −40 W/m²; cause cadence/STALE (576 CA passes/day vs 1), not init (day0 identical) or EOS. CA runs; nmix `********` = I8 print overflow. T-34 valid N1, invalid production. Production matrix BLOCKED (T-39); Phase 2 N=1 GO. | `docs/validation/stage11.8A_phase1_analysis.md` |
+
 ## Rules
 
 - Reports here are not rewritten after stage completion (exception: technical navigational fixes).

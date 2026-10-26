@@ -1,9 +1,9 @@
 # Project Roadmap
 
 **Updated:** 2026-10-25
-**Current scientific stage:** 11.8A Matrix Phase 1 (January) COMPLETE — all 4 cells (LEGACY/EOS80 × N1/PRODUCTION, real OSI-SAF ice) PASS; max |U| 0.511–0.794, KE30/KE15 1.479–1.494, RO≥0, no NaN. D-29 preliminary A/B/C satisfied; no interaction pathology. **Phase 2 (Apr/Jul/Oct) GO**, not started.
+**Current scientific stage:** 11.8A Phase 1-ANALYSIS COMPLETE — production scheduler ice effect is an **ARTIFACT** (cadence/STALE): +65 % extent, 466k km² extra ice over open water, −269 W/m² implied cooling vs −40 N1; day-0 ice identical. Production matrix cells **BLOCKED** (T-39). CA runs; `nmix=********` is an I8 print overflow (T-40). T-34 valid for N1, invalid for production. **Phase 2 N=1 only GO**, not started.
 **Stages 3–11.4.1: COMPLETED** (10.x iceberg modernization; 11.1 seasonal characterization; 11.2 CFL audit; 11.4-D21…D33 EN4 stabilization → ERA5-coverage fix → cleanup + Ocean Baseline 11.x; 11.3A execution-graph audit; 11.3B input-architecture audit + NetCDF contracts; 11.3C scheme audit + timestep matrix; 11.3C.1 semantics + CFL distributions; 11.3C.2 time-integration audit; 11.3C.3 loop-bound search (VERDICT D); 11.4 EOS-80 experiment + 11.4.1 impact validation (OPTIONAL, not default)).
-**Current status:** Stages 10.14-11.8A Phase 1 committed. T0/T1/T2/T3/T4/T5/T5-CORRECTIVE-2/3/4/T6-SEASONAL/11.8A Phase 1 COMPLETE. **11.8A Phase 1:** 4/4 PASS; Phase 2 GO.
+**Current status:** Stages 10.14-11.8A Phase 1-ANALYSIS committed. **11.8A Phase 1 analysis:** production artifact; Phase 2 N=1 GO; production blocked.
 **Test suite:** 69 Fortran test source files (`ls test/*.f90 | wc -l`); 69 executable test targets (`grep -lE '^\s*program ' test/*.f90 | wc -l`). Counting method (Stage 11.8.0 T0): every current `test/*.f90` holds a top-level `program`, so file count == target count (verified 2026-10-24).
 **Stage 11.5H-RC COMPLETE** (release-candidate gate: self-contained production scheduler, docs synced D-22…D-28). Plan: 11.8.0 diagnostic ladder (T0–T6) → 11.8A validation → 11.8B audit → 11.9 closure → 12.0 voxel (blocked, D-28).
 
@@ -433,7 +433,8 @@ later corrected by v2 (hourly, 3600; T3-CORRECTIVE-3). Report:
 | **T5-CORRECTIVE-3** | Monotone/positive advection + sponge | **DONE 2026-10-25** (FAIL: RO<0) |
 | **T5-CORRECTIVE-4** | Density repair + .docx refs | **DONE 2026-10-25** (FAIL; T-38 accepted limitation) |
 | **T6-SEASONAL** | Jul/Oct 30-day + production scheduler retest + 11.8A spec | **DONE 2026-10-25** (11.8A GO) |
-| **11.8A Phase 1** | January 4 cells (EOS × scheduler) | **DONE 2026-10-25** (4/4 PASS; Phase 2 GO) |
+| **11.8A Phase 1** | January 4 cells (EOS × scheduler) | **DONE 2026-10-25** (4/4 stable; production ice artifact) |
+| **11.8A Phase 1-ANALYSIS** | Scheduler ice/CA/heat investigation | **DONE 2026-10-25** (artifact; N1-only Phase 2 GO) |
 
 ### Stage 11.8.0 T3-PREP — EN4 Data Correction (T-20, T-22)
 
@@ -706,6 +707,18 @@ EOS effect ≤1.1 % (KE/max-U), scheduler effect max |U| −35.6 % and ice exten
 +65 % (STALE cadence, not instability); no interaction pathology. D-29
 preliminary A/B/C satisfied; final decision needs all seasons. **Phase 2 GO.**
 Report: `docs/validation/stage11.8A_phase1_january_results.md`.
+
+### 11.8A Phase 1-ANALYSIS — scheduler ice artifact
+
+All four January cells used identical real OSI-SAF ice (day-0 bit-identical).
+Production scheduler gives **+65 % ice extent** (1,128.8 vs 683.6 ×10³ km²),
+**466,124 km²** extra ice over N1 open water (N1 SIC 0.013), surface ocean
+−0.76 °C, implied heat loss **−269 W/m²** vs −40 N1. Cause = production
+cadence/STALE coupling (24 fires/day vs 48 N1 thermo steps; 576 CA passes/day
+vs 1), not initialization or EOS (≤1.1 %). **ARTIFACT** → T-39; production
+matrix cells **BLOCKED**, Phase 2 **N=1 only**. CA is active; `nmix=********`
+is an I8 print overflow (T-40, diagnostic). T-34 valid for N1, invalid for
+production. Report: `docs/validation/stage11.8A_phase1_analysis.md`.
 
 ### Stage 11.8 Prerequisite: Ocean Stabilization (MANDATORY GATE)
 

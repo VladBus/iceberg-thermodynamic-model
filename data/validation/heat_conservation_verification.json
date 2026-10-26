@@ -1,0 +1,38 @@
+{
+  "test": "heat_conservation_verification",
+  "method": "implied mean surface flux from heat content (T-34); no direct surface-flux archive",
+  "cells": {
+    "matrix_jan_legacy_n1": {
+      "heat_day0_C_m3": 1043176823455744.0,
+      "heat_day30_C_m3": 987386003587072.0,
+      "delta_rel": -0.053481653332710266,
+      "implied_mean_surface_flux_w_m2": -40.323047201238005
+    },
+    "matrix_jan_eos80_n1": {
+      "heat_day0_C_m3": 1043176823455744.0,
+      "heat_day30_C_m3": 988841057976320.0,
+      "delta_rel": -0.05208682268857956,
+      "implied_mean_surface_flux_w_m2": -39.27140081102762
+    },
+    "matrix_jan_legacy_prod": {
+      "heat_day0_C_m3": 1043176823455744.0,
+      "heat_day30_C_m3": 671498540941312.0,
+      "delta_rel": -0.3562946021556854,
+      "implied_mean_surface_flux_w_m2": -268.6320165868182
+    },
+    "matrix_jan_eos80_prod": {
+      "heat_day0_C_m3": 1043176823455744.0,
+      "heat_day30_C_m3": 681780759756800.0,
+      "delta_rel": -0.3464379608631134,
+      "implied_mean_surface_flux_w_m2": -261.2005062774599
+    }
+  },
+  "T34_range_w_m2": [
+    -50,
+    -5
+  ],
+  "N1_valid": true,
+  "production_valid": false,
+  "verdict": "T-34 closure VALID for N1 cells (-40/-39 W/m2); INVALID for production (-269/-261 W/m2) \u2014 production heat drift is scheduler artifact, not physical winter cooling",
+  "residual": "not separable without surface flux integral"
+}

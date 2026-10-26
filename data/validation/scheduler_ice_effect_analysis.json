@@ -1,0 +1,47 @@
+{
+  "test": "scheduler_ice_effect",
+  "day0_identical": true,
+  "evidence": {
+    "N1_surface_T_mean_day30": {
+      "LEGACY": 0.8811007142066956,
+      "EOS80": 0.8487885594367981
+    },
+    "prod_surface_T_mean_day30": {
+      "LEGACY": 0.11714723706245422,
+      "EOS80": 0.058872614055871964
+    },
+    "N1_ice_volume_day30_km3": 408.49334716796875,
+    "prod_ice_volume_day30_km3": 566.560791015625,
+    "extra_ice_area_km2": 466123.9536,
+    "extra_ice_N1_sic": 0.012576843611896038,
+    "implied_heat_flux_N1_w_m2": -40.323047201238005,
+    "implied_heat_flux_prod_w_m2": -268.6320165868182,
+    "CA_total_nmix_N1": 21147063.0,
+    "CA_total_nmix_prod": 6629399000.0
+  },
+  "hypotheses": {
+    "H1_physical_STALE_less_heat_exchange": {
+      "confidence": "MEDIUM",
+      "evidence": "production ocean is ~0.76 C colder and grows 466k km2 extra ice; but implied heat loss is -269 W/m2 vs -40 N1, i.e. MORE heat loss, not less. STALE/cadence changes the coupling; not a clean physical mechanism."
+    },
+    "H2_artifact_spurious_cooling": {
+      "confidence": "HIGH",
+      "evidence": "production forces mm2=24 (vs 48 N1) and 576 ocean/CA passes/day; extra ice appears over wide open-water regions (N1 SIC 0.013) with -269 W/m2 implied cooling outside the T-34 -5..-50 range. Scheduler-specific coupling/cadence artifact."
+    },
+    "H3_initialization_difference": {
+      "confidence": "NONE",
+      "evidence": "day-0 SIC/SIT bit-identical in all four cells (real OSI-SAF); H3 ruled out."
+    },
+    "H4_cadence_effect": {
+      "confidence": "HIGH",
+      "evidence": "production 24 fires/day vs N1 48 thermo steps/day; CA runs 576 passes/day (6.63e9 mixings/month vs 2.11e7) and ice/thermo cadence differs. Dominant scheduler-specific mechanism."
+    }
+  },
+  "ranking": [
+    "H4 cadence (HIGH)",
+    "H2 artifact/spurious cooling (HIGH)",
+    "H1 physical (MEDIUM)",
+    "H3 initialization (NONE)"
+  ],
+  "conclusion": "ARTIFACT \u2014 scheduler cadence/STALE coupling, not a validated physical ice response. Production ice climatology is not comparable to N=1 and must not be used for D-29/11.8A ice validation without a scheduler fix."
+}

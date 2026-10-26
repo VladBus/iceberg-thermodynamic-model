@@ -10,13 +10,13 @@ env-gated (default OFF) until D-33 approval.
 
 | Field | Value |
 |---|---|
-| Current stage | 11.8A Matrix Phase 1 (January) — COMPLETE |
+| Current stage | 11.8A Phase 1-ANALYSIS (scheduler ice effect) — COMPLETE |
 | Ocean rest state | **T3b PASS (bounded)** — max \|U\| **0.147 m/s**, KE30/KE15 **0.568** (dt=1800, Ah=10000, no sponge) |
 | T-19 snowfall | **FIXED** — v2 CDS probe R=1.009 (hourly); divisor 3600 |
 | T-25 potential CA | Implemented behind `STAGE118_CA_POTENTIAL` (OFF); no effect in LEGACY |
 | T-32 prognostic RO | Implemented behind `STAGE118_RO_PROGNOSTIC` (OFF); no effect (CA already refreshes RO) |
 | T-31 EUU | **FIXED diagnostically** — 3D KE printed as `KE3D(J)` |
-| Next step | **11.8A Phase 2** (Apr/Jul/Oct) — GO; not started |
+| Next step | **11.8A Phase 2 N=1 only** (production column BLOCKED); not started |
 
 ## Seasonal coverage (30-day forced)
 
@@ -33,12 +33,12 @@ env-gated (default OFF) until D-33 approval.
 |---|---|---|---|---|---|
 | 1 | LEGACY | N1 | 0.794 | 1.486 | 0 | 0 |
 | 2 | EOS80 | N1 | 0.785 | 1.494 | 0 | 0 |
-| 3 | LEGACY | Prod | 0.511 | 1.479 | 0 | 0 |
-| 4 | EOS80 | Prod | 0.511 | 1.483 | 0 | 0 |
+| 3 | LEGACY | Prod | 0.511 | 1.479 | 0 | 0 (ice artifact) |
+| 4 | EOS80 | Prod | 0.511 | 1.483 | 0 | 0 (ice artifact) |
 
-D-29 preliminary: A/B/C satisfied; no interaction pathology. **Phase 2 GO.**
+D-29 preliminary: A/B satisfied for N=1; production ice/cadence artifact (T-39) → production column BLOCKED. **Phase 2 N=1 GO.**
 
-## Issue table (T-01 … T-38)
+## Issue table (T-01 … T-40)
 
 | # | Status | Notes |
 |---|---|---|
@@ -80,6 +80,8 @@ D-29 preliminary: A/B/C satisfied; no interaction pathology. **Phase 2 GO.**
 | T-36 | OPEN | Salinity advection root; monotone/sponge caps not a density fix |
 | T-37 | CLOSED (accepted) | Density repair insufficient; covered by T-38 limitation |
 | T-38 | ACCEPTED LIMITATION | 90-day storm runs unstable; 30-day Jan/Apr/Jul/Oct validated |
+| T-39 | OPEN | Production scheduler ice artifact (+65% extent, −269 W/m²); production matrix BLOCKED |
+| T-40 | OPEN | CA nmix I8 console overflow; CA runs, CSV authoritative |
 | H-2 | FIXED | `STAGE118_WIND_ROTATION`; alpha median 50.18°, max 81.28°; dir error 2.8e-14° |
 
 ## Switches (default OFF; D-33 gate)
@@ -106,6 +108,7 @@ D-29 preliminary: A/B/C satisfied; no interaction pathology. **Phase 2 GO.**
 - T5-CORRECTIVE-3: `t5c3_90day_with_fixes.json`, `t5c3_april_with_fixes.json`, `t5c3_monotone_test.json`, `t5c3_sponge_test.json`
 - T5-CORRECTIVE-4: `t5c4_90day_density_repair.json`, `t5c4_april_density_repair.json`, `t5c4_density_repair_test.json`
 - T6-SEASONAL: `t6s_july_results.json`, `t6s_october_results.json`, `t6s_production_results.json`, `t6s_eos80_smoke.json`
+- Phase1-ANALYSIS: `scheduler_ice_effect_analysis.json`, `ice_detailed_diagnostics.json`, `ca_diagnostics_analysis.json`, `heat_conservation_verification.json`
 - T-19: `data/validation/t19_cds_probe_v2.json`, `snowfall_period_result.json`
 - Sponge tests: `t3c3_sponge_results.json`, `t3c3_sponge2_results.json`,
   `t3c3_sponge3_results.json`
@@ -113,6 +116,6 @@ D-29 preliminary: A/B/C satisfied; no interaction pathology. **Phase 2 GO.**
 
 ## Next action
 
-1. **T6-SEASONAL COMPLETE**: Jul/Oct N=1 PASS; production scheduler 30/30 PASS; T-38 accepted limitation.
-2. **11.8A matrix GO** (16 cells specified); execution not started.
-3. Matrix spec: `docs/validation/stage11.8A_matrix_plan.md`; no T6 long-run claim.
+1. **Phase 1 analysis**: production ice effect is an ARTIFACT (cadence/STALE); T-39 blocks production matrix cells.
+2. **Phase 2 N=1 only GO** (8 cells); production column diagnostic/blocked. No Phase 2 execution yet.
+3. T-40 CA print overflow is diagnostic-only; CA runs (CSV authoritative).

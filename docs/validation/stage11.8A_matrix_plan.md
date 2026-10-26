@@ -13,8 +13,10 @@
 | Season | Jan, Apr, Jul, Oct |
 | Duration | 30 days per cell |
 
-**Cells:** 2 × 2 × 4 = **16** (if production scheduler remains viable; otherwise
-N=1 only + blocked note for production).
+**Cells:** 2 EOS × 4 seasons = **8 N=1 cells** are executable. The production
+column is **BLOCKED**: Phase-1 analysis found a scheduler ice/cadence artifact
+(production +65 % extent, −269 W/m² implied cooling); production runs are
+diagnostic only until a scheduler fix.
 
 ## Standard configuration
 
@@ -70,9 +72,9 @@ is recorded as **NOT MET** (honest closure per D-29 clarification). D-28
 
 | Season | N=1 LEGACY | Production LEGACY | EOS80 |
 |---|---|---|---|
-| Jan | **PASS (Phase 1)** | **PASS (Phase 1, 720/720)** | **PASS (Phase 1)** |
-| Apr | PASS (T5) | TO RUN | TO RUN |
+| Jan | **PASS (Phase 1)** | **BLOCKED (artifact)** | **PASS (Phase 1, N1)** |
+| Apr | PASS (T5) | BLOCKED | TO RUN (N1) |
 | Jul | **PASS (T6)** | TO RUN | TO RUN |
 | Oct | **PASS (T6)** | TO RUN | TO RUN |
 
-Phase 1 (January) complete: all 4 cells PASS. Phase 2 (Apr/Jul/Oct) is GO; not started.
+Phase 1 analysis: N1 cells valid; production column BLOCKED (scheduler ice/cadence artifact). Phase 2 N=1 GO; not started.

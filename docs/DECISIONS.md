@@ -487,3 +487,12 @@ not added.
 - **Results:** July PASS (max |U| 0.542, KE30/KE15 0.827, RO 0); October PASS (0.690, 2.152, RO 0); production scheduler **30/30 d, 720/720 fire-steps PASS** (0.494, 1.480, RO 0) — historical 55/360 blocker resolved for 30-day; EOS80 production 10-day smoke PASS.
 - **11.8A:** GO; matrix 2 EOS ×2 schedulers ×4 seasons =16 cells, 30 d, standard config; D-29 rule unchanged; ice caveat Apr/Jul/Oct January-derived/diagnostic; execution not started. **D-28 Stage-12 gate is unchanged**; this decision only adds a re-scope note.
 - **Report:** `docs/validation/stage11.8.0_T6-SEASONAL_validation.md`; spec `docs/validation/stage11.8A_matrix_plan.md`.
+
+## D-45. Production-scheduler ice effect is an artifact; 11.8A production column blocked (Stage 11.8A Phase 1-ANALYSIS, 2026-10-25)
+
+- **Evidence:** identical day-0 real OSI-SAF ice in all four cells; production gives +65 % extent (1,128.8 vs 683.6 ×10³ km²), 466,124 km² extra ice over N1 open water, surface ocean −0.76 °C, implied heat loss −269 vs −40 W/m². Initialization (H3) ruled out; EOS effect ≤1.1 %.
+- **Cause:** production cadence/STALE coupling (24 fires/day vs 48 N1 thermo steps; 576 CA passes/day vs 1), not a validated physical ice response. **ARTIFACT (T-39).**
+- **CA:** CA runs in production (CA-PROBE, CSV nmix 6.63e9/month); console `nmix=********` is an I8 print overflow (T-40), not a physics bug.
+- **Heat:** T-34 closure valid for N1 (−40/−39 W/m²), invalid for production (−269/−261 W/m²).
+- **Decision:** production matrix cells **BLOCKED**; **Phase 2 (Apr/Jul/Oct) N=1 only GO**, not started. EOS80 remains candidate on N=1; no promotion. No physics/EOS/scheduler code change.
+- **Report:** `docs/validation/stage11.8A_phase1_analysis.md`.

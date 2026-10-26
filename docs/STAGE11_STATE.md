@@ -10,15 +10,24 @@ env-gated (default OFF) until D-33 approval.
 
 | Field | Value |
 |---|---|
-| Current stage | 11.8.0 T5-CORRECTIVE-4 (density repair) — COMPLETE (FAIL) |
+| Current stage | 11.8.0 T6-SEASONAL — COMPLETE (11.8A GO) |
 | Ocean rest state | **T3b PASS (bounded)** — max \|U\| **0.147 m/s**, KE30/KE15 **0.568** (dt=1800, Ah=10000, no sponge) |
 | T-19 snowfall | **FIXED** — v2 CDS probe R=1.009 (hourly); divisor 3600 |
 | T-25 potential CA | Implemented behind `STAGE118_CA_POTENTIAL` (OFF); no effect in LEGACY |
 | T-32 prognostic RO | Implemented behind `STAGE118_RO_PROGNOSTIC` (OFF); no effect (CA already refreshes RO) |
 | T-31 EUU | **FIXED diagnostically** — 3D KE printed as `KE3D(J)` |
-| Next step | **ACCEPT LIMITATIONS** (30-day forced only); **T6 NO-GO** |
+| Next step | **11.8A matrix execution** (specified, NOT started) |
 
-## Issue table (T-01 … T-37)
+## Seasonal coverage (30-day forced)
+
+| Season | N=1 LEGACY | Production LEGACY | EOS80 |
+|---|---|---|---|
+| Jan | PASS (T4) | **PASS (720/720)** | 10-day smoke PASS |
+| Apr | PASS (T5) | TO RUN (11.8A) | TO RUN |
+| Jul | **PASS (T6)** | TO RUN | TO RUN |
+| Oct | **PASS (T6)** | TO RUN | TO RUN |
+
+## Issue table (T-01 … T-38)
 
 | # | Status | Notes |
 |---|---|---|
@@ -56,9 +65,10 @@ env-gated (default OFF) until D-33 approval.
 | T-32 | IMPLEMENTED | E1 RO prognostics behind switch; no effect because CA refreshes RO for all wet columns |
 | T-33 | MITIGATED | Unresolved baroclinic eddies (R_d 2.36 km vs 13.89 km); bounded by dt=1800 + Ah=10000; fundamental limitation documented |
 | T-34 | CLOSED (tentative) | Heat drift physical: −3.94 W/m² Jan, −9.81 W/m² Apr; volume 0, salt <1e-3 |
-| T-35 | OPEN (accepted limitation) | Density repair still NaN day69; long-run forced not validated |
+| T-35 | CLOSED (accepted) | 30-day forced validated; 90-day limitation T-38 |
 | T-36 | OPEN | Salinity advection root; monotone/sponge caps not a density fix |
-| T-37 | OPEN (accepted) | Density repair before CA insufficient; day65 RO −416, NaN day69; April passes |
+| T-37 | CLOSED (accepted) | Density repair insufficient; covered by T-38 limitation |
+| T-38 | ACCEPTED LIMITATION | 90-day storm runs unstable; 30-day Jan/Apr/Jul/Oct validated |
 | H-2 | FIXED | `STAGE118_WIND_ROTATION`; alpha median 50.18°, max 81.28°; dir error 2.8e-14° |
 
 ## Switches (default OFF; D-33 gate)
@@ -84,6 +94,7 @@ env-gated (default OFF) until D-33 approval.
 - T5-CORRECTIVE-2: `t5c2_root_cause.json`, `t5c2_ca_diagnostics.json`, `t5c2_advection_diagnostics.json`, `t5c2_boundary_diagnostics.json`, `t5c2_energy_budget.json`
 - T5-CORRECTIVE-3: `t5c3_90day_with_fixes.json`, `t5c3_april_with_fixes.json`, `t5c3_monotone_test.json`, `t5c3_sponge_test.json`
 - T5-CORRECTIVE-4: `t5c4_90day_density_repair.json`, `t5c4_april_density_repair.json`, `t5c4_density_repair_test.json`
+- T6-SEASONAL: `t6s_july_results.json`, `t6s_october_results.json`, `t6s_production_results.json`, `t6s_eos80_smoke.json`
 - T-19: `data/validation/t19_cds_probe_v2.json`, `snowfall_period_result.json`
 - Sponge tests: `t3c3_sponge_results.json`, `t3c3_sponge2_results.json`,
   `t3c3_sponge3_results.json`
@@ -91,6 +102,6 @@ env-gated (default OFF) until D-33 approval.
 
 ## Next action
 
-1. **T5-CORRECTIVE-4 FAIL**: density repair before CA is overwhelmed by CA/B200; NaN day69.
-2. **ACCEPT LIMITATION**: only 30-day forced runs are validated; **T6 NO-GO.**
-3. D-33 switches remain OFF default; density repair/tracer caps are not production physics.
+1. **T6-SEASONAL COMPLETE**: Jul/Oct N=1 PASS; production scheduler 30/30 PASS; T-38 accepted limitation.
+2. **11.8A matrix GO** (16 cells specified); execution not started.
+3. Matrix spec: `docs/validation/stage11.8A_matrix_plan.md`; no T6 long-run claim.

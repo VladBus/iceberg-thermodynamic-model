@@ -1,0 +1,28 @@
+{
+  "run": "t6s_jan_production",
+  "days": 30,
+  "production_fire_steps": 720,
+  "canonical_12step_days": 360,
+  "steps_completed": "720/720 fire-steps (360/360 canonical)",
+  "historical_blocker": "RESOLVED for 30-day standard config",
+  "max_u_m_s": 0.49358293414115906,
+  "max_v_m_s": 0.4870484173297882,
+  "ke15_j": 515535435981238.4,
+  "ke30_j": 762817865309047.1,
+  "ke30_over_ke15": 1.4796613618948358,
+  "bounds_day30": {
+    "T_min": -1.951141357421875,
+    "T_max": 7.077606201171875,
+    "S_min_psu": 31.522239685058594,
+    "S_max_psu": 37.07408142089844,
+    "RO_min": 0.0,
+    "RO_negative_cells": 0,
+    "nan_cells": 0
+  },
+  "conservation": {
+    "volume_rel": 0.0,
+    "heat_rel": 0.2027652524958782,
+    "salt_rel": 0.0006789919778897556
+  },
+  "PASS": true
+}

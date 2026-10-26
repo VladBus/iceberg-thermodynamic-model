@@ -96,3 +96,13 @@ Full `fpm test` **63/63**, strict build 0; new density-repair, monotone, and
 sponge tests pass; default 1-day legacy md5 identical; H-2 PASS; T-23 FIXED;
 ERA5 120/120; snowfall CONFIRMED_1H; `git diff --check` clean. No EOS formula
 change; D-33 switches default OFF.
+
+---
+
+## Postscript — final T5 closure (T6-SEASONAL)
+
+The T5 long-run effort is formally closed with an **accepted limitation**
+(T-38): 30-day forced runs are validated (Jan/Apr/Jul/Oct), 90-day runs are
+not. T6-SEASONAL subsequently re-scoped the old 365-day T6 criterion and
+defined the 30-day 11.8A matrix. See
+`docs/validation/stage11.8.0_T6-SEASONAL_validation.md`.

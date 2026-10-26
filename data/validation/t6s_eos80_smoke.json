@@ -1,0 +1,18 @@
+{
+  "run": "t6s_jan_prod_eos80",
+  "days": 10,
+  "max_u_m_s": 0.40516403317451477,
+  "max_v_m_s": 0.38172197341918945,
+  "ke_day10_j": 503294298387849.4,
+  "bounds_day10": {
+    "T_min": -1.96075439453125,
+    "T_max": 7.077606201171875,
+    "S_min_psu": 30.75088882446289,
+    "S_max_psu": 37.07408142089844,
+    "RO_min": 0.0,
+    "RO_negative_cells": 0,
+    "nan_cells": 0
+  },
+  "nan_cells": 0,
+  "PASS": true
+}

@@ -1,7 +1,7 @@
 # Model Physics Block Status
 
 **Date:** 2026-10-25
-**Current repository stage:** Stage 11.8.0 T5-CORRECTIVE-4 COMPLETE — **FAIL**: density repair before CA is overwhelmed by CA/B200 (NaN day69, max |U| 34,027); April 30-day passes. ACCEPT LIMITATION (30-day forced); T6 NO-GO.
+**Current repository stage:** Stage 11.8.0 T6-SEASONAL COMPLETE — 30-day forced validated Jan/Apr/Jul/Oct; production scheduler 30/30 PASS (720/720), 55/360 blocker resolved for 30-day; 90-day limitation T-38 accepted. 11.8A matrix GO (specified, not executed).
 **Ocean EOS statement:** the prognostic ocean uses legacy Eckart (Dmitrev–Nesterov) density in float32 (`src/equation_of_state.f90`) by default; UNESCO EOS-80 is implemented opt-in (`src/eos80_unesco.f90`, `EOS_MODE=EOS80`, validated in 11.4/11.4.1, recommendation: optional). Iceberg side uses freezing-point only (table row "Full seawater EOS" below refers to the iceberg module).
 **Production baseline:** Stage 10.13 (low-flow closure behind `low_flow_closure_enabled`; OFF = Stage 10.12/10.10 legacy unchanged); Stage 10.19 adds the env-gated production iceberg connection (inert by default); Stage 10.20 adopts the full-coverage ERA5 Jan file for production gates (`src/param.f90` default path NOT changed); Stage 10.21 adds CA/EOS f32-precision research switches (`STAGE1021_CA_F64`, `STAGE1021_CA_MIX`, `STAGE1021_CA_SCOPE`, `STAGE1021_CA_EPS`) — all OFF by default, production bit-identical (KEEP_CURRENT); Stage 10.22 adds Block-200 stability-audit diagnostic switches (`STAGE1022_DIAG`, `STAGE1022_FREEZE_RO`, `STAGE1022_FREEZE_THERMAL_WIND`, `STAGE1022_FREEZE_TS`, `STAGE1022_FREEZE_RO_DOWNSTREAM`; env names `_FREEZE_RO`/`_FREEZE_TS`/`_FREEZE_RO_DOWNSTREAM`/`_FREEZE_THERMAL_WIND` + `_DIAG`) — all OFF by default, production bit-identical (KEEP_CURRENT); Stage 11.4-D32 adds the ERA5 nearest-edge coverage fallback in `era5_wind()` (loader-only production fix, Jan bit-identical); Stage 11.4-D33 fixes Ocean Baseline 11.x (Jan30/Apr29/Jul30/Oct30, 0 NaN); Stage 11.3C adds `STAGE113_DT/DT1` measurement-only timestep override (defaults = legacy 3600/120); Stage 11.3C.1 adds mm2/mm3 scaling (active only with override) + `s112_cfl_dist` percentiles (DIAG-gated)
 **FPM test targets:** 59 (fpm auto-discovery of `test/*.f90` with a top-level `program`, incl. `check.f90`, `iceberg_test_10p17_melt_budget`, `iceberg_test_10p17_90day`, `drift_scaling_*`)
@@ -348,6 +348,17 @@ RO min 0). Iceberg .docx files absent; voxel PDF has only ice-conduction
 stability, no ocean density guidance. **ACCEPT LIMITATION: 30-day forced runs
 only; T6 NO-GO.** Report:
 `docs/validation/stage11.8.0_T5-CORRECTIVE-4_density_repair.md`.
+
+## Stage 11.8.0 T6-SEASONAL — 30-day validation + production retest
+
+T5 chain closed with accepted limitation T-38 (90-day storm instability;
+30-day Jan/Apr/Jul/Oct validated). July PASS: max |U| 0.542, KE30/KE15 0.827,
+RO 0, no NaN. October PASS: 0.690, 2.152, RO 0, no NaN. Production scheduler
+30/30 days, 720/720 fire-steps PASS: max |U| 0.494, KE30/KE15 1.480, RO 0,
+no NaN — historical 55/360 blocker resolved for 30-day. EOS80 production
+10-day smoke PASS (0.405, RO 0). 11.8A matrix GO (16 cells; spec
+`docs/validation/stage11.8A_matrix_plan.md`); matrix not started.
+Report: `docs/validation/stage11.8.0_T6-SEASONAL_validation.md`.
 
 ## References
 

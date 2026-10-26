@@ -120,6 +120,9 @@ Stage 10 reports have been archived to `docs/wiki/stages/stage10/`. See the arch
 
 | `stage11.8.0_T5-CORRECTIVE-4_density_repair.md` (density repair; FAIL 90d) | 11.8.0 T5-CORRECTIVE-4 | COMPLETE (FAIL; accept 30-day limitation) | Hard T caps removed; `STAGE118_DENSITY_REPAIR` (default OFF) adjusts T/S to RO≥0 after advection. Test RO −0.0242→+2.39e-4, S 0→0.0326 PASS. 90-day: repair adjusts ~139,620 cells/day but CA/B200 recreate negative RO (day65 −416), NaN day69, max |U| 34,027 -> FAIL. April 30-day PASS (KE30/KE15 1.530, max |U| 0.853, RO 0). .docx absent; PDF only iceberg conduction. **ACCEPT LIMITATION; T6 NO-GO.** | `docs/validation/stage11.8.0_T5-CORRECTIVE-4_density_repair.md` |
 
+| `stage11.8.0_T6-SEASONAL_validation.md` (seasonal + production retest) | 11.8.0 T6-SEASONAL | COMPLETE (11.8A GO) | T-38 accepted 90-day limitation. **Jul PASS** (max |U| 0.542, KE30/KE15 0.827, RO 0); **Oct PASS** (0.690, 2.152, RO 0); **production 30/30 d, 720/720 fire-steps PASS** (0.494, 1.480, RO 0) — 55/360 blocker resolved for 30-day; EOS80 production 10-day smoke PASS. **11.8A GO** (16 cells; matrix spec `stage11.8A_matrix_plan.md`). | `docs/validation/stage11.8.0_T6-SEASONAL_validation.md` |
+| `stage11.8A_matrix_plan.md` (11.8A matrix specification) | 11.8A | SPECIFIED, NOT EXECUTED | EOS {LEGACY,EOS80} × scheduler {N1,PRODUCTION} × season {Jan,Apr,Jul,Oct}, 30 d; gates; D-29 rule; ice caveat; ~4.8 GB storage. | `docs/validation/stage11.8A_matrix_plan.md` |
+
 ## Rules
 
 - Reports here are not rewritten after stage completion (exception: technical navigational fixes).

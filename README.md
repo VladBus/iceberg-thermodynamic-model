@@ -35,7 +35,7 @@ under atmospheric, oceanic, bathymetric, and sea-ice forcing.
 
 ## 📑 Project status
 
-- **Current stage:** Stage 11.8.0 T5-CORRECTIVE-4 COMPLETE — **FAIL**: density repair before CA is overwhelmed by CA/B200 (NaN day69, max |U| 34,027); April 30-day passes. ACCEPT LIMITATION (30-day forced only); **T6 NO-GO.**
+- **Current stage:** Stage 11.8.0 T6-SEASONAL COMPLETE — Jul/Oct N=1 PASS; production scheduler 30/30 days (720/720 fire-steps) PASS, historical 55/360 blocker resolved for 30-day; T-38 accepted 90-day limitation. **11.8A matrix GO** (specified, not executed).
   [Historical note from Stage 10.19, SUPERSEDED by Stage 10.20 restoration
   (full-coverage ERA5: 3-day gate PASS, residual characterized, NOT fixed):
   coupling recovery (completed: the Lagrangian iceberg module is now

@@ -479,3 +479,11 @@ not added.
 - **References:** `Iceberg_1.docx` and `Iceberg_Voxel_Thermal_Model.docx` absent; the available voxel PDF covers only iceberg heat-conduction stability, not ocean density/RO.
 - **Decision:** no storm-safe long-run configuration. **ACCEPT LIMITATION: 30-day forced runs only; T6 NO-GO.** Density repair/tracer caps are not promoted; switches default OFF. No EOS formula/scheduler change.
 - **Report:** `docs/validation/stage11.8.0_T5-CORRECTIVE-4_density_repair.md`.
+
+## D-44. T5 long-run limitation accepted; T6 re-scoped to 30-day seasonal + production retest (Stage 11.8.0 T6-SEASONAL, 2026-10-25)
+
+- **T5 closure:** T5-C1..C4 show systemic explicit-scheme/resolution instability for >60-day Q1-storm runs (13.89 km vs 2.36 km Rossby radius; advection→CA→B200 recreates RO<0). **Accepted limitation T-38**: 30-day forced runs validated Jan/Apr/Jul/Oct; 90-day not validated. Future work: implicit fast-wave coupling, full FCT with positivity, adaptive Δt, wind-stress capping, finer/telescoping grid.
+- **T6 re-scope:** original 30→90→365-day criterion is superseded by T-38; T6 = four 30-day seasonal runs + production scheduler retest + 11.8A matrix definition.
+- **Results:** July PASS (max |U| 0.542, KE30/KE15 0.827, RO 0); October PASS (0.690, 2.152, RO 0); production scheduler **30/30 d, 720/720 fire-steps PASS** (0.494, 1.480, RO 0) — historical 55/360 blocker resolved for 30-day; EOS80 production 10-day smoke PASS.
+- **11.8A:** GO; matrix 2 EOS ×2 schedulers ×4 seasons =16 cells, 30 d, standard config; D-29 rule unchanged; ice caveat Apr/Jul/Oct January-derived/diagnostic; execution not started. **D-28 Stage-12 gate is unchanged**; this decision only adds a re-scope note.
+- **Report:** `docs/validation/stage11.8.0_T6-SEASONAL_validation.md`; spec `docs/validation/stage11.8A_matrix_plan.md`.

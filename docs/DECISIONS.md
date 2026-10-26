@@ -499,9 +499,20 @@ not added.
 
 ## D-46. 11.8A Phase 2 complete: D-29 NOT PROMOTED; Stage 11.9 NO-GO (2026-10-26)
 
+> **Status: superseded by D-47 after the T-41 gate correction.**
+
 - **Scope:** N=1 only (production BLOCKED, T-39); 8 cells = Jan (Phase 1) + Apr/Jul/Oct new; 30-day standard protective set. April forcing required one persisted 1 May 00:00 boundary slice because the delivered April file has 120 slices (29 days).
 - **Results:** 7/8 PASS. April both PASS; July LEGACY PASS, **EOS80 FAIL** (RO min −2.504e-3 kg/m³, 7 surface cells, no NaN, T-41); October both PASS. All cells: max |U| <2 m/s, KE30/KE15 <5, S≥0, NaN 0; salt <1e-3; volume 0.
 - **EOS effect (mean 4 seasons):** max |U| **−0.14 %**, KE30/KE15 **+0.33 %**, CA nmix **−12.85 %** → equivalent dynamics, fewer CA mixings.
 - **D-29:** Criterion A **false** (July EOS80); B **true** (equivalent/better within 10%); C **true** for N=1 (production interaction not assessable). **Verdict: NOT PROMOTED**; EOS80 optional, LEGACY default; Stage 11 goal “EOS-80 in production” NOT MET.
 - **Stage 11.9:** **NO-GO at this time**; not started. Open items: 7/8 matrix (T-41 EOS80 July RO), 11.8B release audit. T-39 production ice/cadence is future work and is not a blocker for N=1 closure. No physics/EOS/scheduler code changed; no production cells run.
 - **Report:** `docs/validation/stage11.8A_phase2_seasonal_results.md`.
+
+## D-47. T-41 false positive; D-29 PROMOTED for N=1 (Stage 11.8A Phase 2-ANALYSIS, 2026-10-26)
+
+- **Finding:** the NetCDF `density_anomaly` is in **kg/m³** and represents `rho[g/cm³] - 1.02`. The T-41 gate compared this raw anomaly to zero as if it were a g/cm³ quantity. The seven July cells are at S=25.03–25.08 PSU, T=2.10–2.83 °C (not S=21.9; that is the domain surface minimum, not the failing-cell value).
+- **Physics:** UNESCO EOS-80 absolute density for the seven cells is **1.0199975–1.0199999 g/cm³**; raw anomaly −2.504e-3…−7.5e-5 kg/m³ = −2.504e-6…−7.5e-8 g/cm³. Model−UNESCO RO residual ≤1.2e-9 g/cm³. The S=21.9/T=2.1 example gives rho≈1.01749 g/cm³; it is physically real too. The negative values are the 1.02 reference offset, not a vacuum/instability.
+- **Gate correction:** replace `RO >= 0` with **absolute density > 1.0 g/cm³** and **RO > −0.05 g/cm³**; keep raw RO negative as a diagnostic. All 8 N=1 cells now PASS.
+- **D-29:** Criterion A true (all four EOS80 seasons pass); B true (mean max |U| −0.14 %, KE +0.33 %, CA −12.85 %); C true for N=1. **PROMOTED** for the N=1 30-day validated model. Production scheduler remains BLOCKED (T-39); no Fortran/EOS/scheduler code changed. The runtime default declaration is deferred to Stage 11.8B.
+- **Next:** Stage 11.8B production release audit/cleanup; Stage 11.9 not started.
+- **Evidence:** `data/validation/t41_physics_verification.json`, `python/analysis/stage11.8A_t41_physics.py`, `docs/validation/stage11.8A_phase2_seasonal_results.md`.

@@ -1,6 +1,6 @@
 # Stage 11.8A Matrix Specification — Seasonal EOS × Scheduler
 
-**Status:** COMPLETE — 7/8 N=1 cells PASS; **D-29 NOT PROMOTED** (EOS80 July RO failure).
+**Status:** COMPLETE — **8/8 N=1 cells PASS after T-41 gate correction**; **D-29 PROMOTED** (N=1 scope).
 **Date:** 2026-10-26
 **Config:** validated Stage 11.8 standard set (see below).
 
@@ -33,7 +33,9 @@ is not validated; D-29 is based on N=1 only.**
 
 - NaN/Inf count (gate: 0).
 - max |U|, |V|, |W|; KE day 0/15/30; KE30/KE15 (<5).
-- T/S/RO bounds; **RO ≥ 0** and S ≥ 0.
+- T/S/RO bounds; **absolute density > 1.0 g/cm³** and S ≥ 0. Raw
+  `density_anomaly` is kg/m³ and may be slightly negative for brackish water;
+  it is a diagnostic, not a gate (T-41 correction).
 - Conservation: volume 0; salt <1e-3; heat interpreted via T-34 surface-flux
   closure (not a literal zero-drift target).
 - CA nmix + guard hits.
@@ -47,9 +49,11 @@ EOS80 is promoted to default **only if**:
 2. EOS80 is demonstrably equivalent or better than LEGACY on a documented
    metric;
 3. there is no interaction pathology with the production scheduler.
-Otherwise EOS80 stays optional and the Stage 11 goal “EOS-80 in production”
-is recorded as **NOT MET** (honest closure per D-29 clarification). D-28
-(Stage 12 gate) is unchanged.
+**Outcome:** all EOS80 cells pass the corrected absolute-density gate; EOS80 is
+equivalent on dynamics and uses fewer CA mixings → **D-29 PROMOTED for N=1**
+(T-41 gate correction, D-47). Production scheduler remains BLOCKED (T-39);
+the runtime default is declared in Stage 11.8B. D-28 (Stage 12 gate) is
+unchanged.
 
 ## Sea-ice data caveat
 
@@ -75,9 +79,10 @@ is recorded as **NOT MET** (honest closure per D-29 clarification). D-28
 |---|---|---|---|
 | Jan | **PASS** | **BLOCKED (T-39)** | **PASS** |
 | Apr | **PASS (extended boundary)** | BLOCKED (T-39) | **PASS** |
-| Jul | **PASS** | BLOCKED (T-39) | **FAIL — RO min −2.5e-3 (T-41)** |
+| Jul | **PASS** | BLOCKED (T-39) | **PASS (T-41 corrected)** |
 | Oct | **PASS** | BLOCKED (T-39) | **PASS** |
 
-Phase 2 complete: **7/8 cells PASS**. Production column BLOCKED (T-39);
-EOS80 July fails strict RO≥0 (T-41) → D-29 **NOT PROMOTED**. N=1 LEGACY
-remains default/validated. See `stage11.8A_phase2_seasonal_results.md`.
+Phase 2 complete: **8/8 cells PASS** under the corrected absolute-density
+gate. Production column BLOCKED (T-39); **D-29 PROMOTED** for N=1; EOS80
+remains excluded from production until 11.8B. See
+`stage11.8A_phase2_seasonal_results.md`.

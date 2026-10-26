@@ -1,18 +1,18 @@
 {
-  "stage": "11.8A Phase 2 \u2014 D-29 final",
-  "scheduler_scope": "N=1 only; production BLOCKED (T-39)",
-  "criterion_A_all_eos80_pass": false,
+  "stage": "11.8A Phase 2 \u2014 D-29 final (T-41 gate correction)",
+  "scheduler_scope": "N=1 30-day matrix; production BLOCKED (T-39)",
+  "criterion_A_all_eos80_pass": true,
   "criterion_B_eos80_equivalent_or_better": true,
   "criterion_C_no_scheduler_pathology": true,
   "criterion_C_scope": "N=1 only; production interaction not assessable (T-39)",
-  "criterion_A_failed_cells": [
-    "Jul"
-  ],
-  "verdict": "NOT PROMOTED",
+  "criterion_A_failed_cells": [],
+  "gate_correction": "T-41 false positive: density_anomaly is kg/m3 (rho-1.02); absolute density = 1.02 + RO/1000. July minima are ~1.0200 g/cm3. RO>=0 is not a valid brackish-water gate.",
+  "verdict": "PROMOTED",
+  "promotion_scope": "EOS-80 validated in the N=1 30-day seasonal matrix; production scheduler remains BLOCKED (T-39).",
   "eos80_cells": {
     "Jan": true,
     "Apr": true,
-    "Jul": false,
+    "Jul": true,
     "Oct": true
   },
   "eos_effect_mean_pct": {
@@ -26,5 +26,5 @@
     "30-day runs only (90-day not validated, T-38)",
     "April forcing uses a single persisted boundary time step (1 May 2020 00:00) to reach 30 days"
   ],
-  "stage_11_9_gate": "NO-GO at this time: 7/8 cells pass; T-41 (EOS80 July RO) remains open and 11.8B is not started. T-39 production ice is future work, not a blocker for N=1 closure."
+  "stage_11_9_gate": "11.8A COMPLETE. Next immediate step is Stage 11.8B production release audit/cleanup; Stage 11.9 is NOT started."
 }

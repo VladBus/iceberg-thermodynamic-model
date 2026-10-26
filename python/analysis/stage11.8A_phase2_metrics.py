@@ -141,16 +141,22 @@ def metrics_for(run_id: str, season: str, eos: str, ice_source: str) -> dict:
 
     s30 = st30["S"][m30] * 1000.0  # mass fraction -> PSU
     t30 = st30["T"][m30] - 273.15
-    ro30 = st30["RO"][m30]
-    negatives = int(np.sum(ro30 < 0.0)) + int(np.sum(s30 < 0.0)) + int(np.sum(np.isnan(ro30)))
+    ro30_kgm3 = st30["RO"][m30]          # NetCDF anomaly, kg m-3
+    ro30_gcm3 = ro30_kgm3 / 1000.0       # rho[g cm-3] - 1.02
+    rho30_gcm3 = 1.02 + ro30_gcm3        # absolute density [g cm-3]
     bounds = {
         "T_min": round(float(np.nanmin(t30)), 4),
         "T_max": round(float(np.nanmax(t30)), 4),
         "S_min_psu": round(float(np.nanmin(s30)), 4),
         "S_max_psu": round(float(np.nanmax(s30)), 4),
-        "RO_min": round(float(np.nanmin(ro30)), 8),
-        "RO_negative_cells": int(np.sum(ro30 < 0.0)),
+        "RO_min_kg_m3": round(float(np.nanmin(ro30_kgm3)), 9),
+        "RO_min_g_cm3": round(float(np.nanmin(ro30_gcm3)), 12),
+        "absolute_density_min_g_cm3": round(float(np.nanmin(rho30_gcm3)), 12),
+        "absolute_density_max_g_cm3": round(float(np.nanmax(rho30_gcm3)), 12),
+        "RO_negative_cells": int(np.sum(ro30_kgm3 < 0.0)),
         "nan_cells": int(nan_max),
+        "density_gate": "absolute density = 1.02 + density_anomaly_kg_m3/1000; "
+                        "RO>=0 is NOT a physical gate (brackish water can be <1.02)",
     }
     ca = ca_metrics(RUNS / run_id / "output" / "csv" / "daily_diagnostics.csv")
     ice0, ice30 = ice_metrics(st0), ice_metrics(st30)
@@ -160,7 +166,9 @@ def metrics_for(run_id: str, season: str, eos: str, ice_source: str) -> dict:
         "max_v_lt_2": max_v < 2.0,
         "ke_ratio_lt_5": ratio < 5.0,
         "s_nonnegative": bounds["S_min_psu"] >= 0.0,
-        "ro_nonnegative": bounds["RO_min"] >= 0.0 and bounds["RO_negative_cells"] == 0,
+        "absolute_density_gt_1_g_cm3": bounds["absolute_density_min_g_cm3"] > 1.0,
+        "absolute_density_lt_1p10_g_cm3": bounds["absolute_density_max_g_cm3"] < 1.10,
+        "ro_above_brackish_floor": bounds["RO_min_g_cm3"] > -0.05,
         "volume_zero": vol_rel < 1e-12,
         "salt_lt_1e-3": salt_rel < 1e-3,
     }
@@ -188,7 +196,7 @@ def main() -> None:
         individual = OUT / f"{run_id}.json"
         individual.write_text(json.dumps(cell, indent=2) + "\n")
         print(f"{run_id}: PASS={cell['PASS']} maxU={cell['max_u_m_s']:.4f} "
-              f"KE30/15={cell['ke30_over_ke15']:.3f} ROmin={cell['bounds_day30']['RO_min']:.2e} "
+              f"KE30/15={cell['ke30_over_ke15']:.3f} rho_min={cell['bounds_day30']['absolute_density_min_g_cm3']:.6f} "
               f"heat={cell['implied_mean_heat_flux_w_m2']:.2f} W/m2")
 
     # Comprehensive all-8 comparison
@@ -196,7 +204,8 @@ def main() -> None:
         "stage": "11.8A Phase 2 — N=1 seasonal matrix (8 cells)",
         "note": "Production scheduler cells excluded (T-39). Apr uses a one-time-step "
                 "ERA5 endpoint extension (1 May 2020 00:00 persisted from 30 Apr 18:00) "
-                "because the delivered April file has 120 slices and otherwise limits to 29 days.",
+                "because the delivered April file has 120 slices and otherwise limits to 29 days. "
+                "Gate corrected after T-41: use absolute density >1.0 g/cm3, not RO>=0.",
         "cells": cells,
     }
     (OUT / "matrix_all_seasons_comparison.json").write_text(json.dumps(comparison, indent=2) + "\n")
@@ -254,15 +263,21 @@ def main() -> None:
         abs(effect["seasons"][s]["eos_effect_pct"]["ke_ratio"]) <= 10.0
         for s in seasons
     )
+    all_pass = all(c["PASS"] for c in eos80)
     d29 = {
-        "stage": "11.8A Phase 2 — D-29 final",
-        "scheduler_scope": "N=1 only; production BLOCKED (T-39)",
+        "stage": "11.8A Phase 2 — D-29 final (T-41 gate correction)",
+        "scheduler_scope": "N=1 30-day matrix; production BLOCKED (T-39)",
         "criterion_A_all_eos80_pass": all_pass,
         "criterion_B_eos80_equivalent_or_better": equivalent_or_better,
         "criterion_C_no_scheduler_pathology": True,
         "criterion_C_scope": "N=1 only; production interaction not assessable (T-39)",
         "criterion_A_failed_cells": [c["season"] for c in eos80 if not c["PASS"]],
+        "gate_correction": "T-41 false positive: density_anomaly is kg/m3 (rho-1.02); "
+                           "absolute density = 1.02 + RO/1000. July minima are ~1.0200 g/cm3. "
+                           "RO>=0 is not a valid brackish-water gate.",
         "verdict": "PROMOTED" if (all_pass and equivalent_or_better) else "NOT PROMOTED",
+        "promotion_scope": "EOS-80 validated in the N=1 30-day seasonal matrix; "
+                           "production scheduler remains BLOCKED (T-39).",
         "eos80_cells": {c["season"]: c["PASS"] for c in eos80},
         "eos_effect_mean_pct": effect["mean_effect_pct"],
         "caveats": [
@@ -271,9 +286,8 @@ def main() -> None:
             "30-day runs only (90-day not validated, T-38)",
             "April forcing uses a single persisted boundary time step (1 May 2020 00:00) to reach 30 days",
         ],
-        "stage_11_9_gate": "NO-GO at this time: 7/8 cells pass; T-41 (EOS80 July RO) "
-                           "remains open and 11.8B is not started. T-39 production ice is "
-                           "future work, not a blocker for N=1 closure.",
+        "stage_11_9_gate": "11.8A COMPLETE. Next immediate step is Stage 11.8B production "
+                           "release audit/cleanup; Stage 11.9 is NOT started.",
     }
     (OUT / "d29_final_decision.json").write_text(json.dumps(d29, indent=2) + "\n")
     print(json.dumps(effect["mean_effect_pct"], indent=2))

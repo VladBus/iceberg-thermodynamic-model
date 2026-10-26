@@ -1,7 +1,7 @@
 # Stage 11 — Living State (≤150 lines)
 
 **Updated:** 2026-10-26
-**Base commit:** `e8de52e` (11.8A Phase 1-ANALYSIS); Phase 2 changes in the
+**Base commit:** `2435176` (Phase 2 matrix); T-41 analysis changes in the
 current commit.
 **Branch policy:** `main` = legacy-frozen default; stage11-physics changes are
 env-gated (default OFF) until D-33 approval.
@@ -10,13 +10,13 @@ env-gated (default OFF) until D-33 approval.
 
 | Field | Value |
 |---|---|
-| Current stage | 11.8A Phase 2 (N=1 seasonal matrix) — COMPLETE; D-29 **NOT PROMOTED** |
+| Current stage | 11.8A Phase 2-ANALYSIS (T-41 gate correction) — COMPLETE; D-29 **PROMOTED** (N=1) |
 | Ocean rest state | **T3b PASS (bounded)** — max \|U\| **0.147 m/s**, KE30/KE15 **0.568** (dt=1800, Ah=10000, no sponge) |
 | T-19 snowfall | **FIXED** — v2 CDS probe R=1.009 (hourly); divisor 3600 |
 | T-25 potential CA | Implemented behind `STAGE118_CA_POTENTIAL` (OFF); no effect in LEGACY |
 | T-32 prognostic RO | Implemented behind `STAGE118_RO_PROGNOSTIC` (OFF); no effect (CA already refreshes RO) |
 | T-31 EUU | **FIXED diagnostically** — 3D KE printed as `KE3D(J)` |
-| Next step | Corrective action / limitation adjudication (T-41); **Stage 11.9 NO-GO**, not started |
+| Next step | **Stage 11.8B** production release audit/cleanup; Stage 11.9 not started |
 
 ## Seasonal coverage (30-day forced)
 
@@ -24,7 +24,7 @@ env-gated (default OFF) until D-33 approval.
 |---|---|---|---|
 | Jan | **PASS** | BLOCKED (T-39) | **PASS** |
 | Apr | **PASS** | BLOCKED (T-39) | **PASS** |
-| Jul | **PASS** | BLOCKED (T-39) | **FAIL (RO −2.5e-3, T-41)** |
+| Jul | **PASS** | BLOCKED (T-39) | **PASS (T-41 corrected)** |
 | Oct | **PASS** | BLOCKED (T-39) | **PASS** |
 
 ### 11.8A Phase 1 — January (all 4 PASS)
@@ -36,21 +36,23 @@ env-gated (default OFF) until D-33 approval.
 | 3 | LEGACY | Prod | 0.511 | 1.479 | 0 | 0 (ice artifact) |
 | 4 | EOS80 | Prod | 0.511 | 1.483 | 0 | 0 (ice artifact) |
 
-### 11.8A Phase 2 — N=1 seasonal matrix (7/8 PASS)
+### 11.8A Phase 2 — N=1 seasonal matrix (8/8 PASS)
 
-| Cell | EOS | max \|U\| | KE30/KE15 | S min | RO min | NaN | PASS |
+| Cell | EOS | max \|U\| | KE30/KE15 | S min | rho_abs min | NaN | PASS |
 |---|---|---|---|---|---|---|---|
-| Apr LEGACY | LEGACY | 0.838 | 1.506 | 25.111 | 0 | 0 | YES |
-| Apr EOS80 | EOS80 | 0.843 | 1.507 | 25.049 | 0 | 0 | YES |
-| Jul LEGACY | LEGACY | 0.542 | 0.827 | 21.908 | 0 | 0 | YES |
-| Jul EOS80 | EOS80 | 0.543 | 0.826 | 21.908 | **−2.50e-3** | 0 | **NO** |
-| Oct LEGACY | LEGACY | 0.690 | 2.152 | 25.013 | 0 | 0 | YES |
-| Oct EOS80 | EOS80 | 0.689 | 2.172 | 25.013 | 0 | 0 | YES |
+| Apr LEGACY | LEGACY | 0.838 | 1.506 | 25.111 | 1.020000 | 0 | YES |
+| Apr EOS80 | EOS80 | 0.843 | 1.507 | 25.049 | 1.020000 | 0 | YES |
+| Jul LEGACY | LEGACY | 0.542 | 0.827 | 21.908 | 1.020000 | 0 | YES |
+| Jul EOS80 | EOS80 | 0.543 | 0.826 | 21.908 | **1.019997** | 0 | **YES** |
+| Oct LEGACY | LEGACY | 0.690 | 2.152 | 25.013 | 1.020000 | 0 | YES |
+| Oct EOS80 | EOS80 | 0.689 | 2.172 | 25.013 | 1.020000 | 0 | YES |
 
-Jan: LEGACY/EOS80 both PASS (Phase 1). D-29 final: **NOT PROMOTED** —
-criterion A false (July EOS80 RO, 7 surface cells), B true (EOS effect
-max |U| −0.14 %, KE +0.33 %, CA −12.85 %), C true for N=1. Production
-BLOCKED (T-39). **Stage 11.9 NO-GO**, not started.
+Jan: LEGACY/EOS80 both PASS (Phase 1). **T-41 gate correction:** the July
+EOS80 raw anomaly is −2.504e-3 **kg/m³** = −2.504e-6 g/cm³; absolute density
+is 1.0199975 g/cm³. Raw RO≥0 was an invalid brackish-water gate; corrected
+gate is absolute density >1.0 g/cm³ (all 8 pass). D-29 final: **PROMOTED**
+(criterion A/B/C true for N=1; production BLOCKED T-39). Next: Stage 11.8B
+release audit/cleanup; Stage 11.9 not started.
 
 ## Issue table (T-01 … T-41)
 
@@ -96,7 +98,7 @@ BLOCKED (T-39). **Stage 11.9 NO-GO**, not started.
 | T-38 | ACCEPTED LIMITATION | 90-day storm runs unstable; 30-day Jan/Apr/Jul/Oct validated |
 | T-39 | OPEN | Production scheduler ice artifact (+65% extent, −269 W/m²); production matrix BLOCKED; N=1 sufficient for 30-day validation |
 | T-40 | OPEN | CA nmix I8 console overflow; CA runs, CSV authoritative |
-| T-41 | OPEN | EOS80 July RO min −2.504e-3 (7 surface cells); EOS80 optional; D-29 A false |
+| T-41 | **CLOSED (false positive)** | Raw anomaly is kg/m³; July absolute density 1.0199975 g/cm³; gate corrected to absolute density >1.0; all 8 pass; D-29 promoted |
 | H-2 | FIXED | `STAGE118_WIND_ROTATION`; alpha median 50.18°, max 81.28°; dir error 2.8e-14° |
 
 ## Switches (default OFF; D-33 gate)
@@ -124,7 +126,7 @@ BLOCKED (T-39). **Stage 11.9 NO-GO**, not started.
 - T5-CORRECTIVE-4: `t5c4_90day_density_repair.json`, `t5c4_april_density_repair.json`, `t5c4_density_repair_test.json`
 - T6-SEASONAL: `t6s_july_results.json`, `t6s_october_results.json`, `t6s_production_results.json`, `t6s_eos80_smoke.json`
 - Phase1-ANALYSIS: `scheduler_ice_effect_analysis.json`, `ice_detailed_diagnostics.json`, `ca_diagnostics_analysis.json`, `heat_conservation_verification.json`
-- Phase2: `matrix_all_seasons_comparison.json`, `matrix_eos_effect_summary.json`, `matrix_ice_diagnostics_summary.json`, `d29_final_decision.json`, `matrix_{jan,apr,jul,oct}_{legacy,eos80}_n1.json`
+- Phase2: `matrix_all_seasons_comparison.json`, `matrix_eos_effect_summary.json`, `matrix_ice_diagnostics_summary.json`, `d29_final_decision.json`, `matrix_{jan,apr,jul,oct}_{legacy,eos80}_n1.json`, `t41_physics_verification.json`
 - T-19: `data/validation/t19_cds_probe_v2.json`, `snowfall_period_result.json`
 - Sponge tests: `t3c3_sponge_results.json`, `t3c3_sponge2_results.json`,
   `t3c3_sponge3_results.json`
@@ -132,7 +134,6 @@ BLOCKED (T-39). **Stage 11.9 NO-GO**, not started.
 
 ## Next action
 
-1. **11.8A Phase 2 complete**: 7/8 PASS; D-29 **NOT PROMOTED**; EOS80 optional, LEGACY default.
-2. **T-41** EOS80 July surface RO failure (7 cells) needs adjudication if EOS80 is pursued; no code change made.
-3. **T-39** production scheduler ice artifact remains future work; production cells BLOCKED.
-4. **Stage 11.9 NO-GO** at this time (not started); 11.8B release audit remains.
+1. **11.8A Phase 2 complete**: 8/8 PASS under corrected absolute-density gate; D-29 **PROMOTED** (N=1); T-41 closed false positive.
+2. **Next: Stage 11.8B** production release audit/cleanup (data/runs inventory, final docs, production-default declaration). Stage 11.9 not started.
+3. **T-39** production scheduler ice/cadence artifact remains future work; production matrix BLOCKED.

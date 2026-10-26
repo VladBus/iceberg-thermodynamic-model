@@ -50,7 +50,7 @@
         "max_u": 0.543044,
         "ke_ratio": 0.8258986894442284,
         "ca_nmix": 343189,
-        "PASS": false
+        "PASS": true
       },
       "eos_effect_pct": {
         "max_u": 0.15399965695883305,

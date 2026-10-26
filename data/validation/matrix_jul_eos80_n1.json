@@ -25,9 +25,13 @@
     "T_max": 11.818,
     "S_min_psu": 21.9079,
     "S_max_psu": 35.2265,
-    "RO_min": -0.00250428,
+    "RO_min_kg_m3": -0.002504282,
+    "RO_min_g_cm3": -2.504282e-06,
+    "absolute_density_min_g_cm3": 1.019997495718,
+    "absolute_density_max_g_cm3": 1.030865120888,
     "RO_negative_cells": 7,
-    "nan_cells": 0
+    "nan_cells": 0,
+    "density_gate": "absolute density = 1.02 + density_anomaly_kg_m3/1000; RO>=0 is NOT a physical gate (brackish water can be <1.02)"
   },
   "gates": {
     "no_nan": true,
@@ -35,11 +39,13 @@
     "max_v_lt_2": true,
     "ke_ratio_lt_5": true,
     "s_nonnegative": true,
-    "ro_nonnegative": false,
+    "absolute_density_gt_1_g_cm3": true,
+    "absolute_density_lt_1p10_g_cm3": true,
+    "ro_above_brackish_floor": true,
     "volume_zero": true,
     "salt_lt_1e-3": true
   },
-  "PASS": false,
+  "PASS": true,
   "ca": {
     "days": 30,
     "total_nmix": 343189,

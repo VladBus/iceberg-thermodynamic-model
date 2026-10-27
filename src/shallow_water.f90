@@ -77,12 +77,14 @@ module shallow_water
     ! Глобальные переменные, сохраняющие состояние между вызовами shal().
     ! jjq — общий счётчик баротропных шагов для приливных частот (om = q*jjq).
     ! euu — кинетическая энергия для диагностики: euu += UP2² + VP2².
+    logical, save :: shal_logged = .false.
     integer, save, public :: jjq = 0
     real, save, public :: euu = 0.0
 
 contains
 
-    subroutine shal()
+    subroutine shal(dt_step)
+        real, intent(in) :: dt_step
         ! Локальные переменные
         integer :: i, j, k, i1, i2, j1, j2, ki, jjj, ij, uuk
         real :: hht, a, b, a1, a2, b2, vs, us, uij, vij, uu1, uu2, vv1, vv2
@@ -93,14 +95,18 @@ contains
         integer :: mm3
 
         ! === ОПРЕДЕЛЕНИЕ КОНСТАНТ ===
-        ! dt1 = 120 [с] — баротропный шаг по времени (micro-step).
-        !   Число Куранта Cr = g·H·dt1²/dx² ≈ 981·5000·120²/1.389e6² ≈ 0.03 (стабильно).
+        ! Barotropic substep is capped at 120 s but must span the ACTUAL
+        ! baroclinic step `dt` (Stage 11.10.2).  Hardcoding 30 substeps made
+        ! N=48 over-integrate and made N=4 inconsistent with its 21600 s step.
         dt1 = 120.0
-        ! dx = 1 389 000 [см] — горизонтальный шаг сетки (~13.89 км)
         dx = 1389000.0
-        ! mm3 = 30 — число баротропных микрошагов за бароклинный шаг dt=3600 с
-        !   (30 × 120 = 3600 с)
-        mm3 = 30
+        mm3 = max(1, nint(dt_step/dt1))
+        dt1 = dt_step/real(mm3, kind(1.0))
+        if (.not. shal_logged) then
+            print '(A,F10.3,A,I0,A,F10.3)', 'STAGE1110.2 shal: dt=', dt_step, &
+                ' substeps=', mm3, ' dt1=', dt1
+            shal_logged = .true.
+        end if
         ! c1 = g/rho0 = 981/1 = 981 [см/с² / (г/см³)] = [см⁴·г⁻¹·с⁻²]
         !   Используется как g при расчёте уровня: Y2 -= c10·div(H·U)
         c1 = 981.0/1.0

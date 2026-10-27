@@ -1,0 +1,46 @@
+{
+  "stage": "11.10.2",
+  "date": "2026-10-27",
+  "config": "dt=3600, MM2=24, OBC ON, Ah=2000, 30-day",
+  "runs": {
+    "N4": {
+      "days": 30,
+      "max_u_m_s": 137.815,
+      "max_v_m_s": 3009.82,
+      "first_nan": {
+        "day": 2,
+        "k": 0,
+        "i": 2,
+        "j": 46,
+        "nan_u": 89782
+      },
+      "final_nan_cells": 262894,
+      "final_T_min": -1.87554931640625,
+      "final_T_max": 3.574127197265625,
+      "final_S_min_psu": 0.0,
+      "final_RO_min": 0.0,
+      "PASS": false,
+      "verdict": "FAIL"
+    },
+    "N24": {
+      "days": 30,
+      "max_u_m_s": 3.94087,
+      "max_v_m_s": 6.040979999999999,
+      "first_nan": {
+        "day": 4,
+        "k": 0,
+        "i": 2,
+        "j": 24,
+        "nan_u": 102091
+      },
+      "final_nan_cells": 261840,
+      "final_T_min": -1.87554931640625,
+      "final_T_max": 2.82275390625,
+      "final_S_min_psu": 0.0,
+      "final_RO_min": 0.0,
+      "PASS": false,
+      "verdict": "FAIL"
+    }
+  },
+  "conclusion": "N=24 dt=3600 still fails; N=1 is the mandated fallback with explicit caveat; Stage 12 NO-GO."
+}

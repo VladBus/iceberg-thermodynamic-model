@@ -1667,8 +1667,14 @@ program main
                     ! Its fixed 3600 s then matches Family A daily totals
                     ! (ExpB/D: barotropic stays 3600 s/day by design).
                     ! Legacy/11.5C/inactive/N=1: unchanged.
-                    if ((.not. famA_active .and. .not. d2_shalonce) .or. &
-                        (iii .eq. mm2 .and. ss_d2 .eq. d2_npass)) call shal()
+                    if (nsub_115c .gt. 1) then
+                        ! N-substep mode: barotropic update only on the same
+                        ! firing cadence as the ocean tail (dt is dt_ocean here).
+                        if (mod(iii, ostep_115c) .eq. 0) call shal(dt)
+                    else if ((.not. famA_active .and. .not. d2_shalonce) .or. &
+                        (iii .eq. mm2 .and. ss_d2 .eq. d2_npass)) then
+                        call shal(dt)
+                    end if
                     if (.not. s115h_prod_active()) call s115c1_checkpoint(kkk, iii, 'AFTER_shal')
                     if (.not. s115h_prod_active()) call s115c5_trace(kkk, iii, 'AFTER_shal')
                     if (.not. s115h_prod_active()) call s115c3_seq(kkk, iii, 'AFTER_shal')

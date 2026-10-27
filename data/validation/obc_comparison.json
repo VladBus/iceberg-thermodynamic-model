@@ -1,5 +1,5 @@
 {
-  "stage": "11.10.1",
+  "stage": "11.10.2",
   "N1": {
     "max_u_m_s": 0.785048,
     "max_v_m_s": 0.584034,
@@ -8,12 +8,17 @@
   },
   "N4": {
     "days": 30,
-    "max_u_m_s": 941.38,
-    "max_v_m_s": 14002.9,
+    "max_u_m_s": 137.815,
+    "max_v_m_s": 3009.82,
+    "first_nan": {
+      "day": 2,
+      "k": 0,
+      "i": 2,
+      "j": 46,
+      "nan_u": 89782
+    },
     "final_nan_cells": 262894,
-    "final_u_finite_max": 0.0450364388525486,
-    "final_v_finite_max": 0.050788987427949905,
-    "final_T_min": -3.529571533203125,
+    "final_T_min": -1.87554931640625,
     "final_T_max": 3.574127197265625,
     "final_S_min_psu": 0.0,
     "final_RO_min": 0.0,
@@ -22,11 +27,16 @@
   },
   "N24": {
     "days": 30,
-    "max_u_m_s": 4.27746,
-    "max_v_m_s": 7.441369999999999,
+    "max_u_m_s": 3.94087,
+    "max_v_m_s": 6.040979999999999,
+    "first_nan": {
+      "day": 4,
+      "k": 0,
+      "i": 2,
+      "j": 24,
+      "nan_u": 102091
+    },
     "final_nan_cells": 261840,
-    "final_u_finite_max": 1.350468397140503,
-    "final_v_finite_max": 1.814373254776001,
     "final_T_min": -1.87554931640625,
     "final_T_max": 2.82275390625,
     "final_S_min_psu": 0.0,
@@ -34,5 +44,5 @@
     "PASS": false,
     "verdict": "FAIL"
   },
-  "note": "N=1 is standard protective matrix; N=4/N=24 use OBC ON, Ah=2000, 30 days."
+  "note": "N=1 standard protective matrix; N=4/N=24 corrected subcycling (180/30, dt1=120), OBC ON, 30 days."
 }

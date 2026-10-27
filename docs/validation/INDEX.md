@@ -149,6 +149,8 @@ Stage 10 reports have been archived to `docs/wiki/stages/stage10/`. See the arch
 
 | `stage11.10.1_obc_implementation.md` (OBC + N>1) | 11.10.1 | PARTIAL (OBC implemented; N>1 unstable) | Flather + sponge + radiation switches/tests; 30-day OBC-ON N=4 941 m/s/262,894 NaN, N=24 4.28 m/s/261,840 NaN; CFL 1464/1.11; N=1 fallback caveat; Stage 12 NO-GO. | `docs/validation/stage11.10.1_obc_implementation.md` |
 
+| `stage11.10.2_numerical_core_bisection.md` (subcycling/bisection) | 11.10.2 | PARTIAL (subcycling fixed; N>1 unstable) | `mm3=ceil(dt/120)`, dt1<=120, shal gated; N=24 first NaN day4/max U 3.94; N=4 137.8/3009.8; vacuum 4.38; N=1 caveat; Stage 12 NO-GO. | `docs/validation/stage11.10.2_numerical_core_bisection.md` |
+
 ## Rules
 
 - Reports here are not rewritten after stage completion (exception: technical navigational fixes).

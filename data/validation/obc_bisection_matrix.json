@@ -1,0 +1,44 @@
+{
+  "stage": "11.10.2",
+  "date": "2026-10-27",
+  "runs": [
+    {
+      "run": "N24_full_30d",
+      "config": "full forcing + OBC + Ah=2000",
+      "first_nan": {
+        "day": 4,
+        "k": 0,
+        "i": 2,
+        "j": 24,
+        "nan_u": 102091
+      },
+      "conclusion": "FAIL: external + internal dynamics"
+    },
+    {
+      "run": "N24_vacuum_10d",
+      "config": "STAGE118_T3_REST_MODE=true (wind/ice/thermo off), no OBC",
+      "first_nan": null,
+      "max_u_m_s": 4.38057,
+      "conclusion": "no NaN at 10 d, but internal dynamics grow to 4.38 m/s"
+    },
+    {
+      "run": "N24_wind_only_10d",
+      "config": "not independently switchable",
+      "first_nan": null,
+      "conclusion": "not run: no component-level wind-only switch"
+    },
+    {
+      "run": "N24_thermo_only_10d",
+      "config": "not independently switchable",
+      "first_nan": null,
+      "conclusion": "not run: no component-level thermo-only switch"
+    },
+    {
+      "run": "N24_ice_only_10d",
+      "config": "not independently switchable",
+      "first_nan": null,
+      "conclusion": "not run: no component-level ice-only switch"
+    }
+  ],
+  "conclusion": "Internal dynamics/CFL dominate; external flux shock not required to produce instability. Full component bisection requires missing switches."
+}

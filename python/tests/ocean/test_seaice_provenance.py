@@ -2,18 +2,16 @@
 """
 Stage 11.8.0.0 — Sea-ice provenance verification (ACTUAL source).
 
-Runs the production binary twice (STAGE117E_NETCDF_SEAICE=ON and OFF), reads
+Runs the production binary with the default NetCDF sea-ice path, reads
 the day_00 global attributes, and verifies that provenance reflects the actual
 source rather than hardcoded strings:
 
-ON  -> seaice_reader_mode = "netcdf"
-       seaice_source_file contains "seaice_initial.nc"
-       seaice_manifest_version != NONE/PENDING/UNSET
-       seaice_manifest_checksum is a 32-hex-char MD5
-OFF -> seaice_reader_mode = "legacy"
-       seaice_source_file contains "legacy"
-       seaice_manifest_version = "NONE"
-       seaice_manifest_checksum = "NONE"
+Stage 11.10: NetCDF is the only production sea-ice reader.
+Default run must report:
+  seaice_reader_mode = "netcdf"
+  seaice_source_file contains "seaice_initial.nc"
+  seaice_manifest_version != NONE/PENDING/UNSET
+  seaice_manifest_checksum is a 32-hex-char MD5
 
 Reuses the run/poll helper from test_provenance_attributes.py.
 
@@ -57,42 +55,24 @@ def main():
         return 0
 
     # ON: NetCDF source
-    day00 = tpa.run_model(
-        binary, "test_seaice_prov_on", {"STAGE117E_NETCDF_SEAICE": "ON"}
-    )
+    day00 = tpa.run_model(binary, "test_seaice_prov_default", {})
     if day00 is None:
         print("FAIL: ON run did not produce day_00 output")
         return 1
     a = attrs(day00)
     check(a.get("seaice_reader_mode") == "netcdf",
-          "ON: seaice_reader_mode == netcdf", a.get("seaice_reader_mode"))
+          "DEFAULT: seaice_reader_mode == netcdf", a.get("seaice_reader_mode"))
     check("seaice_initial.nc" in str(a.get("seaice_source_file", "")),
-          "ON: seaice_source_file is seaice_initial.nc",
+          "DEFAULT: seaice_source_file is seaice_initial.nc",
           a.get("seaice_source_file"))
     ver = str(a.get("seaice_manifest_version", ""))
     check(ver not in ("", "NONE", "PENDING", "UNSET"),
-          "ON: manifest version is actual", ver)
+          "DEFAULT: manifest version is actual", ver)
     cks = str(a.get("seaice_manifest_checksum", ""))
     check(bool(re.fullmatch(r"[0-9a-fA-F]{32}", cks)),
-          "ON: manifest checksum is 32-hex MD5", cks)
+          "DEFAULT: manifest checksum is 32-hex MD5", cks)
 
-    # OFF: legacy source
-    day00 = tpa.run_model(
-        binary, "test_seaice_prov_off", {"STAGE117E_NETCDF_SEAICE": "OFF"}
-    )
-    if day00 is None:
-        print("FAIL: OFF run did not produce day_00 output")
-        return 1
-    a = attrs(day00)
-    check(a.get("seaice_reader_mode") == "legacy",
-          "OFF: seaice_reader_mode == legacy", a.get("seaice_reader_mode"))
-    check("legacy" in str(a.get("seaice_source_file", "")),
-          "OFF: seaice_source_file is legacy", a.get("seaice_source_file"))
-    check(str(a.get("seaice_manifest_version")) == "NONE",
-          "OFF: manifest version NONE", a.get("seaice_manifest_version"))
-    check(str(a.get("seaice_manifest_checksum")) == "NONE",
-          "OFF: manifest checksum NONE", a.get("seaice_manifest_checksum"))
-
+    # Stage 11.10: NetCDF is the only production sea-ice reader; no OFF path.
     print(f"\nTOTAL CHECKS: {CHECKS}  PASSED: {CHECKS - ERRORS}  FAILED: {ERRORS}")
     return 1 if ERRORS else 0
 

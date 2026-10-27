@@ -35,7 +35,7 @@ under atmospheric, oceanic, bathymetric, and sea-ice forcing.
 
 ## 📑 Project status
 
-- **Current stage:** **Stage 11 CLOSED** — EOS-80 runtime default; 8/8 N=1 seasonal matrix PASS; production scheduler remains BLOCKED (T-39). Next: Stage 12 preparation (voxel iceberg; not started).
+- **Current stage:** **Stage 11.10 post-closure remediation** — NetCDF default; cleanup executed (0.510 GB); N>1/OBC and real tides remain blockers. EOS-80 is the runtime default; N=1 matrix is diagnostic/validated only, not final. Stage 12 is gated (not started).
 - **BREAKING CHANGE (Stage 11.8B):** `EOS_MODE` unset now selects **EOS80**, not LEGACY. Set `EOS_MODE=LEGACY` to restore the historical Eckart fallback. See `docs/MIGRATION_GUIDE_EOS80_DEFAULT.md`.
   [Historical note from Stage 10.19, SUPERSEDED by Stage 10.20 restoration
   (full-coverage ERA5: 3-day gate PASS, residual characterized, NOT fixed):
@@ -85,18 +85,9 @@ EOS_MODE=LEGACY fpm run --flag "-I/usr/include" -- <run_id> [era5_file]
 #    data/input/processed/grid/ibcao_model_grid.nc does not exist,
 #    download the tiff first and build it below; otherwise skip to step 1:
 python python/grid/build_ibcao_grid.py
-# 1. Build KOORD.DAT, hhh.bar, 1_1.ice..1_5.ice into
-#    data/input/generated/real_grid/:
-python python/grid/build_real_grid_inputs.py
-# 2. Create root-level symlinks (REQUIRED by legacy Fortran readers;
-#    gitignored — must be created manually per checkout):
-ln -sf data/input/generated/real_grid/KOORD.DAT KOORD.DAT
-ln -sf data/input/generated/real_grid/hhh.bar hhh.bar
-ln -sf data/input/generated/real_grid/1_1.ice 1_1.ice
-ln -sf data/input/generated/real_grid/1_2.ice 1_2.ice
-ln -sf data/input/generated/real_grid/1_3.ice 1_3.ice
-ln -sf data/input/generated/real_grid/1_4.ice 1_4.ice
-ln -sf data/input/generated/real_grid/1_5.ice 1_5.ice
+# 1. Legacy .DAT/.bar/.ice files are OFFLINE REGRESSION ONLY from Stage 11.10.
+#    Production uses NetCDF grid.nc / initial_ts.nc / seaice_initial.nc.
+#    No root-level symlinks are required.
 ```
 
 Python: conda environment `iceberg-thermodynamic-model`

@@ -535,3 +535,17 @@ not added.
 - **Non-blocking limitations:** T-38 (90-day), T-39 (production scheduler ice/cadence), Jan-derived Apr/Jul/Oct ice, April forcing boundary extension.
 - **data/runs:** 82.583 GB / 289 runs; 37.327 GB optional cleanup recommendation; no deletion/move/compression performed. Cleanup does **not** block closure and remains pending user approval.
 - **Next:** Stage 12 voxel iceberg **preparation only**; implementation not started. No physics/EOS/scheduler code change in Stage 11.9.
+
+## D-50. Physical baseline supersedes N=1 bit-identity for physics changes (Stage 11.10, 2026-10-27)
+
+- **Problem:** N=1 bit-identity preserved a scheduler that cannot resolve inertial/tidal frequencies and is not acceptable for prognostic iceberg coupling. It also masked physical improvements behind numerical equivalence.
+- **Decision:** **Bit-identity is no longer a gate for physics/ocean improvements.** It remains required only for behavior-preserving refactors. The new physical baseline is:
+  1. 90-day prognostic run without NaN, `S<0`, or `T>30 °C`.
+  2. Global volume/salt/heat drift `<1e-4`, with open-boundary exchange accounted for.
+  3. Post-CA stratification `N² >= -epsilon` (documented epsilon).
+  4. N=4/N=24 evaluated against the same physical gates; N=1 is not a final state.
+  5. NetCDF is the production I/O path; legacy `.DAT`/`.ice` are offline fixtures only.
+- **Status:** Stage 11.10 has not yet met the 90-day/N>1 gates. One-day N=4 blew up (max U 4352 m/s); N=24 grew to max U 1.89 m/s. OBC is the immediate blocker; N=1 remains diagnostic only.
+- **Consequences:** The administrative Stage 11 closure remains historical, but Stage 12 must not treat the N=1 ocean as final. No bit-identity test may block an approved physical improvement.
+- **Note:** D-49 is the Stage 11 closure decision; this is D-50 because D-49 was already occupied.
+- **References:** `docs/OBC_N4_N24_AUDIT.md`, `data/validation/n4_n24_audit.json`, `docs/LEGACY_IO_POLICY.md`.

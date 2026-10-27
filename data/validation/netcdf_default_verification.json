@@ -1,0 +1,37 @@
+{
+  "stage": "11.10",
+  "date": "2026-10-27",
+  "netcdf_default": true,
+  "grid_nc": "data/input/processed/grid/grid.nc",
+  "seaice_nc": "data/input/processed/ice/seaice_initial.nc",
+  "attrs": {
+    "eos_mode": "EOS80",
+    "scheduler_mode": "N1_LEGACY",
+    "seaice_reader_mode": "netcdf",
+    "seaice_source_file": "data/input/processed/ice/seaice_initial.nc"
+  },
+  "one_day_path_verified": true,
+  "thirty_day_run": {
+    "stage": "11.10",
+    "date": "2026-10-27",
+    "run": "stage1110_default_30d",
+    "attrs": {
+      "eos_mode": "EOS80",
+      "scheduler_mode": "N1_LEGACY",
+      "seaice_reader_mode": "netcdf",
+      "seaice_source_file": "data/input/processed/ice/seaice_initial.nc"
+    },
+    "days": 30,
+    "max_u_m_s": 4.986546993255615,
+    "max_v_m_s": 5.2994303703308105,
+    "min_T_C": -1.958099365234375,
+    "max_T_C": 7.077606201171875,
+    "min_S_psu": -26.05418586730957,
+    "min_RO_g_cm3": -41.07377624511719,
+    "nan_cells": 0,
+    "verdict": "FAIL physical baseline (raw default N=1; no protective standard set)",
+    "note": "NetCDF default verified, but raw default N=1 is not acceptable; standard protective config/N>1 OBC required."
+  },
+  "physical_pass": false,
+  "note": "NetCDF default path verified (1-day and 30-day metadata); raw N=1 30-day fails physical baseline and is diagnostic only."
+}

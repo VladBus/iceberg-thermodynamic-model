@@ -18,8 +18,7 @@
   an explicit, bit-identical fallback (D-48).
 - **Reproducibility:** default/explicit EOS80/matrix and LEGACY/matrix are
   bit-identical; representative seasonal re-runs are bit-identical.
-- **Release audit:** 289 data/runs entries, 82.583 GB total; cleanup
-  recommendations ready (37.327 GB estimated savings; not executed).
+- **Release audit:** pre-cleanup 289 entries / 82.583 GB; Stage 11.10 executed cleanup to **26 entries / 0.510 GB**.
 
 ## Known limitations
 
@@ -38,7 +37,7 @@
   coupling frequency (T-39).
 - Develop a 90-day storm-safe configuration (T-38).
 - Acquire real seasonal April/July/October sea-ice initializations.
-- Complete data/runs cleanup after approval.
+- Data/runs cleanup completed in Stage 11.10 (26 entries / 0.510 GB).
 
 ## Evidence
 

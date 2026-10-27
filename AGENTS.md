@@ -149,7 +149,7 @@ Conversions only at the NetCDF output boundary (`netcdf_output.f90`). Internal C
 - **`app/main.f90`** — orchestrator. `forcing_mode = forcing_mode_era5` (line 131). `kl1 = 1` (line 128) enables `heat()`. Exit at `nday1 == 91` (line 404). CLI: `fpm run -- <run_id> [era5_file]`.
 - **`src/param.f90`** — global state: all shared arrays, constants, grid dims (`is=132, js=104, ks=18`, `is1=133, js1=105`, `ngr=5`). Land mask = **`8888.0`** (use epsilon: `abs(x-8888.0) < 1e-8`, never `==`).
 - **ERA5 path:** `era5_input_file` defaults to `data/input/processed/era5/2020/2020_Q1/era5_2020_0103_barents_expanded_merged.nc`. Falls back to legacy if absent.
-- **Grid modes:** `grid_mode_real` (default) reads `KOORD.DAT` (FATAL STOP if missing) and `hhh.bar` (synthetic-basin fallback if missing). `grid_mode_test` generates synthetic grid TEST ONLY.
+- **Grid modes:** NetCDF `grid.nc` is the production default/only reader from Stage 11.10. Legacy `KOORD.DAT`/`hhh.bar` are offline regression fixtures only; no root symlinks and no production env gate.
 - **Axis conventions:** X ↔ `j` ↔ `u`; Y ↔ `i` ↔ `v`; Y-axis inverted (north at `j=1`).
 - **Key modules:** `netcdf_input` (ERA5 read/bilinear interp), `netcdf_output` (CF-1.10 export), `wind_forcing` (legacy + ERA5), `advection_2d/3d_t/3d_s` (FCT), `barotropic_dynamics`, `shallow_water`, `ice_stress/deform/redis`, `thermodynamics`, `grid_coupling`, `initial_ocean_reader` (Stage 7.7 EN4 reader), `initial_conditions`.
 
@@ -179,7 +179,7 @@ Conversions only at the NetCDF output boundary (`netcdf_output.f90`). Internal C
 - ❌ Melt coefficients are compile-time constants — require rebuild to change.
 - ❌ Do not reintroduce an arbitrary velocity floor to avoid numerical issues (Stage 10.13 policy).
 - ❌ Before committing, check `.gitignore` — it blocks: `opencode.jsonc`, `.opencode/`, `data/`, `*.nc`, `*.vtk`, `*.dat`, `*.bak`. **Exceptions:** the curated Stage 10.8.2 observational dataset is versioned (`data/validation/observations/` is un-ignored); `docs/wiki/` is tracked (archive) except `docs/wiki/ERA5_INTEGRATION_TODO.md` (explicitly ignored, live local TODO).
-- ❌ Do not delete root-level input files: `KOORD.DAT`, `hhh.bar` (real grid) and `1_1.ice`..`1_5.ice` (ice initialization, read from the working directory) — required by the model, gitignored; the grid files point to `data/input/generated/real_grid/`.
+- ❌ Do not reintroduce root-level legacy symlinks or use `KOORD.DAT`/`hhh.bar`/`1_*.ice` as production inputs. NetCDF `grid.nc` and `seaice_initial.nc` are the production sources; legacy fixtures are offline-only.
 - ❌ Do not commit/push unless the user explicitly requests it.
 
 ## Calendar Semantics
@@ -210,20 +210,11 @@ Snowfall variable in merged ERA5 NetCDF: `sf` (not `era5_snowfall_rate`). Merge 
 #    data/input/processed/grid/ibcao_model_grid.nc does not exist,
 #    download the tiff first and build it below; otherwise skip to step 1:
 python python/grid/build_ibcao_grid.py
-# 1. Build KOORD.DAT, hhh.bar (+ diagnostic 1_1.ice .. 1_5.ice):
-python python/grid/build_real_grid_inputs.py
-# Creates: KOORD.DAT, hhh.bar, reconstruction_metadata.json
-#          (+ diagnostic 1_1.ice .. 1_5.ice) → data/input/generated/real_grid/
-# 2. Root-level symlinks REQUIRED by legacy Fortran readers (gitignored —
-#    create manually per checkout):
-ln -sf data/input/generated/real_grid/KOORD.DAT KOORD.DAT
-ln -sf data/input/generated/real_grid/hhh.bar hhh.bar
-ln -sf data/input/generated/real_grid/1_1.ice 1_1.ice
-ln -sf data/input/generated/real_grid/1_2.ice 1_2.ice
-ln -sf data/input/generated/real_grid/1_3.ice 1_3.ice
-ln -sf data/input/generated/real_grid/1_4.ice 1_4.ice
-ln -sf data/input/generated/real_grid/1_5.ice 1_5.ice
-# NOTE: grid_mode_real FATAL STOPs without KOORD.DAT.
+# 1. Build the production NetCDF grid:
+python python/grid/build_ibcao_grid.py
+# Production reads data/input/processed/grid/grid.nc directly.
+# Legacy KOORD.DAT/hhh.bar/1_*.ice are offline regression fixtures; no root
+# symlinks and no production env gates.
 ```
 
 ERA5 download: `conda run -n iceberg-thermodynamic-model python python/era5/download_era5.py --year 2020 --month 1 --include-snowfall`
@@ -239,7 +230,7 @@ ERA5 download: `conda run -n iceberg-thermodynamic-model python python/era5/down
   `docs/wiki/stages/stage07/Stage7.6C.2_ERA5_forcing_expansion_and_hot_run.md`.
 - **FCT anti-diffusion intentionally disabled** in `advsh` — zeroed X-block intermediates + `CDY*0`.
 - **`grid_mode=TEST`** synthetic grid is NOT a real basin.
-- **Missing input files are normal:** `GRM2`, `FI1DL1.DAT`, `DAV4_5.98` and the legacy ice files (historically referred to as `1_k.ice`, i.e. the `1_1.ice`–`1_5.ice` family) are absent; code falls back to synthetic fields. See `docs/wiki/stages/stage06/Stage6.4_missing_historical_files.md`.
+- **Legacy files are offline fixtures:** `GRM2` is absent and `tides.nc` is currently null-tides; production uses NetCDF grid/sea-ice. Legacy ice files (`1_1.ice`–`1_5.ice`) are not production inputs. See `docs/LEGACY_IO_POLICY.md`.
 - **Thomas algorithm vertical viscosity:** Can reach 8.5×10⁵ cm²/s at k=2 with realistic EN4 init → matrix ill-conditioning → blowup. Do not "fix" without physics review.
 - **Coriolis:** semi-implicit solver has 8% period error at Δt=3600s — numerical damping; convergence study needed. See `docs/wiki/stages/stage09/Stage9.3_Scientific_Verification_and_Calibration.md`.
 - **Wind drift ratio** 0.08% (with Coriolis) vs literature 1–2% — needs C_D calibration. Same report.
@@ -384,7 +375,7 @@ resolved" for `import <module>` is a known false positive.
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
 | EN4 initial T/S    | `data/input/processed/ocean/initial_ts_2020-01-01.nc`                                                                           |
 | ERA5 forcing       | `data/input/processed/era5/2020/2020_01/era5_2020_01_fullcoverage_d1_4_merged.nc`                                               |
-| Real grid inputs   | `data/input/generated/real_grid/` (KOORD.DAT, hhh.bar; root-level copies/symlinks NOT created automatically — see Regeneration) |
+| Real grid inputs   | `data/input/processed/grid/grid.nc` (production); `data/input/generated/real_grid/` legacy offline fixtures |
 | Ice data           | `data/input/generated/real_grid/ice_2020-01-01/`                                                                                |
 | Diagnostics output | `data/output/diagnostics/stage7.7A/`, `stage7.7B/`, `stage9.3/`                                                                 |
 | Run outputs        | `data/runs/<run_id>/output/nc/`                                                                                                 |

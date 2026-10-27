@@ -1,0 +1,32 @@
+{
+  "stage": "11.10",
+  "date": "2026-10-27",
+  "config": "Ah=2000, dt=1800, 24 fires/day, NetCDF grid/sea-ice, EOS80",
+  "runs": {
+    "N4": {
+      "days": 1,
+      "max_u_m_s": 4352.39,
+      "max_v_m_s": 14097.9,
+      "min_T_C": -206.172,
+      "max_T_C": 7.0776,
+      "min_S_psu": 0.0,
+      "min_RO_g_cm3": -5.10997,
+      "max_ca_nmix": 6182100.0,
+      "verdict": "BLOWUP",
+      "note": "one-day diagnostic only; no 30-day forensic run"
+    },
+    "N24": {
+      "days": 1,
+      "max_u_m_s": 1.89093,
+      "max_v_m_s": 1.13768,
+      "min_T_C": -1.95967,
+      "max_T_C": 7.0776,
+      "min_S_psu": 0.0249162,
+      "min_RO_g_cm3": 9.49947e-07,
+      "max_ca_nmix": 18261400.0,
+      "verdict": "GROWING/UNSTABLE-TREND",
+      "note": "one-day diagnostic only; no 30-day forensic run"
+    }
+  },
+  "conclusion": "N=4 blows up within one day; N=24 is already growing after one day. OBC/CFL/high-frequency stability is an immediate blocker; N=1 remains the only currently validated scheduler and must not be treated as final."
+}

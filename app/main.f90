@@ -494,7 +494,7 @@ program main
 
     ! --- Вызов модулей инициализации сетки и геометрии ---
     print *, "Calling grid_coupling..."
-    ! Stage 11.7E: NetCDF grid switch flag (default OFF → legacy files).
+    ! Stage 11.10: NetCDF grid is the production default (no env gate).
     call s117e_init()
     call s117e_seaice_init()
     call coup1()

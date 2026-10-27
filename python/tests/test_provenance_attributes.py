@@ -5,7 +5,7 @@ Stage 11.7E.2.3 — Provenance Attributes Verification
 Verifies that NetCDF output contains correct provenance metadata attributes
 written at day_00 (initial state output).
 
-Five scenarios tested:
+Five scenarios tested (NetCDF-only sea-ice default since Stage 11.10):
   1. Default path, STRICT mode (OCEAN_INIT_MODE=STRICT, no override)
   2. Override path, STRICT mode (ICEBERG_OCEAN_INIT_FILE set to different path)
   3. FORCE_SYNTHETIC mode (OCEAN_INIT_MODE=FORCE_SYNTHETIC)
@@ -209,10 +209,10 @@ def scenario_default_strict(binary):
         'initialization_mode_actual': 'EN4_REAL',
         'eos_mode': 'EOS80',
         'scheduler_mode': 'N1_LEGACY',
-        'seaice_reader_mode': 'legacy',
-        'seaice_source_file': 'legacy_1_*.ice',
-        'seaice_manifest_version': 'NONE',
-        'seaice_manifest_checksum': 'NONE',
+        'seaice_reader_mode': 'netcdf',
+        'seaice_source_file': 'data/input/processed/ice/seaice_initial.nc',
+        'seaice_manifest_version': 'OSI-450-b CDR v3.1 / CS2SMOS v1.1',
+        'seaice_manifest_checksum': 'c3ca0b1ec8c03398fa7c6ad84b4cd466',
     }
     verify_attributes(day00, expected, "scenario_1_default_strict")
     return True

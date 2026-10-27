@@ -1,3 +1,17 @@
+## Production I/O source of truth (Stage 11.10)
+
+NetCDF is the only production input path. Legacy `.DAT`/`.bar`/`.ice`/`GRM2`
+files are offline regression fixtures, not production defaults. Root legacy
+symlinks were removed. See `docs/LEGACY_IO_POLICY.md`.
+
+| Input class | Production file |
+|---|---|
+| Grid/masks | `data/input/processed/grid/grid.nc` |
+| Ocean initial state | `data/input/processed/ocean/initial_ts_*.nc` |
+| ERA5 atmosphere | `data/input/processed/era5/**/*merged.nc` |
+| Sea ice | `data/input/processed/ice/seaice_initial.nc` |
+| Tides | `data/input/processed/tides/tides.nc` (null-tides; plan pending) |
+
 # Data Sources — External Input and Observational Products
 
 This page is the **single authoritative index of external data products** used
@@ -20,7 +34,7 @@ the cited stage reports; the equation/unit conventions live in
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | ERA5 | ECMWF ERA5, hourly, single levels (u10, v10, msl, t2m, d2m, tcc, precip, sf) | Atmospheric forcing (wind, pressure, temperature, humidity, clouds, snowfall) | Copernicus Climate Data Store (CDS), `reanalysis-era5-single-levels`; requires `~/.cdsapirc` credentials | `data/input/raw/era5/2020/` | `python python/era5/download_era5.py --year 2020 --month 1` (see script header for domain variants) | u10/v10 m/s → ×100 → cm/s; msl Pa → ×0.01 → hPa; t2m K → −273.15 → °C | `docs/wiki/stages/stage06/Stage6.5_era5_barents_data.md`, `docs/wiki/stages/stage06/Stage6.5b_era5_forcing_impact.md`, `Stage6.6_snowfall_forcing.md` |
 | EN4 | Met Office Hadley Centre EN4.2.2, monthly analysis (`g10`, 1°×1°, 42 levels) | Ocean initial T/S (2020-01-01) | `https://www.metoffice.gov.uk/hadobs/en4/` (yearly zips `EN.4.2.2.analyses.g10.YYYY.zip`) | `data/input/raw/ocean/EN.4.2.2.f.analysis.g10.202001.nc` | documented in `docs/wiki/stages/stage07/Stage7.7_Ocean_Dataset_Selection.md` §2.1 | °C, PSU; converted to model salinity mass fraction 0.033–0.035 | `docs/wiki/stages/stage07/Stage7.7_Ocean_Dataset_Selection.md`, `Stage7.7_Realistic_Ocean_Initialisation.md` |
-| IBCAO | IBCAO V5.2, 400 m bathymetry GeoTIFF, EPSG:3996 | Real model grid reconstruction (KOORD.DAT, hhh.bar) | NOAA/NCEI IBCAO v5.2 (GeoTIFF 400 m) | `data/input/raw/ibcao/ibcao_v5_2_2026_depth_400m.tiff` | `python python/grid/build_real_grid_inputs.py` | m (bathymetry); grid in EPSG:3996 | `docs/wiki/stages/stage07/Stage7.6A_IBCAO_real_grid_reconstruction.md` |
+| IBCAO | IBCAO V5.2, 400 m bathymetry GeoTIFF, EPSG:3996 | Real model grid reconstruction (`grid.nc` production; legacy .DAT offline) | NOAA/NCEI IBCAO v5.2 (GeoTIFF 400 m) | `data/input/raw/ibcao/ibcao_v5_2_2026_depth_400m.tiff` | `python python/grid/build_ibcao_grid.py` | m (bathymetry); grid in EPSG:3996 | `docs/wiki/stages/stage07/Stage7.6A_IBCAO_real_grid_reconstruction.md` |
 | OSI-SAF SIC | OSI-SAF Sea Ice Concentration CDR v3.1 (EASE2-250) | Real sea-ice initialization (2020-01-01) | EUMETSAT OSI-SAF `ice_conc_nh_ease2-250_cdr-v3p1` | `data/input/raw/ice/osisaf/ice_conc_nh_ease2-250_cdr-v3p1_202001011200.nc` | documented in `docs/wiki/stages/stage07/Stage7.6C.1_Real_ice_initialization.md` | fraction 0–1 | `docs/wiki/stages/stage07/Stage7.6C.1_Real_ice_initialization.md` |
 | C3S CS2SMOS SIT | C3S (Copernicus) CS2SMOS Sea-Ice Thickness L4 combined v1.1 (EASE2-125) | Real sea-ice initialization (thickness) | CMEMS `ice_thickness_nh_ease2-125_cs3smos-v1p1` | `data/input/raw/ice/c3s_sit/ice_thickness_nh_ease2-125_cs3smos-v1p1_20200101.nc` | documented in `docs/wiki/stages/stage07/Stage7.6C.1_Real_ice_initialization.md` | m | `docs/wiki/stages/stage07/Stage7.6C.1_Real_ice_initialization.md` |
 
@@ -30,7 +44,8 @@ Merged/processed inputs (generated, **not** versioned in git):
 | --- | --- | --- |
 | ERA5 merged NetCDF (model-ready) | `data/input/processed/era5/2020/2020_01/era5_2020_01_fullcoverage_d1_4_merged.nc` (also `era5_2020_0103_barents_expanded_merged.nc` default path) | raw ERA5 + merge/bilinear-interp pipeline (`netcdf_input.f90`; snowfall variable `sf`, units m s⁻¹) |
 | EN4 initial T/S | `data/input/processed/ocean/initial_ts_2020-01-01.nc` (+ `_Tclamp*` variants) | raw EN4 + `initial_ocean_reader` pipeline (Stage 7.7) |
-| Real grid | `data/input/generated/real_grid/` (KOORD.DAT, hhh.bar, reconstruction_metadata.json, `ice_2020-01-01/`) | IBCAO + `python/grid/build_real_grid_inputs.py` |
+| Real grid (production) | `data/input/processed/grid/grid.nc` | NetCDF grid reader; `python/grid/build_ibcao_grid.py` |
+| Legacy grid fixtures (offline only) | `data/input/generated/real_grid/` (KOORD.DAT, hhh.bar) | offline regression; not production |
 
 **Note:** `data/` (raw + processed + generated) is **gitignored** — it is
 large and reproducible. Only curated observational CSV datasets (see §2) are

@@ -1,8 +1,8 @@
 # Stage 11 Closure Checklist
 
 **Date:** 2026-10-27
-**Status:** **Stage 11 CLOSED.** data/runs cleanup is optional and pending
-user approval; it does not block closure.
+**Status:** **Stage 11 CLOSED.** data/runs cleanup was executed in Stage 11.10
+(26 runs / 0.510 GB); no closure dependency.
 
 ## Checklist
 
@@ -11,18 +11,17 @@ user approval; it does not block closure.
 - [x] EOS-80 validation (D-29/D-47)
 - [x] Matrix execution (8/8 N=1 cells PASS)
 - [x] Runtime default changed to EOS80 (D-48; LEGACY fallback verified)
-- [x] Data/runs inventory complete (289 runs / 82.583 GB)
+- [x] Data/runs inventory complete (pre-cleanup 289 runs / 82.583 GB)
 - [x] Reproducibility audit complete (bit-identical checks)
 - [x] Stage 11 summary created
-- [x] Data/runs cleanup recommendation documented (execution optional; pending approval)
+- [x] Data/runs cleanup recommendation documented; Stage 11.10 executed cleanup (26 runs / 0.510 GB)
 - [x] Stage 11.9 formal closure declaration
 
 ## GO/NO-GO
 
-**Stage 11 is CLOSED.** data/runs cleanup remains an optional operational
-recommendation and requires user approval before any action. Production
-scheduler T-39 remains BLOCKED and is explicitly future work, not part of the
-N=1 closure claim.
+**Stage 11 is CLOSED.** data/runs cleanup was executed in Stage 11.10.
+Production scheduler T-39 remains BLOCKED and is explicitly future work, not
+part of the N=1 closure claim.
 
 ## Evidence
 

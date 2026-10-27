@@ -3,15 +3,15 @@
 ! Назначение: Stage 11.7E — чтение сетки/батИметрии из NetCDF вместо
 !             legacy-файлов KOORD.DAT / hhh.bar (первый и самый низкорисковый
 !             reader switch миграции 11.7).
-!             ПОЛНОСТЬЮ ОПЦИОНАЛЕН — поведение по умолчанию бит-идентично
-!             legacy (переключатель выключен → мгновенный возврат везде).
+!             NetCDF is the ONLY production grid reader from Stage 11.10.
+!             Legacy KOORD.DAT/hhh.bar remain only as offline regression
+!             fixtures; no production env gate.
 !
-! Включается env (default OFF → legacy-путь, бит-идентично):
-!   STAGE117E_NETCDF_GRID=true — читать коды KT1 + координаты FI/DL из
-!                                data/input/processed/grid/grid.nc
-!                                (путь — CWD-относительный, как у legacy).
+! Source of truth: data/input/processed/grid/grid.nc
+! (kt1_raw + lon/lat; CWD-relative).
 !
-! Архитектура switch (11.7E): подменяется ТОЛЬКО слой чтения файлов.
+! Architecture: the file-read layer is NetCDF; legacy branches below are
+! retained solely for offline regression and are unreachable in production.
 ! Вся цепочка derivations (ht/mod/smooth/map1/kt1-counts/kk1/hu/hv/dz,
 ! IDX/IDY/кориолис) выполняется существующим кодом coup1() БЕЗ ИЗМЕНЕНИЙ
 ! в обоих путях — расхождение по построению невозможно, контроль
@@ -19,9 +19,7 @@
 ! bathymetry.nc (ht/map1 finals) моделью НЕ читается на этом этапе
 ! (валидированный артефакт для поздних стадий).
 !
-! Откат: STAGE117E_NETCDF_GRID unset → legacy KOORD.DAT/hhh.bar.
-! Отсутствующий grid.nc при ON → FATAL STOP (без silent fallback,
-! конвенция KOORD-missing FATAL в coup1).
+! Missing grid.nc → FATAL STOP (no silent fallback).
 ! Измерения переменных проверяются явно (T-18, 11.7E.1-CP):
 ! несовпадение имён/длин → FATAL, форма буфера не угадывается.
 ! Физика/EOS/scheduler/production-defaults НЕ меняются.
@@ -31,23 +29,15 @@ module netcdf_grid_reader
     use netcdf
     implicit none
 
-    logical, save :: s117e_nc = .false.
+    logical, save :: s117e_nc = .true.
     character(len=*), parameter :: GRID_NC_PATH = &
         'data/input/processed/grid/grid.nc'
 
 contains
 
     subroutine s117e_init()
-        character(len=32) :: env_str
-        call get_environment_variable('STAGE117E_NETCDF_GRID', env_str)
-        if (len_trim(env_str) .gt. 0 .and. &
-            (env_str .eq. 'true' .or. env_str .eq. 'TRUE' .or. &
-             env_str .eq. '1')) then
-            s117e_nc = .true.
-        end if
-        if (s117e_nc) then
-            print *, 'STAGE117E: NetCDF grid input ON (grid.nc codes+coords)'
-        end if
+        s117e_nc = .true.
+        print *, 'Stage 11.10: NetCDF grid input DEFAULT (grid.nc codes+coords)'
     end subroutine s117e_init
 
     logical function s117e_grid_active()
@@ -60,7 +50,7 @@ contains
         print *, 'FATAL: STAGE117E NetCDF grid read failed: ', trim(what)
         print *, '  nf90: ', trim(nf90_strerror(code)), ' (code=', code, ')'
         print *, '  file: ', GRID_NC_PATH
-        print *, '  rollback: unset STAGE117E_NETCDF_GRID (legacy KOORD.DAT/hhh.bar)'
+        print *, '  production requires grid.nc; legacy .DAT/.bar are offline regression only'
         stop 1
     end subroutine s117e_fatal
 
@@ -69,7 +59,7 @@ contains
         character(len=*), intent(in) :: msg
         print *, 'FATAL: STAGE117E NetCDF grid validation failed: ', trim(msg)
         print *, '  file: ', GRID_NC_PATH
-        print *, '  rollback: unset STAGE117E_NETCDF_GRID (legacy KOORD.DAT/hhh.bar)'
+        print *, '  production requires grid.nc; legacy .DAT/.bar are offline regression only'
         stop 1
     end subroutine s117e_fatal_msg
 

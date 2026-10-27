@@ -1,9 +1,9 @@
 # Project Roadmap
 
 **Updated:** 2026-10-27
-**Current scientific stage:** **STAGE 11 CLOSED** (2026-10-27) — EOS-80 runtime default; N=1 matrix 8/8 PASS; production scheduler remains BLOCKED (T-39). data/runs inventory 82.583 GB (cleanup optional). **Next: Stage 12 preparation** (voxel iceberg; implementation not started).
+**Current scientific stage:** **11.10 post-closure remediation** — NetCDF production I/O, disk cleanup (0.510 GB), physical baseline D-50; N>1/OBC and real tides remain blockers. Stage 12 is gated; N=1 is not a final physical state.
 **Stages 3–11.4.1: COMPLETED** (10.x iceberg modernization; 11.1 seasonal characterization; 11.2 CFL audit; 11.4-D21…D33 EN4 stabilization → ERA5-coverage fix → cleanup + Ocean Baseline 11.x; 11.3A execution-graph audit; 11.3B input-architecture audit + NetCDF contracts; 11.3C scheme audit + timestep matrix; 11.3C.1 semantics + CFL distributions; 11.3C.2 time-integration audit; 11.3C.3 loop-bound search (VERDICT D); 11.4 EOS-80 experiment + 11.4.1 impact validation (OPTIONAL, not default)).
-**Current status:** Stages 10.14-11.9 committed. **11.9:** Stage 11 formally closed; closure declaration and final review committed. **11.8B:** EOS80 default; 8/8 matrix; reproducibility bit-identical; inventory 82.583 GB with 37.327 GB optional cleanup (not executed).
+**Current status:** Stages 10.14-11.10 committed. **11.10:** NetCDF-only production I/O; data/runs 0.510 GB; physical baseline D-50; N=4/N=24 OBC blocker measured; tide plan/red test created.
 **Test suite:** 69 Fortran test source files (`ls test/*.f90 | wc -l`); 69 executable test targets (`grep -lE '^\s*program ' test/*.f90 | wc -l`). Counting method (Stage 11.8.0 T0): every current `test/*.f90` holds a top-level `program`, so file count == target count (verified 2026-10-24).
 **Stage 11.5H-RC COMPLETE** (release-candidate gate: self-contained production scheduler, docs synced D-22…D-28). Plan: 11.8.0 diagnostic ladder (T0–T6) → 11.8A validation → 11.8B audit → 11.9 closure → 12.0 voxel (planning open; implementation not started, D-28).
 
@@ -759,9 +759,9 @@ production scheduler change (T-39 remains BLOCKED).
   identical**; LEGACY fallback vs matrix Jan LEGACY: **32/32 identical**.
 - Reproducibility: Jan LEGACY, Jan EOS80, Apr EOS80, Jul LEGACY, Oct EOS80
   re-runs are **bit-identical** to matrix outputs (32/32 each).
-- data/runs: **82.583 GB / 289 runs**; CRITICAL 83 (31.734 GB), ARCHIVE 153
+- data/runs (pre-cleanup): **82.583 GB / 289 runs**; CRITICAL 83 (31.734 GB), ARCHIVE 153
   (40.563 GB), TEMPORARY 47 (8.629 GB), DUPLICATES 6 (1.656 GB); estimated
-  savings **37.327 GB**. **No deletion/archival performed.**
+  savings **37.327 GB**. **Stage 11.10 later executed cleanup to 0.510 GB / 26 runs.**
 - Migration: `docs/MIGRATION_GUIDE_EOS80_DEFAULT.md`.
 - Inventory: `docs/validation/stage11.8B_runs_inventory.md`,
   `data/validation/runs_inventory_final.json`.
@@ -785,6 +785,17 @@ production scheduler change (T-39 remains BLOCKED).
   savings), pending user approval; no deletion performed.
 - Stage 12 preparation: `docs/STAGE12_PREPARATION.md`; implementation not
   started.
+
+### Stage 11.10 — Prognostic Ocean, NetCDF Default, Tides, Disk Cleanup
+
+**Status: PARTIAL — infrastructure complete; physical N>1/OBC and real tides blocked.**
+
+- **Disk:** data/runs **82.583 GB → 0.510 GB**; 263 directories removed; 26 kept with first/last NetCDF + logs/CSV/config. Cleanup executed (not just recommended).
+- **NetCDF:** grid.nc + seaice_initial.nc are the production defaults; root legacy symlinks removed. Legacy `.DAT`/`.bar`/`.ice` are offline fixtures only.
+- **Physical baseline (D-50):** bit-identity with N=1 is abolished as a physics gate; 90-day no NaN/S<0/T>30, drift <1e-4, N² ≥ −ε, N=4/N=24 required.
+- **N>1/OBC:** N=4 blows up within one day (max U 4352 m/s); N=24 grows to 1.89 m/s in one day. OBC (Flather + radiation + T/S sponge) is the immediate blocker; N=1 is diagnostic only.
+- **Tides:** `tides.nc` is null-tides; plan and intentionally-red test created. Tidal forcing must be applied every barotropic step before Stage 12.
+- **Stage 12:** gated; implementation not started.
 
 ### Stage 11.8 Prerequisite: Ocean Stabilization (MANDATORY GATE)
 

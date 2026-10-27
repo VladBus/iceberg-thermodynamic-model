@@ -9,15 +9,17 @@ env-gated (default OFF) until D-33 approval.
 
 | Field | Value |
 |---|---|
-| Current stage | **Stage 11 — CLOSED** (formal closure declaration 2026-10-27) |
+| Current stage | **11.10 — post-closure physical remediation** — NetCDF/cleanup/baseline DONE; N>1/OBC+tides BLOCKED |
 | EOS default | **EOS80** (`EOS_MODE` unset); `EOS_MODE=LEGACY` explicit fallback |
-| data/runs inventory | **82.583 GB / 289 runs**; 37.327 GB optional cleanup; **not deleted** |
+| I/O default | **NetCDF only production path**; root legacy symlinks removed |
+| Physical baseline | **D-50:** 90-day no NaN/S<0/T>30; drift <1e-4; N² ≥ −ε; N=1 not final |
+| data/runs | **0.510 GB / 26 runs**; cleanup EXECUTED 2026-10-27 |
 | Ocean rest state | **T3b PASS (bounded)** — max \|U\| **0.147 m/s**, KE30/KE15 **0.568** (dt=1800, Ah=10000, no sponge) |
 | T-19 snowfall | **FIXED** — v2 CDS probe R=1.009 (hourly); divisor 3600 |
 | T-25 potential CA | Implemented behind `STAGE118_CA_POTENTIAL` (OFF); no effect in LEGACY |
 | T-32 prognostic RO | Implemented behind `STAGE118_RO_PROGNOSTIC` (OFF); no effect (CA already refreshes RO) |
 | T-31 EUU | **FIXED diagnostically** — 3D KE printed as `KE3D(J)` |
-| Next step | **Stage 12 preparation** (voxel iceberg); implementation not started |
+| Next step | OBC/N=4/N=24 stabilization + real tides; Stage 12 remains gated |
 
 ## Seasonal coverage (30-day forced)
 
@@ -53,8 +55,9 @@ EOS80 raw anomaly is −2.504e-3 **kg/m³** = −2.504e-6 g/cm³; absolute densi
 1.0199975 g/cm³. Corrected gate = absolute density >1.0 g/cm³. D-29
 **PROMOTED** (A/B/C true for N=1). **11.8B:** EOS80 is runtime default;
 default/explicit EOS80/matrix and LEGACY fallback/matrix are bit-identical.
-Production scheduler remains BLOCKED (T-39). Stage 11 is CLOSED; next is
-Stage 12 preparation only.
+N>1/OBC is the immediate blocker: N=4 blew up (max U 4352 m/s), N=24 grew
+to 1.89 m/s in one day. T-39 production scheduler remains BLOCKED. Stage 12
+is gated on OBC/N>1 and real tides.
 
 ## Issue table (T-01 … T-41)
 
@@ -137,6 +140,6 @@ Stage 12 preparation only.
 
 ## Next action
 
-1. **Stage 11 CLOSED** (2026-10-27): EOS80 default; 8/8 matrix; default/fallback/reproducibility bit-identical; inventory 82.583 GB / 289 runs.
+1. **Stage 11 CLOSED** (2026-10-27): EOS80 default; 8/8 matrix; default/fallback/reproducibility bit-identical; pre-cleanup inventory 82.583 GB / 289 runs; Stage 11.10 cleanup → 0.510 GB / 26 runs.
 2. **Cleanup optional**: archive 153 historical runs, review/delete 47 temporary and 6 duplicates; est. 37.327 GB savings. **Nothing deleted.**
-3. **Next: Stage 12 preparation** (voxel iceberg); implementation not started. T-39 production scheduler remains BLOCKED (future work).
+3. **Next: OBC/N=4/N=24 stabilization + real tides**; Stage 12 remains gated. N=1 is diagnostic only; T-39 remains BLOCKED.

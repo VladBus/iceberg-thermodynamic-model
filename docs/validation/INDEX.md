@@ -145,6 +145,8 @@ Stage 10 reports have been archived to `docs/wiki/stages/stage10/`. See the arch
 
 | `DATA_RUNS_CLEANUP_RECOMMENDATION.md` (data/runs cleanup) | 11.9 | RECOMMENDATION ONLY (no deletion) | 82.583 GB / 289 runs; archive 153 / 40.563 GB; temporary 47 / 8.629 GB; duplicates 6 / 1.656 GB; estimated savings 37.327 GB; user approval required. | `docs/DATA_RUNS_CLEANUP_RECOMMENDATION.md` |
 
+| `stage11.10_prognostic_ocean_remediation.md` (NetCDF/OBC/tides/cleanup) | 11.10 | PARTIAL (infrastructure + cleanup; N>1/OBC blocker) | data/runs **0.489 GB / 26** after executed cleanup; NetCDF-only production grid/sea-ice; D-50 physical baseline; N=4 blowup/N=24 growth; tide plan + red test. Stage 12 gated. | `docs/validation/stage11.10_prognostic_ocean_remediation.md` |
+
 ## Rules
 
 - Reports here are not rewritten after stage completion (exception: technical navigational fixes).

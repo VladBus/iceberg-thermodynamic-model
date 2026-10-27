@@ -79,7 +79,7 @@ every barotropic step.
 | D-50 physical baseline documented | **PASS** |
 | OBC implemented or immediate blocker documented | **PASS (blocker documented)** |
 | Tide plan + red test | **PASS** |
-| CI green | pending final commit |
+| CI green | **PASS — run 40505342124** |
 
 **Stage 11.10 is not physically complete.** The next action is OBC/N>1
 stabilization and real tidal forcing; Stage 12 remains gated.

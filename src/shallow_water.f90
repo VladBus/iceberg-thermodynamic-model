@@ -71,6 +71,7 @@
 module shallow_water
     use param
     use barotropic_dynamics, only: advsh
+    use stage1110_obc, only: s1110_barotropic_boundary
     implicit none
 
     ! Глобальные переменные, сохраняющие состояние между вызовами shal().
@@ -493,6 +494,7 @@ contains
         ! YM2 используется в block 280 для выравнивания бароклинной и баротропной мод.
         ym2(:, :) = ym2(:, :)/real(mm3)
 
+        call s1110_barotropic_boundary()
     end subroutine shal
 
 end module shallow_water

@@ -1,0 +1,9 @@
+{
+  "test": "obc_sponge",
+  "alpha_per_day": 1.0,
+  "width_cells": 5,
+  "w_dist0": 0.041666666666666664,
+  "w_dist5": 0.015328310048810098,
+  "w_dist6": 0.0,
+  "PASS": true
+}

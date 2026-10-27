@@ -35,7 +35,7 @@ under atmospheric, oceanic, bathymetric, and sea-ice forcing.
 
 ## 📑 Project status
 
-- **Current stage:** **Stage 11.10 post-closure remediation** — NetCDF default; cleanup executed (0.510 GB); N>1/OBC and real tides remain blockers. EOS-80 is the runtime default; N=1 matrix is diagnostic/validated only, not final. Stage 12 is gated (not started).
+- **Current stage:** **Stage 11.10.1 OBC implementation** — OBC switches implemented; N=4/N=24 still unstable; N=1 fallback with caveat; Stage 12 **NO-GO**. EOS-80 remains default.
 - **BREAKING CHANGE (Stage 11.8B):** `EOS_MODE` unset now selects **EOS80**, not LEGACY. Set `EOS_MODE=LEGACY` to restore the historical Eckart fallback. See `docs/MIGRATION_GUIDE_EOS80_DEFAULT.md`.
   [Historical note from Stage 10.19, SUPERSEDED by Stage 10.20 restoration
   (full-coverage ERA5: 3-day gate PASS, residual characterized, NOT fixed):

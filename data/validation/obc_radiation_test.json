@@ -1,0 +1,7 @@
+{
+  "test": "obc_radiation",
+  "phi_b": 2.0,
+  "phi_i": 2.0,
+  "unchanged": 2.0,
+  "PASS": true
+}

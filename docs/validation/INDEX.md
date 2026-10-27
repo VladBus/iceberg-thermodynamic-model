@@ -147,6 +147,8 @@ Stage 10 reports have been archived to `docs/wiki/stages/stage10/`. See the arch
 
 | `stage11.10_prognostic_ocean_remediation.md` (NetCDF/OBC/tides/cleanup) | 11.10 | PARTIAL (infrastructure + cleanup; N>1/OBC blocker) | data/runs **0.489 GB / 26** after executed cleanup; NetCDF-only production grid/sea-ice; D-50 physical baseline; N=4 blowup/N=24 growth; tide plan + red test. Stage 12 gated. | `docs/validation/stage11.10_prognostic_ocean_remediation.md` |
 
+| `stage11.10.1_obc_implementation.md` (OBC + N>1) | 11.10.1 | PARTIAL (OBC implemented; N>1 unstable) | Flather + sponge + radiation switches/tests; 30-day OBC-ON N=4 941 m/s/262,894 NaN, N=24 4.28 m/s/261,840 NaN; CFL 1464/1.11; N=1 fallback caveat; Stage 12 NO-GO. | `docs/validation/stage11.10.1_obc_implementation.md` |
+
 ## Rules
 
 - Reports here are not rewritten after stage completion (exception: technical navigational fixes).

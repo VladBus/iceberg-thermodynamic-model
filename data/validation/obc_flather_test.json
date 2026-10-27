@@ -1,0 +1,8 @@
+{
+  "test": "obc_flather",
+  "eta_m": 1.0,
+  "h_m": 500.0,
+  "q_cm2_s": -70035.70517957251,
+  "zero_eta": 0.0,
+  "PASS": true
+}

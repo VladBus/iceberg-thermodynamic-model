@@ -40,6 +40,7 @@ program main
     use advection_3d_s
     use advection_3d_t
     use tide_forcing
+    use stage1110_obc, only: s1110_init, s1110_apply_sponge
     use shallow_water, only: shal, jjq, euu
     use grid_coupling
     use netcdf_output
@@ -571,6 +572,7 @@ program main
 
     ! --- Инициализация синтетических полей ---
     call init_ocean()
+    call s1110_init()
 
     ! ====================================================================
     !   STAGE 10.21: CONVECTIVE ADJUSTMENT & EOS PRECISION (env-gated)
@@ -1293,6 +1295,7 @@ program main
                         call conv_adj(kkk, iii)
                         ! Stage 11.8.0 E1: prognostic RO (T/S -> RO) after CA,
                         ! before Block 200.  OFF default -> legacy bit-identical.
+                        call s1110_apply_sponge(dt)
                         if (s118_ro_prognostic) call eos_update_ro()
                         ! T5-CORRECTIVE-3: optional boundary sponge after
                         ! advection/CA, before Block 200.  OFF default.

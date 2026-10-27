@@ -1,9 +1,9 @@
 # Project Roadmap
 
 **Updated:** 2026-10-27
-**Current scientific stage:** **11.10 post-closure remediation** — NetCDF production I/O, disk cleanup (0.510 GB), physical baseline D-50; N>1/OBC and real tides remain blockers. Stage 12 is gated; N=1 is not a final physical state.
+**Current scientific stage:** **11.10.1 OBC implementation** — Flather/radiation/sponge implemented; N=4/N=24 still fail 30-day CFL/stability; N=1 fallback with caveat; **Stage 12 NO-GO**.
 **Stages 3–11.4.1: COMPLETED** (10.x iceberg modernization; 11.1 seasonal characterization; 11.2 CFL audit; 11.4-D21…D33 EN4 stabilization → ERA5-coverage fix → cleanup + Ocean Baseline 11.x; 11.3A execution-graph audit; 11.3B input-architecture audit + NetCDF contracts; 11.3C scheme audit + timestep matrix; 11.3C.1 semantics + CFL distributions; 11.3C.2 time-integration audit; 11.3C.3 loop-bound search (VERDICT D); 11.4 EOS-80 experiment + 11.4.1 impact validation (OPTIONAL, not default)).
-**Current status:** Stages 10.14-11.10 committed. **11.10:** NetCDF-only production I/O; data/runs 0.510 GB; physical baseline D-50; N=4/N=24 OBC blocker measured; tide plan/red test created.
+**Current status:** Stages 10.14-11.10.1 committed. **11.10.1:** OBC switches + tests; N=4 941 m/s/262,894 NaN, N=24 4.28 m/s/261,840 NaN; CFL 1464/1.11; N=1 fallback caveat; Stage 12 NO-GO.
 **Test suite:** 69 Fortran test source files (`ls test/*.f90 | wc -l`); 69 executable test targets (`grep -lE '^\s*program ' test/*.f90 | wc -l`). Counting method (Stage 11.8.0 T0): every current `test/*.f90` holds a top-level `program`, so file count == target count (verified 2026-10-24).
 **Stage 11.5H-RC COMPLETE** (release-candidate gate: self-contained production scheduler, docs synced D-22…D-28). Plan: 11.8.0 diagnostic ladder (T0–T6) → 11.8A validation → 11.8B audit → 11.9 closure → 12.0 voxel (planning open; implementation not started, D-28).
 
@@ -796,6 +796,18 @@ production scheduler change (T-39 remains BLOCKED).
 - **N>1/OBC:** N=4 blows up within one day (max U 4352 m/s); N=24 grows to 1.89 m/s in one day. OBC (Flather + radiation + T/S sponge) is the immediate blocker; N=1 is diagnostic only.
 - **Tides:** `tides.nc` is null-tides; plan and intentionally-red test created. Tidal forcing must be applied every barotropic step before Stage 12.
 - **Stage 12:** gated; implementation not started.
+
+### Stage 11.10.1 — OBC implementation (PARTIAL)
+
+**Status: OBC implemented; N>1 still unstable; Stage 12 NO-GO.**
+
+- Flather, T/S sponge, and radiation switches implemented in
+  `src/stage1110_obc.f90`, default OFF; focused tests pass.
+- 30-day OBC-ON: N=4 max U **941 m/s**, 262,894 NaN; N=24 max U **4.28 m/s**,
+  261,840 NaN. CFL **1464 / 1.11**.
+- N=1 is the mandated fallback with explicit caveat; N>1 is not viable.
+- Next: adaptive CFL/timestep + monotone U/V; Stage 12 remains gated.
+- Report: `docs/validation/stage11.10.1_obc_implementation.md`.
 
 ### Stage 11.8 Prerequisite: Ocean Stabilization (MANDATORY GATE)
 

@@ -1,0 +1,39 @@
+{
+  "stage": "11.10.1",
+  "date": "2026-10-27",
+  "grid": "grid.nc",
+  "boundaries": {
+    "north_j1": {
+      "wet_cells": 119,
+      "land_cells": 14,
+      "total": 133
+    },
+    "south_jJS1": {
+      "wet_cells": 91,
+      "land_cells": 42,
+      "total": 133
+    },
+    "west_i1": {
+      "wet_cells": 33,
+      "land_cells": 72,
+      "total": 105
+    },
+    "east_iIS1": {
+      "wet_cells": 103,
+      "land_cells": 2,
+      "total": 105
+    }
+  },
+  "current_obc": "no-gradient copy at north j=1 / west i=1 plus legacy wave-impedance overwritten; south/east largely land/partial",
+  "root_cause": "N=4 dt_ocean=21600 s with max|U| ~941 m/s gives CFL ~1463; N=24 CFL ~1.11. OBC alone cannot stabilize a CFL-violating baroclinic step.",
+  "n4_one_day_no_obc": {
+    "max_u_m_s": 4352.39,
+    "max_v_m_s": 14097.9,
+    "verdict": "BLOWUP"
+  },
+  "n24_one_day_no_obc": {
+    "max_u_m_s": 1.89093,
+    "max_v_m_s": 1.13768,
+    "verdict": "GROWING"
+  }
+}

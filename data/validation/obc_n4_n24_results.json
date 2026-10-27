@@ -1,0 +1,36 @@
+{
+  "stage": "11.10.1",
+  "date": "2026-10-27",
+  "config": "OBC ON; Ah=2000; N=4/24 30-day",
+  "runs": {
+    "N4": {
+      "days": 30,
+      "max_u_m_s": 941.38,
+      "max_v_m_s": 14002.9,
+      "final_nan_cells": 262894,
+      "final_u_finite_max": 0.0450364388525486,
+      "final_v_finite_max": 0.050788987427949905,
+      "final_T_min": -3.529571533203125,
+      "final_T_max": 3.574127197265625,
+      "final_S_min_psu": 0.0,
+      "final_RO_min": 0.0,
+      "PASS": false,
+      "verdict": "FAIL"
+    },
+    "N24": {
+      "days": 30,
+      "max_u_m_s": 4.27746,
+      "max_v_m_s": 7.441369999999999,
+      "final_nan_cells": 261840,
+      "final_u_finite_max": 1.350468397140503,
+      "final_v_finite_max": 1.814373254776001,
+      "final_T_min": -1.87554931640625,
+      "final_T_max": 2.82275390625,
+      "final_S_min_psu": 0.0,
+      "final_RO_min": 0.0,
+      "PASS": false,
+      "verdict": "FAIL"
+    }
+  },
+  "conclusion": "OBC switches were active but N=4/N=24 still fail 30-day stability; N=1 fallback with caveat is required. Stage 12 NO-GO."
+}

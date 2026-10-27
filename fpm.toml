@@ -99,3 +99,15 @@ main = "test_sponge_boundary.f90"
 [test.test_density_repair]
 source-dir = "test"
 main = "test_density_repair.f90"
+
+[test.test_obc_flather]
+source-dir = "test"
+main = "test_obc_flather.f90"
+
+[test.test_obc_sponge]
+source-dir = "test"
+main = "test_obc_sponge.f90"
+
+[test.test_obc_radiation]
+source-dir = "test"
+main = "test_obc_radiation.f90"

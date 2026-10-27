@@ -1,0 +1,14 @@
+{
+  "stage": "11.10.3",
+  "run": "obc_n24_stabilized_30d",
+  "max_u_m_s": 1.9969,
+  "first_nan": {
+    "day": 15,
+    "k": 0,
+    "i": 2,
+    "j": 94
+  },
+  "final_nan_cells": 261862,
+  "PASS": false,
+  "note": "drag/clip active; still failed"
+}

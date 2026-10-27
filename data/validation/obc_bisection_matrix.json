@@ -1,44 +1,47 @@
 {
-  "stage": "11.10.2",
+  "stage": "11.10.3",
   "date": "2026-10-27",
   "runs": [
     {
-      "run": "N24_full_30d",
-      "config": "full forcing + OBC + Ah=2000",
+      "run": "Vacuum",
+      "dir": "vacuum_n24_10d",
+      "max_u_m_s": 4.3805700000000005,
+      "max_v_m_s": 8.71993,
+      "first_nan": null,
+      "final_nan_cells": 0,
+      "PASS": false
+    },
+    {
+      "run": "Wind-only",
+      "dir": "bisect_wind_only_10d",
+      "max_u_m_s": 4.35034,
+      "max_v_m_s": 8.76144,
+      "first_nan": null,
+      "final_nan_cells": 0,
+      "PASS": false
+    },
+    {
+      "run": "Thermo-only",
+      "dir": "bisect_thermo_only_10d",
+      "max_u_m_s": 3.9169,
+      "max_v_m_s": 3.9887900000000003,
       "first_nan": {
-        "day": 4,
+        "day": 3,
         "k": 0,
-        "i": 2,
-        "j": 24,
-        "nan_u": 102091
+        "i": 8,
+        "j": 114
       },
-      "conclusion": "FAIL: external + internal dynamics"
+      "final_nan_cells": 261826,
+      "PASS": false
     },
     {
-      "run": "N24_vacuum_10d",
-      "config": "STAGE118_T3_REST_MODE=true (wind/ice/thermo off), no OBC",
+      "run": "Ice-only",
+      "dir": "bisect_ice_only_10d",
+      "max_u_m_s": 4.17212,
+      "max_v_m_s": 9.62083,
       "first_nan": null,
-      "max_u_m_s": 4.38057,
-      "conclusion": "no NaN at 10 d, but internal dynamics grow to 4.38 m/s"
-    },
-    {
-      "run": "N24_wind_only_10d",
-      "config": "not independently switchable",
-      "first_nan": null,
-      "conclusion": "not run: no component-level wind-only switch"
-    },
-    {
-      "run": "N24_thermo_only_10d",
-      "config": "not independently switchable",
-      "first_nan": null,
-      "conclusion": "not run: no component-level thermo-only switch"
-    },
-    {
-      "run": "N24_ice_only_10d",
-      "config": "not independently switchable",
-      "first_nan": null,
-      "conclusion": "not run: no component-level ice-only switch"
+      "final_nan_cells": 0,
+      "PASS": false
     }
-  ],
-  "conclusion": "Internal dynamics/CFL dominate; external flux shock not required to produce instability. Full component bisection requires missing switches."
+  ]
 }

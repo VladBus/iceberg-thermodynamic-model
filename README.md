@@ -35,7 +35,7 @@ under atmospheric, oceanic, bathymetric, and sea-ice forcing.
 
 ## 📑 Project status
 
-- **Current stage:** **Stage 11.10.2 numerical core bisection** — subcycling fixed; N=24 still fails day 4; N=1 fallback with caveat; Stage 12 **NO-GO**. EOS-80 remains default.
+- **Current stage:** **Stage 11.10.3 CFL stabilization + bisection** — drag/clip implemented; N=24 still NaN day 15; N=1 diagnostic only; Stage 12 **NO-GO**. EOS-80 remains default.
 - **BREAKING CHANGE (Stage 11.8B):** `EOS_MODE` unset now selects **EOS80**, not LEGACY. Set `EOS_MODE=LEGACY` to restore the historical Eckart fallback. See `docs/MIGRATION_GUIDE_EOS80_DEFAULT.md`.
   [Historical note from Stage 10.19, SUPERSEDED by Stage 10.20 restoration
   (full-coverage ERA5: 3-day gate PASS, residual characterized, NOT fixed):

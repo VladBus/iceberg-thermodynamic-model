@@ -151,6 +151,8 @@ Stage 10 reports have been archived to `docs/wiki/stages/stage10/`. See the arch
 
 | `stage11.10.2_numerical_core_bisection.md` (subcycling/bisection) | 11.10.2 | PARTIAL (subcycling fixed; N>1 unstable) | `mm3=ceil(dt/120)`, dt1<=120, shal gated; N=24 first NaN day4/max U 3.94; N=4 137.8/3009.8; vacuum 4.38; N=1 caveat; Stage 12 NO-GO. | `docs/validation/stage11.10.2_numerical_core_bisection.md` |
 
+| `stage11.10.3_cfl_stabilization_bisection.md` (bisection/drag/clip) | 11.10.3 | FAILED (N>1 unstable) | Thermo-only earliest NaN day3; drag caps N24 max U 1.997 and vacuum 1.989 but full N24 NaN day15 (261,862); Stage 12 NO-GO. | `docs/validation/stage11.10.3_cfl_stabilization_bisection.md` |
+
 ## Rules
 
 - Reports here are not rewritten after stage completion (exception: technical navigational fixes).

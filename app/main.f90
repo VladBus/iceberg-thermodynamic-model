@@ -41,6 +41,7 @@ program main
     use advection_3d_t
     use tide_forcing
     use stage1110_obc, only: s1110_init, s1110_apply_sponge
+    use stage1110_stab, only: s1110_stab_init, s1110_apply_momentum
     use shallow_water, only: shal, jjq, euu
     use grid_coupling
     use netcdf_output
@@ -136,6 +137,7 @@ program main
     real :: d2_dt
     character(len=64) :: env_str2
     logical :: rest_mode   ! Stage 11.8.0 T3: ocean rest-state diagnostic
+    logical :: bisect_wind, bisect_thermo, bisect_ice
     integer :: ios2
     ! Stage 11.5B: MM2-override flag (declaration with the other one).
     logical :: stage113_mm2_set
@@ -202,6 +204,11 @@ program main
         print *, '>>> STAGE118_T3_REST_MODE ON: wind=0, heat=0, ', &
                  'freshwater=0, ice-ocean=0; dynamics+CA ACTIVE'
     end if
+    ! Stage 11.10.3 bisection switches (all false = normal).
+    bisect_wind = env_true('STAGE1110_BISECT_WIND')
+    bisect_thermo = env_true('STAGE1110_BISECT_THERMO')
+    bisect_ice = env_true('STAGE1110_BISECT_ICE')
+    if (bisect_thermo) kl1 = 0
     nom = 1             ! Идентификатор чтения начальных данных
     ! Временный переключатель для отладки ERA5 input (этап 2/3).
     forcing_mode = forcing_mode_era5
@@ -399,6 +406,7 @@ program main
         end if
         print *, 'STAGE115H production: 24x24 passes dt_sub=150 shal=1x/day (STALE coupling, self-contained)'
     end if
+    call s1110_stab_init(nsub_115c)
     mm4 = 1             ! Число расчётных месяцев (1 для Q1 2020).
     mm5 = 1             ! Число расчётных лет.
     dx = 1389000.0      ! [см] Пространственный шаг сетки = 13.89 км.
@@ -756,6 +764,7 @@ program main
         ! Legacy forcing: compute initial wind/pressure
         pp(:) = p(:, kkb)
         call wind1()
+        if (bisect_wind) call zero_bisect_wind()
     end if
 
     ! Stage 8.6 diagnostics: B = after wind forcing
@@ -1081,6 +1090,7 @@ program main
                         wice1(:, :, k) = an3(:, :)
                     end do
                     call redis()
+                    if (bisect_ice) call zero_bisect_ice()
 
                     ! ====================================================================
                     !   5. РАСЧЁТ ВЕРТИКАЛЬНОЙ СКОРОСТИ TЕЧЕНИЙ (W)
@@ -1759,6 +1769,7 @@ program main
                     if (.not. s115h_prod_active()) call s115c7_track(kkk, iii, 'B280', 1)
                     ! Stage 10.22: проба в конце шага
                     if (s22_diag) call s22_probe('END_step', kkk, iii)
+                    call s1110_apply_momentum(dt)
 
                     ! --- STAGE 11.2: END-OF-STEP DIAGNOSTICS ---
                     ! Thermal wind, density, T/S ranges, and timeseries output
@@ -1907,6 +1918,22 @@ program main
     call write_nc(trim(run_nc_dir)//'/results_day_final.nc')
 
 contains
+
+    logical function env_true(name)
+        character(len=*), intent(in) :: name
+        character(len=64) :: v
+        call get_environment_variable(name, v)
+        env_true = (trim(v) .eq. 'true' .or. trim(v) .eq. 'TRUE' .or. trim(v) .eq. '1' .or. trim(v) .eq. 'ON')
+    end function env_true
+
+    subroutine zero_bisect_wind()
+        windx = 0.0; windy = 0.0; tx = 0.0; ty = 0.0
+        windx1 = 0.0; windy1 = 0.0; tx1 = 0.0; ty1 = 0.0
+    end subroutine zero_bisect_wind
+
+    subroutine zero_bisect_ice()
+        ans = 0.0; an1 = 0.0; wice1 = 0.0; hices = 0.0
+    end subroutine zero_bisect_ice
 
     ! ==========================================================================
     ! write_daily_diagnostics: суточная диагностика (этап 4.2).

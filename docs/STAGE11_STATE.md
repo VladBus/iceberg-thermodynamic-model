@@ -9,17 +9,17 @@ env-gated (default OFF) until D-33 approval.
 
 | Field | Value |
 |---|---|
-| Current stage | **11.10.2 — numerical core bisection** — subcycling fixed; N>1 still unstable; N=1 fallback caveat; Stage 12 NO-GO |
+| Current stage | **11.10.3 — CFL stabilization + bisection** — drag/clip implemented; N=24 still NaN day15; N=1 diagnostic only; Stage 12 NO-GO |
 | EOS default | **EOS80** (`EOS_MODE` unset); `EOS_MODE=LEGACY` explicit fallback |
 | I/O default | **NetCDF only production path**; root legacy symlinks removed |
 | Physical baseline | **D-50:** 90-day no NaN/S<0/T>30; drift <1e-4; N² ≥ −ε; N=1 not final |
-| data/runs | **2.5 GB / 37 runs**; OBC/bisection evidence retained |
+| data/runs | **3.2 GB / 42 runs**; OBC/bisection evidence retained |
 | Ocean rest state | **T3b PASS (bounded)** — max \|U\| **0.147 m/s**, KE30/KE15 **0.568** (dt=1800, Ah=10000, no sponge) |
 | T-19 snowfall | **FIXED** — v2 CDS probe R=1.009 (hourly); divisor 3600 |
 | T-25 potential CA | Implemented behind `STAGE118_CA_POTENTIAL` (OFF); no effect in LEGACY |
 | T-32 prognostic RO | Implemented behind `STAGE118_RO_PROGNOSTIC` (OFF); no effect (CA already refreshes RO) |
 | T-31 EUU | **FIXED diagnostically** — 3D KE printed as `KE3D(J)` |
-| Next step | adaptive CFL/monotone U/V; N=24 first NaN day 4; Stage 12 NO-GO |
+| Next step | thermodynamic flux/advection stabilization; N=24 NaN day15; Stage 12 NO-GO |
 
 ## Seasonal coverage (30-day forced)
 
@@ -55,9 +55,9 @@ EOS80 raw anomaly is −2.504e-3 **kg/m³** = −2.504e-6 g/cm³; absolute densi
 1.0199975 g/cm³. Corrected gate = absolute density >1.0 g/cm³. D-29
 **PROMOTED** (A/B/C true for N=1). **11.8B:** EOS80 is runtime default;
 default/explicit EOS80/matrix and LEGACY fallback/matrix are bit-identical.
-Subcycling fixed (180/30 substeps, dt1=120) but N=24 still first NaN day 4,
-max U 3.94 m/s; N=4 max U 137.8 m/s. Vacuum N=24 grows to 4.38 m/s.
-CFL 1.02/214. N=1 fallback caveat; Stage 12 **NO-GO**. T-39 remains BLOCKED.
+Bisection: thermo-only is earliest NaN (day3); wind/ice/vacuum finite at 10d.
+Drag caps N=24 max U to 1.997 and vacuum to 1.989, but full N=24 still
+first NaN day15 (261,862 cells). N=1 is diagnostic only; Stage 12 **NO-GO**.
 
 ## Issue table (T-01 … T-41)
 
@@ -142,4 +142,4 @@ CFL 1.02/214. N=1 fallback caveat; Stage 12 **NO-GO**. T-39 remains BLOCKED.
 
 1. **Stage 11 CLOSED** (2026-10-27): EOS80 default; 8/8 matrix; default/fallback/reproducibility bit-identical; pre-cleanup inventory 82.583 GB / 289 runs; Stage 11.10 cleanup → 0.510 GB / 26 runs.
 2. **Cleanup optional**: archive 153 historical runs, review/delete 47 temporary and 6 duplicates; est. 37.327 GB savings. **Nothing deleted.**
-3. **Next: adaptive CFL/monotone U/V**; N=24 first NaN day4; Stage 12 NO-GO. N=1 fallback with caveat; T-39 remains BLOCKED.
+3. **Next: thermodynamic flux/advection stabilization**; N=24 NaN day15; Stage 12 NO-GO. N=1 diagnostic only; T-39 remains BLOCKED.

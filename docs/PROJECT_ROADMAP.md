@@ -1,9 +1,9 @@
 # Project Roadmap
 
 **Updated:** 2026-10-27
-**Current scientific stage:** **11.10.2 numerical core bisection** — subcycling fixed; N=24 first NaN day 4; N=1 fallback caveat; **Stage 12 NO-GO**.
+**Current scientific stage:** **11.10.3 CFL stabilization + bisection** — drag/clip implemented; N=24 NaN day15; N=1 diagnostic only; **Stage 12 NO-GO**.
 **Stages 3–11.4.1: COMPLETED** (10.x iceberg modernization; 11.1 seasonal characterization; 11.2 CFL audit; 11.4-D21…D33 EN4 stabilization → ERA5-coverage fix → cleanup + Ocean Baseline 11.x; 11.3A execution-graph audit; 11.3B input-architecture audit + NetCDF contracts; 11.3C scheme audit + timestep matrix; 11.3C.1 semantics + CFL distributions; 11.3C.2 time-integration audit; 11.3C.3 loop-bound search (VERDICT D); 11.4 EOS-80 experiment + 11.4.1 impact validation (OPTIONAL, not default)).
-**Current status:** Stages 10.14-11.10.2 committed. **11.10.2:** subcycling fixed (180/30, dt1=120); N=24 first NaN day4/max U 3.94; N=4 137.8/3009.8; vacuum grows 4.38; N=1 fallback caveat; Stage 12 NO-GO.
+**Current status:** Stages 10.14-11.10.3 committed. **11.10.3:** bisection complete; thermo-only first NaN day3; drag caps U but N=24 NaN day15; Stage 12 NO-GO.
 **Test suite:** 69 Fortran test source files (`ls test/*.f90 | wc -l`); 69 executable test targets (`grep -lE '^\s*program ' test/*.f90 | wc -l`). Counting method (Stage 11.8.0 T0): every current `test/*.f90` holds a top-level `program`, so file count == target count (verified 2026-10-24).
 **Stage 11.5H-RC COMPLETE** (release-candidate gate: self-contained production scheduler, docs synced D-22…D-28). Plan: 11.8.0 diagnostic ladder (T0–T6) → 11.8A validation → 11.8B audit → 11.9 closure → 12.0 voxel (planning open; implementation not started, D-28).
 
@@ -819,6 +819,18 @@ production scheduler change (T-39 remains BLOCKED).
 - Ah=5000/10000 do not stabilize. OBC/Flather tests pass but are insufficient.
 - N=1 fallback with explicit caveat; **Stage 12 NO-GO**.
 - Report: `docs/validation/stage11.10.2_numerical_core_bisection.md`.
+
+### Stage 11.10.3 — CFL stabilization + bisection (FAILED N>1)
+
+- Added `STAGE1110_BISECT_WIND/THERMO/ICE`; complete 10-day matrix shows
+  **thermo-only earliest NaN day 3 (k0,i8,j114)**; vacuum/wind/ice finite but
+  growing (4.17–4.38 m/s).
+- High-speed drag caps N=24 max U to **1.997 m/s** (vacuum 1.989) and clips
+  boundary strips, but full N=24 still NaNs at **day 15 (k0,i2,j94)**,
+  261,862 cells.
+- CFL ~0.52; T/S thermodynamic/advective instability dominates.
+- N=1 is diagnostic only; **Stage 12 NO-GO**. Report:
+  `docs/validation/stage11.10.3_cfl_stabilization_bisection.md`.
 
 ### Stage 11.8 Prerequisite: Ocean Stabilization (MANDATORY GATE)
 

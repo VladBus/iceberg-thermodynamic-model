@@ -1,0 +1,17 @@
+{
+  "units": "kg/m3 anomaly (rho_gcm3 - 1.02); NOT g/cm3",
+  "RO_min_kg_m3": -11.736263275146484,
+  "absolute_density_kg_m3": 1008.2637367248535,
+  "absolute_density_g_cm3": 1.0082637367248535,
+  "cell": {
+    "k": 0,
+    "i": 103,
+    "j": 25,
+    "lat": 66.59140014648438,
+    "lon": 42.57109832763672
+  },
+  "T_C": 29.999993896484398,
+  "S_psu": 16.942098736763,
+  "all_wet_rho_gt_1000": true,
+  "PASS": true
+}

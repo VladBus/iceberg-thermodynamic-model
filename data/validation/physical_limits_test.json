@@ -1,0 +1,8 @@
+{
+  "stage": "11.11",
+  "wet_S_lt_0p1_and_T_lt_0": 0,
+  "S_min_wet_psu": 16.942098736763,
+  "T_min_wet_C": -1.9365905761718523,
+  "PASS": true,
+  "note": "S=0 values in global file are dry/ghost cells, not wet ocean."
+}

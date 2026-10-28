@@ -7,6 +7,7 @@ module stage1110_thermo
     logical, save :: flux_clip = .false.
     logical, save :: ca_smooth = .false.
     logical, save :: implicit_vdiff = .false.
+    logical, save :: physical_limits = .false.
     real, save :: kv_diff = 1.0e-4   ! m2/s
 contains
     subroutine s1110_thermo_init(nsub)
@@ -16,6 +17,7 @@ contains
         flux_clip = nsub .gt. 1
         ca_smooth = nsub .gt. 1
         implicit_vdiff = nsub .gt. 1
+        physical_limits = nsub .gt. 1
         call get_environment_variable('STAGE1110_HARD_LIMITS', env)
         if (len_trim(env) .gt. 0) hard_limits = truthy(env)
         call get_environment_variable('STAGE1110_FLUX_CLIPPING', env)
@@ -24,8 +26,11 @@ contains
         if (len_trim(env) .gt. 0) ca_smooth = truthy(env)
         call get_environment_variable('STAGE1110_IMPLICIT_VDIFF', env)
         if (len_trim(env) .gt. 0) implicit_vdiff = truthy(env)
-        print '(A,L1,A,L1,A,L1,A,L1)', '>>> Stage 11.10.4 thermo: HARD=', hard_limits, &
-            ' CLIP=', flux_clip, ' CA_SMOOTH=', ca_smooth, ' IMPLICIT_VDIFF=', implicit_vdiff
+        call get_environment_variable('STAGE1110_PHYSICAL_LIMITS', env)
+        if (len_trim(env) .gt. 0) physical_limits = truthy(env)
+        print '(A,L1,A,L1,A,L1,A,L1,A,L1)', '>>> Stage 11.10.4 thermo: HARD=', hard_limits, &
+            ' CLIP=', flux_clip, ' CA_SMOOTH=', ca_smooth, ' IMPLICIT_VDIFF=', implicit_vdiff, &
+            ' PHYSICAL=', physical_limits
     end subroutine s1110_thermo_init
 
     logical function truthy(v)
@@ -51,6 +56,10 @@ contains
                     tf = -0.0575*spsu + 1.710523e-3*spsu*sqrt(max(spsu,0.0)) &
                          - 2.154996e-4*spsu*spsu
                     t2(i, j, k) = max(tf, min(30.0, t2(i, j, k)))
+                    if (physical_limits) then
+                        if (spsu .lt. 0.1 .and. t2(i, j, k) .lt. 0.0) t2(i, j, k) = 0.0
+                        if (t2(i, j, k) .lt. 0.0) s2(i, j, k) = max(s2(i, j, k), 0.0001)
+                    end if
                 end do
             end do
         end do

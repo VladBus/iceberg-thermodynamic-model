@@ -155,6 +155,8 @@ Stage 10 reports have been archived to `docs/wiki/stages/stage10/`. See the arch
 
 | `stage11.10.4_thermo_rewrite.md` (thermodynamic rewrite) | 11.10.4 | PASS (N=24 30-day) | Hard T/S limits, implicit vdiff, flux clipping, CA smoothing; N=24 0 NaN/max U 1.999/CFL 0.518; KE decays after day10; N=1 diagnostic only. | `docs/validation/stage11.10.4_thermo_rewrite.md` |
 
+| `stage11.11_physical_validation_tides.md` (RO/S/N²/tides) | 11.11 | PARTIAL (Stage 12 NO-GO) | RO kg/m³ verified (ρ_abs 1008.264); no wet S<0.1 at T<0; N² 4,627 interfaces <−1e−6; tides null; N24 no-tide stable. | `docs/validation/stage11.11_physical_validation_tides.md` |
+
 ## Rules
 
 - Reports here are not rewritten after stage completion (exception: technical navigational fixes).

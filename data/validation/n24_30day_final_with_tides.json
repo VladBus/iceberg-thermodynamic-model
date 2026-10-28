@@ -1,0 +1,25 @@
+{
+  "stage": "11.11",
+  "tides_available": false,
+  "tides_source": "null-tides",
+  "no_tide_stable_run": {
+    "day": 30,
+    "max_u_m_s": 1.9986199999999998,
+    "max_v_m_s": 1.9999,
+    "nan_cells": 0,
+    "T_min": -1.93658447265625,
+    "T_max": 30.0,
+    "S_min_psu": 0.0,
+    "S_max_psu": 37.05043029785156,
+    "RO_min": -11.736263275146484,
+    "PASS": true,
+    "ke10_j": 7.185565662290589e+16,
+    "ke20_j": 2.1638436308640748e+16,
+    "ke30_j": 2.10594392112766e+16,
+    "ke_stable_after_day10": true,
+    "max_cfl": 0.5180008639308855
+  },
+  "tidal_signal": null,
+  "PASS": false,
+  "note": "Tides not implemented: FES2014/TPXO atlas unavailable locally; no fabricated constituents."
+}

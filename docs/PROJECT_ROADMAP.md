@@ -1,9 +1,9 @@
 # Project Roadmap
 
 **Updated:** 2026-10-27
-**Current scientific stage:** **11.10.4 thermodynamic rewrite** — N=24 30-day PASS (0 NaN, max U 1.999, CFL 0.518); N=1 diagnostic only; Stage 12 implementation not started.
+**Current scientific stage:** **11.11 physical validation/tides** — N=24 no-tide stable; N² and FES2014 tide blockers; **Stage 12 NO-GO**.
 **Stages 3–11.4.1: COMPLETED** (10.x iceberg modernization; 11.1 seasonal characterization; 11.2 CFL audit; 11.4-D21…D33 EN4 stabilization → ERA5-coverage fix → cleanup + Ocean Baseline 11.x; 11.3A execution-graph audit; 11.3B input-architecture audit + NetCDF contracts; 11.3C scheme audit + timestep matrix; 11.3C.1 semantics + CFL distributions; 11.3C.2 time-integration audit; 11.3C.3 loop-bound search (VERDICT D); 11.4 EOS-80 experiment + 11.4.1 impact validation (OPTIONAL, not default)).
-**Current status:** Stages 10.14-11.10.4 committed. **11.10.4:** hard limits, implicit vdiff, flux clipping, CA smoothing; N=24 30-day 0 NaN/max U 1.999/CFL 0.518; KE decays after day10.
+**Current status:** Stages 10.14-11.11 committed. **11.11:** RO units verified, hard physical limits; N² fails at 4,627 interfaces; tides.nc null; Stage 12 NO-GO.
 **Test suite:** 69 Fortran test source files (`ls test/*.f90 | wc -l`); 69 executable test targets (`grep -lE '^\s*program ' test/*.f90 | wc -l`). Counting method (Stage 11.8.0 T0): every current `test/*.f90` holds a top-level `program`, so file count == target count (verified 2026-10-24).
 **Stage 11.5H-RC COMPLETE** (release-candidate gate: self-contained production scheduler, docs synced D-22…D-28). Plan: 11.8.0 diagnostic ladder (T0–T6) → 11.8A validation → 11.8B audit → 11.9 closure → 12.0 voxel (planning open; implementation not started, D-28).
 
@@ -843,6 +843,16 @@ production scheduler change (T-39 remains BLOCKED).
 - No bit-identity claim for thermodynamic rewrite. Stage 12 implementation
   remains **not started**.
 - Report: `docs/validation/stage11.10.4_thermo_rewrite.md`.
+
+### Stage 11.11 — Physical validation + tides (PARTIAL / NO-GO)
+
+- RO_min −11.736 is **kg/m³**; absolute density 1008.264 kg/m³; all wet cells >1000.
+- No wet S<0.1 at T<0; physical-limit switch added.
+- N² min **−0.01568 s⁻²**, **4,627** wet interfaces <−1e−6 → **FAIL**.
+- `tides.nc` remains null-tides; no FES2014/TPXO atlas locally; no real tide
+  forcing/propagation. N=24 no-tide run is stable (0 NaN, max U 1.999).
+- **Stage 12 NO-GO**; report:
+  `docs/validation/stage11.11_physical_validation_tides.md`.
 
 ### Stage 11.8 Prerequisite: Ocean Stabilization (MANDATORY GATE)
 

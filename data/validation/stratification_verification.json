@@ -1,0 +1,7 @@
+{
+  "N2_min_s2": -0.015683820988150205,
+  "negative_gt_1e-6_cells": 4627,
+  "wet_interfaces": 142246,
+  "PASS": false,
+  "note": "N2 computed with downward-positive z using EOS80 density anomaly; negative cells remain a physical-validation issue."
+}

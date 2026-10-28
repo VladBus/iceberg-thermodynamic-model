@@ -42,6 +42,7 @@ program main
     use tide_forcing
     use stage1110_obc, only: s1110_init, s1110_apply_sponge
     use stage1110_stab, only: s1110_stab_init, s1110_apply_momentum
+    use stage1110_thermo, only: s1110_thermo_init, s1110_hard_limits, s1110_ca_smoothing, s1110_implicit_vdiff
     use shallow_water, only: shal, jjq, euu
     use grid_coupling
     use netcdf_output
@@ -407,6 +408,7 @@ program main
         print *, 'STAGE115H production: 24x24 passes dt_sub=150 shal=1x/day (STALE coupling, self-contained)'
     end if
     call s1110_stab_init(nsub_115c)
+    call s1110_thermo_init(nsub_115c)
     mm4 = 1             ! Число расчётных месяцев (1 для Q1 2020).
     mm5 = 1             ! Число расчётных лет.
     dx = 1389000.0      ! [см] Пространственный шаг сетки = 13.89 км.
@@ -1306,6 +1308,9 @@ program main
                         ! Stage 11.8.0 E1: prognostic RO (T/S -> RO) after CA,
                         ! before Block 200.  OFF default -> legacy bit-identical.
                         call s1110_apply_sponge(dt)
+                        call s1110_ca_smoothing()
+                        call s1110_implicit_vdiff(dt)
+                        call s1110_hard_limits()
                         if (s118_ro_prognostic) call eos_update_ro()
                         ! T5-CORRECTIVE-3: optional boundary sponge after
                         ! advection/CA, before Block 200.  OFF default.

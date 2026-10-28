@@ -1,0 +1,11 @@
+{
+  "stage": "11.10.4",
+  "test": "thermo_hard_limits_test",
+  "note": "10-day thermo-only with hard limits/flux clipping/CA smoothing/implicit diffusion",
+  "source_run": "thermo_rewrite_n24_10d",
+  "PASS": true,
+  "days": 10,
+  "nan_cells": 0,
+  "max_u_m_s": 1.98285,
+  "run": "thermo_rewrite_n24_10d"
+}

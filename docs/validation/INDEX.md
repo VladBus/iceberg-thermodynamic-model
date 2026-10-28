@@ -153,6 +153,8 @@ Stage 10 reports have been archived to `docs/wiki/stages/stage10/`. See the arch
 
 | `stage11.10.3_cfl_stabilization_bisection.md` (bisection/drag/clip) | 11.10.3 | FAILED (N>1 unstable) | Thermo-only earliest NaN day3; drag caps N24 max U 1.997 and vacuum 1.989 but full N24 NaN day15 (261,862); Stage 12 NO-GO. | `docs/validation/stage11.10.3_cfl_stabilization_bisection.md` |
 
+| `stage11.10.4_thermo_rewrite.md` (thermodynamic rewrite) | 11.10.4 | PASS (N=24 30-day) | Hard T/S limits, implicit vdiff, flux clipping, CA smoothing; N=24 0 NaN/max U 1.999/CFL 0.518; KE decays after day10; N=1 diagnostic only. | `docs/validation/stage11.10.4_thermo_rewrite.md` |
+
 ## Rules
 
 - Reports here are not rewritten after stage completion (exception: technical navigational fixes).

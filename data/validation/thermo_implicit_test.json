@@ -1,0 +1,14 @@
+{
+  "stage": "11.10.4",
+  "test": "thermo_implicit_test",
+  "note": "30-day full rewritten thermodynamic core",
+  "source_run": "obc_n24_thermo_30d",
+  "PASS": true,
+  "nan_cells": 0,
+  "max_u_m_s": 1.9986199999999998,
+  "T_min": -1.93658447265625,
+  "T_max": 30.0,
+  "S_min_psu": 0.0,
+  "S_max_psu": 37.05043029785156,
+  "days": 30
+}

@@ -36,6 +36,7 @@
 
 module thermodynamics
     use param
+    use stage1110_thermo, only: s1110_clip_heat_flux
     implicit none
 
 contains
@@ -196,6 +197,7 @@ contains
                     !   Q_net = Q_sh + Q_lh + ε_a·σ·T_a⁴·(BackColor) + 0.9·SW - ε_w·σ·T_w⁴
                     !   0.9 — альбедо воды для коротковолновой радиации (~0.06-0.10).
                     qn = sh1 + el1 + 0.97*wl + 0.9*sw + aaa
+                    qn = s1110_clip_heat_flux(qn)
 
                     if (qn .gt. 0.0) then
                         ! Нагревание воды: ΔT = dtz · A_open · Q_net [°C]

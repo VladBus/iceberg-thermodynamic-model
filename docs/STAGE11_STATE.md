@@ -9,7 +9,7 @@ env-gated (default OFF) until D-33 approval.
 
 | Field | Value |
 |---|---|
-| Current stage | **11.11.1 — stratification fix + synthetic tides** — tide 10-day control; N² still fails; Stage 12 NO-GO |
+| Current stage | **11.11.2 — heat forensics + synthetic tide** — 10-day control; N² still fails; Stage 12 NO-GO |
 | EOS default | **EOS80** (`EOS_MODE` unset); `EOS_MODE=LEGACY` explicit fallback |
 | I/O default | **NetCDF only production path**; root legacy symlinks removed |
 | Physical baseline | **D-50:** 90-day no NaN/S<0/T>30; drift <1e-4; N² ≥ −ε; N=1 not final |
@@ -19,7 +19,7 @@ env-gated (default OFF) until D-33 approval.
 | T-25 potential CA | Implemented behind `STAGE118_CA_POTENTIAL` (OFF); no effect in LEGACY |
 | T-32 prognostic RO | Implemented behind `STAGE118_RO_PROGNOSTIC` (OFF); no effect (CA already refreshes RO) |
 | T-31 EUU | **FIXED diagnostically** — 3D KE printed as `KE3D(J)` |
-| Next step | eliminate remaining N² inversions and complete 30-day tide validation; Stage 12 NO-GO |
+| Next step | eliminate N² inversions and complete 30-day tide validation; Stage 12 NO-GO |
 
 ## Seasonal coverage (30-day forced)
 
@@ -55,9 +55,9 @@ EOS80 raw anomaly is −2.504e-3 **kg/m³** = −2.504e-6 g/cm³; absolute densi
 1.0199975 g/cm³. Corrected gate = absolute density >1.0 g/cm³. D-29
 **PROMOTED** (A/B/C true for N=1). **11.8B:** EOS80 is runtime default;
 default/explicit EOS80/matrix and LEGACY fallback/matrix are bit-identical.
-Synthetic M2 (0.5 m) loaded; N=24 10-day tide control 0 NaN/max U 1.992.
-N² still fails (9,813 interfaces <−1e−6); 30-day tide validation incomplete.
-**Stage 12 NO-GO**. N=1 diagnostic only.
+First capped cell day10 (i=1,j=93) T=30/S=40; H1/H2/H3 rejected. Iterative
+CA prevents T=30 in 10-day tide control (Tmax 12.61), but N² still fails
+(9,813 interfaces <−1e−6); 30-day tide validation incomplete. **Stage 12 NO-GO.**
 
 ## Issue table (T-01 … T-41)
 

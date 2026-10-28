@@ -35,7 +35,7 @@ under atmospheric, oceanic, bathymetric, and sea-ice forcing.
 
 ## 📑 Project status
 
-- **Current stage:** **Stage 11.11.1 stratification/synthetic tides** — N=24 10-day tide control stable; N² gate fails; Stage 12 **NO-GO**. EOS-80 remains default.
+- **Current stage:** **Stage 11.11.2 heat forensics/synthetic tides** — N=24 10-day tide control stable; N² gate fails; Stage 12 **NO-GO**. EOS-80 remains default.
 - **BREAKING CHANGE (Stage 11.8B):** `EOS_MODE` unset now selects **EOS80**, not LEGACY. Set `EOS_MODE=LEGACY` to restore the historical Eckart fallback. See `docs/MIGRATION_GUIDE_EOS80_DEFAULT.md`.
   [Historical note from Stage 10.19, SUPERSEDED by Stage 10.20 restoration
   (full-coverage ERA5: 3-day gate PASS, residual characterized, NOT fixed):

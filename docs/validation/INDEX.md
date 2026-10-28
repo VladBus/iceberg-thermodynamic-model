@@ -159,6 +159,8 @@ Stage 10 reports have been archived to `docs/wiki/stages/stage10/`. See the arch
 
 | `stage11.11_physical_validation_tides.md` (RO/S/N²/synthetic tides) | 11.11.1 | PARTIAL (Stage 12 NO-GO) | Synthetic M2 0.5m loaded; N24 10-day 0 NaN/max U 1.992; N² min −0.01639, 9,813 unstable interfaces; 30-day tide test incomplete. | `docs/validation/stage11.11_physical_validation_tides.md` |
 
+| `stage11.11.2_heat_forensics_root_cause.md` (heat forensics/tide) | 11.11.2 | PARTIAL (Stage 12 NO-GO) | First cap day10 i1/j93 T30/S40; H1-H3 rejected; iterative CA prevents T30 in 10d tide (Tmax12.61), N² still 9,813 unstable. | `docs/validation/stage11.11.2_heat_forensics_root_cause.md` |
+
 ## Rules
 
 - Reports here are not rewritten after stage completion (exception: technical navigational fixes).

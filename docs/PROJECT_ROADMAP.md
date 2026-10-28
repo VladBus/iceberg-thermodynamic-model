@@ -1,9 +1,9 @@
 # Project Roadmap
 
 **Updated:** 2026-10-27
-**Current scientific stage:** **11.11.1 stratification/tides** — synthetic M2 loaded; 10-day tide control stable; N² gate fails; **Stage 12 NO-GO**.
+**Current scientific stage:** **11.11.2 heat forensics/tides** — hot-cell source traced; 10-day tide control stable; N² gate fails; **Stage 12 NO-GO**.
 **Stages 3–11.4.1: COMPLETED** (10.x iceberg modernization; 11.1 seasonal characterization; 11.2 CFL audit; 11.4-D21…D33 EN4 stabilization → ERA5-coverage fix → cleanup + Ocean Baseline 11.x; 11.3A execution-graph audit; 11.3B input-architecture audit + NetCDF contracts; 11.3C scheme audit + timestep matrix; 11.3C.1 semantics + CFL distributions; 11.3C.2 time-integration audit; 11.3C.3 loop-bound search (VERDICT D); 11.4 EOS-80 experiment + 11.4.1 impact validation (OPTIONAL, not default)).
-**Current status:** Stages 10.14-11.11.1 committed. **11.11.1:** synthetic M2 (0.5 m); 10-day tide control 0 NaN/max U 1.992; N² fails at 9,813 interfaces; Stage 12 NO-GO.
+**Current status:** Stages 10.14-11.11.2 committed. **11.11.2:** first hot cell day10 i1/j93; H1-H3 rejected; N² fails at 9,813; 30-day tide incomplete; Stage 12 NO-GO.
 **Test suite:** 69 Fortran test source files (`ls test/*.f90 | wc -l`); 69 executable test targets (`grep -lE '^\s*program ' test/*.f90 | wc -l`). Counting method (Stage 11.8.0 T0): every current `test/*.f90` holds a top-level `program`, so file count == target count (verified 2026-10-24).
 **Stage 11.5H-RC COMPLETE** (release-candidate gate: self-contained production scheduler, docs synced D-22…D-28). Plan: 11.8.0 diagnostic ladder (T0–T6) → 11.8A validation → 11.8B audit → 11.9 closure → 12.0 voxel (planning open; implementation not started, D-28).
 
@@ -862,6 +862,16 @@ production scheduler change (T-39 remains BLOCKED).
   9,813 interfaces <−1e−6** → FAIL. 30-day tide validation not completed.
 - Stage 12 remains **NO-GO**. Report:
   `docs/validation/stage11.11_physical_validation_tides.md`.
+
+### Stage 11.11.2 — Heat forensics + synthetic tide (PARTIAL / NO-GO)
+
+- First capped cell: day10 k0,i1,j93 (80.61N), T=30/S=40; initial −1.33°C.
+- H1/H2/H3 rejected (sponge climatology in °C, initialized, indices consistent).
+- Iterative post-flux CA prevents 30°C in 10-day tide control (max T 12.61),
+  but N² min **−0.01639 s⁻²**, **9,813** interfaces <−1e−6.
+- Synthetic M2 schema test passes; true 2-D propagation/30-day tide validation
+  incomplete. **Stage 12 NO-GO.**
+- Report: `docs/validation/stage11.11.2_heat_forensics_root_cause.md`.
 
 ### Stage 11.8 Prerequisite: Ocean Stabilization (MANDATORY GATE)
 

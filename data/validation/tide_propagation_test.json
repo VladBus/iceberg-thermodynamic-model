@@ -1,0 +1,9 @@
+{
+  "test": "tide_propagation",
+  "synthetic_m2_amplitude_m": 0.5,
+  "period_s": 44712.0,
+  "phase_range": "0..pi",
+  "sqrt_gH_cm_s": 7003.5705179572515,
+  "schema_PASS": true,
+  "note": "Synthetic schema/phase test; true 2D propagation not yet exercised in this isolated program."
+}

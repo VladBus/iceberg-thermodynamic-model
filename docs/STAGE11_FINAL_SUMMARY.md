@@ -1,8 +1,8 @@
 # Stage 11 — Final Summary
 
-**Status:** Stage 11 technical core CLOSED historically; **Stage 11.11 final
-ocean polish is PARTIAL** — N=24 no-tide stable, but N² and real tides remain
-blockers. **Stage 12 NO-GO.**
+**Status:** Stage 11 technical core CLOSED historically; **Stage 11.11.1 final
+ocean polish is PARTIAL** — N=24 no-tide stable and synthetic M2 loaded, but
+N² and 30-day tide validation remain blockers. **Stage 12 NO-GO.**
 **Date:** 2026-10-27
 **Base:** `5ddf414`
 
@@ -22,8 +22,8 @@ blockers. **Stage 12 NO-GO.**
 ## Remaining limitations
 
 - **N²** min −0.01568 s⁻²; 4,627 wet interfaces <−1e−6 (fails physical gate).
-- **Tides:** `tides.nc` is null-tides; no FES2014/TPXO atlas locally; real
-  tide forcing/propagation is not implemented.
+- **Tides:** synthetic M2 (0.5 m, 12.42 h) is generated/loaded; FES2014 is not
+  available and true 30-day tide propagation validation is incomplete.
 - N=24 valid for 30 days only; 90-day storm runs not tested.
 - Production scheduler T-39 remains BLOCKED.
 - Apr/Jul/Oct sea ice is diagnostic, not OSI-SAF-validated.

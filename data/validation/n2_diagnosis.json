@@ -1,0 +1,7 @@
+{
+  "stage": "11.11.1",
+  "observation": "CA is applied before hard limits and post-flux/ice updates; hard T=30/S=40 clipping and surface ice fluxes can recreate potential-density inversions after CA.",
+  "N2_min_s2": -0.01639111119999605,
+  "unstable_interfaces": 9813,
+  "PASS": false
+}

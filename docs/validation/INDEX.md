@@ -157,6 +157,8 @@ Stage 10 reports have been archived to `docs/wiki/stages/stage10/`. See the arch
 
 | `stage11.11_physical_validation_tides.md` (RO/S/N²/tides) | 11.11 | PARTIAL (Stage 12 NO-GO) | RO kg/m³ verified (ρ_abs 1008.264); no wet S<0.1 at T<0; N² 4,627 interfaces <−1e−6; tides null; N24 no-tide stable. | `docs/validation/stage11.11_physical_validation_tides.md` |
 
+| `stage11.11_physical_validation_tides.md` (RO/S/N²/synthetic tides) | 11.11.1 | PARTIAL (Stage 12 NO-GO) | Synthetic M2 0.5m loaded; N24 10-day 0 NaN/max U 1.992; N² min −0.01639, 9,813 unstable interfaces; 30-day tide test incomplete. | `docs/validation/stage11.11_physical_validation_tides.md` |
+
 ## Rules
 
 - Reports here are not rewritten after stage completion (exception: technical navigational fixes).

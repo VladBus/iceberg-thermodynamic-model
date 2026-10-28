@@ -111,3 +111,7 @@ main = "test_obc_sponge.f90"
 [test.test_obc_radiation]
 source-dir = "test"
 main = "test_obc_radiation.f90"
+
+[test.test_tide_propagation]
+source-dir = "test"
+main = "test_tide_propagation.f90"

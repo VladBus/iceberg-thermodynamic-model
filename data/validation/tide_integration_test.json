@@ -1,0 +1,19 @@
+{
+  "stage": "11.11.1",
+  "run": "tides_n24_10d_pot2",
+  "days": 10,
+  "max_u_m_s": 1.99237,
+  "max_v_m_s": 1.99929,
+  "nan_cells": 0,
+  "T_min_C": -1.9448608398437273,
+  "T_max_C": 12.614160156250023,
+  "S_min_psu": 23.376794531941414,
+  "S_max_psu": 35.40206328034401,
+  "N2_min_s2": -0.01639111119999605,
+  "N2_unstable_interfaces": 9813,
+  "N2_PASS": false,
+  "tide_amplitude_m": 0.5,
+  "tide_signal_verified": false,
+  "PASS": false,
+  "note": "10-day synthetic M2 control; 30-day tide gate and N2 gate not met."
+}

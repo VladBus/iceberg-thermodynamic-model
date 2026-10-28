@@ -1,0 +1,10 @@
+{
+  "stage": "11.11.1",
+  "test": "iterative/post-flux N2 stabilization",
+  "iterations": 10,
+  "method": "potential-density adjacent-level mixing",
+  "N2_min_s2": -0.01639111119999605,
+  "unstable_interfaces": 9813,
+  "PASS": false,
+  "note": "Iterative stabilization reduces near-surface inversions but 10-day N2 gate is still not met."
+}

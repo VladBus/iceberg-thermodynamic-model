@@ -9,17 +9,17 @@ env-gated (default OFF) until D-33 approval.
 
 | Field | Value |
 |---|---|
-| Current stage | **11.11 — physical validation/tides** — N=24 no-tide stable; N²/tide blockers; Stage 12 NO-GO |
+| Current stage | **11.11.1 — stratification fix + synthetic tides** — tide 10-day control; N² still fails; Stage 12 NO-GO |
 | EOS default | **EOS80** (`EOS_MODE` unset); `EOS_MODE=LEGACY` explicit fallback |
 | I/O default | **NetCDF only production path**; root legacy symlinks removed |
 | Physical baseline | **D-50:** 90-day no NaN/S<0/T>30; drift <1e-4; N² ≥ −ε; N=1 not final |
-| data/runs | **3.7 GB / 45 runs**; OBC/bisection/thermo evidence retained |
+| data/runs | **4.0 GB / 48 runs**; OBC/bisection/thermo/tide evidence retained |
 | Ocean rest state | **T3b PASS (bounded)** — max \|U\| **0.147 m/s**, KE30/KE15 **0.568** (dt=1800, Ah=10000, no sponge) |
 | T-19 snowfall | **FIXED** — v2 CDS probe R=1.009 (hourly); divisor 3600 |
 | T-25 potential CA | Implemented behind `STAGE118_CA_POTENTIAL` (OFF); no effect in LEGACY |
 | T-32 prognostic RO | Implemented behind `STAGE118_RO_PROGNOSTIC` (OFF); no effect (CA already refreshes RO) |
 | T-31 EUU | **FIXED diagnostically** — 3D KE printed as `KE3D(J)` |
-| Next step | resolve N² and real FES2014/TPXO tides; Stage 12 NO-GO |
+| Next step | eliminate remaining N² inversions and complete 30-day tide validation; Stage 12 NO-GO |
 
 ## Seasonal coverage (30-day forced)
 
@@ -55,9 +55,9 @@ EOS80 raw anomaly is −2.504e-3 **kg/m³** = −2.504e-6 g/cm³; absolute densi
 1.0199975 g/cm³. Corrected gate = absolute density >1.0 g/cm³. D-29
 **PROMOTED** (A/B/C true for N=1). **11.8B:** EOS80 is runtime default;
 default/explicit EOS80/matrix and LEGACY fallback/matrix are bit-identical.
-RO_min is kg/m³ (ρ_abs 1008.264); no wet S<0.1 at T<0. N² still fails
-(4,627 interfaces <−1e−6). tides.nc is null; FES2014 unavailable. N=24
-no-tide stable, but **Stage 12 NO-GO**. N=1 diagnostic only.
+Synthetic M2 (0.5 m) loaded; N=24 10-day tide control 0 NaN/max U 1.992.
+N² still fails (9,813 interfaces <−1e−6); 30-day tide validation incomplete.
+**Stage 12 NO-GO**. N=1 diagnostic only.
 
 ## Issue table (T-01 … T-41)
 
@@ -142,4 +142,4 @@ no-tide stable, but **Stage 12 NO-GO**. N=1 diagnostic only.
 
 1. **Stage 11 CLOSED** (2026-10-27): EOS80 default; 8/8 matrix; default/fallback/reproducibility bit-identical; pre-cleanup inventory 82.583 GB / 289 runs; Stage 11.10 cleanup → 0.510 GB / 26 runs.
 2. **Cleanup optional**: archive 153 historical runs, review/delete 47 temporary and 6 duplicates; est. 37.327 GB savings. **Nothing deleted.**
-3. **Next: resolve N² + real FES2014/TPXO tides**; Stage 12 NO-GO; T-39 remains BLOCKED; N=1 diagnostic only.
+3. **Next: eliminate N² inversions + 30-day tide validation**; Stage 12 NO-GO; T-39 remains BLOCKED; N=1 diagnostic only.

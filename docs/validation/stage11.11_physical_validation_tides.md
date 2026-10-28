@@ -64,3 +64,23 @@ Evidence: `data/validation/n24_30day_thermo_rewrite_results.json`.
 **NO-GO.** Two blockers remain: real FES2014/TPXO tidal forcing is absent, and
 N² is below −1e-6 at 4,627 wet interfaces. Stage 12 implementation must not
 start until these are resolved or explicitly accepted as limitations.
+
+---
+
+## Addendum — 11.11.1 Stratification Fix & Synthetic Tides
+
+**Status:** PARTIAL; Stage 12 NO-GO.
+
+- Added iterative post-flux potential-density mixing (`STAGE1111_ITERATIVE_CA`,
+  default ON for N>1) after hard limits. The 10-day N=24 synthetic-tide run
+  has **0 NaN**, max U 1.992 m/s, T −1.94…12.61 °C, S 23.38…35.40 PSU.
+- **N² gate still fails:** min −0.01639 s⁻², **9,813** unstable wet
+  interfaces. Iterative mixing reduces but does not eliminate inversions.
+- Generated `data/input/processed/tides/tides.nc` with synthetic M2:
+  **0.5 m**, period 12.42 h, phase 0…π west→east; S2/K1/O1 zero.
+- Fortran NetCDF tide reader added; synthetic schema/propagation placeholder
+  test passes. **True 30-day tide validation and physical propagation test
+  remain incomplete**; no FES2014 download was attempted.
+- Evidence: `data/validation/tide_integration_test.json`,
+  `stratification_fix_test.json`, `n2_diagnosis.json`,
+  `n24_30day_final_validated.json`.

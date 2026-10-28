@@ -42,7 +42,7 @@ program main
     use tide_forcing
     use stage1110_obc, only: s1110_init, s1110_apply_sponge
     use stage1110_stab, only: s1110_stab_init, s1110_apply_momentum
-    use stage1110_thermo, only: s1110_thermo_init, s1110_hard_limits, s1110_ca_smoothing, s1110_implicit_vdiff
+    use stage1110_thermo, only: s1110_thermo_init, s1110_hard_limits, s1110_ca_smoothing, s1110_implicit_vdiff, s1110_stabilize_n2
     use shallow_water, only: shal, jjq, euu
     use grid_coupling
     use netcdf_output
@@ -139,6 +139,7 @@ program main
     character(len=64) :: env_str2
     logical :: rest_mode   ! Stage 11.8.0 T3: ocean rest-state diagnostic
     logical :: bisect_wind, bisect_thermo, bisect_ice
+    logical :: tides_on
     integer :: ios2
     ! Stage 11.5B: MM2-override flag (declaration with the other one).
     logical :: stage113_mm2_set
@@ -409,6 +410,12 @@ program main
     end if
     call s1110_stab_init(nsub_115c)
     call s1110_thermo_init(nsub_115c)
+    tides_on = (nsub_115c .gt. 1)
+    block
+        character(len=32) :: tenv = ''
+        call get_environment_variable('STAGE1111_TIDES', tenv)
+        if (len_trim(tenv) .gt. 0) tides_on = (trim(tenv).eq.'true' .or. trim(tenv).eq.'TRUE' .or. trim(tenv).eq.'1' .or. trim(tenv).eq.'ON')
+    end block
     mm4 = 1             ! Число расчётных месяцев (1 для Q1 2020).
     mm5 = 1             ! Число расчётных лет.
     dx = 1389000.0      ! [см] Пространственный шаг сетки = 13.89 км.
@@ -498,6 +505,7 @@ program main
     qq(4) = 13.943036    ! O1 — основная суточная лунная (период ≈ 25.82 ч)
 
     call datte()
+    if (tides_on) call read_tides_nc(tides_on)
 
     ! Перевод угловых частот из °/ч в радианы на баротропный шаг dt1:
     !   q[k] = qq[k] × (dt1/3600) × (π/180) = qq[k] × dt1 / 3600 / 57.2958
@@ -1311,6 +1319,7 @@ program main
                         call s1110_ca_smoothing()
                         call s1110_implicit_vdiff(dt)
                         call s1110_hard_limits()
+                        call s1110_stabilize_n2(dt)
                         if (s118_ro_prognostic) call eos_update_ro()
                         ! T5-CORRECTIVE-3: optional boundary sponge after
                         ! advection/CA, before Block 200.  OFF default.

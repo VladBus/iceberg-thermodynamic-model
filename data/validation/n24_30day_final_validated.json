@@ -1,0 +1,42 @@
+{
+  "stage": "11.11.1",
+  "n24_30day_no_tide": {
+    "day": 30,
+    "max_u_m_s": 1.9986199999999998,
+    "max_v_m_s": 1.9999,
+    "nan_cells": 0,
+    "T_min": -1.93658447265625,
+    "T_max": 30.0,
+    "S_min_psu": 0.0,
+    "S_max_psu": 37.05043029785156,
+    "RO_min": -11.736263275146484,
+    "PASS": true,
+    "ke10_j": 7.185565662290589e+16,
+    "ke20_j": 2.1638436308640748e+16,
+    "ke30_j": 2.10594392112766e+16,
+    "ke_stable_after_day10": true,
+    "max_cfl": 0.5180008639308855
+  },
+  "n24_10day_synthetic_tide": {
+    "stage": "11.11.1",
+    "run": "tides_n24_10d_pot2",
+    "days": 10,
+    "max_u_m_s": 1.99237,
+    "max_v_m_s": 1.99929,
+    "nan_cells": 0,
+    "T_min_C": -1.9448608398437273,
+    "T_max_C": 12.614160156250023,
+    "S_min_psu": 23.376794531941414,
+    "S_max_psu": 35.40206328034401,
+    "N2_min_s2": -0.01639111119999605,
+    "N2_unstable_interfaces": 9813,
+    "N2_PASS": false,
+    "tide_amplitude_m": 0.5,
+    "tide_signal_verified": false,
+    "PASS": false,
+    "note": "10-day synthetic M2 control; 30-day tide gate and N2 gate not met."
+  },
+  "tide_30day_run": false,
+  "PASS": false,
+  "note": "Synthetic tide forcing implemented and 10-day control runs, but N2 gate fails and 30-day tide validation not completed."
+}

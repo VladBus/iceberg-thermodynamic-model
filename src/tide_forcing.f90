@@ -23,9 +23,48 @@
 
 module tide_forcing
     use param
+    use netcdf
     implicit none
 
 contains
+
+    subroutine read_tides_nc(active)
+        logical, intent(out) :: active
+        integer :: ncid, vid, st, c, i, j
+        real, allocatable :: amp(:,:,:), pha(:,:,:)
+        character(len=256) :: path
+        active = .false.
+        path = 'data/input/processed/tides/tides.nc'
+        st = nf90_open(trim(path), nf90_nowrite, ncid)
+        if (st /= nf90_noerr) then
+            print *, 'WARNING: tides.nc unavailable; synthetic tidal forcing OFF'
+            return
+        end if
+        allocate(amp(is1, js1, 4), pha(is1, js1, 4))
+        st = nf90_inq_varid(ncid, 'amplitude', vid)
+        if (st /= nf90_noerr) then; print *, 'WARNING: amplitude missing'; return; end if
+        st = nf90_get_var(ncid, vid, amp)
+        st = nf90_inq_varid(ncid, 'phase', vid)
+        if (st /= nf90_noerr) then; print *, 'WARNING: phase missing'; return; end if
+        st = nf90_get_var(ncid, vid, pha)
+        st = nf90_close(ncid)
+        amp1 = 0.0; amp2 = 0.0; amp3 = 0.0
+        faz1 = 0.0; faz2 = 0.0; faz3 = 0.0
+        do c = 1, 4
+            do i = 1, is1
+                amp1(i, c) = amp(i, 1, c)
+                faz1(i, c) = pha(i, 1, c)*57.29578
+                amp3(i, c) = amp(i, js, c)
+                faz3(i, c) = pha(i, js, c)*57.29578
+            end do
+            do j = 1, js1
+                amp2(j, c) = amp(1, j, c)
+                faz2(j, c) = pha(1, j, c)*57.29578
+            end do
+        end do
+        active = .true.
+        print *, 'STAGE1111: synthetic tides.nc loaded (M2 0.5 m)'
+    end subroutine read_tides_nc
 
     subroutine datte()
         ! Локальные переменные

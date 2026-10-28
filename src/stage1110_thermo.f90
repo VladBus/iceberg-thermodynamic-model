@@ -2,12 +2,14 @@
 ! All switches are OFF for N=1; the module can be enabled for N>1.
 module stage1110_thermo
     use param
+    use equation_of_state, only: eos_density
     implicit none
     logical, save :: hard_limits = .false.
     logical, save :: flux_clip = .false.
     logical, save :: ca_smooth = .false.
     logical, save :: implicit_vdiff = .false.
     logical, save :: physical_limits = .false.
+    logical, save :: iterative_ca = .false.
     real, save :: kv_diff = 1.0e-4   ! m2/s
 contains
     subroutine s1110_thermo_init(nsub)
@@ -18,6 +20,7 @@ contains
         ca_smooth = nsub .gt. 1
         implicit_vdiff = nsub .gt. 1
         physical_limits = nsub .gt. 1
+        iterative_ca = nsub .gt. 1
         call get_environment_variable('STAGE1110_HARD_LIMITS', env)
         if (len_trim(env) .gt. 0) hard_limits = truthy(env)
         call get_environment_variable('STAGE1110_FLUX_CLIPPING', env)
@@ -28,9 +31,11 @@ contains
         if (len_trim(env) .gt. 0) implicit_vdiff = truthy(env)
         call get_environment_variable('STAGE1110_PHYSICAL_LIMITS', env)
         if (len_trim(env) .gt. 0) physical_limits = truthy(env)
+        call get_environment_variable('STAGE1111_ITERATIVE_CA', env)
+        if (len_trim(env) .gt. 0) iterative_ca = truthy(env)
         print '(A,L1,A,L1,A,L1,A,L1,A,L1)', '>>> Stage 11.10.4 thermo: HARD=', hard_limits, &
             ' CLIP=', flux_clip, ' CA_SMOOTH=', ca_smooth, ' IMPLICIT_VDIFF=', implicit_vdiff, &
-            ' PHYSICAL=', physical_limits
+            ' PHYSICAL=', physical_limits, ' ITER_CA=', iterative_ca
     end subroutine s1110_thermo_init
 
     logical function truthy(v)
@@ -134,4 +139,33 @@ contains
             end do
         end do
     end subroutine s1110_implicit_vdiff
+    ! Post-flux local stabilization: mix adjacent levels while N2 < -1e-6.
+    subroutine s1110_stabilize_n2(dt_step)
+        real, intent(in) :: dt_step
+        integer :: i, j, k, kk, it, ki, nmix
+        real :: rho_hi, rho_lo, dz1z, tm, sm
+        if (.not. iterative_ca) return
+        do j = 1, js1
+            do i = 1, is1
+                ki = kt1(i, j)
+                if (ki .lt. 2) cycle
+                do it = 1, 10
+                    nmix = 0
+                    do k = 1, ki - 1
+                        rho_hi = eos_density(t2(i,j,k), s2(i,j,k), 0.0)
+                        rho_lo = eos_density(t2(i,j,k+1), s2(i,j,k+1), 0.0)
+                        if (rho_lo .lt. rho_hi) then
+                            dz1z = dz1(k) + dz1(k+1)
+                            tm = (t2(i,j,k)*dz1(k) + t2(i,j,k+1)*dz1(k+1))/dz1z
+                            sm = (s2(i,j,k)*dz1(k) + s2(i,j,k+1)*dz1(k+1))/dz1z
+                            t2(i,j,k) = tm; t2(i,j,k+1) = tm
+                            s2(i,j,k) = sm; s2(i,j,k+1) = sm
+                            nmix = nmix + 1
+                        end if
+                    end do
+                    if (nmix .eq. 0) exit
+                end do
+            end do
+        end do
+    end subroutine s1110_stabilize_n2
 end module stage1110_thermo

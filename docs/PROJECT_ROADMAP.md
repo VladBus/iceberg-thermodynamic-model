@@ -1,9 +1,9 @@
 # Project Roadmap
 
 **Updated:** 2026-10-27
-**Current scientific stage:** **11.11 physical validation/tides** — N=24 no-tide stable; N² and FES2014 tide blockers; **Stage 12 NO-GO**.
+**Current scientific stage:** **11.11.1 stratification/tides** — synthetic M2 loaded; 10-day tide control stable; N² gate fails; **Stage 12 NO-GO**.
 **Stages 3–11.4.1: COMPLETED** (10.x iceberg modernization; 11.1 seasonal characterization; 11.2 CFL audit; 11.4-D21…D33 EN4 stabilization → ERA5-coverage fix → cleanup + Ocean Baseline 11.x; 11.3A execution-graph audit; 11.3B input-architecture audit + NetCDF contracts; 11.3C scheme audit + timestep matrix; 11.3C.1 semantics + CFL distributions; 11.3C.2 time-integration audit; 11.3C.3 loop-bound search (VERDICT D); 11.4 EOS-80 experiment + 11.4.1 impact validation (OPTIONAL, not default)).
-**Current status:** Stages 10.14-11.11 committed. **11.11:** RO units verified, hard physical limits; N² fails at 4,627 interfaces; tides.nc null; Stage 12 NO-GO.
+**Current status:** Stages 10.14-11.11.1 committed. **11.11.1:** synthetic M2 (0.5 m); 10-day tide control 0 NaN/max U 1.992; N² fails at 9,813 interfaces; Stage 12 NO-GO.
 **Test suite:** 69 Fortran test source files (`ls test/*.f90 | wc -l`); 69 executable test targets (`grep -lE '^\s*program ' test/*.f90 | wc -l`). Counting method (Stage 11.8.0 T0): every current `test/*.f90` holds a top-level `program`, so file count == target count (verified 2026-10-24).
 **Stage 11.5H-RC COMPLETE** (release-candidate gate: self-contained production scheduler, docs synced D-22…D-28). Plan: 11.8.0 diagnostic ladder (T0–T6) → 11.8A validation → 11.8B audit → 11.9 closure → 12.0 voxel (planning open; implementation not started, D-28).
 
@@ -852,6 +852,15 @@ production scheduler change (T-39 remains BLOCKED).
 - `tides.nc` remains null-tides; no FES2014/TPXO atlas locally; no real tide
   forcing/propagation. N=24 no-tide run is stable (0 NaN, max U 1.999).
 - **Stage 12 NO-GO**; report:
+  `docs/validation/stage11.11_physical_validation_tides.md`.
+
+### Stage 11.11.1 — Stratification fix + synthetic tides (PARTIAL / NO-GO)
+
+- Iterative post-flux potential-density mixing added; synthetic M2 tide
+  generated (0.5 m, 12.42 h, phase 0…π) and loaded by Fortran.
+- N=24 10-day tide control: 0 NaN, max U 1.992 m/s; **N² min −0.01639 s⁻²,
+  9,813 interfaces <−1e−6** → FAIL. 30-day tide validation not completed.
+- Stage 12 remains **NO-GO**. Report:
   `docs/validation/stage11.11_physical_validation_tides.md`.
 
 ### Stage 11.8 Prerequisite: Ocean Stabilization (MANDATORY GATE)

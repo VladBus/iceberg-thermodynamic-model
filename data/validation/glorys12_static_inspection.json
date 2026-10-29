@@ -1,0 +1,147 @@
+{
+  "coordinate_vars": [
+    "depth",
+    "latitude",
+    "longitude"
+  ],
+  "coordinates": {
+    "depth": {
+      "dims": [
+        "depth"
+      ],
+      "dtype": "float32",
+      "first_10": [
+        0.494,
+        1.5414,
+        2.6457,
+        3.8195,
+        5.0782,
+        6.4406,
+        7.9296,
+        9.573,
+        11.405,
+        13.4671
+      ],
+      "max": 5727.9169921875,
+      "min": 0.49402499198913574,
+      "n_levels": 50,
+      "ndim": 1,
+      "shape": [
+        50
+      ],
+      "standard_name": "depth",
+      "units": "m"
+    },
+    "latitude": {
+      "dims": [
+        "latitude"
+      ],
+      "dtype": "float32",
+      "first": 63.0,
+      "last": 86.0,
+      "ndim": 1,
+      "shape": [
+        277
+      ],
+      "standard_name": "latitude",
+      "step": 0.08333200216293335,
+      "units": "degrees_north"
+    },
+    "longitude": {
+      "dims": [
+        "longitude"
+      ],
+      "dtype": "float32",
+      "first": 5.0,
+      "last": 80.0,
+      "ndim": 1,
+      "shape": [
+        901
+      ],
+      "standard_name": "longitude",
+      "step": 0.08333300054073334,
+      "units": "degrees_east"
+    },
+    "time": null
+  },
+  "dimensions": {
+    "depth": 50,
+    "latitude": 277,
+    "longitude": 901
+  },
+  "file": "data/input/raw/reanalysis/glorys12/static/glorys12_static_barents.nc",
+  "global_attrs": {
+    "Conventions": "CF-1.6",
+    "area": "GLOBAL",
+    "contact": "servicedesk.cmems@mercator-ocean.eu",
+    "copernicusmarine_version": "2.5.0",
+    "credit": "E.U. Copernicus Marine Service Information (CMEMS)",
+    "dataset": "global-reanalysis-phy-001-030-statics",
+    "institution": "Mercator Ocean",
+    "licence": "http://marine.copernicus.eu/services-portfolio/service-commitments-and-licence/",
+    "producer": "CMEMS - Global Monitoring and Forecasting Centre",
+    "product": "GLOBAL_REANALYSIS_PHY_001_030",
+    "product_user_manual": "http://marine.copernicus.eu/documents/PUM/CMEMS-GLO-PUM-001-030.pdf",
+    "references": "http://marine.copernicus.eu",
+    "source": "GLORYS12V1",
+    "title": "Bathymetry and mask for product GLOBAL_REANALYSIS_PHY_001_030"
+  },
+  "grid_type": "regular_1d_lat_lon",
+  "time": null,
+  "variables": {
+    "deptho": {
+      "_FillValue": null,
+      "dims": [
+        "latitude",
+        "longitude"
+      ],
+      "dtype": "float32",
+      "long_name": "Bathymetry",
+      "max": 4983.73876953125,
+      "mean": 1133.834716796875,
+      "min": 7.0,
+      "nan_count": 67556,
+      "nan_fraction": 0.270682,
+      "sample_points": 249577,
+      "shape": [
+        277,
+        901
+      ],
+      "standard_name": "sea_floor_depth_below_geoid",
+      "stats_sample": "full",
+      "units": "m",
+      "valid_max": null,
+      "valid_min": null
+    },
+    "mask": {
+      "_FillValue": null,
+      "dims": [
+        "depth",
+        "latitude",
+        "longitude"
+      ],
+      "dtype": "int8",
+      "long_name": "Land-sea mask: 1 = sea ; 0 = land",
+      "max": 1.0,
+      "mean": 0.4359440974128225,
+      "min": 0.0,
+      "nan_count": 0,
+      "nan_fraction": 0.0,
+      "sample_points": 12478850,
+      "shape": [
+        50,
+        277,
+        901
+      ],
+      "standard_name": "sea_binary_mask",
+      "stats_sample": "full",
+      "unique_values": [
+        0,
+        1
+      ],
+      "units": "1",
+      "valid_max": null,
+      "valid_min": null
+    }
+  }
+}

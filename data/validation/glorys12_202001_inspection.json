@@ -1,0 +1,312 @@
+{
+  "coordinate_vars": [
+    "depth",
+    "latitude",
+    "longitude",
+    "time"
+  ],
+  "coordinates": {
+    "depth": {
+      "dims": [
+        "depth"
+      ],
+      "dtype": "float32",
+      "first_10": [
+        0.494,
+        1.5414,
+        2.6457,
+        3.8195,
+        5.0782,
+        6.4406,
+        7.9296,
+        9.573,
+        11.405,
+        13.4671
+      ],
+      "max": 541.0889282226562,
+      "min": 0.49402499198913574,
+      "n_levels": 32,
+      "ndim": 1,
+      "shape": [
+        32
+      ],
+      "standard_name": "depth",
+      "units": "m"
+    },
+    "latitude": {
+      "dims": [
+        "latitude"
+      ],
+      "dtype": "float32",
+      "first": 63.0,
+      "last": 86.0,
+      "ndim": 1,
+      "shape": [
+        277
+      ],
+      "standard_name": "latitude",
+      "step": 0.08333200216293335,
+      "units": "degrees_north"
+    },
+    "longitude": {
+      "dims": [
+        "longitude"
+      ],
+      "dtype": "float32",
+      "first": 5.0,
+      "last": 80.0,
+      "ndim": 1,
+      "shape": [
+        901
+      ],
+      "standard_name": "longitude",
+      "step": 0.08333300054073334,
+      "units": "degrees_east"
+    },
+    "time": {
+      "dims": [
+        "time"
+      ],
+      "dtype": "datetime64[ns]",
+      "ndim": 1,
+      "shape": [
+        31
+      ],
+      "standard_name": "time",
+      "units": "MISSING"
+    }
+  },
+  "dimensions": {
+    "depth": 32,
+    "latitude": 277,
+    "longitude": 901,
+    "time": 31
+  },
+  "file": "data/input/raw/reanalysis/glorys12/2020/glorys12_barents_202001.nc",
+  "global_attrs": {
+    "Conventions": "CF-1.4",
+    "bulletin_date": "2021-07-07 00:00:00",
+    "bulletin_type": "operational",
+    "comment": "CMEMS product",
+    "copernicusmarine_version": "2.5.0",
+    "domain_name": "GL12",
+    "easting": "longitude",
+    "field_date": "2021-06-30 00:00:00",
+    "field_julian_date": "26113.0",
+    "field_type": "mean",
+    "forecast_range": "",
+    "forecast_type": "",
+    "history": "2023/06/01 16:20:05 MERCATOR OCEAN Netcdf creation",
+    "institution": "MERCATOR OCEAN",
+    "julian_day_unit": "days since 1950-01-01 00:00:00",
+    "latitude_max": "90.0",
+    "latitude_min": "-80.0",
+    "longitude_max": "179.9166717529297",
+    "longitude_min": "-180.0",
+    "northing": "latitude",
+    "references": "http://www.mercator-ocean.fr",
+    "source": "MERCATOR GLORYS12V1",
+    "title": "daily mean fields from Global Ocean Physics Analysis and Forecast updated Daily",
+    "z_max": "5727.9169921875",
+    "z_min": "0.49402499198913574"
+  },
+  "grid_type": "regular_1d_lat_lon",
+  "time": {
+    "first": "2020-01-01T00:00:00.000000000",
+    "last": "2020-01-31T00:00:00.000000000",
+    "n_steps": 31,
+    "storage_units": "hours since 1950-01-01"
+  },
+  "variables": {
+    "siconc": {
+      "_FillValue": null,
+      "dims": [
+        "time",
+        "latitude",
+        "longitude"
+      ],
+      "dtype": "float64",
+      "long_name": "Ice concentration",
+      "max": 1.0312204342335463,
+      "mean": 0.7521556044627293,
+      "min": 0.0,
+      "nan_count": 223095,
+      "nan_fraction": 0.446946,
+      "sample_points": 499154,
+      "shape": [
+        31,
+        277,
+        901
+      ],
+      "standard_name": "sea_ice_area_fraction",
+      "stats_sample": "time_slice[0,-1]",
+      "units": "1",
+      "valid_max": 28670,
+      "valid_min": 1
+    },
+    "sithick": {
+      "_FillValue": null,
+      "dims": [
+        "time",
+        "latitude",
+        "longitude"
+      ],
+      "dtype": "float64",
+      "long_name": "Sea ice thickness",
+      "max": 1.8219550140202045,
+      "mean": 0.8212400256026522,
+      "min": 0.0,
+      "nan_count": 223092,
+      "nan_fraction": 0.44694,
+      "sample_points": 499154,
+      "shape": [
+        31,
+        277,
+        901
+      ],
+      "standard_name": "sea_ice_thickness",
+      "stats_sample": "time_slice[0,-1]",
+      "units": "m",
+      "valid_max": 6179,
+      "valid_min": 1
+    },
+    "so": {
+      "_FillValue": null,
+      "dims": [
+        "time",
+        "depth",
+        "latitude",
+        "longitude"
+      ],
+      "dtype": "float64",
+      "long_name": "Salinity",
+      "max": 45.44663834385574,
+      "mean": 34.224790087787774,
+      "min": 2.056947536766529,
+      "nan_count": 6369442,
+      "nan_fraction": 0.398765,
+      "sample_points": 15972928,
+      "shape": [
+        31,
+        32,
+        277,
+        901
+      ],
+      "standard_name": "sea_water_salinity",
+      "stats_sample": "time_slice[0,-1]",
+      "units": "1e-3",
+      "valid_max": 28249,
+      "valid_min": 1
+    },
+    "thetao": {
+      "_FillValue": null,
+      "dims": [
+        "time",
+        "depth",
+        "latitude",
+        "longitude"
+      ],
+      "dtype": "float64",
+      "long_name": "Temperature",
+      "max": 9.90346996486187,
+      "mean": 0.6936342452165418,
+      "min": -2.5063325688242912,
+      "nan_count": 6369442,
+      "nan_fraction": 0.398765,
+      "sample_points": 15972928,
+      "shape": [
+        31,
+        32,
+        277,
+        901
+      ],
+      "standard_name": "sea_water_potential_temperature",
+      "stats_sample": "time_slice[0,-1]",
+      "units": "degrees_C",
+      "valid_max": 21306,
+      "valid_min": -32766
+    },
+    "uo": {
+      "_FillValue": null,
+      "dims": [
+        "time",
+        "depth",
+        "latitude",
+        "longitude"
+      ],
+      "dtype": "float64",
+      "long_name": "Eastward velocity",
+      "max": 1.118198186159134,
+      "mean": 0.016865005335296564,
+      "min": -0.5664235353469849,
+      "nan_count": 6374798,
+      "nan_fraction": 0.3991,
+      "sample_points": 15972928,
+      "shape": [
+        31,
+        32,
+        277,
+        901
+      ],
+      "standard_name": "eastward_sea_water_velocity",
+      "stats_sample": "time_slice[0,-1]",
+      "units": "m s-1",
+      "valid_max": 4314,
+      "valid_min": -3123
+    },
+    "vo": {
+      "_FillValue": null,
+      "dims": [
+        "time",
+        "depth",
+        "latitude",
+        "longitude"
+      ],
+      "dtype": "float64",
+      "long_name": "Northward velocity",
+      "max": 1.2189092673361301,
+      "mean": 0.012996669025048431,
+      "min": -1.0180974751710892,
+      "nan_count": 6374798,
+      "nan_fraction": 0.3991,
+      "sample_points": 15972928,
+      "shape": [
+        31,
+        32,
+        277,
+        901
+      ],
+      "standard_name": "northward_sea_water_velocity",
+      "stats_sample": "time_slice[0,-1]",
+      "units": "m s-1",
+      "valid_max": 3639,
+      "valid_min": -3680
+    },
+    "zos": {
+      "_FillValue": null,
+      "dims": [
+        "time",
+        "latitude",
+        "longitude"
+      ],
+      "dtype": "float64",
+      "long_name": "Sea surface height",
+      "max": 0.3933835867792368,
+      "mean": -0.5725300095735033,
+      "min": -1.600085450336337,
+      "nan_count": 135112,
+      "nan_fraction": 0.270682,
+      "sample_points": 499154,
+      "shape": [
+        31,
+        277,
+        901
+      ],
+      "standard_name": "sea_surface_height_above_geoid",
+      "stats_sample": "time_slice[0,-1]",
+      "units": "m",
+      "valid_max": 5684,
+      "valid_min": -6228
+    }
+  }
+}

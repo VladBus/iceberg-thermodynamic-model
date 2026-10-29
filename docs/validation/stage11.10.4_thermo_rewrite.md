@@ -14,7 +14,7 @@ diagnostic only; Stage 12 implementation not started.
 Switch `STAGE1110_HARD_LIMITS` (default ON for N>1).
 
 Thermo-only N=24 10-day: **0 NaN**, max U 1.98 m/s.
-`data/validation/thermo_hard_limits_test.json`.
+`docs/wiki/stages/stage11/evidence/thermo_hard_limits_test.json`.
 
 ## Phase 2 — Implicit vertical diffusion
 
@@ -22,20 +22,20 @@ Implemented backward-Euler vertical diffusion with a Thomas solve for T and S
 in `src/stage1110_thermo.f90`; switch `STAGE1110_IMPLICIT_VDIFF` (ON for N>1).
 The solver uses a conservative column tridiagonal system and the validated
 layer thickness convention. N=24 full 30-day passes with 0 NaN.
-`data/validation/thermo_implicit_test.json`.
+`docs/wiki/stages/stage11/evidence/thermo_implicit_test.json`.
 
 ## Phase 3 — Surface flux clipping
 
 Every open-water net heat flux `qn` is clipped to **[-500, +500] W/m²** before
 application. Switch `STAGE1110_FLUX_CLIPPING` (ON for N>1).
 Full N=24 10/30-day runs remain finite.
-`data/validation/thermo_flux_clipping_test.json`.
+`docs/wiki/stages/stage11/evidence/thermo_flux_clipping_test.json`.
 
 ## Phase 4 — Post-CA smoothing
 
 A 3-point vertical smoother (`0.25/0.5/0.25`) is applied after CA over wet
 levels 2..ki-1. Switch `STAGE1110_CA_SMOOTHING` (ON for N>1).
-`data/validation/thermo_ca_smoothing_test.json`.
+`docs/wiki/stages/stage11/evidence/thermo_ca_smoothing_test.json`.
 
 ## Phase 5 — N=24 30-day validation
 
@@ -53,7 +53,7 @@ boundary clip ON, OBC ON, Ah=2000, `dt=3600`, `MM2=24`, NetCDF, EOS80.
 | KE day 10/20/30 | 7.19e16 / 2.16e16 / 2.11e16 J |
 | KE stable after day 10 | **YES** (decaying) |
 
-Registry: `data/validation/n24_30day_thermo_rewrite_results.json`.
+Registry: `docs/wiki/stages/stage11/evidence/n24_30day_thermo_rewrite_results.json`.
 N=1 diagnostic with all new switches explicitly OFF: 1-day, 0 NaN.
 No bit-identity claim is made for the thermodynamic rewrite.
 

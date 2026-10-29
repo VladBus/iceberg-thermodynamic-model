@@ -35,7 +35,7 @@ the active EOS and applies the smaller-magnitude tracer correction to reach
 
 **Test:** `test/test_density_repair.f90` starts at T=30 °C, S=0:
 RO **−0.0242 → +2.39e-4 g/cm³**, S **0 → 0.0326**, T unchanged → **PASS**
-(`data/validation/t5c4_density_repair_test.json`).
+(`docs/wiki/stages/stage11/evidence/t5c4_density_repair_test.json`).
 
 ## 4. Phase 3 — 90-day Config 1 with density repair (FAIL)
 
@@ -56,7 +56,7 @@ Density repair adjusted **139,620 cells/day**, but CA and the subsequent
 momentum step recreate negative density; the run becomes NaN at day 69.
 **FAIL** on no-NaN, max-U, RO>0.
 
-`data/validation/t5c4_90day_density_repair.json`.
+`docs/wiki/stages/stage11/evidence/t5c4_90day_density_repair.json`.
 
 ## 5. Phase 4 — April 30-day with density repair (PASS)
 
@@ -70,7 +70,7 @@ Same configuration, April EN4/ERA5:
 | Volume / heat / salt | 0 / 9.10e-3 / 3.75e-4 |
 
 April remains stable with repair; it does not exercise the March collapse.
-`data/validation/t5c4_april_density_repair.json`.
+`docs/wiki/stages/stage11/evidence/t5c4_april_density_repair.json`.
 
 ## 6. Trade-offs and limitation
 

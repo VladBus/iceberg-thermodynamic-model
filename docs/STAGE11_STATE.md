@@ -122,7 +122,7 @@ frozen as a research artifact; Stage 12 uses GLORYS12 + ERA5 (D-51).
 
 ## Evidence
 
-- T3b: `data/validation/t3c4_final_results.json`, `t3c4_ah_results.json`, `t3c4_dt_results.json`
+- T3b: `docs/wiki/stages/stage11/evidence/t3c4_final_results.json`, `t3c4_ah_results.json`, `t3c4_dt_results.json`
 - H-2/T-23: `wind_rotation_verification.json`, `wind_rotation_fortran.json`, `lon_clamp_verification.json`, `t3_with_fixes.json`
 - T4: `t4_wind_forcing_metrics.json`, `t4_ekman_analysis.json`, `t4_energy_budget.json`, `t4_acceptance.json`, `t4_comparison_t3.json`
 - T5: `t5_90day_results.json`, `t5_april_results.json`, `t5_seasonal_comparison.json`, `t34_heat_closure.json`
@@ -133,7 +133,7 @@ frozen as a research artifact; Stage 12 uses GLORYS12 + ERA5 (D-51).
 - T6-SEASONAL: `t6s_july_results.json`, `t6s_october_results.json`, `t6s_production_results.json`, `t6s_eos80_smoke.json`
 - Phase1-ANALYSIS: `scheduler_ice_effect_analysis.json`, `ice_detailed_diagnostics.json`, `ca_diagnostics_analysis.json`, `heat_conservation_verification.json`
 - Phase2: `matrix_all_seasons_comparison.json`, `matrix_eos_effect_summary.json`, `matrix_ice_diagnostics_summary.json`, `d29_final_decision.json`, `matrix_{jan,apr,jul,oct}_{legacy,eos80}_n1.json`, `t41_physics_verification.json`
-- T-19: `data/validation/t19_cds_probe_v2.json`, `snowfall_period_result.json`
+- T-19: `docs/wiki/stages/stage11/evidence/t19_cds_probe_v2.json`, `snowfall_period_result.json`
 - Sponge tests: `t3c3_sponge_results.json`, `t3c3_sponge2_results.json`,
   `t3c3_sponge3_results.json`
 - 11.8B: `default_eos80_verification.json`, `reproducibility_audit.json`, `runs_inventory_final.json`; `docs/MIGRATION_GUIDE_EOS80_DEFAULT.md`, `docs/STAGE11_SUMMARY.md`, `docs/STAGE11_CLOSURE_CHECKLIST.md`

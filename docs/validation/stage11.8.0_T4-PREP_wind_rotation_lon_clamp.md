@@ -46,7 +46,7 @@ OFF is the legacy unrotated path and is bit-identical.
   **3.45e-4 m/s** (boundary `i=is1` copies the interior rotated value);
   `wind_rotation_fortran.json` → **PASS**.
 
-Outputs: `data/validation/wind_rotation_verification.json`,
+Outputs: `docs/wiki/stages/stage11/evidence/wind_rotation_verification.json`,
 `wind_rotation_fortran.json`.
 
 ## 2. T-23 — ERA5 longitude edge clamp
@@ -74,7 +74,7 @@ both modes on a narrow 10–70°E file:
 | 75°E | **10°E** (wrong side) | **70°E** (east edge) |
 | 5°E control | 10°E | 10°E |
 
-Status **FIXED**; `data/validation/lon_clamp_verification.json`,
+Status **FIXED**; `docs/wiki/stages/stage11/evidence/lon_clamp_verification.json`,
 `era5_longitude_wrap_result.json`.
 
 T1 spatial/temporal suites with `STAGE118_LON_CLAMP=true`:
@@ -95,7 +95,7 @@ configuration (dt=1800, Ah=10000, E1+E2+E3, zero forcing):
 
 The result is exactly the same as the chosen T4-PREP baseline
 (`t3c4_dt1800_ah10000`), confirming that wind rotation and longitude clamping
-do not affect the zero-forcing rest test. `data/validation/t3_with_fixes.json`.
+do not affect the zero-forcing rest test. `docs/wiki/stages/stage11/evidence/t3_with_fixes.json`.
 
 ## 4. Regression and safety
 

@@ -1,7 +1,7 @@
 # Model Equation Ledger — Mathematical Specification of the Current Model
 
-**Date:** 2026-09-15
-**Current repository stage:** Stage 11.5H-RC (release-candidate gate). Equations below are the PHYSICAL specification (unchanged by Stages 11.5–11.5H-RC); temporal integration architecture (operator cadence, substepping, STALE coupling, production scheduler) is documented separately in `docs/archive/stage11/stage11.5H_production_temporal_architecture.md` and does not alter these equations.
+**Date:** 2026-10-29
+**Current repository stage:** **Stage 11 FROZEN** (D-51, tag `stage11-final-frozen`); **Stage 12 active** (GLORYS12 + ERA5 voxel iceberg, `../STAGE12_PREPARATION.md`). The equations below are the **rectangular-prism Stage-11 physical specification** and are unchanged by the freeze; temporal integration architecture (operator cadence, substepping, STALE coupling, production scheduler) is documented separately in `../archive/stage11/stage11.5H_production_temporal_architecture.md`. Stage 12 will add a **voxel thermal section** (per-voxel `T`/`φ`, finite-volume conduction, Stefan/three-equation boundary flux) and a **reanalysis forcing interface** once implemented — neither exists yet, so they are intentionally not written here.
 **Production baseline:** Stage 10.13 (low-flow closure behind `low_flow_closure_enabled`; OFF = Stage 10.12/10.10 behavior unchanged)
 **Units:** SI in the iceberg module unless explicitly noted.
 

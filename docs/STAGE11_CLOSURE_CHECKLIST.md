@@ -29,9 +29,9 @@ part of the N=1 closure claim.
 
 - `docs/STAGE11_SUMMARY.md`
 - `docs/validation/stage11.8B_runs_inventory.md`
-- `data/validation/runs_inventory_final.json`
-- `data/validation/default_eos80_verification.json`
-- `data/validation/reproducibility_audit.json`
+- `docs/wiki/stages/stage11/evidence/runs_inventory_final.json`
+- `docs/wiki/stages/stage11/evidence/default_eos80_verification.json`
+- `docs/wiki/stages/stage11/evidence/reproducibility_audit.json`
 - `docs/MIGRATION_GUIDE_EOS80_DEFAULT.md`
 - `docs/STAGE11_CLOSURE_DECLARATION.md`
 - `docs/validation/stage11.9_final_review.md`

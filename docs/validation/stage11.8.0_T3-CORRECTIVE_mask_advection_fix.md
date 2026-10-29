@@ -32,7 +32,7 @@ loaded T=0 °C at those wet levels (S was repaired from above, T was not).
 **143,422 level cells**, **0 unfilled pairs**, **0 S≤0** wet cells, correct
 600 m z-grid and 0 cells below Tf. New
 `python/tests/ocean/test_mask_consistency.py` → **CLEAN (8/8)**;
-`data/validation/mask_consistency_result.json`.
+`docs/wiki/stages/stage11/evidence/mask_consistency_result.json`.
 
 ## 2. T-29 — advection boundary zeroing: **FIXED (Option A)**
 
@@ -51,7 +51,7 @@ unchanged.
 **Verification:** new `test/test_advection_boundary.f90` (uniform S=0.035,
 T=5 °C, zero velocity, all wet) → **PASS** (0 interior and 0 boundary
 violations). Proven red: reverting the writeback makes the test exit 1;
-restoring it exits 0. `data/validation/advection_boundary_result.json`.
+restoring it exits 0. `docs/wiki/stages/stage11/evidence/advection_boundary_result.json`.
 In the rest run, day-1 S=0 cells fell from **1,341 to 0** and the boundary S
 mean is preserved (0.034704).
 
@@ -83,7 +83,7 @@ physical geostrophic adjustment of a zero-velocity state over a 3-D density
 field; the exponential 30-day growth is the defect.
 
 New baseline: `data/runs/t3c_legacy_canonical/`,
-`data/runs/t3c_eos80_canonical/` + `data/validation/t3_rest_fix_result.json`;
+`data/runs/t3c_eos80_canonical/` + `docs/wiki/stages/stage11/evidence/t3_rest_fix_result.json`;
 the pre-fix `t3_*` runs remain as the defect baseline.
 
 ## 4. `data/runs/` inventory (recommendations only — NOTHING DELETED)
@@ -97,7 +97,7 @@ the pre-fix `t3_*` runs remain as the defect baseline.
 
 Recommended (not executed, requires user approval): compress ARCHIVE
 (~3× gzip, ≈27 GB saved) and delete TEMPORARY (2.7 GB) → **≈29.7 GB
-potential savings**. Report: `data/validation/runs_inventory_result.json`
+potential savings**. Report: `docs/wiki/stages/stage11/evidence/runs_inventory_result.json`
 (also written to `data/runs_inventory.json`, gitignored).
 
 ## 5. Regression and CI

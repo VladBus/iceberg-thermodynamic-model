@@ -52,6 +52,6 @@
 
 - `docs/validation/stage11.8A_phase2_seasonal_results.md`
 - `docs/validation/stage11.8B_runs_inventory.md`
-- `data/validation/default_eos80_verification.json`
-- `data/validation/reproducibility_audit.json`
-- `data/validation/runs_inventory_final.json`
+- `docs/wiki/stages/stage11/evidence/default_eos80_verification.json`
+- `docs/wiki/stages/stage11/evidence/reproducibility_audit.json`
+- `docs/wiki/stages/stage11/evidence/runs_inventory_final.json`

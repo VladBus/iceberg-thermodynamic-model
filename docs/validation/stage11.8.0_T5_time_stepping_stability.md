@@ -29,7 +29,7 @@ Ah=10000, E1+E2+E3, LEGACY); corrected EN4 January; ERA5 Q1 2020; 90-day target.
   physically impossible velocities; no NaN was written before the abort.
 - Heat/salt drift at day 60: 6.46e-3 / 2.844e-2; salt fails, confirming loss of
   numerical integrity. The run did **not** complete 90 days → **FAIL**.
-- Output: `data/validation/t5_90day_results.json`; run
+- Output: `docs/wiki/stages/stage11/evidence/t5_90day_results.json`; run
   `data/runs/t5_90day_jan/` (60 daily files).
 
 **Trigger context:** the Q1 forcing reaches strong March winds
@@ -72,7 +72,7 @@ its low edge). Volume is exactly conserved and salt is <1e-3 in January;
 the heat change is a forced response, not a numerical leak. **T-34 CLOSED
 (physical, tentative)**. The 90-day failure is a separate long-run numerical
 instability and does not change the 30-day heat attribution.
-`data/validation/t34_heat_closure.json`.
+`docs/wiki/stages/stage11/evidence/t34_heat_closure.json`.
 
 ## 4. Phase 4 — 180-day run
 

@@ -3,7 +3,7 @@
 **Status:** BLOCKER CONFIRMED — no production N>1 scheduler promoted.
 **Date:** 2026-10-27
 **Base:** `ae6260e`
-**Evidence:** `data/validation/n4_n24_audit.json`
+**Evidence:** `docs/wiki/stages/stage11/evidence/n4_n24_audit.json`
 
 ## Configuration
 

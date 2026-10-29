@@ -20,7 +20,7 @@ All runs: N=24, `dt=3600`, `MM2=24`, 10 days, OBC OFF, Ah=2000.
 
 Thermodynamic surface forcing is the fastest NaN trigger; wind/ice alone grow
 strongly but remain finite for 10 days. Evidence:
-`data/validation/obc_bisection_matrix.json`.
+`docs/wiki/stages/stage11/evidence/obc_bisection_matrix.json`.
 
 ## Phase 2 — Momentum stabilization
 
@@ -54,7 +54,7 @@ Full forcing, OBC ON, drag ON, Ah=2000, dt=3600:
 
 The velocity cap is effective, but temperature/salinity can still become NaN;
 the earliest thermo-only failure is day 3. Evidence:
-`data/validation/obc_n24_stabilized_results.json`.
+`docs/wiki/stages/stage11/evidence/obc_n24_stabilized_results.json`.
 
 ## Phase 5 — Regression
 

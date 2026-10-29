@@ -3,7 +3,7 @@
 **Status:** COMPLETE — inventory and recommendations only; **NO data deleted**.
 **Date:** 2026-10-26
 **Base:** `3a249cb` (Stage 11.8A Phase 2-ANALYSIS)
-**Inventory JSON:** `data/validation/runs_inventory_final.json`
+**Inventory JSON:** `docs/wiki/stages/stage11/evidence/runs_inventory_final.json`
 
 ---
 

@@ -405,7 +405,7 @@ not added.
 - **Evidence:** initial thermal-wind state is unbalanced (0.283 m/s, barotropic transport 0.144 m/s) vs u=v=0; `RO` is not prognostic (eos_diag only init/final), so CA is the only RO update; `STAGE1022_FREEZE_RO` (CA mixes T/S but does not write RO) bounds the flow at 0.205 m/s / 6.52e13 J in LEGACY and 0.201 / 6.12e13 in EOS-80, while baselines grow; `FREEZE_TS` is identical to `FREEZE_RO`; `FREEZE_THERMAL_WIND` is exactly at rest. CA-induced Delta-RO up to 8.26 kg/m3; CA-induced PGF work share 7.9% -> 99.6%; correlation speed/gradient 0.62. PGF surface double-count is 1.5e-5 of PGF (negligible); Coriolis work ~0; PGF raw vs bottom-filled identical under KK1. The signal is localised at the SW 600-m boundary (33% KE within 5 cells, 64% within 10, 71% SW); dt=1800 is bounded (0.528 m/s, 1.18e14 J), dt=3600 exponential, dt=7200 FPE.
 - **Decision:** KEEP_CURRENT production physics — no source change in T3-CORRECTIVE-2. T-03 root cause is classified as the **CA density-writeback -> PGF feedback** (T-32), seeded by the unbalanced rest init and amplified by the dt=3600 splitting and the clamped SW boundary. The T3-CORRECTIVE statement that T-25 is not primary because EOS-80 CA converges is **revised**: EOS-80 still writes RO and is unstable; T-25 remains CRITICAL and is the leading CA-defect candidate.
 - **Next:** T3-CORRECTIVE-3 (fix) must pass D-33; candidate fixes: (1) make RO consistent with evolving T/S (prognostic/after advection), (2) potential-density CA (T-25), (3) CA sub-cycling / dt convergence, (4) boundary radiation. Acceptance: rest |U|,|V| < 0.01 m/s, no KE growth, conservation < 1e-4. T4 remains NO-GO; T-23/H-2 remain T4 prerequisites.
-- **Report:** `docs/validation/stage11.8.0_T3-CORRECTIVE-2_t03_diagnosis.md`; evidence `data/validation/t3c2_spatial_diagnosis.json`, `data/validation/t3c2_controls_analysis.json`.
+- **Report:** `docs/validation/stage11.8.0_T3-CORRECTIVE-2_t03_diagnosis.md`; evidence `docs/wiki/stages/stage11/evidence/t3c2_spatial_diagnosis.json`, `docs/wiki/stages/stage11/evidence/t3c2_controls_analysis.json`.
 
 ## D-35. T-19 v2 hourly snowfall; T3-CORRECTIVE-3 fixes implemented but T3b fails (Stage 11.8.0, 2026-10-25)
 
@@ -517,7 +517,7 @@ not added.
 - **Gate correction:** replace `RO >= 0` with **absolute density > 1.0 g/cm³** and **RO > −0.05 g/cm³**; keep raw RO negative as a diagnostic. All 8 N=1 cells now PASS.
 - **D-29:** Criterion A true (all four EOS80 seasons pass); B true (mean max |U| −0.14 %, KE +0.33 %, CA −12.85 %); C true for N=1. **PROMOTED** for the N=1 30-day validated model. Production scheduler remains BLOCKED (T-39); no Fortran/EOS/scheduler code changed. The runtime default declaration is deferred to Stage 11.8B.
 - **Next:** Stage 11.8B production release audit/cleanup; Stage 11.9 not started.
-- **Evidence:** `data/validation/t41_physics_verification.json`, `python/analysis/stage11.8A_t41_physics.py`, `docs/validation/stage11.8A_phase2_seasonal_results.md`.
+- **Evidence:** `docs/wiki/stages/stage11/evidence/t41_physics_verification.json`, `python/analysis/stage11.8A_t41_physics.py`, `docs/validation/stage11.8A_phase2_seasonal_results.md`.
 
 ## D-48. EOS-80 runtime default; breaking change (Stage 11.8B, 2026-10-26)
 
@@ -548,7 +548,7 @@ not added.
 - **Status:** Stage 11.10 has not yet met the 90-day/N>1 gates. One-day N=4 blew up (max U 4352 m/s); N=24 grew to max U 1.89 m/s. OBC is the immediate blocker; N=1 remains diagnostic only.
 - **Consequences:** The administrative Stage 11 closure remains historical, but Stage 12 must not treat the N=1 ocean as final. No bit-identity test may block an approved physical improvement.
 - **Note:** D-49 is the Stage 11 closure decision; this is D-50 because D-49 was already occupied.
-- **References:** `docs/OBC_N4_N24_AUDIT.md`, `data/validation/n4_n24_audit.json`, `docs/LEGACY_IO_POLICY.md`.
+- **References:** `docs/OBC_N4_N24_AUDIT.md`, `docs/wiki/stages/stage11/evidence/n4_n24_audit.json`, `docs/LEGACY_IO_POLICY.md`.
 
 ## D-51. Stage 11 frozen as a research artifact; Stage 12 uses GLORYS12 + ERA5 reanalysis (Stage 12.0, 2026-10-29)
 

@@ -1,8 +1,17 @@
-# Stage 10 — Physics Modernization Plan
+# Stage 10 — Physics Modernization Plan (HISTORICAL)
 
-**Updated:** 2026-09-17
-**Current stage:** 10.15 (operational end-to-end demonstration; no physics change)
-**Current classification:** C — Stage 10.14 is a verification stage (10.8.2 re-scoring, Python 177 checks; no calibration, production unchanged); Stage 10.15 is an operational demonstration (30-day real-forcing Lagrangian iceberg run, trajectory + diagnostics; full-model runs with the documented ocean NaN state); Stage 10.13 remains a research parameterization behind `low_flow_closure_enabled` (OFF = legacy unchanged)
+**Updated:** 2026-10-29 (status reconciliation)
+**Stage 10 classification:** **COMPLETE / historical.** Stage 10 ran 10.1–10.22;
+**Stage 10.15** was the operational end-to-end demonstration (30-day
+real-forcing Lagrangian iceberg trajectory + diagnostics; no physics change);
+**10.16–10.22** were drift/melt-budget/lateral-melt audit and Block-200/210
+forensic closeout (all KEEP_CURRENT, production physics unchanged). Stage 10.13
+remains a research parameterization behind `low_flow_closure_enabled` (OFF =
+legacy unchanged).
+**Current repository stage (2026-10-29):** **Stage 11 FROZEN** (D-51,
+`../STAGE11_FREEZE.md`); **Stage 12 active** (GLORYS12 + ERA5 voxel iceberg,
+`../STAGE12_PREPARATION.md`). This file is the Stage 10 journal and is retained
+unchanged below as historical record.
 
 ## Purpose
 

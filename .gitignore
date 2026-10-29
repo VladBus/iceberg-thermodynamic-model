@@ -118,6 +118,17 @@ data/*
 # and provenance/sources metadata ARE versioned.
 data/validation/observations/stage10.18d/raw/
 
+# Stage 11 evidence JSONs + figures are ARCHIVED to
+# docs/wiki/stages/stage11/evidence/ and docs/wiki/stages/stage11/figures/
+# (D-51 freeze). data/validation/ is reserved for Stage 12 artifacts + the
+# curated observations/ dataset. Stage 11 tests may still WRITE evidence JSONs
+# into data/validation/ at run time; those regenerated copies must NOT be
+# re-committed. The Stage 12 catalogue/inspection JSONs are explicitly kept.
+data/validation/*.json
+!data/validation/reanalysis_catalog_probe.json
+!data/validation/glorys12_202001_inspection.json
+!data/validation/glorys12_static_inspection.json
+
 # Временные и системные файлы
 *~
 .DS_Store

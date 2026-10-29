@@ -144,10 +144,10 @@ Ordered by causal priority (fix upstream first):
 | T2 Homogeneous Column Red Test | `python/tests/ocean/test_homogeneous_column.py` | **DONE** (Phase 1) |
 | T2 Analytical Mixing Test | `python/tests/ocean/test_analytical_mixing.py` | TODO |
 | T3 Rest Run Test | `python/tests/ocean/test_rest_run.py` | TODO |
-| Red Test Results | `data/validation/homogeneous_column_result.json` | PENDING |
+| Red Test Results | `docs/wiki/stages/stage11/evidence/homogeneous_column_result.json` | PENDING |
 | Ice Coverage Test | `python/tests/ocean/test_ice_coverage.py` | **DONE** (Phase 2) |
 | Snowfall Period Test | `python/tests/ocean/test_snowfall_period.py` | **DONE** (Phase 3) |
-| Snowfall Period Results | `data/validation/snowfall_period_result.json` | PENDING |
+| Snowfall Period Results | `docs/wiki/stages/stage11/evidence/snowfall_period_result.json` | PENDING |
 
 ---
 

@@ -68,7 +68,7 @@ premise; the CA defect requires a **weak real inversion** (the T2
 analytical-mixing test in the 11.8.0 plan), not a homogeneous column. This is
 recorded so the 11.8 red-test target is not misdirected.
 
-Outputs: `data/validation/homogeneous_column_result.json`,
+Outputs: `docs/wiki/stages/stage11/evidence/homogeneous_column_result.json`,
 `homogeneous_column_fortran_LEGACY.json`, `homogeneous_column_fortran_EOS80.json`.
 
 ---
@@ -96,7 +96,7 @@ interpolates onto the instantaneous ERA5 grid; that spacing is **not** the
 accumulation period. The Stage 11.7E.4.1 “6 h mismatch” finding was based on
 that artifact and is corrected here.
 
-Output: `data/validation/snowfall_period_result.json`.
+Output: `docs/wiki/stages/stage11/evidence/snowfall_period_result.json`.
 
 ---
 
@@ -155,7 +155,7 @@ reaches 25.72 m, within its nominal 50 m cap but physically implausible for
 Arctic sea ice). Documented as a target for the 11.8 thermodynamic work; not
 fixed here.
 
-Output: `data/validation/ice_coverage_result.json`.
+Output: `docs/wiki/stages/stage11/evidence/ice_coverage_result.json`.
 
 ---
 
@@ -212,12 +212,12 @@ No `||` error masking was added.
 - `python/tests/ocean/test_snowfall_period.py` (source metadata)
 - `python/tests/ocean/test_ice_coverage.py` (thresholds + 25.72 m investigation)
 - `python/tests/ocean/test_seaice_provenance.py`
-- `data/validation/homogeneous_column_result.json`
-- `data/validation/homogeneous_column_fortran_LEGACY.json`
-- `data/validation/homogeneous_column_fortran_EOS80.json`
-- `data/validation/snowfall_period_result.json`
-- `data/validation/ice_coverage_result.json`
-- `data/validation/snowfall_period_result.json`
+- `docs/wiki/stages/stage11/evidence/homogeneous_column_result.json`
+- `docs/wiki/stages/stage11/evidence/homogeneous_column_fortran_LEGACY.json`
+- `docs/wiki/stages/stage11/evidence/homogeneous_column_fortran_EOS80.json`
+- `docs/wiki/stages/stage11/evidence/snowfall_period_result.json`
+- `docs/wiki/stages/stage11/evidence/ice_coverage_result.json`
+- `docs/wiki/stages/stage11/evidence/snowfall_period_result.json`
 - this report
 
 ---

@@ -22,7 +22,7 @@ land but have wet strips. At N=4 (dt_ocean=21600 s), one-day max U reaches
 **4352 m/s**; at N=24 (3600 s), max U reaches **1.89 m/s**. The immediate
 mechanism is CFL violation, not only boundary reflection: CFL = U·dt/dx is
 **1464** (N=4) and **1.11** (N=24). Evidence:
-`data/validation/obc_instability_analysis.json`.
+`docs/wiki/stages/stage11/evidence/obc_instability_analysis.json`.
 
 ## Phase 2 — Flather condition
 
@@ -32,7 +32,7 @@ Implemented in `src/stage1110_obc.f90` and called at the end of every `shal()`:
 
 Switch: `STAGE1110_FLATHER_OBC` (default OFF). Focused test
 `test_obc_flather.f90` verifies zero-eta and impedance relations. Evidence:
-`data/validation/obc_flather_test.json`.
+`docs/wiki/stages/stage11/evidence/obc_flather_test.json`.
 
 ## Phase 3 — T/S sponge layer
 
@@ -41,7 +41,7 @@ the initial T/S climatology, with `STAGE1110_SPONGE_ALPHA` (default 1/day) and
 `STAGE1110_SPONGE_WIDTH` (default 5). Switches:
 `STAGE1110_SPONGE_LAYER` (default OFF). Focused test
 `test_obc_sponge.f90` verifies monotone decay and zero interior weight.
-Evidence: `data/validation/obc_sponge_test.json`.
+Evidence: `docs/wiki/stages/stage11/evidence/obc_sponge_test.json`.
 
 ## Phase 4 — Radiation condition
 
@@ -49,7 +49,7 @@ Implemented for boundary transports using
 `phi_new = phi_b - c*dt/dx*(phi_b - phi_i)`, with `c=sqrt(gH)`.
 Switch: `STAGE1110_RADIATION_OBC` (default OFF). Focused test
 `test_obc_radiation.f90` verifies zero-gradient invariance and nonzero
-correction. Evidence: `data/validation/obc_radiation_test.json`.
+correction. Evidence: `docs/wiki/stages/stage11/evidence/obc_radiation_test.json`.
 
 ## Phase 5 — 30-day integration
 
@@ -63,8 +63,8 @@ Configuration: OBC FLATHER+SPONGE+RADIATION ON, Ah=2000, `dt=1800`,
 
 Both complete the 30-day loop but produce NaN fields. N=1 standard matrix
 remains the only stable comparison (`max U 0.785 m/s`, `KE30/KE15 1.494`).
-Evidence: `data/validation/obc_n4_n24_results.json`,
-`data/validation/obc_comparison.json`.
+Evidence: `docs/wiki/stages/stage11/evidence/obc_n4_n24_results.json`,
+`docs/wiki/stages/stage11/evidence/obc_comparison.json`.
 
 ## Phase 6 — Fallback
 

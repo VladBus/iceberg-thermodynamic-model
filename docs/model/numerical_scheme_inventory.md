@@ -4,6 +4,12 @@ Frozen 2026-09-29. Method: read ACTUAL Fortran code, not comments. Where code
 and comments disagree, CODE wins (flagged HISTORICAL NOTE). No scheme was
 changed in this audit.
 
+> **Scope note (2026-10-29):** this inventory describes the **Stage 11 frozen**
+> prognostic ocean. Stage 12 (D-51) drives the iceberg from **GLORYS12 + ERA5
+> reanalysis** (offline/prescribed) and does **not** reuse this prognostic
+> ocean, so these schemes are the Stage 11 reference, not the Stage 12 forcing
+> path. The Stage 12 voxel thermal schemes will be added here when implemented.
+
 ## Summary table
 
 | Block | File | PDE | Spatial | Temporal | Stability constraint |

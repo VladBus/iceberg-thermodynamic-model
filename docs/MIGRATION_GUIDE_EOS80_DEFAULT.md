@@ -69,7 +69,7 @@ LEGACY regression comparison is intended; label such runs clearly.
   EOS selection, not the scheduler or physics switches.
 - Stage 11.8B verification: default = explicit EOS80 = matrix EOS80
   bit-identical (32/32 NetCDF files); LEGACY fallback = matrix LEGACY
-  bit-identical. See `data/validation/default_eos80_verification.json`.
+  bit-identical. See `docs/wiki/stages/stage11/evidence/default_eos80_verification.json`.
 
 ## Recommended workflow
 

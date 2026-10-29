@@ -26,7 +26,7 @@ compares the 12:00 field with the mean of all 24 fields:
 | recommended divisor | **3600 s** |
 
 If the field were a 12-hour accumulation, R would be ~12; it is ~1.009.
-`data/validation/t19_cds_probe_v2.json`; v1 JSON is marked `INVALID_V1`.
+`docs/wiki/stages/stage11/evidence/t19_cds_probe_v2.json`; v1 JSON is marked `INVALID_V1`.
 
 **Code fix:** `python/era5/merge_snowfall.py` now uses
 `SNOWFALL_ACCUMULATION_PERIOD_S = 3600.0`; hourly raw records are summed over
@@ -120,7 +120,7 @@ KE day 30 **8.696e15 J**, **ratio 52.98** (acceptance < 2.0) → **FAIL**.
 E1 alone and E2 alone are bit-identical to the baseline (E1 redundant, E2
 inactive in LEGACY); E3 is the only active change and does not stabilize.
 A balanced-initial-state diagnostic (`STAGE118_T3_KEEP_TW`) also failed
-(Umax 3.998 m/s, KE30/KE15 50.4). Data: `data/validation/t3c3_fix_results.json`,
+(Umax 3.998 m/s, KE30/KE15 50.4). Data: `docs/wiki/stages/stage11/evidence/t3c3_fix_results.json`,
 `t3c3_experiments.json`.
 
 **Interpretation:** the remaining instability is the **coupled T/S

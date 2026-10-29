@@ -31,7 +31,7 @@ No data outside `data/runs/` was touched. Manifest:
   (`docs/LEGACY_IO_POLICY.md`).
 
 Verification: default 1-day and 30-day runs report NetCDF grid/sea-ice
-metadata; `data/validation/netcdf_default_verification.json`.
+metadata; `docs/wiki/stages/stage11/evidence/netcdf_default_verification.json`.
 
 ## 3. Physical baseline — D-50
 

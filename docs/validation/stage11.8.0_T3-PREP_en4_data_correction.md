@@ -87,11 +87,11 @@ minimum T is now −1.962 °C (was −3.28 °C). This is a physical correction
 New `python/tests/ocean/test_en4_data_correction.py` (61 checks): existence,
 z-grid, 0 below Tf, no sentinel zeros, units, masks, per-season metadata,
 rebuild≡canonical, cross-season mask identity → **CLEAN** (0 warnings).
-`data/validation/en4_correction_result.json`.
+`docs/wiki/stages/stage11/evidence/en4_correction_result.json`.
 
 T0 test updated (pressure-aware Tf, density inversions reclassified as
 physical INFO): **CLEAN — 95 checks, 79 PASS, 16 INFO, 0 WARNING, 0 FAIL**
-(previously ISSUES_FOUND). `data/validation/en4_initial_result.json`.
+(previously ISSUES_FOUND). `docs/wiki/stages/stage11/evidence/en4_initial_result.json`.
 
 | Check | Result |
 |---|---|

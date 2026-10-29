@@ -51,9 +51,9 @@ scope for T-19 resolution):
 **Verdict:** every stored record is the **12-hour accumulation window ending
 at its valid_time**; the divisor `43200` in `python/era5/merge_snowfall.py`
 is **CONFIRMED CORRECT from source**. T-19 CLOSED 2026-10-23. The divisor was
-never changed. Evidence: `data/validation/snowfall_period_result.json`
+never changed. Evidence: `docs/wiki/stages/stage11/evidence/snowfall_period_result.json`
 (status `CONFIRMED_12H`, basis: live probe) +
-`data/validation/t19_cds_probe.json`.
+`docs/wiki/stages/stage11/evidence/t19_cds_probe.json`.
 
 `test_snowfall_period.py` now: strict evidence hierarchy (step attributes →
 CONFIRMED; forecast_reference_time → INFERRED; spacing only → UNCERTAIN;

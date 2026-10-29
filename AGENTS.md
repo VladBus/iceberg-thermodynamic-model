@@ -21,7 +21,10 @@ map — in `docs/README.md`.
 | Stage 10 modernization plan        | `docs/model/stage10_modernization_plan.md` |
 | Stage 11 roadmap                   | `docs/PROJECT_ROADMAP.md`                   |
 | Active validation reports          | `docs/validation/INDEX.md`                 |
-| Historical archive (stages 3–10)   | `docs/wiki/INDEX.md`                       |
+| Stage 11 freeze (research artifact) | `docs/STAGE11_FREEZE.md`                   |
+| Stage 12 reanalysis data plan      | `docs/REANALYSIS_DATA_PLAN.md`             |
+| Historical archive (stages 3–11)   | `docs/wiki/INDEX.md`                       |
+| Stage 11 archived evidence/figures | `docs/wiki/stages/stage11/evidence/`       |
 | Key decisions                      | `docs/DECISIONS.md`                        |
 | Bibliography and literature matrix | `docs/references/README.md`                |
 | External data sources (ERA5/EN4/IBCAO/obs) | `docs/data_sources.md`           |
@@ -178,7 +181,7 @@ Conversions only at the NetCDF output boundary (`netcdf_output.f90`). Internal C
 - ❌ No advanced physics (internal 3D temperature, wave erosion, sea-ice capture, rollover, fracture, multi-iceberg) without a dedicated stage.
 - ❌ Melt coefficients are compile-time constants — require rebuild to change.
 - ❌ Do not reintroduce an arbitrary velocity floor to avoid numerical issues (Stage 10.13 policy).
-- ❌ Before committing, check `.gitignore` — it blocks: `opencode.jsonc`, `.opencode/`, `data/`, `*.nc`, `*.vtk`, `*.dat`, `*.bak`. **Exceptions:** the curated Stage 10.8.2 observational dataset is versioned (`data/validation/observations/` is un-ignored); `docs/wiki/` is tracked (archive) except `docs/wiki/ERA5_INTEGRATION_TODO.md` (explicitly ignored, live local TODO).
+- ❌ Before committing, check `.gitignore` — it blocks: `opencode.jsonc`, `.opencode/`, `data/`, `*.nc`, `*.vtk`, `*.dat`, `*.bak`. **Exceptions:** the curated Stage 10.8.2 observational dataset is versioned (`data/validation/observations/` is un-ignored); `docs/wiki/` is tracked (archive) except `docs/wiki/ERA5_INTEGRATION_TODO.md` (explicitly ignored, live local TODO). **Stage 11 evidence** is archived under `docs/wiki/stages/stage11/evidence/` (tracked); `data/validation/*.json` is now ignored except the Stage 12 catalogue/inspection JSONs, so regenerated Stage 11 evidence is never re-committed.
 - ❌ Do not reintroduce root-level legacy symlinks or use `KOORD.DAT`/`hhh.bar`/`1_*.ice` as production inputs. NetCDF `grid.nc` and `seaice_initial.nc` are the production sources; legacy fixtures are offline-only.
 - ❌ Do not commit/push unless the user explicitly requests it.
 
@@ -263,6 +266,8 @@ ERA5 download: `conda run -n iceberg-thermodynamic-model python python/era5/down
 | 10.22                | Block-200 stability audit (causal chain ISOLATED, D-20): replay experiments a0–a4 (30 d, step 1; CSVs `stage1022_{probes,block200,block210}.csv`, per-step/30-day A5 verdicts) behind env switches `STAGE1022_DIAG`/`_FREEZE_RO`/`_FREEZE_THERMAL_WIND`/`_FREEZE_TS`/`_FREEZE_RO_DOWNSTREAM` — all default OFF → bit-identical legacy verified (daily-diagnostics md5 `1ef13cb4…`); **chain**: CA/EOS density corruption (ρ<0 day 4 s1) → **first NaN day 5 s6** (`CA_after ro_nan=198`) → **Block 200 = transmitter** (ro in, momentum NaN out: `u2_nan=333`; two-path budget split EXACT) → **Block 210 = amplifier** (rhs 1.13E16, den 7.06E-04 → day-6 zombie 142,081); **Thomas pivots negative BY CONSTRUCTION** (piv_neg = piv_cnt = 100 %, piv_min = 1.0) — structural, NOT pathology; stabilizer levers `freeze_ro`/`freeze_ts`/`freeze_ro_downstream` restore physical validity (30/30, worst rel 4.213e-6) but **DIAGNOSTIC-ONLY**; **production physics KEEP_CURRENT**; `test_stage10_22_block200_audit.py` 300 checks; no Fortran test added; full battery PASS (59 targets) | `docs/archive/stage11/stage10.22_ocean_density_thermal_wind_block200_audit.md` |
 | 11.1                 | Ocean Stability Across Seasonal Initial Conditions — **seasonal dependence established**: instability is general to prognostic ocean evolution but timing depends on initial EN4 state; Jan survives 4 days (crash Day 5), Apr/Jul/Oct crash Day 1 with pre-existing negative ro (−20.07 g/cm³); frozen-ocean control 30 days stable (ro 0.0075–0.0082 g/cm³); atmosphere alone does NOT cause instability; EN4 initial condition pathology identified for summer/autumn (identical ro_min = −20.07 g/cm³); next = EN4 initial condition stabilization (Stage 11.2) | `docs/archive/stage11/stage11.1_ocean_stability_seasonal_initial_conditions.md` |
 | 11.2                 | CFL + Numerical Time-Discretization Audit — **diagnostic-only**: all explicit CFL numbers ≪ 1 (Cx=0.023, Cy=0.015, Cz=0.10, Cwave=0.66, f·DT=0.52); instability NOT caused by CFL violation; confirmed root cause = EOS float32 quantization → density inversions → thermal wind → Block 200/210 chain (per Stage 10.22); 90-day baseline run completed; timestep sensitivity matrix defined for Stage 11.3 | `docs/archive/stage11/stage11.2_cfl_numerical_audit.md` |
+| 11 (frozen)            | **FROZEN research artifact** (D-51, tag `stage11-final-frozen`): N=24 30-day no-tide stable (0 NaN, max U 1.999 m/s, CFL 0.518); N² fails (9,813 interfaces), no real tides/30-day tide validation, no 90-day validation; evidence JSONs + figures archived to `docs/wiki/stages/stage11/evidence/` | `docs/STAGE11_FREEZE.md`, `docs/wiki/stages/stage11/` |
+| 12.0 / 12.1            | Stage 12 prep on GLORYS12 + ERA5 reanalysis (D-51); 12.1 reconnaissance: Jan-2020 Barents subset inspected — regular 1/12° grid (277×901), 32 levels→541 m, `so` units 1e-3 (÷1000), NaN=land; **GO** for the Fortran reader; no download of full year | `docs/STAGE12_PREPARATION.md`, `docs/REANALYSIS_DATA_PLAN.md`, `data/validation/stage12.1_glorys12_validation.md` |
 
 Current physics status and switches — ALWAYS check
 `docs/model/model_physics_status.md` and `docs/DECISIONS.md`, not this file

@@ -3,8 +3,11 @@
 Statuses: **ARCHIVED** (stage materials completed and not edited).
 
 General rules: reports are not rewritten retroactively; the current model
-state is in `docs/model/`; decisions — in `docs/DECISIONS.md`; active Stage 10
-reports — in `docs/validation/INDEX.md`.
+state is in `docs/model/`; decisions — in `docs/DECISIONS.md`; active validation
+reports (now Stage 12) — in `docs/validation/INDEX.md`. Stage 11 is **frozen**
+(D-51, tag `stage11-final-frozen`): its narrative reports live in
+`docs/validation/` and `docs/archive/stage11/`, and its JSON evidence +
+figures are archived under `stages/stage11/evidence/` and `stages/stage11/figures/`.
 
 ## Stages
 
@@ -18,6 +21,7 @@ reports — in `docs/validation/INDEX.md`.
 | 8     | `stages/stage08/` | 8          | EN4 preprocessing (8.0), energy instability (8.1), thermal-wind correction (8.2), spin-up (8.3), operator splitting (8.4–8.6), legacy iceberg module reconstruction (8.7)              |
 | 9     | `stages/stage09/` | 12 + plots | Lagrangian iceberg model: reconstruction (9.1–9.2), verification and calibration (9.3), core and forcing-pipeline corrections (9.4A–9.4C.2); diagnostic plots `plots_stage9.4b/`       |
 | 10    | `stages/stage10/` | 28         | Complete Stage 10 modernization (10.7–10.22): basal melt validation (10.7–10.9), three-equation interface (10.10), natural convection (10.11), internal thermal evolution (10.12), low-flow closure (10.13), rescoring (10.14), operational demonstration (10.15), trajectory audit & fix (10.15.1–2), drift dynamics (10.16), melt budget audit (10.17), lateral melt audit & observational constraint (10.18A–D), production coupling (10.19), ocean initialization stabilization (10.20), CA/EOS precision (10.21), Block-200/210 stability audit (10.22). Early reports (10.4.2, 10.4.2.1, 10.5) also archived. |
+| 11    | `stages/stage11/` | evidence + figures | **FROZEN** research artifact (D-51, tag `stage11-final-frozen`). JSON evidence (`evidence/`, 153 files) + diagnostic figures (`figures/t3c2/`). Stage 11 narrative reports remain in `docs/validation/` (11.8.x) and `docs/archive/stage11/` (11.0–11.7). Freeze record: `docs/STAGE11_FREEZE.md`. |
 
 ## Topics
 

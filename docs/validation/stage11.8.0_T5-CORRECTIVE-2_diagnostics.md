@@ -68,7 +68,7 @@ Evidence:
   reflected storm energy amplifying the near-boundary error.
 - Wind work vs dissipation does not show runaway energy input before collapse.
 
-`data/validation/t5c2_root_cause.json`.
+`docs/wiki/stages/stage11/evidence/t5c2_root_cause.json`.
 
 ## 4. Storm timing
 

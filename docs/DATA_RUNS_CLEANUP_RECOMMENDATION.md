@@ -43,5 +43,5 @@ remain.
 ## Evidence
 
 - `data/runs/KEEP_MANIFEST.json`
-- `data/validation/n4_n24_audit.json`
-- `data/validation/runs_inventory_final.json` (pre-cleanup inventory)
+- `docs/wiki/stages/stage11/evidence/n4_n24_audit.json`
+- `docs/wiki/stages/stage11/evidence/runs_inventory_final.json` (pre-cleanup inventory)

@@ -5,7 +5,15 @@ active, `docs/wiki/stages/stageXX/` — archived), decisions —
 `docs/DECISIONS.md`, physics status — `docs/model/model_physics_status.md`.
 Full commit list — `git log`.
 
-## Stage 11 (ocean stability, CFL, numerical audit — active validation)
+## Stage 12 (voxel iceberg on GLORYS12 + ERA5 reanalysis — active)
+
+| Stage | Summary | Commits | Report |
+| ----- | ------- | ------- | ------ |
+| 12.0  | Freeze Stage 11 as a research artifact (D-51, tag `stage11-final-frozen`) + Stage 12 preparation (GLORYS12 + ERA5 plan, catalogue probe, Enderlin23 staging) | `0f45376` | `docs/STAGE11_FREEZE.md`, `docs/STAGE12_PREPARATION.md` |
+| 12.1  | GLORYS12 Barents **reconnaissance**: Jan-2020 daily subset (1.9 GB) + static downloaded and inspected (regular 1/12° 277×901, 32 levels→541 m, `so`=1e-3 ÷1000, NaN=land, 31 daily steps); **GO** for the Fortran reader; **no Fortran written**; no full-year download | this commit | `data/validation/stage12.1_glorys12_validation.md` |
+| docs  | Housekeeping: Stage 11 evidence JSONs (153) + figures archived to `docs/wiki/stages/stage11/evidence/`; `data/validation/` reserved for Stage 12 + curated `observations/`; `docs/model/` actualized to frozen Stage 11 / active Stage 12 | this commit | `docs/wiki/stages/stage11/README.md` |
+
+## Stage 11 (ocean stability, CFL, numerical audit — FROZEN research artifact)
 
 | Stage             | Summary                                                                                                                | Commits                         | Report                                                                                                                                                                   |
 | ----------------- | ---------------------------------------------------------------------------------------------------------------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |

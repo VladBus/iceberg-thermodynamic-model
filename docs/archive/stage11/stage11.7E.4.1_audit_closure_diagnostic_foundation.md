@@ -86,7 +86,7 @@ This is a TRANSITION stage: from infrastructure contracts (11.7) to ocean diagno
 - **Expected:** FAIL — convective adjustment modifies homogeneous column due to EOS float32 quantization (2⁻²³ = 1.1921E-07) and pressure-dependent density in EOS80
 - **Defect proven:** This test will be the first target for Stage 11.8 intervention #2 (Core)
 
-**Result file:** `data/validation/homogeneous_column_result.json`
+**Result file:** `docs/wiki/stages/stage11/evidence/homogeneous_column_result.json`
 
 ---
 
@@ -105,7 +105,7 @@ This is a TRANSITION stage: from infrastructure contracts (11.7) to ocean diagno
 - **Legacy:** 5 files, max cells with ice = 3595, max conc = 0.9923
 - **Verifies:** 11.7E.4 successfully connected real Jan-2020 OSI-SAF SIC + C3S SIT data
 
-**Result file:** `data/validation/ice_coverage_result.json`
+**Result file:** `docs/wiki/stages/stage11/evidence/ice_coverage_result.json`
 
 ---
 
@@ -120,7 +120,7 @@ This is a TRANSITION stage: from infrastructure contracts (11.7) to ocean diagno
 - **Recommendation:** Divisor should be 21600 (6 hours), not 43200
 - **Severity:** MISMATCH — fix deferred to Stage 11.8 (T0 Data fixes)
 
-**Result file:** `data/validation/snowfall_period_result.json`
+**Result file:** `docs/wiki/stages/stage11/evidence/snowfall_period_result.json`
 
 ---
 
@@ -165,9 +165,9 @@ This is a TRANSITION stage: from infrastructure contracts (11.7) to ocean diagno
 | Ice coverage red test | `python/tests/ocean/test_ice_coverage.py` |
 | Snowfall period test | `python/tests/ocean/test_snowfall_period.py` |
 | Ocean diagnostic plan | `docs/validation/stage11.8.0_ocean_diagnostic_plan.md` |
-| Ice coverage results | `data/validation/ice_coverage_result.json` |
-| Snowfall period results | `data/validation/snowfall_period_result.json` |
-| Homogeneous column results | `data/validation/homogeneous_column_result.json` |
+| Ice coverage results | `docs/wiki/stages/stage11/evidence/ice_coverage_result.json` |
+| Snowfall period results | `docs/wiki/stages/stage11/evidence/snowfall_period_result.json` |
+| Homogeneous column results | `docs/wiki/stages/stage11/evidence/homogeneous_column_result.json` |
 | Updated 11.7E.4 report | `docs/validation/stage11.7E.4_real_seaice_connection.md` |
 | Ocean diagnostic plan | `docs/validation/stage11.8.0_ocean_diagnostic_plan.md` |
 

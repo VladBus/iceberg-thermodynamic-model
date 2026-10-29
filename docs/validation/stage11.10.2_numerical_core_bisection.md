@@ -36,7 +36,7 @@ The vacuum control proves external flux shocks are not required for the core
 instability. Full component bisection is blocked by missing per-component
 switches; this is documented rather than fabricated.
 
-Evidence: `data/validation/obc_bisection_matrix.json`.
+Evidence: `docs/wiki/stages/stage11/evidence/obc_bisection_matrix.json`.
 
 ## Phase 3 — Momentum/FCT/viscosity findings
 

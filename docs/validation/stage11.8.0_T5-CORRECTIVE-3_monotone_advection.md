@@ -36,7 +36,7 @@ Default OFF preserves the legacy path bit-identically.
 
 **Test:** `test/test_monotone_advection.f90` — sharp S gradient, uniform
 velocity; S min 0, S max 0.035, negative cells **0** → **PASS**
-(`data/validation/t5c3_monotone_test.json`).
+(`docs/wiki/stages/stage11/evidence/t5c3_monotone_test.json`).
 
 ## 3. Phase 2 — Boundary sponge
 
@@ -50,7 +50,7 @@ U,V,UP,VP *= max(0, 1 - (alpha/86400)·dt·ramp)
 
 **Test:** `test/test_sponge_boundary.f90` — boundary pulse 1.0 → 0.9583;
 interior unchanged 1.0 → **PASS**
-(`data/validation/t5c3_sponge_test.json`).
+(`docs/wiki/stages/stage11/evidence/t5c3_sponge_test.json`).
 
 ## 4. Phase 3 — 90-day Config 1 with both fixes (FAIL)
 
@@ -75,7 +75,7 @@ create **nonphysical S=0/T=30 combinations with negative density**. The
 acceptance criterion `RO > 0` **fails**. Without the T bound the run returned
 NaN; the hard range is a safety net, not a consistent density fix.
 
-`data/validation/t5c3_90day_with_fixes.json`.
+`docs/wiki/stages/stage11/evidence/t5c3_90day_with_fixes.json`.
 
 ## 5. Phase 4 — April 30-day with fixes (PASS)
 
@@ -89,7 +89,7 @@ Configuration identical to Phase 3, April EN4/ERA5:
 | Volume / heat / salt | 0 / 9.10e-3 / 3.75e-4 |
 
 Seasonal stability passes; the hard caps are active but do not break April.
-`data/validation/t5c3_april_with_fixes.json`.
+`docs/wiki/stages/stage11/evidence/t5c3_april_with_fixes.json`.
 
 ## 6. Trade-offs
 

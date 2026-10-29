@@ -96,8 +96,8 @@ hardcoded 0 and was not used).
   mode. The first baroclinic Rossby radius from the mean EN4 stratification is
   **2.36 km**, only **0.17 × the 13.89 km grid**.
 
-Outputs: `data/validation/t3c2_spatial_diagnosis.json`,
-`data/validation/figures/t3c2/*.png`.
+Outputs: `docs/wiki/stages/stage11/evidence/t3c2_spatial_diagnosis.json`,
+`docs/wiki/stages/stage11/figures/t3c2/*.png`.
 
 ## 2. Phase 1 — Geostrophic balance check
 
@@ -296,9 +296,9 @@ prerequisites.
 New diagnostic scripts:
 
 - `python/analysis/stage11.8.0_T3_CORRECTIVE2_diagnosis.py` →
-  `data/validation/t3c2_spatial_diagnosis.json` + 7 figures.
+  `docs/wiki/stages/stage11/evidence/t3c2_spatial_diagnosis.json` + 7 figures.
 - `python/analysis/stage11.8.0_T3_CORRECTIVE2_controls.py` →
-  `data/validation/t3c2_controls_analysis.json`.
+  `docs/wiki/stages/stage11/evidence/t3c2_controls_analysis.json`.
 - Supporting outputs: `t3c2_controls_30d.json`, `t3c2_freeze_results.json`,
   `t3c2_eos80_controls.json`, `t3c2_dt_sensitivity.json`.
 

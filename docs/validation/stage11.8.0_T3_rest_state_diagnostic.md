@@ -133,7 +133,7 @@ Run IDs (outputs under `data/runs/`, gitignored; stdout copied as
 - `data/runs/t3_eos80_canonical/` — 30 days, EOS80, canonical Jan
 - `data/runs/t3_legacy_rebuild/` — 30 days, LEGACY, rebuild (identical)
 
-Committed metrics: `data/validation/t3_rest_result.json` (per-day series +
+Committed metrics: `docs/wiki/stages/stage11/evidence/t3_rest_result.json` (per-day series +
 summary). This **replaces all pre-T3-PREP baselines** (which used the
 wrong-grid products) but is a **defect baseline** demonstrating the
 instability — it is NOT a validated rest-state reference.

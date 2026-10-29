@@ -35,7 +35,7 @@ T3b setup: zero forcing, corrected EN4, E1+E2+E3 ON, LEGACY, 30 days.
 - Δt=1800 already brings the ratio from 52.98 to **1.112** (<5); max |U| is
   0.517, marginally above the old 0.5 m/s limit.
 - Δt=900 also passes the ratio and the max-|U| limit.
-- Outputs: `data/validation/t3c4_dt1800_results.json`,
+- Outputs: `docs/wiki/stages/stage11/evidence/t3c4_dt1800_results.json`,
   `t3c4_dt900_results.json`.
 
 ## 3. Phase 2 — Laplacian dissipation
@@ -61,7 +61,7 @@ Ah=20000; Ah=50000 would give 1.86 (>1) and is not used at Δt=1800.
 | 20000 | 0.114 | 0.079 | 2.862e13 | 1.599e13 | 0.559 |
 
 All three pass; Ah=10000 is the requested starting value and retains more
-large-scale signal than 20000. Output: `data/validation/t3c4_ah_results.json`.
+large-scale signal than 20000. Output: `docs/wiki/stages/stage11/evidence/t3c4_ah_results.json`.
 
 ## 4. Phase 3 — sponge layers
 
@@ -86,7 +86,7 @@ zero forcing; corrected EN4; LEGACY.
 | Acceptance (revised: <5.0, max \|U\|<0.5) | **PASS** |
 | Classification | bounded adjustment (KE decays after day 15) |
 
-`data/validation/t3c4_final_results.json`; output directory
+`docs/wiki/stages/stage11/evidence/t3c4_final_results.json`; output directory
 `data/runs/t3c4_dt1800_ah10000`.
 
 ## 6. Acceptance-criteria revision

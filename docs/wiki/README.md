@@ -56,6 +56,7 @@ Reports are organized by stage directories in `docs/wiki/stages/`:
 - `stage08/` — EN4 ocean initialization, thermodynamic correction, spin-up, legacy iceberg module
 - `stage09/` — minimal Lagrangian iceberg model: reconstruction, verification, calibration
 - `stage10/` — early Stage 10 reports (10.4.2, 10.4.2.1, 10.5); the remaining Stage 10 reports are active and live in `docs/validation/`
+- `stage11/` — **frozen** Stage 11 research artifact (D-51, tag `stage11-final-frozen`): archived JSON evidence in `stage11/evidence/` and diagnostic figures in `stage11/figures/`; narrative reports stay in `docs/validation/` (11.8.x) and `docs/archive/stage11/` (11.0–11.7)
 
 Each stage directory has a `README.md` with an index and summary.
 

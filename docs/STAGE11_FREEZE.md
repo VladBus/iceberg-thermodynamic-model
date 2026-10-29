@@ -28,7 +28,7 @@ with the baseline as a **numerical experiment**, not as tide validation.
 
 ## 2. Verified outcome
 
-Primary 30-day no-tide run (`data/validation/n24_30day_final_with_tides.json`,
+Primary 30-day no-tide run (`docs/wiki/stages/stage11/evidence/n24_30day_final_with_tides.json`,
 `n24_30day_thermo_rewrite_results.json`):
 
 | Metric | Frozen value | Verdict |
@@ -57,9 +57,9 @@ These numbers are the complete, honest Stage 11 stability result. They do
 | Production scheduler | **BLOCKED** (T-39 ice/cadence artifact) | N=1/production matrix not a validated physical baseline |
 | N=1 | diagnostic only | not the frozen production state |
 
-The first cap is documented in `data/validation/heat_first_appearance.json`;
-the N² failure in `data/validation/tide_integration_test.json`; tide absence in
-`data/validation/n24_30day_final_with_tides.json`.
+The first cap is documented in `docs/wiki/stages/stage11/evidence/heat_first_appearance.json`;
+the N² failure in `docs/wiki/stages/stage11/evidence/tide_integration_test.json`; tide absence in
+`docs/wiki/stages/stage11/evidence/n24_30day_final_with_tides.json`.
 
 ## 4. What this freeze means
 
@@ -93,11 +93,11 @@ fpm test --flag "-I/usr/include"          # full battery; exit 0 expected
 
 Evidence anchors:
 
-- `data/validation/n24_30day_final_with_tides.json`
-- `data/validation/n24_30day_thermo_rewrite_results.json`
-- `data/validation/tide_integration_test.json`
-- `data/validation/stratification_verification.json`
-- `data/validation/heat_first_appearance.json`
+- `docs/wiki/stages/stage11/evidence/n24_30day_final_with_tides.json`
+- `docs/wiki/stages/stage11/evidence/n24_30day_thermo_rewrite_results.json`
+- `docs/wiki/stages/stage11/evidence/tide_integration_test.json`
+- `docs/wiki/stages/stage11/evidence/stratification_verification.json`
+- `docs/wiki/stages/stage11/evidence/heat_first_appearance.json`
 - `docs/validation/stage11.11.2_heat_forensics_root_cause.md`
 - `docs/validation/stage11.11_physical_validation_tides.md`
 

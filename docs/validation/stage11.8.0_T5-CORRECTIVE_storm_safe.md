@@ -45,7 +45,7 @@ From Q1 ERA5, the peak wind is **2020-03-16 18:00 UTC**:
 | day 70 | first NaN (config 3); day 74 config 4 |
 
 The failure develops during the March storm, not during the January spin-up.
-`data/validation/t5c_storm_analysis.json`.
+`docs/wiki/stages/stage11/evidence/t5c_storm_analysis.json`.
 
 ## 3. Seasonal validation
 

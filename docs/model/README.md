@@ -11,12 +11,23 @@ archive. History lives in `docs/wiki/`.
 | `model_description.md`          | integral narrative description: formulation, components, data, processes, numerical implementation             |
 | `model_physics_status.md`       | status of every physics block: implemented/experimental/limitations; what is on by default, what is selectable |
 | `model_equation_ledger.md`      | mathematical specification: equations, variables, units, sign conventions, coefficients, EOS, code links       |
-| `stage10_modernization_plan.md` | Stage 10 modernization plan and journal (active work stage)                                                    |
+| `numerical_scheme_inventory.md` | authoritative (Stage 11.3C forensic) inventory of the actual numerical schemes                                |
+| `stage10_modernization_plan.md` | Stage 10 modernization plan and journal (**historical** — Stage 10 complete)                                   |
+
+## Current development status
+
+- **Stage 11 — FROZEN** research artifact (D-51, tag `stage11-final-frozen`;
+  see `../STAGE11_FREEZE.md`). The prognostic ocean is **not** a
+  production-validated ocean (N²/tides/90-day gates unresolved).
+- **Stage 12 — active**, offline/prescribed **GLORYS12 + ERA5** forcing for a
+  voxel iceberg (D-51); see `../STAGE12_PREPARATION.md` and
+  `../REANALYSIS_DATA_PLAN.md`. No Stage 12 Fortran reader written yet
+  (Stage 12.1 reconnaissance complete).
 
 ## Related directories
 
-- Active Stage 10 validation reports: `../validation/INDEX.md`
-- Historical stage reports 3–10: `../wiki/INDEX.md`
+- Active Stage 12 validation reports: `../validation/INDEX.md`
+- Historical stage reports 3–11: `../wiki/INDEX.md`
 - Key decisions: `../DECISIONS.md`
 - Current known issues: `../../KNOWN_ISSUES.md`
 

@@ -42,7 +42,7 @@ Output: `data/runs/t4_wind_forcing/`. No NaN/Inf in any daily field
 | S RMS drift | **0.229 PSU** |
 | Volume / heat / salt relative change | **0 / 5.228e-3 / 8.319e-4** |
 
-`data/validation/t4_wind_forcing_metrics.json`, `t4_acceptance.json`.
+`docs/wiki/stages/stage11/evidence/t4_wind_forcing_metrics.json`, `t4_acceptance.json`.
 
 ### Conservation interpretation
 
@@ -67,7 +67,7 @@ current to the right of the wind stress (Northern Hemisphere).
 61.4 % of cells).** By day 30 the surface current is dominated by the evolving
 geostrophic/eddy field and the mean angle reverses; the signal is therefore
 spin-up-phase, not stationary. `ekman_observed=true`;
-`data/validation/t4_ekman_analysis.json`.
+`docs/wiki/stages/stage11/evidence/t4_ekman_analysis.json`.
 
 ## 4. Energy budget
 
@@ -79,7 +79,7 @@ spin-up-phase, not stationary. `ekman_observed=true`;
 
 Wind work is positive and exceeds the resolved Laplacian dissipation; the
 residual is carried by vertical friction/advection/boundary fluxes (not
-archived as separate diagnostics). `data/validation/t4_energy_budget.json`.
+archived as separate diagnostics). `docs/wiki/stages/stage11/evidence/t4_energy_budget.json`.
 
 ## 5. Comparison with T3 (rest)
 
@@ -90,7 +90,7 @@ archived as separate diagnostics). `data/validation/t4_energy_budget.json`.
 
 Wind forcing adds substantial energy and roughly doubles-to-sextuples the
 surface current envelope; the forced run remains bounded (KE30/KE15 1.52).
-`data/validation/t4_comparison_t3.json`.
+`docs/wiki/stages/stage11/evidence/t4_comparison_t3.json`.
 
 ## 6. Acceptance
 

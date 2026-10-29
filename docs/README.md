@@ -18,10 +18,11 @@ README.md (root)
      │   ├─ model_equation_ledger.md  equations and conventions
      │   └─ stage10_modernization_plan.md — Stage 10 modernization plan
      │
-     ├─ validation/INDEX.md           active validation (Stage 11)
+     ├─ validation/INDEX.md           active validation (Stage 12; Stage 11 reports frozen)
      │
      ├─ wiki/README.md                historical archive
-     │   └─ wiki/INDEX.md             index of stages 3–10
+     │   ├─ wiki/INDEX.md             index of stages 3–11
+     │   └─ stages/stage11/evidence/  archived Stage 11 JSON evidence + figures
      │
      ├─ DECISIONS.md                  key decisions journal
      ├─ PROJECT_ROADMAP.md            project plan and stage status
@@ -38,8 +39,8 @@ README.md (root)
 | ----------------- | ------------------------------------------ | ---------------------------------------------------------------- |
 | Working rules     | `AGENTS.md`, `RULES.md`, `STYLE.md` (root) | how to change the project, style, constraints                    |
 | Current model     | `docs/model/`                              | how the model works now: physics, equations, status, limitations |
-| Active validation | `docs/validation/`                         | current-stage reports (Stage 11), design notes, test results     |
-| History           | `docs/wiki/`                               | archive of completed stages 3–10, forensic audits, references    |
+| Active validation | `docs/validation/`                         | current-stage reports (Stage 12), design notes, validation JSONs |
+| History           | `docs/wiki/`                               | archive of completed stages 3–11, forensic audits, references; Stage 11 evidence JSONs + figures live in `docs/wiki/stages/stage11/evidence/` |
 | Decisions         | `docs/DECISIONS.md`                        | why the model is structured the way it is                        |
 | Navigation        | `docs/README.md`, directory indexes        | how to move from general to specific                             |
 

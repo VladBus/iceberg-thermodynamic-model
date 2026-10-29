@@ -474,7 +474,7 @@ i=is1/j=js1 T/S boundary: 1,341 cells by day 1), plus core pressure-gradient
 instability (T-03). Heat/salt drift 0.59-0.82 % / 1.33-1.46 %; volume 0.
 Rebuild is byte-identical to canonical (md5), so the comparison is a
 determinism check only. New metrics baseline:
-`data/validation/t3_rest_result.json` (replaces pre-T3-PREP baselines; a
+`docs/wiki/stages/stage11/evidence/t3_rest_result.json` (replaces pre-T3-PREP baselines; a
 defect baseline, not a validated reference).
 Status: **COMPLETE (UNSTABLE)**. Report:
 `docs/validation/stage11.8.0_T3_rest_state_diagnostic.md`.
@@ -763,7 +763,7 @@ production scheduler change (T-39 remains BLOCKED).
   savings **37.327 GB**. **Stage 11.10 later executed cleanup to 0.510 GB / 26 runs.**
 - Migration: `docs/MIGRATION_GUIDE_EOS80_DEFAULT.md`.
 - Inventory: `docs/validation/stage11.8B_runs_inventory.md`,
-  `data/validation/runs_inventory_final.json`.
+  `docs/wiki/stages/stage11/evidence/runs_inventory_final.json`.
 - Stage summary: `docs/STAGE11_SUMMARY.md`; checklist:
   `docs/STAGE11_CLOSURE_CHECKLIST.md`.
 - Status: **Stage 11.9 CLOSED**; see closure declaration.

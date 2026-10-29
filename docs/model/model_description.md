@@ -6,9 +6,11 @@ The repository contains a Lagrangian iceberg module coupled to a legacy Eulerian
 
 This document is the narrative description of the current model. The equation ledger is the mathematical specification; the physics-status document records the maturity and limitations of individual blocks.
 
+**Current development status (2026-10-29).** Stage 11 is **frozen** as a research artifact (D-51, tag `stage11-final-frozen`) — the rectangular-prism iceberg and the prognostic ocean it produced are the reference state, but that ocean is **not** production-validated (N²/tide/90-day gates open). **Stage 12 is active**: a thermally resolved **voxel** iceberg driven by offline/prescribed **GLORYS12 + ERA5** reanalysis, which will supersede the rectangular-prism thermodynamics. Stage 12.1 (data reconnaissance) is complete; the Fortran reader is not yet written. See `../STAGE12_PREPARATION.md`, `../REANALYSIS_DATA_PLAN.md`, and `../STAGE11_FREEZE.md`.
+
 ## 2. Grid and coordinates
 
-The reconstructed real grid has 133 × 105 nodes, with 132 × 104 active cells. It is a B-grid with DX = DY = 13.89 km. Geographic coordinates are supplied by KOORD.DAT and bathymetry/land mask by hhh.bar. The real-grid reconstruction uses IBCAO V5.2 at 400 m resolution in EPSG:3996.
+The reconstructed real grid has 133 × 105 nodes, with 132 × 104 active cells. It is a B-grid with DX = DY = 13.89 km. **Production reads the grid from NetCDF `data/input/processed/grid/grid.nc`** (coordinates, bathymetry and land mask); the legacy `KOORD.DAT` / `hhh.bar` files are offline regression fixtures only (see `../LEGACY_IO_POLICY.md`). The real-grid reconstruction uses IBCAO V5.2 at 400 m resolution in EPSG:3996.
 
 Iceberg motion is prognosed in model x/y coordinates. Atmospheric and oceanic forcing is interpolated at the current x/y position. Geographic latitude/longitude are diagnostic coordinates and are updated from x/y each time step (`model_coords_to_latlon`); they are not independent prognostic variables.
 

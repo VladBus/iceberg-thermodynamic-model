@@ -1,87 +1,113 @@
-# Stage 12 Preparation
+# Stage 12 Preparation — Voxel Iceberg on Reanalysis Forcing
 
-**Status:** PREPARATION ONLY — Stage 12 implementation has **NOT** started.
-**Date:** 2026-10-26
-**Base:** `531bbfa` (Stage 11 closed)
+**Status:** **STAGE 12.0 — PREPARATION / DOCUMENTATION FREEZE**
+**Date:** 2026-10-29
+**Base:** `386c850` (Stage 11 frozen; tag `stage11-final-frozen`)
+**Implementation:** **NOT STARTED.** No Fortran, `fpm.toml`, CI, or production
+default is changed by Stage 12.0.
 
-## Objective
+## 1. Objective
 
-Implement a voxel-based iceberg thermodynamics model integrated with the
-Stage 11 ocean model. The target is a thermally resolved iceberg body with
-per-voxel temperature and ice fraction, coupled to the validated ocean,
-atmosphere, and drift dynamics.
+Replace the rectangular-prism iceberg thermodynamics with a thermally
+resolved voxel iceberg forced by an **offline/prescribed reanalysis ocean** and
+ERA5 atmosphere. The first implementation is deliberately one-way: the ocean
+does not feel the iceberg.
 
-## Prerequisites (COMPLETED)
+The target is not a calibrated operational model. It is a controlled
+thermodynamic model with explicit conservation budgets, voxel-level
+diagnostics, and a documented observational comparison.
 
-- Ocean stabilization (Stage 11; T3-CORRECTIVE chain)
-- EOS-80 validation and runtime default (D-29/D-47/D-48)
-- Forcing validation (T4–T6; wind rotation, longitude clamp, snowfall)
-- 8/8 N=1 seasonal matrix PASS and bit-identical reproducibility
-- Stage 11 closure declaration and final review
+## 2. Fixed data architecture (D-51)
 
-## Reference review
+| Component | Source | Status |
+|---|---|---|
+| Ocean T/S/currents | GLORYS12 `GLOBAL_MULTIYEAR_PHY_001_030`, daily 1/12° (`thetao`, `so`, `uo`, `vo`, `zos`) | selected; not downloaded |
+| Sea ice / SSH | same product (`siconc`, `sithick`, `zos`) | selected |
+| Bathymetry / mask | `cmems_mod_glo_phy_my_0.083deg_static` (`deptho`, `mask`) | selected |
+| Atmosphere | ERA5 (existing validated path) | existing |
+| Iceberg geometry/bathymetry | IBCAO model grid (existing) | existing |
+| Coupling | offline/prescribed, one-way | fixed for Stage 12 |
 
-Available:
-- `docs/references/Iceberg/Iceberg_Voxel_Thermal_Model_8.pdf` (32 pages) —
-  full voxel thermal specification. It defines a regular cubic voxel grid
-  with per-voxel temperature `T` and remaining-ice fraction `φ`; finite-volume
-  conduction through shared ice faces; Stefan/three-equation ice-water
-  boundary fluxes; air-surface heat balance; geometric erosion and voxel
-  removal (`φ_min`); hydrostatic waterline; and a drift-dynamics interface.
-- `docs/references/Dmitriev_model/` — original model/reference texts.
+The Stage 11 N=24 ocean is **not** the Stage 12 ocean of record. It remains a
+frozen numerical cross-check (`docs/STAGE11_FREEZE.md`).
 
-Not available:
-- `Iceberg_1.docx`
-- `Iceberg_Voxel_Thermal_Model.docx`
+Fallback/cross-check only: `ARCTIC_MULTIYEAR_PHY_002_003` (TOPAZ4, daily).
+Do not mix products inside one run.
 
-**Important:** the PDF is a model specification, not an observational
-validation. Its own limitations include calibration needs for turbulent
-coefficients, cavity exchange, spray/waterline zone, and no coupled
-ocean/atmosphere feedback in the thermal formulation.
+## 3. Voxel model contract
 
-## Key tasks (tentative)
+The reference specification is
+`docs/references/Iceberg/Iceberg_Voxel_Thermal_Model_8.pdf` (32 pages).
+Freeze the following before coding:
 
-1. Review the voxel specification and freeze the numerical design:
-   grid resolution `h`, time step, explicit/stable conduction limit,
-   boundary-flux and phase-change treatment.
-2. Design the iceberg↔ocean coupling interface: per-face depth, ocean
-   `T/S/u/v`, freezing point, and the existing Stage 11 forcing contract.
-3. Implement voxel thermodynamics: conduction, ice–water Stefan/three-equation
-   flux, ice–air surface balance, per-voxel `T/φ` update.
-4. Implement geometric erosion and hydrostatic waterline/voxel removal.
-5. Integrate the existing Lagrangian drift module with voxel-derived mass,
-   draft, areas, and added-mass/drag diagnostics.
-6. Design conservation/energy budgets and voxel-level diagnostics.
-7. Validate against the available observational constraints; do not claim
-   production calibration without data.
-8. Decide whether the initial Stage 12 coupling is one-way (prescribed ocean)
-   or two-way; two-way coupling requires a dedicated approved stage.
+- regular cubic voxel grid with per-voxel temperature `T` and ice fraction `φ`;
+- finite-volume conduction through shared ice faces;
+- Stefan / three-equation ice-water boundary flux on submerged faces;
+- air-surface heat balance on exposed faces;
+- geometric erosion and removal at `φ < φ_min`;
+- hydrostatic waterline and drift coupling through voxel-derived mass, draft,
+  and areas;
+- explicit energy and meltwater budgets.
 
-## Estimated effort
+The PDF is a **model specification**, not an observational calibration. Its
+own open items (turbulent coefficients, cavity exchange, spray/waterline zone,
+no coupled feedback) must remain visible in the implementation.
 
-| Work package | Estimate |
-|---|---|
-| Literature/specification review | 1–2 weeks |
-| Numerical/interface design | 1–2 weeks |
-| Implementation | 4–8 weeks |
-| Validation and diagnostics | 2–4 weeks |
-| **Total** | **8–16 weeks** |
+## 4. Staged work packages
 
-## Dependencies
+| Stage | Deliverable | Gate |
+|---|---|---|
+| 12.1 | Reanalysis acquisition/validation (GLORYS12 + ERA5 subset) | product/time/bbox/units/mask verified; no NaNs |
+| 12.2 | Reanalysis reader and offline forcing contract | reader reproduces independent subset; no Stage 11 ocean dependency |
+| 12.3 | Voxel thermal core | conduction + phase change conserve energy in a closed test |
+| 12.4 | Ice-water/ice-air boundary coupling | three-equation limit reproduces Stage 10.10 anchors |
+| 12.5 | Geometry/erosion/hydrostatic coupling | mass and volume budgets close; no negative φ |
+| 12.6 | Drift coupling with voxel-derived geometry | existing drift tests remain green; no two-way feedback |
+| 12.7 | Validation and diagnostics | documented observational comparison; no calibration claim |
 
-- Stage 11 ocean model and forcing (COMPLETED)
-- Voxel model specification (PDF available; DOCX absent)
-- Observational data for validation (availability to be assessed)
-- Explicit approval before any two-way coupling or production default change
+Stages may be reordered only with an explicit decision. Stage 12.1 must not
+start before its data plan is reviewed.
 
-## Guardrails
+## 5. Data gates for Stage 12.1
 
-- Do not change Stage 11 EOS/scheduler/physics defaults during Stage 12
-  preparation.
-- Keep Stage 12 implementation behind a dedicated switch/branch.
-- Preserve the Stage 11 closure baselines and reproducibility evidence.
-- Do not claim voxel validation before a documented observational comparison.
+- Barents subset: approximately **63–86°N, 5–80°E** (model domain
+  `64.21–85.04°N, 8.33–76.32°E` plus a guard margin).
+- Time: **2020-01-01 through 2020-12-31**, daily means; verify the exact
+  availability end before the first run.
+- Depth: surface through at least **600 m**; preserve the native GLORYS
+  levels rather than pre-interpolating to the Stage 11 grid.
+- Units: `thetao` °C, `so` 1e−3 (verify against model salinity mass fraction),
+  `uo/vo` m s⁻¹, `zos` m, `siconc` fraction, `sithick` m.
+- Mask: use the product `mask`/`deptho`; never fill land with zeros.
+- Storage: monthly float32 chunks with compression; the uncompressed
+  4-field 3-D subset is tens of GB, so the exact size must be measured before
+  a full-year download.
 
-## Next action
+## 6. Guardrails
 
-Stage 12 planning/literature review only. **No implementation has started.**
+- No two-way ocean coupling in Stage 12; that requires a separate approved
+  stage.
+- No change to Stage 11 EOS, scheduler, or frozen evidence.
+- No production default change; new physics stays behind a dedicated switch.
+- No claim of calibration or operational skill from a specification-only
+  model.
+- No reanalysis download in Stage 12.0; this stage is documentation only.
+- Stage 11 limitations (N², tides, 90-day, T-39) remain limitations; they are
+  not waived by changing the forcing source.
+
+## 7. Entry/exit criteria
+
+**Stage 12.0 exit:** frozen Stage 11 tag; D-51 recorded; this plan and the
+reanalysis data plan reviewed; catalogue probe reproducible; Enderlin23
+dataset staged with provenance.
+
+**Stage 12.1 entry:** all of the above, plus an approved storage/transfer
+budget. **Stage 12 implementation remains NOT STARTED.**
+
+## 8. References
+
+- `docs/STAGE11_FREEZE.md`
+- `docs/REANALYSIS_DATA_PLAN.md`
+- `docs/DECISIONS.md` D-51
+- `docs/references/Iceberg/Iceberg_Voxel_Thermal_Model_8.pdf`
+- `docs/data_sources.md`

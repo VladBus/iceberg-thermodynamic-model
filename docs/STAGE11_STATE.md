@@ -1,25 +1,25 @@
 # Stage 11 — Living State (≤150 lines)
 
-**Updated:** 2026-10-27
-**Base commit:** `531bbfa` (Stage 11.8B); Stage 11.9 closure documentation in the current commit.
-**Branch policy:** `main` = legacy-frozen default; stage11-physics changes are
-env-gated (default OFF) until D-33 approval.
+**Updated:** 2026-10-29
+**Base commit:** `386c850` (Stage 11.11.2 source); freeze tag includes the Stage 12.0 record.
+**Branch policy:** `main` = frozen Stage 11 research artifact; no Stage 11 physics/EOS/scheduler changes under this label (D-51).
 
 ## Current status
 
 | Field | Value |
 |---|---|
-| Current stage | **11.11.2 — heat forensics + synthetic tide** — 10-day control; N² still fails; Stage 12 NO-GO |
+| Current stage | **Stage 11 FROZEN** (research artifact); **Stage 12.0 preparation** complete; Stage 12 implementation not started |
+| Freeze authority | `docs/STAGE11_FREEZE.md`; decision D-51 |
 | EOS default | **EOS80** (`EOS_MODE` unset); `EOS_MODE=LEGACY` explicit fallback |
 | I/O default | **NetCDF only production path**; root legacy symlinks removed |
 | Physical baseline | **D-50:** 90-day no NaN/S<0/T>30; drift <1e-4; N² ≥ −ε; N=1 not final |
-| data/runs | **4.0 GB / 48 runs**; OBC/bisection/thermo/tide evidence retained |
+| data/runs | **4.6 GB / 54 run directories**; OBC/bisection/thermo/tide evidence retained |
 | Ocean rest state | **T3b PASS (bounded)** — max \|U\| **0.147 m/s**, KE30/KE15 **0.568** (dt=1800, Ah=10000, no sponge) |
 | T-19 snowfall | **FIXED** — v2 CDS probe R=1.009 (hourly); divisor 3600 |
 | T-25 potential CA | Implemented behind `STAGE118_CA_POTENTIAL` (OFF); no effect in LEGACY |
 | T-32 prognostic RO | Implemented behind `STAGE118_RO_PROGNOSTIC` (OFF); no effect (CA already refreshes RO) |
 | T-31 EUU | **FIXED diagnostically** — 3D KE printed as `KE3D(J)` |
-| Next step | eliminate N² inversions and complete 30-day tide validation; Stage 12 NO-GO |
+| Next step | Stage 12.1 reanalysis acquisition under D-51; N²/tide/90-day gaps remain frozen limitations |
 
 ## Seasonal coverage (30-day forced)
 
@@ -57,7 +57,8 @@ EOS80 raw anomaly is −2.504e-3 **kg/m³** = −2.504e-6 g/cm³; absolute densi
 default/explicit EOS80/matrix and LEGACY fallback/matrix are bit-identical.
 First capped cell day10 (i=1,j=93) T=30/S=40; H1/H2/H3 rejected. Iterative
 CA prevents T=30 in 10-day tide control (Tmax 12.61), but N² still fails
-(9,813 interfaces <−1e−6); 30-day tide validation incomplete. **Stage 12 NO-GO.**
+(9,813 interfaces <−1e−6); 30-day tide validation incomplete. Stage 11 is
+frozen as a research artifact; Stage 12 uses GLORYS12 + ERA5 (D-51).
 
 ## Issue table (T-01 … T-41)
 
@@ -140,6 +141,10 @@ CA prevents T=30 in 10-day tide control (Tmax 12.61), but N² still fails
 
 ## Next action
 
-1. **Stage 11 CLOSED** (2026-10-27): EOS80 default; 8/8 matrix; default/fallback/reproducibility bit-identical; pre-cleanup inventory 82.583 GB / 289 runs; Stage 11.10 cleanup → 0.510 GB / 26 runs.
-2. **Cleanup optional**: archive 153 historical runs, review/delete 47 temporary and 6 duplicates; est. 37.327 GB savings. **Nothing deleted.**
-3. **Next: eliminate N² inversions + 30-day tide validation**; Stage 12 NO-GO; T-39 remains BLOCKED; N=1 diagnostic only.
+1. **Stage 11 FROZEN** (2026-10-29): commit `386c850`, tag
+   `stage11-final-frozen`; authority `docs/STAGE11_FREEZE.md`.
+2. **Open physical gates are frozen limitations, not solved:** N² min
+   −0.01639 s⁻² (9,813 interfaces), no real tides/30-day tide validation, no
+   90-day validated run, T-39 production scheduler still BLOCKED.
+3. **Next: Stage 12.1** reanalysis acquisition/validation under D-51; Stage 12
+   implementation has NOT started; N=1 remains diagnostic only.

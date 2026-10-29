@@ -549,3 +549,31 @@ not added.
 - **Consequences:** The administrative Stage 11 closure remains historical, but Stage 12 must not treat the N=1 ocean as final. No bit-identity test may block an approved physical improvement.
 - **Note:** D-49 is the Stage 11 closure decision; this is D-50 because D-49 was already occupied.
 - **References:** `docs/OBC_N4_N24_AUDIT.md`, `data/validation/n4_n24_audit.json`, `docs/LEGACY_IO_POLICY.md`.
+
+## D-51. Stage 11 frozen as a research artifact; Stage 12 uses GLORYS12 + ERA5 reanalysis (Stage 12.0, 2026-10-29)
+
+- **Status:** ACTIVE.
+- **Decision:** Freeze the Stage 11 ocean/ice code and evidence with an annotated
+  tag (`stage11-final-frozen`) as a **research artifact**, not a production
+  ocean. Stage 12 uses offline/prescribed **GLORYS12 + ERA5** forcing for the
+  iceberg; it does not use the Stage 11 prognostic ocean as physical truth.
+- **Why:** Stage 11's N=24 30-day no-tide run is numerically bounded (0 NaN,
+  max U 1.999 m/s, CFL 0.518) but still fails the stratification gate
+  (N² min −0.01639 s⁻², 9,813 wet interfaces) and has no real tide or 90-day
+  validation. Continuing to treat it as the ocean of record would block
+  Stage 12 on unresolved physics outside the iceberg scope.
+- **Stage 12 primary ocean product:** `GLOBAL_MULTIYEAR_PHY_001_030`,
+  dataset `cmems_mod_glo_phy_my_0.083deg_P1D-m` (daily, 1/12°, GLORYS12;
+  `thetao`, `so`, `uo`, `vo`, `zos`, `siconc`, `sithick`); static
+  `cmems_mod_glo_phy_my_0.083deg_static` (`deptho`, `mask`). Barents subset,
+  offline/prescribed, no two-way coupling.
+- **Atmosphere:** ERA5, unchanged. The Stage 11 atmosphere validation and
+  NetCDF boundary remain in force.
+- **Fallback / cross-check:** `ARCTIC_MULTIYEAR_PHY_002_003` (TOPAZ4, daily)
+  may be used for coverage/consistency checks; it is not the primary product.
+- **Consequences:** Stage 11 N²/tide/90-day gaps are explicitly frozen as
+  limitations; they do not silently disappear and are not claimed as solved.
+  No Stage 11 physics/EOS/scheduler change is made by this decision.
+- **References:** `docs/STAGE11_FREEZE.md`,
+  `docs/STAGE12_PREPARATION.md`, `docs/REANALYSIS_DATA_PLAN.md`,
+  `docs/validation/stage11.11.2_heat_forensics_root_cause.md`.

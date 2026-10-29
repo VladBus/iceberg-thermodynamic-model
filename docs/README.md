@@ -25,6 +25,9 @@ README.md (root)
      │
      ├─ DECISIONS.md                  key decisions journal
      ├─ PROJECT_ROADMAP.md            project plan and stage status
+     ├─ STAGE11_FREEZE.md             frozen Stage 11 research artifact
+     ├─ STAGE12_PREPARATION.md        Stage 12 voxel/reanalysis plan
+     ├─ REANALYSIS_DATA_PLAN.md       GLORYS12 + ERA5 data contract
      ├─ data_sources.md               external data products: sources, retrieval, units
      └─ references/                   bibliography, literature matrix
 ```

@@ -1,10 +1,15 @@
-# Stage 11 — Final Summary
+# Stage 11 — Final Summary (Historical)
 
-**Status:** Stage 11 technical core CLOSED historically; **Stage 11.11.1 final
-ocean polish is PARTIAL** — N=24 no-tide stable and synthetic M2 loaded, but
-N² and 30-day tide validation remain blockers. **Stage 12 NO-GO.**
-**Date:** 2026-10-27
-**Base:** `5ddf414`
+> **Frozen 2026-10-29:** this summary is historical. The authoritative freeze
+> record is `docs/STAGE11_FREEZE.md` (commit `386c850`, tag
+> `stage11-final-frozen`). The latest N² audit found **9,813** wet interfaces
+> below −1e−6, not 4,627; both are frozen limitations. Stage 12 proceeds on
+> GLORYS12 + ERA5 reanalysis (D-51), not on this ocean.
+
+**Status:** Stage 11 technical core CLOSED historically; **Stage 11.11.2 final
+ocean state is PARTIAL and FROZEN** — N=24 no-tide stable and synthetic M2
+loaded, but N² and 30-day tide validation remain blockers. Stage 12
+implementation has not started.
 
 ## Achievements
 
@@ -21,7 +26,7 @@ N² and 30-day tide validation remain blockers. **Stage 12 NO-GO.**
 
 ## Remaining limitations
 
-- **N²** min −0.01568 s⁻²; 4,627 wet interfaces <−1e−6 (fails physical gate).
+- **N²** min −0.01639 s⁻²; 9,813 wet interfaces <−1e−6 (latest 11.11.2 audit; fails physical gate).
 - **Tides:** synthetic M2 (0.5 m, 12.42 h) is generated/loaded; FES2014 is not
   available and true 30-day tide propagation validation is incomplete.
 - N=24 valid for 30 days only; 90-day storm runs not tested.
@@ -31,5 +36,6 @@ N² and 30-day tide validation remain blockers. **Stage 12 NO-GO.**
 
 ## Next
 
-Resolve N² and acquire FES2014/TPXO constituents; then Stage 12 (voxel iceberg)
-may be considered. **Stage 12 implementation has NOT started.**
+Stage 11 is frozen as a research artifact. Stage 12.1 acquires/validates
+GLORYS12 + ERA5 reanalysis; **Stage 12 implementation has NOT started**.
+Resolving N²/tides is deferred and no longer blocks Stage 12 under D-51.

@@ -1,0 +1,7 @@
+# Stage 10.18D source metadata (per-iceberg Enderlin23 dataset)
+# Access date: 2026-09-20.
+# Retrieval method: direct HTTP POST to the USAP-DC zip endpoint (no account);
+# inner zip MD5 821bed51660957b65a896c42fb88a057 verified.
+# data_quality: PRIMARY_SOURCE (archive is the paper's own released data).
+source_id,authors,year,title,journal,doi,url,dataset_url,dataset_status,data_quality,primary_or_secondary,notes
+ENDERLIN23,Enderlin E.M.,2023,Antarctic iceberg melt rate variability and sensitivity to ocean thermal forcing,Journal of Glaciology 69(278):1718-1728,10.1017/jog.2023.54,https://doi.org/10.1017/jog.2023.54,USAP-DC 601679 (10.15784/601679),RETRIEVED 2026-09-20 (direct POST; MD5 verified),PRIMARY_SOURCE,primary,Per-iceberg geometries + meltwater fluxes for 15 Antarctic sites 2011-2022 (54 CSV, 743 iceberg observations); submarine total melt; no ocean velocity (U_rel NOT observed); CC BY 4.0

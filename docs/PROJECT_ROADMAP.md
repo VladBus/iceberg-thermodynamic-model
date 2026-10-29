@@ -1,10 +1,9 @@
 # Project Roadmap
 
-**Updated:** 2026-10-27
-**Current scientific stage:** **11.11.2 heat forensics/tides** — hot-cell source traced; 10-day tide control stable; N² gate fails; **Stage 12 NO-GO**.
-**Stages 3–11.4.1: COMPLETED** (10.x iceberg modernization; 11.1 seasonal characterization; 11.2 CFL audit; 11.4-D21…D33 EN4 stabilization → ERA5-coverage fix → cleanup + Ocean Baseline 11.x; 11.3A execution-graph audit; 11.3B input-architecture audit + NetCDF contracts; 11.3C scheme audit + timestep matrix; 11.3C.1 semantics + CFL distributions; 11.3C.2 time-integration audit; 11.3C.3 loop-bound search (VERDICT D); 11.4 EOS-80 experiment + 11.4.1 impact validation (OPTIONAL, not default)).
-**Current status:** Stages 10.14-11.11.2 committed. **11.11.2:** first hot cell day10 i1/j93; H1-H3 rejected; N² fails at 9,813; 30-day tide incomplete; Stage 12 NO-GO.
-**Test suite:** 69 Fortran test source files (`ls test/*.f90 | wc -l`); 69 executable test targets (`grep -lE '^\s*program ' test/*.f90 | wc -l`). Counting method (Stage 11.8.0 T0): every current `test/*.f90` holds a top-level `program`, so file count == target count (verified 2026-10-24).
+**Updated:** 2026-10-29
+**Current scientific stage:** **Stage 11 FROZEN (research artifact); Stage 12.0 preparation complete.** Stage 12 implementation has **not started**; Stage 12 uses GLORYS12 + ERA5 reanalysis (D-51).
+**Current status:** Stages 10.14–11.11.2 committed at `386c850`; Stage 11 freeze tag `stage11-final-frozen`. **11.11.2:** first hot cell day10 i1/j93; H1-H3 rejected; N² fails at 9,813 interfaces; 30-day tide incomplete. These are frozen limitations, not production claims. Historical "Stage 12 NO-GO" labels in the stage-by-stage sections below predate D-51 and are retained as stage history.
+**Test suite:** 77 Fortran test source files (`ls test/*.f90 | wc -l`); 77 executable test targets (`grep -lE '^\s*program ' test/*.f90 | wc -l`). Counting method (Stage 11.8.0 T0): every current `test/*.f90` holds a top-level `program`, so file count == target count (verified 2026-10-29).
 **Stage 11.5H-RC COMPLETE** (release-candidate gate: self-contained production scheduler, docs synced D-22…D-28). Plan: 11.8.0 diagnostic ladder (T0–T6) → 11.8A validation → 11.8B audit → 11.9 closure → 12.0 voxel (planning open; implementation not started, D-28).
 
 ## Completed foundation
@@ -870,8 +869,10 @@ production scheduler change (T-39 remains BLOCKED).
 - Iterative post-flux CA prevents 30°C in 10-day tide control (max T 12.61),
   but N² min **−0.01639 s⁻²**, **9,813** interfaces <−1e−6.
 - Synthetic M2 schema test passes; true 2-D propagation/30-day tide validation
-  incomplete. **Stage 12 NO-GO.**
-- Report: `docs/validation/stage11.11.2_heat_forensics_root_cause.md`.
+  incomplete. **This is a frozen Stage 11 limitation** (not a Stage 12.0
+  blocker); D-51 moves Stage 12 to GLORYS12 + ERA5.
+- Report: `docs/validation/stage11.11.2_heat_forensics_root_cause.md`; freeze:
+  `docs/STAGE11_FREEZE.md`.
 
 ### Stage 11.8 Prerequisite: Ocean Stabilization (MANDATORY GATE)
 
@@ -994,11 +995,24 @@ scope. T-38 (90-day), T-39 (production ice/cadence), and diagnostic seasonal
 ice remain documented non-blocking limitations. Stage 12 planning is open;
 implementation has NOT started.
 
-### Stage 12.0 — Voxel Iceberg Thermodynamics (PLANNED; preparation only)
+### Stage 12.0 — Freeze Stage 11 + Reanalysis Preparation (COMPLETE, 2026-10-29)
 
-3D internal iceberg model. Stage 11.9 has closed and the D-28 entry gate is
-open for **planning**, but implementation has NOT started. See
-`docs/STAGE12_PREPARATION.md`.
+Stage 11 is frozen at `386c850` / tag `stage11-final-frozen` as a research
+artifact, not a production ocean. D-51 selects GLORYS12
+(`GLOBAL_MULTIYEAR_PHY_001_030`, daily 1/12°) plus ERA5 as the Stage 12
+offline forcing; the Stage 11 N=24 ocean is retained only as a numerical
+cross-check. Stage 12 implementation has **NOT** started.
+
+Deliverables: `docs/STAGE11_FREEZE.md`, `docs/STAGE12_PREPARATION.md`,
+`docs/REANALYSIS_DATA_PLAN.md`, `python/reanalysis/copernicus_probe.py`, and
+the staged Enderlin23 dataset.
+
+### Stage 12.1 — Reanalysis Acquisition and Validation (NEXT; not started)
+
+Acquire/validate the Barents GLORYS12 subset and static mask/depth, then build
+the reader-ready offline forcing. Gate: time/bbox/units/mask/no-NaN checks in
+`docs/REANALYSIS_DATA_PLAN.md` §6. **No download starts until storage is
+approved.**
 
 ### Stage 11.2 — EN4 Initial Condition Stabilization (SUPERSEDED — archive)
 

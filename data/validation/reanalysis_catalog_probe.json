@@ -1,0 +1,72 @@
+{
+  "checks": {
+    "fallback_daily_dataset_present": true,
+    "fallback_product_present": true,
+    "primary_daily_dataset_present": true,
+    "primary_product_present": true,
+    "primary_required_variables_present": true,
+    "primary_static_dataset_present": true,
+    "static_required_variables_present": true
+  },
+  "cli_version": "copernicusmarine, version 2.5.0",
+  "fallback": {
+    "dataset_id": "cmems_mod_arc_phy_my_topaz4_P1D-m",
+    "dataset_version": "202506",
+    "doi": "10.48670/moi-00007",
+    "product_id": "ARCTIC_MULTIYEAR_PHY_002_003",
+    "title": "Arctic Ocean Physics Reanalysis",
+    "variables_found": [
+      "bottomT",
+      "mlotst",
+      "model_depth",
+      "siconc",
+      "sisnthick",
+      "sithick",
+      "sithick_corr",
+      "so",
+      "stfbaro",
+      "thetao",
+      "vxo",
+      "vxsi",
+      "vyo",
+      "vysi",
+      "zos"
+    ]
+  },
+  "primary": {
+    "dataset_id": "cmems_mod_glo_phy_my_0.083deg_P1D-m",
+    "dataset_version": "202311",
+    "doi": "10.48670/moi-00021",
+    "missing_variables": [],
+    "product_id": "GLOBAL_MULTIYEAR_PHY_001_030",
+    "static_dataset_id": "cmems_mod_glo_phy_my_0.083deg_static",
+    "static_missing_variables": [],
+    "static_variables_found": [
+      "deptho",
+      "deptho_lev",
+      "e1t",
+      "e2t",
+      "e3t",
+      "mask",
+      "mdt"
+    ],
+    "static_version": "202311",
+    "title": "Global Ocean Physics Reanalysis",
+    "variables_found": [
+      "bottomT",
+      "mlotst",
+      "siconc",
+      "sithick",
+      "so",
+      "thetao",
+      "uo",
+      "usi",
+      "vo",
+      "vsi",
+      "zos"
+    ]
+  },
+  "purpose": "catalogue availability only; no data downloaded",
+  "ready_for_stage_12_1": true,
+  "stage": "12.0"
+}

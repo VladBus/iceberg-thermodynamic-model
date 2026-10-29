@@ -1,7 +1,11 @@
-# Stage 11 — Summary
+# Stage 11 — Summary (Historical)
 
-**Status:** **Stage 11 CLOSED**.
-**Date:** 2026-10-27
+> **Frozen 2026-10-29:** Stage 11 is a research artifact, not a
+> production-validated ocean. Authority: `docs/STAGE11_FREEZE.md` (commit
+> `386c850`, tag `stage11-final-frozen`). Stage 12 uses GLORYS12 + ERA5 (D-51).
+
+**Status:** **Stage 11 CLOSED administratively; FROZEN as a research artifact.**
+**Date:** 2026-10-27 (freeze addendum 2026-10-29)
 **Base:** `531bbfa`; final closure declaration in the current commit.
 
 ## Key achievements
@@ -31,7 +35,8 @@
 
 ## Future work
 
-- Stage 12 voxel iceberg thermodynamics (preparation only; not started).
+- Stage 12 voxel iceberg on GLORYS12 + ERA5 reanalysis (Stage 12.0 prep done;
+  implementation not started).
 
 - Redesign/validate the production scheduler to respect the original N=1
   coupling frequency (T-39).

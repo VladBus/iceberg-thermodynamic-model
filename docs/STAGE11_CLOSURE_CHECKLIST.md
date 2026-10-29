@@ -1,7 +1,9 @@
 # Stage 11 Closure Checklist
 
-**Date:** 2026-10-27
-**Status:** **Stage 11 CLOSED.** data/runs cleanup was executed in Stage 11.10
+**Date:** 2026-10-27 (freeze addendum 2026-10-29)
+**Status:** **Stage 11 CLOSED administratively; FROZEN as a research artifact.**
+Freeze authority: `docs/STAGE11_FREEZE.md` (commit `386c850`, tag
+`stage11-final-frozen`). data/runs cleanup was executed in Stage 11.10
 (26 runs / 0.510 GB); no closure dependency.
 
 ## Checklist

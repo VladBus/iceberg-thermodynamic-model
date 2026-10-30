@@ -35,7 +35,7 @@ under atmospheric, oceanic, bathymetric, and sea-ice forcing.
 
 ## 📑 Project status
 
-- **Current stage:** **Stage 11 FROZEN** as a research artifact (tag `stage11-final-frozen`); **Stage 12.0 preparation complete**, Stage 12 implementation **not started**. Stage 12 uses GLORYS12 + ERA5 reanalysis (D-51). EOS-80 remains default. See `docs/STAGE11_FREEZE.md` and `docs/STAGE12_PREPARATION.md`.
+- **Current stage:** **Stage 11 FROZEN** as a research artifact (tag `stage11-final-frozen`); **Stage 12 active**: 12.0 prep + 12.1 GLORYS12 reconnaissance + **12.2 reanalysis reader & ocean provider COMPLETE** (`OCEAN_SOURCE` env, default `model` → Stage 11 bit-identical; D-51/D-52). Stage 12 uses GLORYS12 + ERA5 reanalysis; the **voxel thermal core (12.3) is not started**. EOS-80 remains default. See `docs/STAGE11_FREEZE.md`, `docs/STAGE12_PREPARATION.md`, `docs/validation/stage12.2_reanalysis_reader.md`.
 - **BREAKING CHANGE (Stage 11.8B):** `EOS_MODE` unset now selects **EOS80**, not LEGACY. Set `EOS_MODE=LEGACY` to restore the historical Eckart fallback. See `docs/MIGRATION_GUIDE_EOS80_DEFAULT.md`.
   [Historical note from Stage 10.19, SUPERSEDED by Stage 10.20 restoration
   (full-coverage ERA5: 3-day gate PASS, residual characterized, NOT fixed):

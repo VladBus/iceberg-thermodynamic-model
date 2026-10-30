@@ -33,6 +33,12 @@ module iceberg_forcing
                             era5_u10, era5_v10, era5_t2m, era5_d2m, &
                             era5_tcc, era5_msl, era5_snowfall, era5_is_open, &
                             era5_time, era5_lat, era5_lon
+    use ocean_provider, only: ocean_provider_type, ocean_provider_init, &
+                              ocean_provider_get, ocean_provider_close, &
+                              SRC_REANALYSIS, SRC_MODEL
+    use reanalysis_reader, only: reanalysis_reader_ndepth, &
+                                 reanalysis_reader_depth_values, &
+                                 reanalysis_reader_get, reanalysis_reader_ready
     implicit none
 
     ! ========================================================================
@@ -42,6 +48,22 @@ module iceberg_forcing
     real, parameter :: EPS_LAND = 1.0e-8        ! Эпсилон для сравнения с land mask
     real, parameter :: CM_TO_M = 0.01           ! Перевод см → м
     real, parameter :: M_TO_CM = 100.0          ! Перевод м → см
+
+    ! ========================================================================
+    !   STAGE 12.2: ОКЕАНСКИЙ ПРОВАЙДЕР (GLORYS12 реанализ vs Stage 11 модель)
+    !   Env OCEAN_SOURCE = reanalysis|model (default model → Stage 11 бит-
+    !   идентичен, выключатель OFF). Реанализ offline/prescribed (D-51).
+    !   REANALYSIS_DAILY_PATH / REANALYSIS_STATIC_PATH переопределяют пути.
+    ! ========================================================================
+    integer, parameter :: OCEAN_SOURCE_MODEL = 2
+    integer, parameter :: OCEAN_SOURCE_REANALYSIS = 1
+    character(len=512), save :: ocean_daily_path = &
+        'data/input/raw/reanalysis/glorys12/2020/glorys12_barents_202001.nc'
+    character(len=512), save :: ocean_static_path = &
+        'data/input/raw/reanalysis/glorys12/static/glorys12_static_barents.nc'
+    integer, save :: ocean_source = OCEAN_SOURCE_MODEL
+    type(ocean_provider_type), save :: ocean_prov
+    logical, save :: ocean_prov_configured = .false.
 
 contains
 
@@ -65,13 +87,15 @@ contains
     !   prof             - выходной профиль океана (intent(out))
     !   ok               - флаг успеха (intent(out))
     ! ========================================================================
-    subroutine get_ocean_profile(x_model, y_model, lat, lon, draft, u_ice, v_ice, prof, ok)
+    subroutine get_ocean_profile(x_model, y_model, lat, lon, draft, u_ice, v_ice, prof, ok, &
+                                 time_sec)
         real, intent(in) :: x_model, y_model
         real, intent(in) :: lat, lon
         real, intent(in) :: draft
         real, intent(in) :: u_ice, v_ice
         type(ocean_profile), intent(out) :: prof
         logical, intent(out) :: ok
+        real(8), intent(in), optional :: time_sec
 
         integer :: i_idx, j_idx
         integer :: i1, i2, j1, j2
@@ -82,6 +106,14 @@ contains
         real :: ocean_depth, effective_draft
 
         ok = .false.
+
+        ! STAGE 12.2: источник океана из env (default model → бит-идентичен Stage 11).
+        call ocean_forcing_init_from_env()
+        if (ocean_source == OCEAN_SOURCE_REANALYSIS) then
+            call get_ocean_profile_reanalysis(lat, lon, draft, u_ice, v_ice, &
+                                              prof, ok, time_sec)
+            return
+        end if
 
         ! 1. Найти индексы сетки (перевод модельных координат в индексы)
         call model_coords_to_indices(x_model, y_model, i_idx, j_idx, in_domain)
@@ -182,6 +214,135 @@ contains
 
         ok = .true.
     end subroutine get_ocean_profile
+
+    ! ========================================================================
+    !   STAGE 12.2: НАСТРОЙКА ИСТОЧНИКА ОКЕАНА
+    ! ========================================================================
+    ! Явная настройка (для main/tests). source: 1=reanalysis, 2=model.
+    subroutine ocean_forcing_configure(source, daily_path, static_path)
+        integer, intent(in) :: source
+        character(len=*), intent(in), optional :: daily_path, static_path
+
+        if (present(daily_path)) ocean_daily_path = daily_path
+        if (present(static_path)) ocean_static_path = static_path
+        ocean_source = source
+        call ocean_provider_close(ocean_prov)
+        call ocean_provider_init(ocean_prov, source, &
+                                 trim(ocean_daily_path), trim(ocean_static_path))
+        ocean_prov_configured = .true.
+    end subroutine ocean_forcing_configure
+
+    ! Инициализация из env один раз (OCEAN_SOURCE default model). Вызывается
+    ! лениво из get_ocean_profile. model-путь НЕ трогает реанализ-файлы.
+    subroutine ocean_forcing_init_from_env()
+        character(len=64) :: env_str
+        character(len=512) :: dp, sp
+
+        if (ocean_prov_configured) return
+
+        ocean_source = OCEAN_SOURCE_MODEL
+        call get_environment_variable('OCEAN_SOURCE', env_str)
+        if (len_trim(env_str) > 0) then
+            if (trim(env_str) == 'reanalysis') ocean_source = OCEAN_SOURCE_REANALYSIS
+        end if
+
+        if (ocean_source == OCEAN_SOURCE_REANALYSIS) then
+            dp = ocean_daily_path
+            sp = ocean_static_path
+            call get_environment_variable('REANALYSIS_DAILY_PATH', dp)
+            if (len_trim(dp) == 0) dp = ocean_daily_path
+            call get_environment_variable('REANALYSIS_STATIC_PATH', sp)
+            if (len_trim(sp) == 0) sp = ocean_static_path
+            call ocean_provider_init(ocean_prov, OCEAN_SOURCE_REANALYSIS, trim(dp), trim(sp))
+        else
+            call ocean_provider_init(ocean_prov, OCEAN_SOURCE_MODEL)
+        end if
+        ocean_prov_configured = .true.
+    end subroutine ocean_forcing_init_from_env
+
+    ! Публичный запрос: активен ли реанализ-источник (для отчётов/tests).
+    logical function ocean_forcing_is_reanalysis()
+        call ocean_forcing_init_from_env()
+        ocean_forcing_is_reanalysis = (ocean_source == OCEAN_SOURCE_REANALYSIS)
+    end function ocean_forcing_is_reanalysis
+
+    ! ========================================================================
+    !   STAGE 12.2: ПОСТРОЕНИЕ ПРОФИЛЯ ИЗ РЕАНАЛИЗА
+    ! ========================================================================
+    ! Профиль строится на нативных GLORYS-уровнях от поверхности до осадки,
+    ! останавливаясь на первом невалидном (дно/суша) уровне — минимум 1 уровень.
+    ! Требуется time_sec (UNIX c). Значения из provider (T °C, S масс.доля,
+    ! u/v м/с). u_rel = |u_ice - u_w|. Нет экстраполяции за дно.
+    subroutine get_ocean_profile_reanalysis(lat, lon, draft, u_ice, v_ice, &
+                                            prof, ok, time_sec)
+        real, intent(in) :: lat, lon, draft, u_ice, v_ice
+        type(ocean_profile), intent(out) :: prof
+        logical, intent(out) :: ok
+        real(8), intent(in), optional :: time_sec
+
+        real(8), allocatable :: dep(:)
+        real(8) :: t8, tm, sm, um, vm, zos, siconc, sithick
+        integer :: nd, k, nlevels
+        logical :: rok
+
+        ok = .false.
+        if (.not. reanalysis_reader_ready(ocean_prov%reader)) then
+            print *, 'FORCING ERROR: reanalysis provider not ready (OCEAN_SOURCE=reanalysis, ' &
+                //'данные недоступны — SKIP в CI)'
+            return
+        end if
+        if (.not. present(time_sec)) then
+            print *, 'FORCING ERROR: reanalysis source требует time_sec (модельное время)'
+            return
+        end if
+        t8 = time_sec
+
+        nd = reanalysis_reader_ndepth(ocean_prov%reader)
+        allocate (dep(nd))
+        call reanalysis_reader_depth_values(ocean_prov%reader, dep)
+
+        ! Предварительный массив на весь стек; nlevels ограничивает использование.
+        allocate (prof%z(nd), prof%dz(nd), prof%temp(nd), prof%salt(nd), &
+                  prof%u(nd), prof%v(nd), prof%u_rel(nd))
+
+        ! ОДИН проход: от поверхности вниз, стоп на первом невалидном (дно/суша)
+        ! или NaN-уровне; включить хотя бы уровень, покрывающий осадку, если есть.
+        nlevels = 0
+        do k = 1, nd
+            call reanalysis_reader_get(ocean_prov%reader, t8, real(lat, 8), real(lon, 8), &
+                                       dep(k), tm, sm, um, vm, zos, siconc, sithick, rok)
+            if (.not. rok) exit
+            if (tm /= tm .or. sm /= sm .or. um /= um .or. vm /= vm) exit   ! def. NaN-guard
+            nlevels = k
+            prof%z(k) = real(dep(k))
+            prof%temp(k) = real(tm)
+            prof%salt(k) = real(sm)          ! mass fraction (so/1000 выполнен в reader)
+            prof%u(k) = real(um)
+            prof%v(k) = real(vm)
+            prof%u_rel(k) = real(sqrt((um - real(u_ice, 8))**2 + (vm - real(v_ice, 8))**2))
+            if (nd == 1) then
+                prof%dz(k) = 5.0
+            else if (k == 1) then
+                prof%dz(k) = real(0.5*(dep(2) - dep(1)))
+            else if (k == nd) then
+                prof%dz(k) = real(0.5*(dep(nd) - dep(nd - 1)))
+            else
+                prof%dz(k) = real(0.5*(dep(k + 1) - dep(k - 1)))
+            end if
+            if (dep(k) >= draft) exit
+        end do
+
+        if (nlevels < 1) then
+            print *, 'FORCING WARNING: reanalysis point not ocean (land/no data)', &
+                ' lat=', lat, ' lon=', lon
+            deallocate (prof%z, prof%dz, prof%temp, prof%salt, prof%u, prof%v, prof%u_rel)
+            deallocate (dep)
+            return
+        end if
+        deallocate (dep)
+        prof%nlevels = nlevels
+        ok = .true.
+    end subroutine get_ocean_profile_reanalysis
 
     ! ========================================================================
     !   БИЛИНЕЙНАЯ ИНТЕРПОЛЯЦИЯ 3D ПОЛЯ (pure function)

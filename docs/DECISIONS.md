@@ -577,3 +577,31 @@ not added.
 - **References:** `docs/STAGE11_FREEZE.md`,
   `docs/STAGE12_PREPARATION.md`, `docs/REANALYSIS_DATA_PLAN.md`,
   `docs/validation/stage11.11.2_heat_forensics_root_cause.md`.
+
+## D-52. Stage 12.2 reanalysis reader + ocean provider (offline/prescribed; default OFF) (2026-10-29)
+
+- **Status:** ACTIVE.
+- **Decision:** Implement the GLORYS12 reanalysis path for iceberg forcing as
+  two new modules — `src/reanalysis_reader.f90` (NetCDF reader) and
+  `src/ocean_provider.f90` (pointwise `time,lat,lon,depth → T,S,u,v,zos,siconc,sithick`) —
+  integrated into `src/iceberg_forcing.f90` behind the env switch
+  `OCEAN_SOURCE=reanalysis|model` (default **model**). The ocean does not feel
+  the iceberg (one-way, per D-51).
+- **Reader contract (from Stage 12.1):** regular 1/12° grid; bilinear(lat,lon) +
+  linear(non-uniform depth, clamp at ends) + linear(time, `hours since 1950-01-01`
+  → UNIX s); **packed int16 decoded explicitly** (`raw*scale_factor+add_offset`,
+  `_FillValue=-32767`→NaN) because netCDF-Fortran does not auto-scale; `so` ÷1000
+  → mass fraction; `siconc` clip [0,1]; NaN = land/below-seafloor, corner weights
+  renormalised, no zero-fill; out-of-range lat/lon/time → `ok=.false.`.
+- **Stage 11 untouched:** the prognostic ocean and every model-path call site
+  (main.f90 + iceberg tests) are bit-identical with the switch OFF; `get_ocean_profile`
+  gained a backward-compatible **optional** `time_sec`. No Stage 11 ocean/EOS/
+  scheduler code changed; `fpm.toml`/CI unchanged (tests auto-discovered).
+- **Verification:** `test_reanalysis_reader` (9/9) + `test_ocean_provider` (4/4)
+  + `test_iceberg_forcing_reanalysis` (4/4) PASS locally against independent
+  xarray anchors (T=−1.48164, S=0.034889 mass fraction, vertical+temporal
+  interp, land→ok=false, siconc clip); all SKIP (exit 0) without the gitignored
+  `.nc`. Full `fpm test` battery green (STOP 0 = 71, 0 failed).
+- **Docs:** `docs/validation/stage12.2_reanalysis_reader.md`; updates to
+  `docs/STAGE12_PREPARATION.md`, `docs/REANALYSIS_DATA_PLAN.md`.
+- **Next:** Stage 12.3 voxel thermal core (**GO**, not started in this stage).

@@ -1,10 +1,13 @@
 # Stage 12 Preparation — Voxel Iceberg on Reanalysis Forcing
 
-**Status:** **STAGE 12.0 — PREPARATION / DOCUMENTATION FREEZE**
+**Status:** **STAGE 12.1 COMPLETE (reconnaissance); STAGE 12.2 COMPLETE (reanalysis reader + ocean provider, default OFF).**
 **Date:** 2026-10-29
 **Base:** `386c850` (Stage 11 frozen; tag `stage11-final-frozen`)
-**Implementation:** **NOT STARTED.** No Fortran, `fpm.toml`, CI, or production
-default is changed by Stage 12.0.
+**Implementation:** **Stage 12.2 reanalysis reader + ocean provider DONE**
+(`src/reanalysis_reader.f90`, `src/ocean_provider.f90`, integrated in
+`src/iceberg_forcing.f90` behind `OCEAN_SOURCE` default `model`). The **voxel
+thermal core (Stage 12.3) is NOT started**; `fpm.toml`/CI unchanged (tests
+auto-discovered).
 
 ## 1. Objective
 
@@ -57,9 +60,9 @@ no coupled feedback) must remain visible in the implementation.
 
 | Stage | Deliverable | Gate |
 |---|---|---|
-| 12.1 | Reanalysis acquisition/validation (GLORYS12 + ERA5 subset) | product/time/bbox/units/mask verified; no NaNs |
-| 12.2 | Reanalysis reader and offline forcing contract | reader reproduces independent subset; no Stage 11 ocean dependency |
-| 12.3 | Voxel thermal core | conduction + phase change conserve energy in a closed test |
+| 12.1 | Reanalysis acquisition/validation (GLORYS12 + ERA5 subset) | **COMPLETE** (Jan-2020 recon; regular grid/units/mask verified; report) |
+| 12.2 | Reanalysis reader and offline forcing contract | **COMPLETE** (`reanalysis_reader`+`ocean_provider`+`iceberg_forcing`; D-52; tests green; default OFF) |
+| 12.3 | Voxel thermal core | **NEXT (not started)**: conduction + phase change conserve energy in a closed test |
 | 12.4 | Ice-water/ice-air boundary coupling | three-equation limit reproduces Stage 10.10 anchors |
 | 12.5 | Geometry/erosion/hydrostatic coupling | mass and volume budgets close; no negative φ |
 | 12.6 | Drift coupling with voxel-derived geometry | existing drift tests remain green; no two-way feedback |
@@ -97,12 +100,17 @@ start before its data plan is reviewed.
 
 ## 7. Entry/exit criteria
 
-**Stage 12.0 exit:** frozen Stage 11 tag; D-51 recorded; this plan and the
-reanalysis data plan reviewed; catalogue probe reproducible; Enderlin23
-dataset staged with provenance.
+**Stage 12.0 exit:** frozen Stage 11 tag; D-51 recorded; plan + reanalysis data
+plan reviewed; catalogue probe reproducible; Enderlin23 dataset staged. **DONE.**
 
-**Stage 12.1 entry:** all of the above, plus an approved storage/transfer
-budget. **Stage 12 implementation remains NOT STARTED.**
+**Stage 12.1 exit:** Jan-2020 subset downloaded + inspected; grid/units/mask/
+depth/time verified against Python. **DONE** (`stage12.1_glorys12_validation.md`).
+
+**Stage 12.2 exit:** reader + provider + iceberg-forcing integration; unit +
+integration tests green; default `OCEAN_SOURCE=model` → Stage 11 bit-identical;
+no ocean-code change. **DONE** (`stage12.2_reanalysis_reader.md`, D-52).
+
+**Stage 12.3 entry:** all of the above. Voxel thermal core. **NOT started.**
 
 ## 8. References
 

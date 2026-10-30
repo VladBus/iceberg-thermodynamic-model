@@ -20,13 +20,15 @@
 ! ==============================================================================
 module voxel_thermal_solver
     use iceberg_types, only: RHO_ICE, RHO_WATER, GRAVITY, C_ICE, K_ICE, LATENT_HEAT, &
-                             CD_AIR, RHO_AIR, CP_AIR, &
+                             CD_AIR, RHO_AIR, CP_AIR, CP_SEAWATER, &
+                             THREE_EQ_KT, THREE_EQ_KS, ocean_profile, &
                              ocean_freezing_point, ocean_heat_transfer_coeff
     implicit none
 
     private
     public :: solve_heat_conduction, apply_boundary_fluxes, solve_cn
     public :: face_h, voxel_face_dphi, face_area
+    public :: three_equation_melt, profile_at
 
     real(8), parameter :: EPS_PHI = 1.0d-12
     real(8), parameter :: WIND_MIN = 0.1_8
@@ -231,7 +233,7 @@ contains
                         cg_tol, cg_maxit, draft, ocean_T, ocean_S, ocean_u, ocean_v, &
                         atmos_T, atmos_Q, atmos_wind, submerged_mask, exposed_mask, &
                         Tnew, iters, resid, converged, &
-                        dir_face_a, dir_T_a, dir_face_b, dir_T_b)
+                        dir_face_a, dir_T_a, dir_face_b, dir_T_b, tb_override)
         real(8), intent(in) :: T(:,:,:), phi(:,:,:)
         real(8), intent(in) :: dx, dy, dz, dt, k_ice, rho_ice, c_ice, theta
         real(8), intent(in) :: cg_tol
@@ -245,6 +247,7 @@ contains
         logical, intent(out) :: converged
         integer, intent(in), optional :: dir_face_a, dir_face_b
         real(8), intent(in), optional :: dir_T_a, dir_T_b
+        real(8), intent(in), optional :: tb_override(:,:,:)
 
         integer :: nx, ny, nz, i, j, k, d, it, mx
         integer :: di(6), dj(6), dk(6), ii, jj, kk, fa, fb
@@ -294,6 +297,7 @@ contains
                     zf = (real(k, 8) - 0.5_8)*dz
                     dface = max(0.0_8, draft - zf)
                     tf = real(ocean_freezing_point(real(ocean_S), real(dface)), 8)
+                    if (present(tb_override)) tf = tb_override(i, j, k)
                     do d = 1, 6
                         ii = i + di(d); jj = j + dj(d); kk = k + dk(d)
                         A = face_area(d, dx, dy, dz); hn = face_h(d, dx, dy, dz)
@@ -394,6 +398,131 @@ contains
             end do
         end do
     end subroutine matvec_cn
+
+    ! ==========================================================================
+    ! ТРЁХУРАВНЕННЫЙ ИНТЕРФЕЙС (PDF 6.1-6.10): тепловой+солевой баланс,
+    ! EOS-80 Tf(S,P) на глубине грани. F(m) строго убывает; аккреция OFF
+    ! (spec A5): если F(0)<=0 → m=0. Биссекция, m>=0.
+    ! ==========================================================================
+    subroutine three_equation_melt(t_w, s_w_kgkg, u_rel, depth_m, h_norm, t_voxel, &
+                                   m_out, tb_out, sb_out, ok)
+        real(8), intent(in) :: t_w, s_w_kgkg, u_rel, depth_m, h_norm, t_voxel
+        real(8), intent(out) :: m_out, tb_out, sb_out
+        logical, intent(out) :: ok
+
+        real(8) :: gamma_t, gamma_s, rho_w, rho_i, cw, lf, kc
+        real(8) :: m_lo, m_hi, m_mid, f0, fmid
+        integer :: it
+
+        ok = .false.
+        m_out = 0.0_8
+        tb_out = 0.0_8
+        sb_out = s_w_kgkg
+        if (h_norm <= 0.0_8 .or. s_w_kgkg <= 0.0_8) return
+        rho_w = real(RHO_WATER, 8); rho_i = real(RHO_ICE, 8)
+        cw = real(CP_SEAWATER, 8); lf = real(LATENT_HEAT, 8); kc = real(K_ICE, 8)
+
+        ! Tf at Sw (used for F(0) and no-flow case)
+        sb_out = s_w_kgkg
+        tb_out = tb_of(s_w_kgkg)
+
+        if (u_rel <= 0.0_8) then
+            m_out = 0.0_8
+            ok = .true.                      ! gamma_S=0 -> нет солевого обмена, m=0
+            return
+        end if
+        gamma_t = real(THREE_EQ_KT, 8)*u_rel
+        gamma_s = real(THREE_EQ_KS, 8)*u_rel
+        if (gamma_s <= 0.0_8) then
+            m_out = 0.0_8; ok = .true.; return
+        end if
+
+        f0 = fval(0.0_8)
+        if (f0 <= 0.0_8) then
+            m_out = 0.0_8
+            ok = .true.
+            return
+        end if
+
+        m_hi = 1.0d-5
+        do it = 1, 50
+            if (fval(m_hi) > 0.0_8) then
+                m_hi = 2.0_8*m_hi
+            else
+                exit
+            end if
+        end do
+        m_lo = 0.0_8
+        m_mid = 0.5_8*(m_lo + m_hi)
+        do it = 1, 80
+            m_mid = 0.5_8*(m_lo + m_hi)
+            fmid = fval(m_mid)
+            if (fmid > 0.0_8) then
+                m_lo = m_mid
+            else
+                m_hi = m_mid
+            end if
+            if ((m_hi - m_lo) < 1.0d-13 .or. abs(fmid) < 1.0d-9) exit
+        end do
+        m_out = 0.5_8*(m_lo + m_hi)
+        sb_out = sb_of(m_out)
+        tb_out = tb_of(sb_out)
+        ok = .true.
+
+    contains
+
+        real(8) function sb_of(m) result(sb)
+            real(8), intent(in) :: m
+            sb = rho_w*gamma_s*s_w_kgkg/(rho_w*gamma_s + rho_i*m)
+        end function sb_of
+
+        real(8) function tb_of(sb) result(tb)
+            real(8), intent(in) :: sb
+            tb = real(ocean_freezing_point(real(sb), real(depth_m)), 8)
+        end function tb_of
+
+        real(8) function fval(m) result(f)
+            real(8), intent(in) :: m
+            real(8) :: tb
+            tb = tb_of(sb_of(m))
+            f = rho_w*cw*gamma_t*(t_w - tb) - rho_i*lf*m - &
+                (2.0_8*kc/h_norm)*(tb - t_voxel)
+        end function fval
+    end subroutine three_equation_melt
+
+    ! Линейная интерполяция T,S,u,v профиля на глубину d (PDF eq 6.4).
+    ! Ниже дна: последний уровень, u=v=0; выше поверхности: первый уровень.
+    subroutine profile_at(prof, depth, t, s, u, v)
+        type(ocean_profile), intent(in) :: prof
+        real(8), intent(in) :: depth
+        real(8), intent(out) :: t, s, u, v
+        integer :: k, n
+        real(8) :: w
+        t = 0.0_8; s = 0.0_8; u = 0.0_8; v = 0.0_8
+        if (.not. allocated(prof%temp) .or. prof%nlevels < 1) return
+        n = prof%nlevels
+        if (depth <= real(prof%z(1), 8)) then
+            t = real(prof%temp(1), 8); s = real(prof%salt(1), 8)
+            u = real(prof%u(1), 8); v = real(prof%v(1), 8)
+            return
+        end if
+        if (depth >= real(prof%z(n), 8)) then
+            t = real(prof%temp(n), 8); s = real(prof%salt(n), 8)
+            u = 0.0_8; v = 0.0_8
+            return
+        end if
+        do k = 1, n - 1
+            if (real(prof%z(k), 8) <= depth .and. depth < real(prof%z(k + 1), 8)) then
+                w = (depth - real(prof%z(k), 8))/ &
+                    (real(prof%z(k + 1), 8) - real(prof%z(k), 8))
+                t = (1.0_8 - w)*real(prof%temp(k), 8) + w*real(prof%temp(k + 1), 8)
+                s = (1.0_8 - w)*real(prof%salt(k), 8) + w*real(prof%salt(k + 1), 8)
+                u = (1.0_8 - w)*real(prof%u(k), 8) + w*real(prof%u(k + 1), 8)
+                v = (1.0_8 - w)*real(prof%v(k), 8) + w*real(prof%v(k + 1), 8)
+                return
+            end if
+        end do
+    end subroutine profile_at
 
     pure logical function on_face(i, j, k, nx, ny, nz, f)
         integer, intent(in) :: i, j, k, nx, ny, nz, f

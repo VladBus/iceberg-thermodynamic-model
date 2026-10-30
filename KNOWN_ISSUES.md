@@ -171,3 +171,20 @@ removed from the active list (their history lives in stage reports and
 - Trajectory-level observational comparison with a curated iceberg-track dataset — after the coupling and drift questions above.
 - lat/lon update — already implemented (Stage 9.4A); no further action required.
 - Hydrodynamics: 3D geostrophic initialization/spin-up completed in Stage 8; controlled spin-up remains run practice.
+
+## Stage 12.4 (voxel CN + three-equation) — open items
+
+- No cavity/channel exchange and no spray/waterline band (spec open items).
+- Natural convection at `u_rel → 0` is not represented (γ_T=KT·u_rel → 0;
+  no buoyancy-driven floor). Accretion is deliberately OFF (`m ≥ 0`, spec A5).
+- `KT=1.1e-3`, `KS=3.1e-5` (J2010) are **uncalibrated** for this model.
+- `c_ice=2100` kept for bulk/voxel consistency; PDF Appendix A suggests 2009
+  (Yen 1981) — open calibration question, not changed in 12.4.
+- `φ_min=0.01` retained (PDF 0.05 is an example value; calibration deferred).
+- Air flux uses `Q_net` from the Stage‑10 surface balance (already includes
+  net LW/SW/latent); the PDF §11.1 `Ga=4εσT̄³` linearisation is **not** added
+  to avoid double counting (add it if `Q_net` is ever computed locally).
+- `u_rel` uses `state%u,v`; the ~50° model-grid rotation is neglected
+  (consistent with existing `iceberg_dynamics`).
+- A‑T6(ii) constant-flux half-cell BC yields non-√t late melt; the exact
+  fixed-surface-temperature Stefan similarity is deferred to 12.7a.

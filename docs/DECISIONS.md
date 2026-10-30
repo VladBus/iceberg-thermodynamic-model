@@ -667,3 +667,37 @@ not added.
   (`Tf(35,0)=−1.9223`, `ΔTf(100 dbar)=−0.0753`). Full battery + strict build
   green.
 - **Docs:** `docs/validation/stage12.4_crank_nicolson_stefan.md`.
+
+## D-55. Three-equation ice–ocean interface (H&J99 / J2010), Tf(S,P), profile forcing, u_rel (Stage 12.4 Part B, 2026-10-31)
+
+- **Status:** ACTIVE (implementation; not observationally validated).
+- **Decision:** the voxel submerged faces use the full non-linear
+  **three-equation** interface (PDF eqs 6.9–6.10): `γ_T=KT·u_rel`,
+  `γ_S=KS·u_rel` (KT=1.1e-3, KS=3.1e-5), `S_B(m)=ρ_wγ_SS_w/(ρ_wγ_S+ρ_icem)`,
+  `T_B(m)=Tf(S_B,P)` with **EOS-80 `Tf(S,P)`** (PDF eq 8.1) at the face depth
+  `P=ρ_w g d_f/1e4`, and
+  `F(m)=ρ_wc_wγ_T(T_w−T_B)−ρ_iceL_fm−(2k/h_norm)(T_B−T_voxel)`.
+  `F(m)` is strictly decreasing; `F(0)≤0 → m=0` (**no accretion**, spec A5).
+  Root by bisection (≥60 iters, |F|<1e-9). `m≥0` enforced.
+- **Ocean input:** the voxel step receives `ocean_profile` (same as bulk);
+  `T,S,u,v` are linearly interpolated at each face depth (below the deepest
+  level: last wet level with u=v=0). Salinity is stored as **kg/kg** and
+  converted to PSU exactly once at the boundary (the freezing-point routine
+  does `×1000` internally).
+- **Relative velocity:** `u_rel=|u_w(d_f)−v_ice|`, with `v_ice = state%u,state%v`
+  (existing module treats them as east/north; the ~50° grid rotation is
+  neglected — documented).
+- **Characteristic length (12.3 defect #3):** the forced-convection path uses
+  per-face `l_char` (basal/top `max(nx dx,ny dy)`, lateral `max(draft,dz)`);
+  the three-equation Stanton form is length-independent.
+- **Implicit coupling:** the converged `T_B` is passed as a per-voxel Dirichlet
+  override into the CN matrix.
+- **Diagnostics:** mean/deepest/waterline `T_B`, mean `S_B`, mean `u_rel`,
+  face count, CG iterations/residual, clip count, flushed mass/energy, melt
+  rates by component.
+- **Verification:** B‑T1 (brute-force match 7.4e−14), B‑T2 (PDF §6.2 example:
+  m=0.248 m/day, S_B=19.2 PSU, T_B=−1.041 °C, within 20%), B‑T3 salinity guard,
+  B‑T4 pressure (−0.2277 °C at 300 m; melt increases with depth per eq 8.1),
+  B‑T5 u_rel scaling, B‑T6 stratified profile (top >3× deep), B‑T7 no accretion,
+  B‑T8 integration (mass budget 8.96e−16). Full battery + strict build green.
+- **Docs:** `docs/validation/stage12.4_crank_nicolson_stefan.md`.

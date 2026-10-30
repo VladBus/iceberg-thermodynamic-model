@@ -1,13 +1,14 @@
 # Stage 12 Preparation — Voxel Iceberg on Reanalysis Forcing
 
-**Status:** **STAGE 12.1 COMPLETE; STAGE 12.2 COMPLETE (reader+provider); STAGE 12.3 COMPLETE (voxel thermal core, default OFF).**
+**Status:** **STAGE 12.1/12.2/12.3 COMPLETE; STAGE 12.4 COMPLETE (CN core + three-equation Stefan; default OFF).**
 **Date:** 2026-10-29
 **Base:** `386c850` (Stage 11 frozen; tag `stage11-final-frozen`)
-**Implementation:** **Stage 12.2 reader/provider DONE; Stage 12.3 voxel thermal
-core DONE** (`src/voxel_iceberg.f90`, `src/voxel_thermal_solver.f90`, gated in
-`src/iceberg_thermodynamics.f90` behind `VOXEL_ENABLED` default OFF → bulk path
-bit-identical; D-53). The **ice–water/ice–air coupling (Stage 12.4) is NOT
-started**; `fpm.toml`/CI unchanged (tests auto-discovered).
+**Implementation:** Stage 12.2 reader/provider, 12.3 voxel core **and 12.4
+Crank–Nicolson + three-equation Stefan are DONE** (`src/voxel_iceberg.f90`,
+`src/voxel_thermal_solver.f90`, gated in `src/iceberg_thermodynamics.f90`
+behind `VOXEL_ENABLED` default OFF → bulk path bit-identical; D-53/D-54/D-55).
+The next stage is **12.5** (voxel geometry driving drift); `fpm.toml`/CI
+unchanged (tests auto-discovered).
 
 ## 1. Objective
 
@@ -63,8 +64,8 @@ no coupled feedback) must remain visible in the implementation.
 | 12.1 | Reanalysis acquisition/validation (GLORYS12 + ERA5 subset) | **COMPLETE** (Jan-2020 recon; regular grid/units/mask verified; report) |
 | 12.2 | Reanalysis reader and offline forcing contract | **COMPLETE** (`reanalysis_reader`+`ocean_provider`+`iceberg_forcing`; D-52; tests green; default OFF) |
 | 12.3 | Voxel thermal core | **COMPLETE** (`voxel_iceberg`+`voxel_thermal_solver`, D-53; FV conduction+phase change, Stefan/air melt, erosion, waterline; tests green; default OFF) |
-| 12.4 | Ice-water/ice-air boundary coupling | **NEXT (not started)**: three-equation at draft, γ_T/γ_S, Tf(S,p), relative-flow u_rel |
-| 12.5 | Geometry/erosion/hydrostatic coupling | mass and volume budgets close; no negative φ |
+| 12.4 | Ice-water/ice-air boundary coupling | **COMPLETE**: Crank–Nicolson (θ-scheme, PCG, Rannacher), geometry fix, three-equation Stefan (γ_T/γ_S, Tf(S,P), profile, u_rel), melt cap/flush; D-54/D-55; tests green; default OFF |
+| 12.5 | Geometry/erosion/hydrostatic coupling | **NEXT (not started)**: voxel geometry drives drift; mass/volume budgets; no negative φ |
 | 12.6 | Drift coupling with voxel-derived geometry | existing drift tests remain green; no two-way feedback |
 | 12.7 | Validation and diagnostics | documented observational comparison; no calibration claim |
 
@@ -116,8 +117,15 @@ energy-conserving, Archimedes draft exact, erosion + dynamic waterline, melt
 budgets; unit + integration tests green; no Stage 11/12.2 code change. **DONE**
 (`stage12.3_voxel_thermal_core.md`, D-53).
 
-**Stage 12.4 entry:** all of the above. Three-equation ice–water / ice–air
-boundary coupling. **NOT started.**
+**Stage 12.4 exit:** Crank–Nicolson θ-scheme (PCG 1e−10, Rannacher) with
+boundary conditions in the matrix, single enthalpy clamp, energy‑consistent
+flush transfer, 3D `h_norm` fix, melt cap; three‑equation Stefan per submerged
+face with per‑depth profile, `Tf(S,P)`, `u_rel` with iceberg velocity,
+`m≥0` (no accretion); D‑54/D‑55; tests green; default OFF. **DONE**
+(`stage12.4_crank_nicolson_stefan.md`).
+
+**Stage 12.5 entry:** all of the above. Voxel geometry driving drift /
+hydrostatics / mass budgets. **NOT started.**
 
 ## 8. References
 

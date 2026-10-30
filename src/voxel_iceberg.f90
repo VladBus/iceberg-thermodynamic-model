@@ -11,9 +11,11 @@
 ! ==============================================================================
 module voxel_iceberg
     use iceberg_types, only: RHO_ICE, RHO_WATER, C_ICE, K_ICE, LATENT_HEAT, &
-                             ocean_freezing_point, ocean_heat_transfer_coeff
+                             ocean_freezing_point, ocean_heat_transfer_coeff, &
+                             ocean_profile
     use voxel_thermal_solver, only: solve_heat_conduction, apply_boundary_fluxes, &
-                                    solve_cn, face_h, face_area, voxel_face_dphi
+                                    solve_cn, face_h, face_area, voxel_face_dphi, &
+                                    three_equation_melt, profile_at
     implicit none
 
     private
@@ -23,6 +25,7 @@ module voxel_iceberg
     public :: voxel_iceberg_get_melt, voxel_iceberg_compute_state
     public :: voxel_iceberg_get_flush, voxel_iceberg_get_solver
     public :: voxel_iceberg_get_clamp_mass
+    public :: voxel_iceberg_step_profile, voxel_iceberg_get_stefan
 
     real(8), parameter :: EPS_PHI = 1.0d-12
     real(8), parameter :: DEFAULT_PHI_MIN = 0.01d0
@@ -66,6 +69,11 @@ module voxel_iceberg
         real(8) :: flushed_mass = 0.0_8
         real(8) :: flushed_energy = 0.0_8
         real(8) :: clamp_melt_mass = 0.0_8
+        ! Part B diagnostics
+        real(8) :: stefan_mean_tb = 0.0_8, stefan_mean_sb = 0.0_8, stefan_mean_urel = 0.0_8
+        real(8) :: stefan_deep_tb = 0.0_8, stefan_wl_tb = 0.0_8
+        integer :: stefan_faces = 0
+        logical :: stefan_conv = .false.
     end type voxel_iceberg_type
 
 contains
@@ -243,11 +251,7 @@ contains
         di = (/ 1, -1, 0, 0, 0, 0 /); dj = (/ 0, 0, 1, -1, 0, 0 /); dk = (/ 0, 0, 0, 0, 1, -1 /)
         dmelt = 0.0_8; dbasal = 0.0_8; dlat = 0.0_8
         u_rel = sqrt(ocean_u*ocean_u + ocean_v*ocean_v)
-        l_char = max(real(vox%nx, 8)*vox%dx, real(vox%ny, 8)*vox%dy)
-        gt_r = 0.0
-        call ocean_heat_transfer_coeff(real(u_rel), real(l_char), gt_r)
-        gamma = max(real(gt_r, 8), 0.0d0)
-        if (gamma <= 0.0d0) return
+        if (u_rel <= 0.0d0) return
         do k = 1, vox%nz
             do j = 1, vox%ny
                 do i = 1, vox%nx
@@ -255,12 +259,21 @@ contains
                     zf = (real(k, 8) - 0.5_8)*vox%dz
                     dface = max(0.0_8, vox%draft - zf)
                     tf = real(ocean_freezing_point(real(ocean_S), real(dface)), 8)
-                    m = max(0.0_8, gamma*(ocean_T - tf)/ &
-                            (real(RHO_ICE, 8)*real(LATENT_HEAT, 8)))   ! m>=0 (A5)
-                    if (m <= 0.0d0) cycle
                     do d = 1, 6
                         ii = i + di(d); jj = j + dj(d); kk = k + dk(d)
                         if (.not. empty_or_outside(vox, ii, jj, kk)) cycle
+                        ! per-face characteristic length (12.3 defect #3)
+                        if (d >= 5) then
+                            l_char = max(real(vox%nx, 8)*vox%dx, real(vox%ny, 8)*vox%dy)
+                        else
+                            l_char = max(vox%draft, vox%dz)
+                        end if
+                        gt_r = 0.0
+                        call ocean_heat_transfer_coeff(real(u_rel), real(l_char), gt_r)
+                        gamma = max(real(gt_r, 8), 0.0d0)
+                        m = max(0.0_8, gamma*(ocean_T - tf)/ &
+                                (real(RHO_ICE, 8)*real(LATENT_HEAT, 8)))   ! m>=0 (A5)
+                        if (m <= 0.0d0) cycle
                         hn = face_h(d, vox%dx, vox%dy, vox%dz)
                         A = face_area(d, vox%dx, vox%dy, vox%dz)
                         dmelt(i, j, k) = dmelt(i, j, k) + m*dt/hn          ! A5 h_norm
@@ -377,6 +390,8 @@ contains
                     end do
                 end do
             end do
+            basal_melt = basal_melt/dt
+            lateral_melt = lateral_melt/dt
             deallocate (dmelt, dbasal, dlat)
         end if
 
@@ -439,6 +454,203 @@ contains
         end if
         vox%phi(i, j, k) = 0.0_8
     end subroutine flush_voxel
+
+    ! ==========================================================================
+    ! PART B: шаг с трёхуравненным интерфейсом по профилю океана.
+    ! Per-face m_f, T_B, S_B на глубине грани; u_rel с учётом скорости айсберга.
+    ! T_B поля подаются в CN-матрицу (tb_override).
+    ! ==========================================================================
+    subroutine voxel_iceberg_step_profile(vox, dt, prof, v_ice_u, v_ice_v, &
+                                          atmos_T, atmos_Q, atmos_wind, &
+                                          basal_melt, lateral_melt, surface_melt)
+        type(voxel_iceberg_type), intent(inout) :: vox
+        real(8), intent(in) :: dt
+        type(ocean_profile), intent(in) :: prof
+        real(8), intent(in) :: v_ice_u, v_ice_v
+        real(8), intent(in) :: atmos_T, atmos_Q, atmos_wind
+        real(8), intent(out) :: basal_melt, lateral_melt, surface_melt
+
+        integer :: i, j, k, d, ii, jj, kk, removed
+        integer :: di(6), dj(6), dk(6)
+        real(8), allocatable :: Tn(:,:,:), dmelt(:,:,:), dbasal(:,:,:), dlat(:,:,:)
+        real(8), allocatable :: tb_field(:,:,:), tbsum(:,:,:)
+        integer, allocatable :: tbcount(:,:,:)
+        real(8) :: rho8, c8, k8, lf8, theta_eff, capv, tot, scale, dphi, dm, V
+        real(8) :: tw, sw, uw, vw, urel, dface, hn, A, m, tb, sb
+        real(8) :: sum_tb, sum_sb, sum_urel, deep_depth, wl_depth
+        real(8) :: clamp_mass
+        logical :: ok3
+        integer :: nface
+
+        basal_melt = 0.0_8; lateral_melt = 0.0_8; surface_melt = 0.0_8
+        if (.not. allocated(vox%T)) return
+        rho8 = real(RHO_ICE, 8); c8 = real(C_ICE, 8); k8 = real(K_ICE, 8); lf8 = real(LATENT_HEAT, 8)
+        V = vox%dx*vox%dy*vox%dz
+        di = (/ 1, -1, 0, 0, 0, 0 /); dj = (/ 0, 0, 1, -1, 0, 0 /); dk = (/ 0, 0, 0, 0, 1, -1 /)
+        call voxel_iceberg_compute_state(vox)
+
+        allocate (dmelt(vox%nx, vox%ny, vox%nz), dbasal(vox%nx, vox%ny, vox%nz), &
+                  dlat(vox%nx, vox%ny, vox%nz))
+        allocate (tb_field(vox%nx, vox%ny, vox%nz), tbsum(vox%nx, vox%ny, vox%nz))
+        allocate (tbcount(vox%nx, vox%ny, vox%nz))
+        dmelt = 0.0_8; dbasal = 0.0_8; dlat = 0.0_8; tbsum = 0.0_8; tbcount = 0
+        sum_tb = 0.0_8; sum_sb = 0.0_8; sum_urel = 0.0_8; nface = 0
+        deep_depth = -1.0_8; wl_depth = 1.0e30_8
+
+        ! fallback Tf at voxel centre for submerged voxels
+        do k = 1, vox%nz
+            do j = 1, vox%ny
+                do i = 1, vox%nx
+                    if (.not. vox%submerged_mask(i, j, k)) cycle
+                    dface = max(0.0_8, vox%draft - (real(k, 8) - 0.5_8)*vox%dz)
+                    call profile_at(prof, dface, tw, sw, uw, vw)
+                    tb_field(i, j, k) = real(ocean_freezing_point(real(sw), real(dface)), 8)
+                end do
+            end do
+        end do
+
+        do k = 1, vox%nz
+            do j = 1, vox%ny
+                do i = 1, vox%nx
+                    if (.not. vox%submerged_mask(i, j, k)) cycle
+                    dface = max(0.0_8, vox%draft - (real(k, 8) - 0.5_8)*vox%dz)
+                    call profile_at(prof, dface, tw, sw, uw, vw)
+                    urel = sqrt((uw - v_ice_u)**2 + (vw - v_ice_v)**2)
+                    do d = 1, 6
+                        ii = i + di(d); jj = j + dj(d); kk = k + dk(d)
+                        if (.not. empty_or_outside(vox, ii, jj, kk)) cycle
+                        hn = face_h(d, vox%dx, vox%dy, vox%dz)
+                        A = face_area(d, vox%dx, vox%dy, vox%dz)
+                        call three_equation_melt(tw, sw, urel, dface, hn, &
+                                                 vox%T(i, j, k), m, tb, sb, ok3)
+                        if (.not. ok3) cycle
+                        dmelt(i, j, k) = dmelt(i, j, k) + m*dt/hn
+                        if (d >= 5) then
+                            dbasal(i, j, k) = dbasal(i, j, k) + rho8*A*m*dt
+                        else
+                            dlat(i, j, k) = dlat(i, j, k) + rho8*A*m*dt
+                        end if
+                        tbsum(i, j, k) = tbsum(i, j, k) + tb
+                        tbcount(i, j, k) = tbcount(i, j, k) + 1
+                        sum_tb = sum_tb + tb; sum_sb = sum_sb + sb; sum_urel = sum_urel + urel
+                        nface = nface + 1
+                        if (dface > deep_depth) then
+                            deep_depth = dface; vox%stefan_deep_tb = tb
+                        end if
+                        if (dface < wl_depth) then
+                            wl_depth = dface; vox%stefan_wl_tb = tb
+                        end if
+                    end do
+                end do
+            end do
+        end do
+        do k = 1, vox%nz
+            do j = 1, vox%ny
+                do i = 1, vox%nx
+                    if (tbcount(i, j, k) > 0) tb_field(i, j, k) = tbsum(i, j, k)/real(tbcount(i, j, k), 8)
+                end do
+            end do
+        end do
+        if (nface > 0) then
+            vox%stefan_mean_tb = sum_tb/real(nface, 8)
+            vox%stefan_mean_sb = sum_sb/real(nface, 8)
+            vox%stefan_mean_urel = sum_urel/real(nface, 8)
+        else
+            vox%stefan_mean_tb = 0.0_8; vox%stefan_mean_sb = 0.0_8; vox%stefan_mean_urel = 0.0_8
+        end if
+        vox%stefan_faces = nface
+
+        theta_eff = vox%theta
+        if (vox%rannacher_left > 0) theta_eff = 1.0_8
+        allocate (Tn(vox%nx, vox%ny, vox%nz))
+        call solve_cn(vox%T, vox%phi, vox%dx, vox%dy, vox%dz, dt, k8, rho8, c8, &
+                      theta_eff, vox%cg_tol, vox%cg_maxit, vox%draft, &
+                      0.0_8, 0.035_8, 0.0_8, 0.0_8, atmos_T, atmos_Q, atmos_wind, &
+                      vox%submerged_mask, vox%exposed_mask, Tn, &
+                      vox%cg_iters, vox%cg_resid, vox%stefan_conv, &
+                      vox%test_dir_face_a, vox%test_dir_T_a, &
+                      vox%test_dir_face_b, vox%test_dir_T_b, tb_field)
+        vox%T = Tn
+        deallocate (Tn)
+
+        ! clamp (energy-consistent phi factor)
+        clamp_mass = 0.0_8
+        do k = 1, vox%nz
+            do j = 1, vox%ny
+                do i = 1, vox%nx
+                    if (vox%T(i, j, k) > 0.0_8 .and. vox%phi(i, j, k) > EPS_PHI) then
+                        dphi = vox%phi(i, j, k)*c8*vox%T(i, j, k)/lf8
+                        dm = min(dphi, vox%phi(i, j, k))
+                        vox%phi(i, j, k) = vox%phi(i, j, k) - dm
+                        clamp_mass = clamp_mass + dm*rho8*V
+                        vox%T(i, j, k) = 0.0_8
+                    end if
+                end do
+            end do
+        end do
+        vox%clamp_melt_mass = clamp_mass
+        surface_melt = clamp_mass/dt
+
+        ! boundary melt + cap
+        vox%clip_events = 0
+        basal_melt = 0.0_8; lateral_melt = 0.0_8
+        do k = 1, vox%nz
+            do j = 1, vox%ny
+                do i = 1, vox%nx
+                    if (vox%phi(i, j, k) <= EPS_PHI) cycle
+                    tot = dmelt(i, j, k)
+                    if (tot <= 0.0_8) cycle
+                    capv = vox%melt_cap*vox%phi(i, j, k)
+                    if (tot > capv) then
+                        if (capv > 0.0_8) then
+                            scale = capv/tot
+                            vox%clip_events = vox%clip_events + 1
+                            dmelt(i, j, k) = capv
+                            dbasal(i, j, k) = dbasal(i, j, k)*scale
+                            dlat(i, j, k) = dlat(i, j, k)*scale
+                        else
+                            dmelt(i, j, k) = 0.0_8; dbasal(i, j, k) = 0.0_8; dlat(i, j, k) = 0.0_8
+                        end if
+                    end if
+                    basal_melt = basal_melt + dbasal(i, j, k)
+                    lateral_melt = lateral_melt + dlat(i, j, k)
+                    vox%phi(i, j, k) = max(0.0_8, vox%phi(i, j, k) - dmelt(i, j, k))
+                end do
+            end do
+        end do
+        basal_melt = basal_melt/dt
+        lateral_melt = lateral_melt/dt
+        deallocate (dmelt, dbasal, dlat, tb_field, tbsum, tbcount)
+
+        ! erosion + flush + Rannacher
+        removed = 0
+        do k = 1, vox%nz
+            do j = 1, vox%ny
+                do i = 1, vox%nx
+                    if (vox%phi(i, j, k) > EPS_PHI .and. vox%phi(i, j, k) < vox%phi_min) then
+                        call flush_voxel(vox, i, j, k, rho8, c8, lf8, V)
+                        removed = removed + 1
+                    end if
+                end do
+            end do
+        end do
+        if (removed > 0) vox%rannacher_left = 2
+        if (vox%rannacher_left > 0 .and. removed == 0) vox%rannacher_left = max(0, vox%rannacher_left - 1)
+
+        vox%basal_melt_rate = basal_melt
+        vox%lateral_melt_rate = lateral_melt
+        vox%surface_melt_rate = surface_melt
+        call voxel_iceberg_compute_state(vox)
+    end subroutine voxel_iceberg_step_profile
+
+    subroutine voxel_iceberg_get_stefan(vox, mean_tb, mean_sb, mean_urel, deep_tb, wl_tb, nfaces)
+        type(voxel_iceberg_type), intent(in) :: vox
+        real(8), intent(out) :: mean_tb, mean_sb, mean_urel, deep_tb, wl_tb
+        integer, intent(out) :: nfaces
+        mean_tb = vox%stefan_mean_tb; mean_sb = vox%stefan_mean_sb
+        mean_urel = vox%stefan_mean_urel; deep_tb = vox%stefan_deep_tb
+        wl_tb = vox%stefan_wl_tb; nfaces = vox%stefan_faces
+    end subroutine voxel_iceberg_get_stefan
 
     ! ==========================================================================
     ! Геттеры

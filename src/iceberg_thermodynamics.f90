@@ -36,7 +36,7 @@ module iceberg_thermodynamics
     use iceberg_types
     use iceberg_forcing, only: interp_at_draft, depth_averaged_thermal_forcing
     use voxel_iceberg, only: voxel_iceberg_type, voxel_iceberg_init, voxel_iceberg_step, &
-                             voxel_iceberg_get_melt
+                             voxel_iceberg_step_profile, voxel_iceberg_get_melt
     use param, only: nat
     implicit none
 
@@ -1392,9 +1392,10 @@ contains
         tair = atmos%t2m - 273.15
         qnet = diag%q_net_surface
 
-        call voxel_iceberg_step(vox_ice, real(dt, 8), real(to, 8), real(so, 8), &
-                                real(uo, 8), real(vo, 8), real(tair, 8), real(qnet, 8), &
-                                real(wind, 8), basal, lat, surf)
+        call voxel_iceberg_step_profile(vox_ice, real(dt, 8), ocean_prof, &
+                                        real(state%u, 8), real(state%v, 8), &
+                                        real(tair, 8), real(qnet, 8), real(wind, 8), &
+                                        basal, lat, surf)
 
         ! кг/с → м/с по соответствующей площади (basal=дно, lateral=бок, surf=верх)
         area = max(vox_ice%waterline_area, 1.0d0)

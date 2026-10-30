@@ -1,13 +1,13 @@
 # Stage 12 Preparation — Voxel Iceberg on Reanalysis Forcing
 
-**Status:** **STAGE 12.1 COMPLETE (reconnaissance); STAGE 12.2 COMPLETE (reanalysis reader + ocean provider, default OFF).**
+**Status:** **STAGE 12.1 COMPLETE; STAGE 12.2 COMPLETE (reader+provider); STAGE 12.3 COMPLETE (voxel thermal core, default OFF).**
 **Date:** 2026-10-29
 **Base:** `386c850` (Stage 11 frozen; tag `stage11-final-frozen`)
-**Implementation:** **Stage 12.2 reanalysis reader + ocean provider DONE**
-(`src/reanalysis_reader.f90`, `src/ocean_provider.f90`, integrated in
-`src/iceberg_forcing.f90` behind `OCEAN_SOURCE` default `model`). The **voxel
-thermal core (Stage 12.3) is NOT started**; `fpm.toml`/CI unchanged (tests
-auto-discovered).
+**Implementation:** **Stage 12.2 reader/provider DONE; Stage 12.3 voxel thermal
+core DONE** (`src/voxel_iceberg.f90`, `src/voxel_thermal_solver.f90`, gated in
+`src/iceberg_thermodynamics.f90` behind `VOXEL_ENABLED` default OFF → bulk path
+bit-identical; D-53). The **ice–water/ice–air coupling (Stage 12.4) is NOT
+started**; `fpm.toml`/CI unchanged (tests auto-discovered).
 
 ## 1. Objective
 
@@ -62,8 +62,8 @@ no coupled feedback) must remain visible in the implementation.
 |---|---|---|
 | 12.1 | Reanalysis acquisition/validation (GLORYS12 + ERA5 subset) | **COMPLETE** (Jan-2020 recon; regular grid/units/mask verified; report) |
 | 12.2 | Reanalysis reader and offline forcing contract | **COMPLETE** (`reanalysis_reader`+`ocean_provider`+`iceberg_forcing`; D-52; tests green; default OFF) |
-| 12.3 | Voxel thermal core | **NEXT (not started)**: conduction + phase change conserve energy in a closed test |
-| 12.4 | Ice-water/ice-air boundary coupling | three-equation limit reproduces Stage 10.10 anchors |
+| 12.3 | Voxel thermal core | **COMPLETE** (`voxel_iceberg`+`voxel_thermal_solver`, D-53; FV conduction+phase change, Stefan/air melt, erosion, waterline; tests green; default OFF) |
+| 12.4 | Ice-water/ice-air boundary coupling | **NEXT (not started)**: three-equation at draft, γ_T/γ_S, Tf(S,p), relative-flow u_rel |
 | 12.5 | Geometry/erosion/hydrostatic coupling | mass and volume budgets close; no negative φ |
 | 12.6 | Drift coupling with voxel-derived geometry | existing drift tests remain green; no two-way feedback |
 | 12.7 | Validation and diagnostics | documented observational comparison; no calibration claim |
@@ -110,7 +110,14 @@ depth/time verified against Python. **DONE** (`stage12.1_glorys12_validation.md`
 integration tests green; default `OCEAN_SOURCE=model` → Stage 11 bit-identical;
 no ocean-code change. **DONE** (`stage12.2_reanalysis_reader.md`, D-52).
 
-**Stage 12.3 entry:** all of the above. Voxel thermal core. **NOT started.**
+**Stage 12.3 exit:** voxel core (`voxel_iceberg` + `voxel_thermal_solver`) +
+gated `VOXEL_ENABLED` integration (default OFF → bulk bit-identical); conduction
+energy-conserving, Archimedes draft exact, erosion + dynamic waterline, melt
+budgets; unit + integration tests green; no Stage 11/12.2 code change. **DONE**
+(`stage12.3_voxel_thermal_core.md`, D-53).
+
+**Stage 12.4 entry:** all of the above. Three-equation ice–water / ice–air
+boundary coupling. **NOT started.**
 
 ## 8. References
 

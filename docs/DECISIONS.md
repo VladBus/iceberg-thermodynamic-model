@@ -605,3 +605,36 @@ not added.
 - **Docs:** `docs/validation/stage12.2_reanalysis_reader.md`; updates to
   `docs/STAGE12_PREPARATION.md`, `docs/REANALYSIS_DATA_PLAN.md`.
 - **Next:** Stage 12.3 voxel thermal core (**GO**, not started in this stage).
+
+## D-53. Stage 12.3 voxel thermal core (offline/prescribed; VOXEL_ENABLED default OFF) (2026-10-30)
+
+- **Status:** ACTIVE (implementation; not observationally validated).
+- **Decision:** Replace the rectangular-prism bulk thermodynamics with a
+  thermally resolved **voxel** iceberg: new `src/voxel_iceberg.f90` (per-voxel
+  `T`/`φ` + Archimedes mass/draft/areas) and `src/voxel_thermal_solver.f90`
+  (finite-volume explicit conduction + enthalpy phase change; Stefan
+  forced-convection ocean melt basal/lateral + air-surface sensible/latent
+  melt; geometric erosion `φ<φ_min`; dynamic waterline). Integrated into
+  `src/iceberg_thermodynamics.f90` behind env **`VOXEL_ENABLED` (default OFF →
+  the existing bulk path is bit-identical)**; when ON a parallel voxel is driven
+  by the SAME `ocean_profile`/`atmos_forcing` (via the Stage 12.2 provider path)
+  and its melt kg/s is recorded in diagnostics.
+- **One-way / no-feedback (D-51):** the voxel does not feed melt or buoyancy
+  back to the ocean/atmosphere; the prism `state` still drives drift (full
+  geometry feedback deferred to Stage 12.4).
+- **Reference:** `docs/references/Iceberg/Iceberg_Voxel_Thermal_Model_8.pdf`
+  — a **model specification**, not calibration. Open items kept visible in code:
+  `γ_S`/salt boundary layer, `Tf(S,p)` at depth, relative-flow `u_rel`,
+  cavity/spray zones, freezing of ambient water, turbulent-coefficient
+  calibration.
+- **Verification:** `test_voxel_thermal_solver` (7 checks: adiabatic energy
+  conserved, phase clamp, basal+lateral melt sign/magnitude, freeze branch,
+  air-flux melt), `test_voxel_iceberg` (8: analytic mass, **draft=ρ_i/ρ_w·H=88.5 m
+  exact**, areas, mass conserved under zero forcing, melting, `φ_min` removal,
+  waterline adjust), `test_voxel_integration` (6: no NaN, mass/draft decrease,
+  bulk three-equation order-of-magnitude cross-check). All run in CI (no `.nc`).
+  Full `fpm test` battery green (STOP 0 = 74, 0 failed); strict
+  `-Wall -Wextra -fcheck=all -ffpe-trap` clean.
+- **Docs:** `docs/validation/stage12.3_voxel_thermal_core.md`.
+- **Next:** Stage 12.4 proper three-equation ice–water / ice–air boundary
+  coupling (**GO**, not started here).

@@ -35,8 +35,25 @@
 module iceberg_thermodynamics
     use iceberg_types
     use iceberg_forcing, only: interp_at_draft, depth_averaged_thermal_forcing
+    use voxel_iceberg, only: voxel_iceberg_type, voxel_iceberg_init, voxel_iceberg_step, &
+                             voxel_iceberg_get_melt
     use param, only: nat
     implicit none
+
+    ! ========================================================================
+    !   STAGE 12.3: ВОКСЕЛЬНОЕ ТЕРМОЯДРО (offline/prescribed форсинг, D-51).
+    !   Env VOXEL_ENABLED=true|false (default false → бит-идентичный bulk-путь).
+    !   VOXEL_NX/NY/NZ (default 10), VOXEL_DX/DY/DZ (default 10 м),
+    !   VOXEL_T_INIT (-10), VOXEL_PHI_INIT (1), VOXEL_PHI_MIN (0.01).
+    !   When ON: a parallel voxel iceberg is advanced from the same ocean/atmos
+    !   forcing; its melt rates overwrite the basal/lateral/surface diagnostics.
+    !   State geometry (prism) is NOT rewritten by the voxel (kept separate);
+    !   full geometry feedback is a Stage 12.4 concern. One-way (no feedback).
+    ! ========================================================================
+    type(voxel_iceberg_type), save :: vox_ice
+    logical, save :: vox_checked = .false.
+    logical, save :: vox_enabled = .false.
+    logical, save :: vox_ready = .false.
 
     ! ========================================================================
     !   КОНСТАНТЫ ДЛЯ ПОВЕРХНОСТНОГО ТЕПЛОВОГО БАЛАНСА (адаптированы из legacy HEAT)
@@ -284,6 +301,9 @@ contains
 
         diag%q_net_surface = q_net
         diag%m_surface = m_surface
+
+        ! STAGE 12.3: воксельное термо-ядро (default OFF → ниже inert).
+        call voxel_model_step(state, dt, ocean_prof, atmos, diag)
     end subroutine iceberg_thermodynamics_step
 
     ! ========================================================================
@@ -1302,5 +1322,106 @@ contains
         real, intent(in) :: salinity
         tf = ocean_freezing_point(salinity, 0.0)
     end function freezing_point
+
+    ! ========================================================================
+    !   STAGE 12.3: воксельное термо-ядро (VOXEL_ENABLED, default OFF).
+    ! ========================================================================
+    ! Ленивая инициализация из env (один раз). OFF → vox_enabled=.false., шаг
+    ! инертен (бит-идентичный bulk-путь не трогается).
+    subroutine voxel_model_configure()
+        character(len=64) :: ev
+        integer :: nx, ny, nz
+        real(8) :: dx, dy, dz, t_init, phi_init, phi_min
+
+        if (vox_checked) return
+        vox_checked = .true.
+        vox_enabled = .false.
+        call get_environment_variable('VOXEL_ENABLED', ev)
+        if (len_trim(ev) > 0) then
+            if (trim(ev) == 'true' .or. trim(ev) == 'TRUE' .or. trim(ev) == '1') then
+                vox_enabled = .true.
+            end if
+        end if
+        if (.not. vox_enabled) return
+
+        nx = 10; ny = 10; nz = 10
+        dx = 10.0d0; dy = 10.0d0; dz = 10.0d0
+        t_init = -10.0d0; phi_init = 1.0d0; phi_min = 0.01d0
+        call env_int('VOXEL_NX', nx); call env_int('VOXEL_NY', ny); call env_int('VOXEL_NZ', nz)
+        call env_real('VOXEL_DX', dx); call env_real('VOXEL_DY', dy); call env_real('VOXEL_DZ', dz)
+        call env_real('VOXEL_T_INIT', t_init); call env_real('VOXEL_PHI_INIT', phi_init)
+        call env_real('VOXEL_PHI_MIN', phi_min)
+        call voxel_iceberg_init(vox_ice, nx, ny, nz, dx, dy, dz, t_init, phi_init, phi_min)
+        vox_ready = .true.
+        print '(a,3i4,a,3f6.1)', ' VOXEL core ON: grid', nx, ny, nz, ' dx', dx, dy, dz
+    end subroutine voxel_model_configure
+
+    ! Шаг воксельного ядра с форсингом из океана/атмосферы (те же источники,
+    ! что и bulk). Записывает скорости плавления в diag; геометрию призмы НЕ меняет.
+    subroutine voxel_model_step(state, dt, ocean_prof, atmos, diag)
+        type(iceberg_state), intent(in) :: state
+        real, intent(in) :: dt
+        type(ocean_profile), intent(in) :: ocean_prof
+        type(atmos_forcing), intent(in) :: atmos
+        type(iceberg_diagnostics), intent(inout) :: diag
+
+        real :: to, so, uo, vo
+        real(8) :: basal, lat, surf, wind, tair, qnet
+        real(8) :: area, vel_min
+
+        call voxel_model_configure()
+        if (.not. vox_enabled) return
+        if (.not. vox_ready) return
+        if (.not. allocated(ocean_prof%temp)) return
+
+        to = interp_at_draft(ocean_prof, diag%draft, 'temp')
+        so = interp_at_draft(ocean_prof, diag%draft, 'salt')
+        uo = interp_at_draft(ocean_prof, diag%draft, 'u')
+        vo = interp_at_draft(ocean_prof, diag%draft, 'v')
+        wind = sqrt(atmos%u10*atmos%u10 + atmos%v10*atmos%v10)
+        tair = atmos%t2m - 273.15
+        qnet = diag%q_net_surface
+
+        call voxel_iceberg_step(vox_ice, real(dt, 8), real(to, 8), real(so, 8), &
+                                real(uo, 8), real(vo, 8), real(tair, 8), real(qnet, 8), &
+                                real(wind, 8), basal, lat, surf)
+
+        ! кг/с → м/с по соответствующей площади (basal=дно, lateral=бок, surf=верх)
+        area = max(vox_ice%waterline_area, 1.0d0)
+        vel_min = max(vox_ice%submerged_area, 1.0d0)
+        diag%m_basal = real(basal/(real(RHO_ICE, 8)*vel_min), 4)
+        diag%m_lateral = real(lat/(real(RHO_ICE, 8)*vel_min), 4)
+        diag%m_surface = real(surf/(real(RHO_ICE, 8)*area), 4)
+        ! (state-геометрия призмы сохраняется отдельно; full feedback → Stage 12.4)
+    end subroutine voxel_model_step
+
+    ! Активен ли воксельный путь (для тестов/диагностики).
+    logical function voxel_model_active()
+        call voxel_model_configure()
+        voxel_model_active = vox_enabled .and. vox_ready
+    end function voxel_model_active
+
+    subroutine env_int(name, val)
+        character(len=*), intent(in) :: name
+        integer, intent(inout) :: val
+        character(len=64) :: s
+        integer :: r
+        call get_environment_variable(name, s)
+        if (len_trim(s) > 0) then
+            read (s, *, iostat=r) val
+            if (r /= 0) val = val   ! keep default on parse failure
+        end if
+    end subroutine env_int
+
+    subroutine env_real(name, val)
+        character(len=*), intent(in) :: name
+        real(8), intent(inout) :: val
+        character(len=64) :: s
+        integer :: r
+        call get_environment_variable(name, s)
+        if (len_trim(s) > 0) then
+            read (s, *, iostat=r) val
+        end if
+    end subroutine env_real
 
 end module iceberg_thermodynamics

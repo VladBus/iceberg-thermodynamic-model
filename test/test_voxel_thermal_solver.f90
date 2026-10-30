@@ -85,19 +85,19 @@ program test_voxel_thermal_solver
         print *, '  FAIL: NaN in phi after fluxes'; nerr = nerr + 1
     end if
 
-    ! --- Check 4: freezing with sub-Tf ocean + current (melt_v<0) -------------
+    ! --- Check 4: sub-Tf ocean → m = 0, phi UNCHANGED (spec A5: no accretion) --
     T = -20.0d0; phi = 0.0d0; phi(3, 3, 1) = 0.5d0
     sm = .false.; em = .false.
     sm(3, 3, 1) = .true.
     call apply_boundary_fluxes(T, phi, dx, dy, dz, dt, &
                                -5.0d0, 0.035d0, 0.05d0, 0.0d0, &
                                -30.0d0, 0.0d0, 0.0d0, sm, em, basal, lat, surf)
-    ! ocean at -5 °C < Tf(~-1.9) + current → melt_v<0 → freeze → phi up, basal<0
-    print '(a,es12.4,a,f8.4)', ' freeze basal kg/s=', basal, ' phi=', phi(3, 3, 1)
-    if (basal < 0.0d0 .or. phi(3, 3, 1) > 0.5d0) then
-        print *, '  OK: sub-freezing ocean → net freezing (phi up / basal<0)'
+    ! ocean at -5 °C < Tf(~-1.9): accretion NOT modelled (spec A5) → m=0, phi same
+    print '(a,es12.4,a,f8.4)', ' sub-Tf basal kg/s=', basal, ' phi=', phi(3, 3, 1)
+    if (abs(basal) < 1.0d-12 .and. abs(phi(3, 3, 1) - 0.5d0) < 1.0d-12) then
+        print *, '  OK: sub-Tf ocean → m=0, phi unchanged (no accretion, spec A5)'
     else
-        print *, '  FAIL: expected freezing (phi up or basal<0)'; nerr = nerr + 1
+        print *, '  FAIL: expected m=0 and unchanged phi'; nerr = nerr + 1
     end if
 
     ! --- Check 5: air-surface heat adds melt with warm flux -------------------

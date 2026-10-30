@@ -638,3 +638,32 @@ not added.
 - **Docs:** `docs/validation/stage12.3_voxel_thermal_core.md`.
 - **Next:** Stage 12.4 proper three-equation ice–water / ice–air boundary
   coupling (**GO**, not started here).
+
+## D-54. Crank–Nicolson (θ=0.5) + PCG replaces explicit sub-stepped conduction; Rannacher smoothing (Stage 12.4 Part A, 2026-10-31)
+
+- **Status:** ACTIVE (supervisor-approved; Transition doc §6.2).
+- **Decision:** `voxel_thermal_solver` now solves the voxel heat equation with
+  the θ‑scheme (`ICEBERG_THETA`, default 0.5; θ=1 = backward Euler), a symmetric
+  positive‑definite 7‑diagonal system, by **preconditioned conjugate gradients
+  (Jacobi)**, relative residual ≤ `ICEBERG_CG_TOL=1e-10`, warm start `T^n`.
+  Boundary conditions are inside the matrix: submerged Dirichlet
+  `G_b=2k_ice A/h_norm` toward `Tf(S,P)`; exposed Robin with sensible `h_sA`
+  fully implicit and `A·Q_net` explicit (no Ga — `Q_net` already contains net
+  LW/SW/latent, avoiding double counting). **Rannacher:** the 2 steps after any
+  geometry change use θ=1.
+- **Why:** 2nd‑order temporal accuracy, no explicit sub‑stepping at fine
+  voxels, implicit coupling to the Stefan boundary (Transition doc §6.2).
+  Explicit stability was not the problem (`Fo≈0.004` at h=1 m, dt=1 h).
+- **Geometry fix (12.3 defect #1):** all face‑normal operations use
+  `h_norm = dx|dy|dz` per face (melt fraction, air heating, half‑cell
+  conduction), proven by a non‑cubic test (`dz/dx=0.1`).
+- **Energy:** single enthalpy clamp using `dφ=φ c T/L` (energy‑consistent);
+  melt cap 0.20 with clip counter; voxel removal transfers residual sensible
+  heat to active face‑neighbours and records flushed mass/energy (PDF eq 9.3).
+  Adiabatic `ΣC_iT_i` drift 1.6e−10 over 100 steps; temporal order 3.996.
+- **Explicit path retained:** `VOXEL_THERMAL_SCHEME=explicit` reproduces the
+  12.3 sub‑stepped scheme (with geometry fix, m≥0).
+- **Tests:** A‑T1…A‑T9 (CI‑safe, synthetic) + freezing‑point units
+  (`Tf(35,0)=−1.9223`, `ΔTf(100 dbar)=−0.0753`). Full battery + strict build
+  green.
+- **Docs:** `docs/validation/stage12.4_crank_nicolson_stefan.md`.

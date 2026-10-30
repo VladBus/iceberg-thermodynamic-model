@@ -12,7 +12,7 @@ program test_voxel_iceberg
     type(voxel_iceberg_type) :: vox
     real(8) :: m0, m1, draft0, draft1, wa, sa, ea, exp_mass, mass_tol, draft_exp
     real(8) :: basal, lat, surf
-    integer :: i, j, k, nerr
+    integer :: i, j, k, nerr, ischeme
 
     nerr = 0
     print *, '===================================================='
@@ -118,6 +118,35 @@ program test_voxel_iceberg
     else
         print *, '  FAIL: draft should adjust with mass'; nerr = nerr + 1
     end if
+
+    ! --- Check 6 (A-T9): key physics under BOTH schemes ---------------------
+    do ischeme = 1, 2
+        ! melting under warm forcing
+        call voxel_iceberg_init(vox, 8, 8, 8, 10.0d0, 10.0d0, 10.0d0, -5.0d0, 1.0d0, &
+                                scheme=ischeme)
+        m0 = vox%total_mass
+        do k = 1, 5
+            call voxel_iceberg_step(vox, 3600.0d0, 2.0d0, 0.035d0, 0.1d0, 0.0d0, &
+                                    -2.0d0, 50.0d0, 5.0d0, basal, lat, surf)
+        end do
+        call voxel_iceberg_get_mass(vox, m1)
+        if (m1 < m0) then
+            print '(a,i0,a)', '  OK: scheme ', ischeme, ' melts under warm forcing'
+        else
+            print '(a,i0,a)', '  FAIL: scheme ', ischeme, ' did not melt'; nerr = nerr + 1
+        end if
+        ! removal
+        call voxel_iceberg_init(vox, 6, 6, 6, 10.0d0, 10.0d0, 10.0d0, -10.0d0, 1.0d0, &
+                                scheme=ischeme)
+        vox%phi(3, 3, 3) = 0.005d0
+        call voxel_iceberg_step(vox, 3600.0d0, 0.0d0, 0.035d0, 0.0d0, 0.0d0, &
+                                -10.0d0, 0.0d0, 0.0d0, basal, lat, surf)
+        if (vox%phi(3, 3, 3) == 0.0d0) then
+            print '(a,i0,a)', '  OK: scheme ', ischeme, ' removes phi<phi_min voxel'
+        else
+            print '(a,i0,a)', '  FAIL: scheme ', ischeme, ' removal'; nerr = nerr + 1
+        end if
+    end do
 
     print *, '===================================================='
     if (nerr == 0) then

@@ -1329,9 +1329,9 @@ contains
     ! Ленивая инициализация из env (один раз). OFF → vox_enabled=.false., шаг
     ! инертен (бит-идентичный bulk-путь не трогается).
     subroutine voxel_model_configure()
-        character(len=64) :: ev
-        integer :: nx, ny, nz
-        real(8) :: dx, dy, dz, t_init, phi_init, phi_min
+        character(len=64) :: ev, sch
+        integer :: nx, ny, nz, scheme, cg_maxit
+        real(8) :: dx, dy, dz, t_init, phi_init, phi_min, theta, cg_tol, melt_cap
 
         if (vox_checked) return
         vox_checked = .true.
@@ -1347,13 +1347,23 @@ contains
         nx = 10; ny = 10; nz = 10
         dx = 10.0d0; dy = 10.0d0; dz = 10.0d0
         t_init = -10.0d0; phi_init = 1.0d0; phi_min = 0.01d0
+        scheme = 1; theta = 0.5d0; cg_tol = 1.0d-10; melt_cap = 0.20d0
         call env_int('VOXEL_NX', nx); call env_int('VOXEL_NY', ny); call env_int('VOXEL_NZ', nz)
         call env_real('VOXEL_DX', dx); call env_real('VOXEL_DY', dy); call env_real('VOXEL_DZ', dz)
         call env_real('VOXEL_T_INIT', t_init); call env_real('VOXEL_PHI_INIT', phi_init)
         call env_real('VOXEL_PHI_MIN', phi_min)
-        call voxel_iceberg_init(vox_ice, nx, ny, nz, dx, dy, dz, t_init, phi_init, phi_min)
+        call get_environment_variable('VOXEL_THERMAL_SCHEME', sch)
+        if (trim(sch) == 'explicit') scheme = 2
+        call env_real('ICEBERG_THETA', theta)
+        call env_real('ICEBERG_CG_TOL', cg_tol)
+        cg_maxit = 10*nx*ny*nz
+        call env_int('ICEBERG_CG_MAXIT', cg_maxit)
+        call env_real('VOXEL_MELT_CAP', melt_cap)
+        call voxel_iceberg_init(vox_ice, nx, ny, nz, dx, dy, dz, t_init, phi_init, phi_min, &
+                                scheme, theta, cg_tol, cg_maxit, melt_cap)
         vox_ready = .true.
-        print '(a,3i4,a,3f6.1)', ' VOXEL core ON: grid', nx, ny, nz, ' dx', dx, dy, dz
+        print '(a,3i4,a,3f6.1,a,i0,a,f4.2)', ' VOXEL core ON: grid', nx, ny, nz, &
+            ' dx', dx, dy, dz, ' scheme', scheme, ' theta', theta
     end subroutine voxel_model_configure
 
     ! Шаг воксельного ядра с форсингом из океана/атмосферы (те же источники,

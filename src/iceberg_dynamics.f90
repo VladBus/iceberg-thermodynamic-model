@@ -38,6 +38,8 @@ module iceberg_dynamics
     use iceberg_types
     use iceberg_forcing, only: depth_integrated_currents
     use iceberg_geometry, only: compute_full_geometry
+    use iceberg_thermodynamics, only: voxel_geometry_active, voxel_geometry_mass, &
+                                      voxel_geometry_draft, voxel_geometry_drag_areas
     implicit none
 
 contains
@@ -87,7 +89,11 @@ contains
         real :: u_old, v_old
         real :: fx_noncor, fy_noncor
 
-        mass = RHO_ICE*state%L*state%W*state%H
+        if (voxel_geometry_active()) then
+            mass = voxel_geometry_mass()          ! Stage 12.5: voxel geometry drives drift
+        else
+            mass = RHO_ICE*state%L*state%W*state%H
+        end if
         diag%mass = mass
 
         ! 1. Ветровая сила
@@ -153,16 +159,20 @@ contains
         real, intent(out) :: fx, fy
 
         real :: u_rel, v_rel, speed_rel
-        real :: a_sail
+        real :: a_sail, a_sub_dummy
         real :: draft, freeboard
-
-        draft = state%H*RHO_ICE/RHO_WATER
-        freeboard = state%H - draft
-        a_sail = state%L*state%W + 2.0*(state%L + state%W)*freeboard
 
         u_rel = atmos%u10 - state%u
         v_rel = atmos%v10 - state%v
         speed_rel = sqrt(u_rel**2 + v_rel**2)
+        if (voxel_geometry_active()) then
+            ! Stage 12.5: sail area = total exposed voxel surface (PDF 13.3)
+            call voxel_geometry_drag_areas(atan2(v_rel, u_rel), a_sub_dummy, a_sail)
+        else
+            draft = state%H*RHO_ICE/RHO_WATER
+            freeboard = state%H - draft
+            a_sail = state%L*state%W + 2.0*(state%L + state%W)*freeboard
+        end if
 
         fx = 0.5*RHO_AIR*CD_AIR*a_sail*speed_rel*u_rel
         fy = 0.5*RHO_AIR*CD_AIR*a_sail*speed_rel*v_rel
@@ -198,8 +208,13 @@ contains
         real :: dz_layer, z_top, z_bot
         real :: du, dv, speed_rel
         real :: side_area_x, side_area_y
+        real :: a_sub, a_sail_dummy
 
-        draft = state%H*RHO_ICE/RHO_WATER
+        if (voxel_geometry_active()) then
+            draft = voxel_geometry_draft()
+        else
+            draft = state%H*RHO_ICE/RHO_WATER
+        end if
 
         call depth_integrated_currents(ocean_prof, draft, u_avg, v_avg, &
                                        u_prof, v_prof, z_layers, n_layers)
@@ -207,6 +222,17 @@ contains
         if (n_layers .eq. 0) then
             fx = 0.0
             fy = 0.0
+            return
+        end if
+
+        if (voxel_geometry_active()) then
+            ! Stage 12.5: projected submerged area perpendicular to flow
+            du = u_avg - state%u
+            dv = v_avg - state%v
+            speed_rel = sqrt(du**2 + dv**2)
+            call voxel_geometry_drag_areas(atan2(dv, du), a_sub, a_sail_dummy)
+            fx = 0.5*RHO_WATER*CD_WATER*a_sub*speed_rel*du
+            fy = 0.5*RHO_WATER*CD_WATER*a_sub*speed_rel*dv
             return
         end if
 
@@ -266,8 +292,13 @@ contains
         integer :: n_layers
         real :: u_avg, v_avg
         real :: a_wet, du, dv, speed_rel
+        real :: a_sub, a_sail_dummy
 
-        draft = state%H*RHO_ICE/RHO_WATER
+        if (voxel_geometry_active()) then
+            draft = voxel_geometry_draft()
+        else
+            draft = state%H*RHO_ICE/RHO_WATER
+        end if
 
         call depth_integrated_currents(ocean_prof, draft, u_avg, v_avg, &
                                        u_prof, v_prof, z_layers, n_layers)
@@ -275,6 +306,16 @@ contains
         if (n_layers .eq. 0) then
             fx = 0.0
             fy = 0.0
+            return
+        end if
+
+        du = u_avg - state%u
+        dv = v_avg - state%v
+        speed_rel = sqrt(du**2 + dv**2)
+        if (voxel_geometry_active()) then
+            call voxel_geometry_drag_areas(atan2(dv, du), a_sub, a_sail_dummy)
+            fx = 0.5*RHO_WATER*CD_WATER*a_sub*speed_rel*du
+            fy = 0.5*RHO_WATER*CD_WATER*a_sub*speed_rel*dv
             return
         end if
 

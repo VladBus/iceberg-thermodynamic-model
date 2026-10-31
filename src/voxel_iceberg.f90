@@ -26,6 +26,7 @@ module voxel_iceberg
     public :: voxel_iceberg_get_flush, voxel_iceberg_get_solver
     public :: voxel_iceberg_get_clamp_mass
     public :: voxel_iceberg_step_profile, voxel_iceberg_get_stefan
+    public :: voxel_iceberg_get_frontal_area, voxel_iceberg_get_stability
 
     real(8), parameter :: EPS_PHI = 1.0d-12
     real(8), parameter :: DEFAULT_PHI_MIN = 0.01d0
@@ -642,6 +643,106 @@ contains
         vox%surface_melt_rate = surface_melt
         call voxel_iceberg_compute_state(vox)
     end subroutine voxel_iceberg_step_profile
+
+    ! ==========================================================================
+    ! Проекционная фронтальная площадь (PDF §13.2).
+    ! Для каждого твёрдого вокселя: если сосед В НАПРАВЛЕНИИ ПОТОКА пуст/вне
+    ! области — вклад phi*A_face. Для произвольного угла:
+    !   A_perp = Σ phi*( |cos|*dy*dz [x-грань] + |sin|*dx*dz [y-грань] ).
+    ! A_perp — по ВСЕМ твёрдым вокселям; A_sub_proj — только по погружённым
+    ! (для водного сопротивления). Приближение: единое направление потока.
+    ! ==========================================================================
+    subroutine voxel_iceberg_get_frontal_area(vox, flow_angle, A_perp, A_sub_proj)
+        type(voxel_iceberg_type), intent(in) :: vox
+        real(8), intent(in) :: flow_angle
+        real(8), intent(out) :: A_perp, A_sub_proj
+        integer :: i, j, k, ii, jj
+        real(8) :: ca, sa, cs, sn, contrib, ph
+        A_perp = 0.0_8; A_sub_proj = 0.0_8
+        if (.not. allocated(vox%phi)) return
+        cs = cos(flow_angle); sn = sin(flow_angle)
+        ca = abs(cs); sa = abs(sn)
+        do k = 1, vox%nz
+            do j = 1, vox%ny
+                do i = 1, vox%nx
+                    ph = vox%phi(i, j, k)
+                    if (ph <= EPS_PHI) cycle
+                    contrib = 0.0_8
+                    if (ca > 0.0_8) then
+                        if (cs >= 0.0_8) then
+                            ii = i + 1
+                        else
+                            ii = i - 1
+                        end if
+                        if (empty_or_outside(vox, ii, j, k)) &
+                            contrib = contrib + ph*vox%dy*vox%dz*ca
+                    end if
+                    if (sa > 0.0_8) then
+                        if (sn >= 0.0_8) then
+                            jj = j + 1
+                        else
+                            jj = j - 1
+                        end if
+                        if (empty_or_outside(vox, i, jj, k)) &
+                            contrib = contrib + ph*vox%dx*vox%dz*sa
+                    end if
+                    A_perp = A_perp + contrib
+                    if (vox%submerged_mask(i, j, k)) A_sub_proj = A_sub_proj + contrib
+                end do
+            end do
+        end do
+    end subroutine voxel_iceberg_get_frontal_area
+
+    ! ==========================================================================
+    ! Метацентрическая устойчивость (PDF §13.4) — оценочно, без динамики
+    ! опрокидывания. I_wp = L_eff*W_eff^3/12 (поперечная ось), V_sub=mass/rho_w,
+    ! BM=I_wp/V_sub, BG=z_g-z_b, GM=BM-BG. GM<0 → риск опрокидывания
+    ! (документируется, НЕ моделируется).
+    ! ==========================================================================
+    subroutine voxel_iceberg_get_stability(vox, GM, BM, BG, I_wp, V_sub)
+        type(voxel_iceberg_type), intent(in) :: vox
+        real(8), intent(out) :: GM, BM, BG, I_wp, V_sub
+        integer :: i, j, k, imin, imax, jmin, jmax
+        real(8) :: xext, yext, cellvol, zc, num, den, z_g, z_b
+        GM = 0.0_8; BM = 0.0_8; BG = 0.0_8; I_wp = 0.0_8; V_sub = 0.0_8
+        if (.not. allocated(vox%phi)) return
+        if (vox%total_mass <= 0.0_8) return
+        V_sub = vox%total_mass/real(RHO_WATER, 8)
+        imin = vox%nx; imax = 1; jmin = vox%ny; jmax = 1
+        do k = 1, vox%nz
+            do j = 1, vox%ny
+                do i = 1, vox%nx
+                    if (.not. vox%submerged_mask(i, j, k)) cycle
+                    imin = min(imin, i); imax = max(imax, i)
+                    jmin = min(jmin, j); jmax = max(jmax, j)
+                end do
+            end do
+        end do
+        xext = real(max(imax - imin + 1, 1), 8)*vox%dx
+        yext = real(max(jmax - jmin + 1, 1), 8)*vox%dy
+        I_wp = xext*yext**3/12.0_8
+        if (V_sub > 0.0_8) BM = I_wp/V_sub
+        cellvol = vox%dx*vox%dy*vox%dz
+        num = 0.0_8; den = 0.0_8
+        do k = 1, vox%nz
+            zc = (real(k, 8) - 0.5_8)*vox%dz
+            do j = 1, vox%ny
+                do i = 1, vox%nx
+                    if (vox%phi(i, j, k) <= EPS_PHI) cycle
+                    num = num + vox%phi(i, j, k)*zc*cellvol
+                    den = den + vox%phi(i, j, k)*cellvol
+                end do
+            end do
+        end do
+        if (den > 0.0_8) then
+            z_g = num/den
+        else
+            z_g = 0.0_8
+        end if
+        z_b = 0.5_8*vox%draft
+        BG = z_g - z_b
+        GM = BM - BG
+    end subroutine voxel_iceberg_get_stability
 
     subroutine voxel_iceberg_get_stefan(vox, mean_tb, mean_sb, mean_urel, deep_tb, wl_tb, nfaces)
         type(voxel_iceberg_type), intent(in) :: vox

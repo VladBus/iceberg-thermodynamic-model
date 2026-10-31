@@ -1,6 +1,6 @@
 # Stage 12 Preparation — Voxel Iceberg on Reanalysis Forcing
 
-**Status:** **STAGE 12.1/12.2/12.3 COMPLETE; STAGE 12.4 COMPLETE (CN core + three-equation Stefan; default OFF).**
+**Status:** **STAGE 12.1–12.4 COMPLETE; STAGE 12.5 COMPLETE (voxel geometry drives drift; default OFF).**
 **Date:** 2026-10-29
 **Base:** `386c850` (Stage 11 frozen; tag `stage11-final-frozen`)
 **Implementation:** Stage 12.2 reader/provider, 12.3 voxel core **and 12.4
@@ -65,7 +65,8 @@ no coupled feedback) must remain visible in the implementation.
 | 12.2 | Reanalysis reader and offline forcing contract | **COMPLETE** (`reanalysis_reader`+`ocean_provider`+`iceberg_forcing`; D-52; tests green; default OFF) |
 | 12.3 | Voxel thermal core | **COMPLETE** (`voxel_iceberg`+`voxel_thermal_solver`, D-53; FV conduction+phase change, Stefan/air melt, erosion, waterline; tests green; default OFF) |
 | 12.4 | Ice-water/ice-air boundary coupling | **COMPLETE**: Crank–Nicolson (θ-scheme, PCG, Rannacher), geometry fix, three-equation Stefan (γ_T/γ_S, Tf(S,P), profile, u_rel), melt cap/flush; D-54/D-55; tests green; default OFF |
-| 12.5 | Geometry/erosion/hydrostatic coupling | **NEXT (not started)**: voxel geometry drives drift; mass/volume budgets; no negative φ |
+| 12.5 | Geometry/erosion/hydrostatic coupling | **COMPLETE**: voxel mass/draft/frontal A_sub_proj/A_sail drive drift (gated), GM estimate; D-56; tests green; default OFF |
+| 12.6 | Drift in lat/lon, `iceberg_run`, temporal interpolation, waves/ice, real(8) | **NEXT (not started)** |
 | 12.6 | Drift coupling with voxel-derived geometry | existing drift tests remain green; no two-way feedback |
 | 12.7 | Validation and diagnostics | documented observational comparison; no calibration claim |
 
@@ -124,8 +125,12 @@ face with per‑depth profile, `Tf(S,P)`, `u_rel` with iceberg velocity,
 `m≥0` (no accretion); D‑54/D‑55; tests green; default OFF. **DONE**
 (`stage12.4_crank_nicolson_stefan.md`).
 
-**Stage 12.5 entry:** all of the above. Voxel geometry driving drift /
-hydrostatics / mass budgets. **NOT started.**
+**Stage 12.5 exit:** voxel frontal/wetted areas + mass/draft drive drift
+(gated), metacentric estimate, tests; D‑56; default OFF. **DONE**
+(`stage12.5_voxel_geometry_drift.md`).
+
+**Stage 12.6 entry:** all of the above. lat/lon drift, `iceberg_run`, temporal
+interpolation, waves/ice, real(8). **NOT started.**
 
 ## 8. References
 

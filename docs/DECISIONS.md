@@ -701,3 +701,28 @@ not added.
   B‑T5 u_rel scaling, B‑T6 stratified profile (top >3× deep), B‑T7 no accretion,
   B‑T8 integration (mass budget 8.96e−16). Full battery + strict build green.
 - **Docs:** `docs/validation/stage12.4_crank_nicolson_stefan.md`.
+
+## D-56. Voxel geometry drives drift when VOXEL_ENABLED=ON; frontal area per PDF §13.2 (Stage 12.5, 2026-10-31)
+
+- **Status:** ACTIVE.
+- **Decision:** when `VOXEL_ENABLED=ON`, `iceberg_dynamics` uses the voxel
+  geometry for drift: **mass** = voxel mass, **draft** = voxel Archimedes draft,
+  **wind A_sail** = total exposed voxel surface (PDF §13.3), **water A** =
+  `A_sub_proj` (projected submerged silhouette perpendicular to the
+  depth-averaged relative current, PDF §13.2). When OFF (default) the bulk
+  prism formulas are used unchanged (bit-identical).
+- **Frontal area:** per solid voxel, if the neighbour in the flow direction is
+  empty/outside, contribution `φ·A_face·|cosθ|` (x) and/or `φ·A_face·|sinθ|`
+  (y). `A_perp` = whole silhouette, `A_sub_proj` = submerged only.
+  **Correction:** at 45° a cube’s true silhouette is `a²(|cos|+|sin|)=14142 m²`
+  (the prompt’s 7071 is the single‑face projection). Implementation uses the
+  physical silhouette; documented.
+- **Metacentric stability:** estimate `GM = BM − BG` with
+  `I_wp = L_eff W_eff³/12`, `BM = I_wp/V_sub`, `BG = z_g − z_b`; `GM<0` is
+  reported only (no capsize dynamics). Getter `voxel_iceberg_get_stability`.
+- **Phase 6:** the explicit `dφ = φc(T−T_f)/L` fix was already applied in
+  Stage 12.4A (`3e3ec4a`); no further change.
+- **Tests:** `test_voxel_drift` (A_perp 10000/14142/5000; integration; GM;
+  gated interface) + A_perp check in `test_voxel_integration`; full battery
+  77 STOP 0; strict build clean.
+- **Docs:** `docs/validation/stage12.5_voxel_geometry_drift.md`.

@@ -16,7 +16,7 @@ program test_voxel_integration
     real(8), parameter :: oT = 2.0d0, oS = 0.035d0, ou = 0.10d0, ov = 0.02d0
     real(8), parameter :: atT = -8.0d0, atQ = -30.0d0, atW = 8.0d0
     real(8) :: dt, m0, m1, draft0, draft1, basal, lat, surf, b2, l2, s2
-    real(8) :: tf, u_rel, l_char, bulk_melt_rate, bulk_loss, mass_frac
+    real(8) :: tf, u_rel, l_char, bulk_melt_rate, bulk_loss, mass_frac, ap, asub
     real :: gamma_t
     integer :: step, i, j, k, nerr
     real(8), allocatable :: ph0(:,:,:)
@@ -81,6 +81,15 @@ program test_voxel_integration
     ! порядок величины: воксельный дрейф-фолл согласован с bulk (тот же порядок)
     if (bulk_melt_rate > 0.0d0) then
         print *, '  OK: warm-forced melt rate positive (bulk & voxel agree in sign/range)'
+    end if
+
+    ! Stage 12.5: projected frontal area must be computed and reasonable
+    call voxel_iceberg_get_frontal_area(vox, 0.0d0, ap, asub)
+    print '(a,f12.2,a,f12.2)', ' frontal A_perp=', ap, ' A_sub_proj=', asub
+    if (ap > 0.0d0 .and. ap == ap .and. asub > 0.0d0 .and. asub == asub) then
+        print *, '  OK: frontal areas computed (positive, finite)'
+    else
+        print *, '  FAIL: invalid frontal area'; nerr = nerr + 1
     end if
 
     deallocate (ph0)

@@ -36,7 +36,10 @@ module iceberg_thermodynamics
     use iceberg_types
     use iceberg_forcing, only: interp_at_draft, depth_averaged_thermal_forcing
     use voxel_iceberg, only: voxel_iceberg_type, voxel_iceberg_init, voxel_iceberg_step, &
-                             voxel_iceberg_step_profile, voxel_iceberg_get_melt
+                             voxel_iceberg_step_profile, voxel_iceberg_get_melt, &
+                             voxel_iceberg_get_mass, voxel_iceberg_get_draft, &
+                             voxel_iceberg_get_areas, voxel_iceberg_get_frontal_area, &
+                             voxel_iceberg_get_stability
     use param, only: nat
     implicit none
 
@@ -1411,6 +1414,68 @@ contains
         call voxel_model_configure()
         voxel_model_active = vox_enabled .and. vox_ready
     end function voxel_model_active
+
+    ! ========================================================================
+    !   STAGE 12.5: публичный интерфейс воксельной геометрии для дрейфа.
+    !   Всё gated: OFF (default) → вызывающий использует призму (без изменений).
+    ! ========================================================================
+    logical function voxel_geometry_active()
+        call voxel_model_configure()
+        voxel_geometry_active = vox_enabled .and. vox_ready
+    end function voxel_geometry_active
+
+    ! TEST-ONLY: принудительно включить воксельную геометрию (CI-тесты).
+    ! НЕ вызывается из production; production использует env VOXEL_ENABLED.
+    subroutine voxel_geometry_test_enable()
+        if (vox_enabled .and. vox_ready) return
+        vox_checked = .true.
+        vox_enabled = .true.
+        call voxel_iceberg_init(vox_ice, 10, 10, 10, 10.0d0, 10.0d0, 10.0d0, -10.0d0, 1.0d0)
+        vox_ready = .true.
+    end subroutine voxel_geometry_test_enable
+
+    real function voxel_geometry_mass()
+        real(8) :: m
+        voxel_geometry_mass = 0.0
+        call voxel_model_configure()
+        if (.not. (vox_enabled .and. vox_ready)) return
+        call voxel_iceberg_get_mass(vox_ice, m)
+        voxel_geometry_mass = real(m, 4)
+    end function voxel_geometry_mass
+
+    real function voxel_geometry_draft()
+        real(8) :: d
+        voxel_geometry_draft = 0.0
+        call voxel_model_configure()
+        if (.not. (vox_enabled .and. vox_ready)) return
+        call voxel_iceberg_get_draft(vox_ice, d)
+        voxel_geometry_draft = real(d, 4)
+    end function voxel_geometry_draft
+
+    ! A_sub_proj — проекционная подводная площадь (водное сопротивление);
+    ! A_sail — полная открытая площадь (PDF §13.3) для ветра.
+    subroutine voxel_geometry_drag_areas(flow_angle, A_sub_proj, A_sail)
+        real, intent(in) :: flow_angle
+        real, intent(out) :: A_sub_proj, A_sail
+        real(8) :: ap, asub, wa, sa, ea
+        A_sub_proj = 0.0; A_sail = 0.0
+        call voxel_model_configure()
+        if (.not. (vox_enabled .and. vox_ready)) return
+        call voxel_iceberg_get_frontal_area(vox_ice, real(flow_angle, 8), ap, asub)
+        call voxel_iceberg_get_areas(vox_ice, wa, sa, ea)
+        A_sub_proj = real(asub, 4)
+        A_sail = real(ea, 4)
+    end subroutine voxel_geometry_drag_areas
+
+    subroutine voxel_geometry_stability(GM, BM, BG)
+        real, intent(out) :: GM, BM, BG
+        real(8) :: gm8, bm8, bg8, iwp, vsub
+        GM = 0.0; BM = 0.0; BG = 0.0
+        call voxel_model_configure()
+        if (.not. (vox_enabled .and. vox_ready)) return
+        call voxel_iceberg_get_stability(vox_ice, gm8, bm8, bg8, iwp, vsub)
+        GM = real(gm8, 4); BM = real(bm8, 4); BG = real(bg8, 4)
+    end subroutine voxel_geometry_stability
 
     subroutine env_int(name, val)
         character(len=*), intent(in) :: name

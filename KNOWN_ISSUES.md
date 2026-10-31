@@ -188,3 +188,15 @@ removed from the active list (their history lives in stage reports and
   (consistent with existing `iceberg_dynamics`).
 - A‑T6(ii) constant-flux half-cell BC yields non-√t late melt; the exact
   fixed-surface-temperature Stefan similarity is deferred to 12.7a.
+
+## Stage 12.5 (voxel geometry drift) — open items
+
+- Uniform flow direction over the iceberg; no depth-resolved projected area
+  (per-layer voxel drag deferred to 12.6).
+- `A_sail` = total exposed surface (PDF §13.3), not a projected sail area
+  (over-estimates oblique wind drag).
+- Metacentric `GM` is an estimate from waterplane extents; no capsize/roll
+  dynamics (`GM<0` reported only).
+- Concave silhouettes can double-count exposed faces (convex assumption).
+- Grid rotation (~50 degrees) neglected in `u_rel` (consistent with existing
+  dynamics); one-way coupling (D-51).

@@ -189,6 +189,6 @@ forcing into melt as efficiently.
 | Stratification | PASS (region/size/ΔT) |
 | Bulk vs voxel | PASS |
 | Plots | PASS (`docs/validation/figures/enderlin23/`) |
-| Full tests / strict build / CI | PASS (80 STOP 0; strict clean; CI pending push) |
+| Full tests / strict build / CI | PASS (80 STOP 0; strict clean; CI #205 green) |
 | No Stage 11 ocean code or `app/main.f90` modified | PASS |
 | Documentation + D-59 | PASS |

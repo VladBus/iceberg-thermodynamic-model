@@ -182,7 +182,7 @@ contains
         real :: u_avg, v_avg
         real :: du, dv, speed_rel
 
-        call depth_integrated_currents(ocean_prof_in, state%H*910.0/1028.0, u_avg, v_avg, &
+        call depth_integrated_currents(ocean_prof_in, real(state%H*910.0/1028.0, 4), u_avg, v_avg, &
                                        u_prof, v_prof, z_layers, n_layers)
 
         if (n_layers .eq. 0) then

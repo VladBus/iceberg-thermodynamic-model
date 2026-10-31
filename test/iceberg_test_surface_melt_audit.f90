@@ -1888,7 +1888,7 @@ print *, "Negative forcing: T_final = ", t_neg, " m_surface = ", m_neg, " q_net 
     print *, "=================================================="
 
     ! Verify polar night precondition (SW = 0) and latitude for cos_zenith
-    call solar_geometry(nat(1), nat(2), nat(3), nat(4), 0.0, 90.0, 0.0, &
+    call solar_geometry(nat(1), nat(2), nat(3), nat(4), 0.0d0, 90.0d0, 0.0d0, &
                         cos_zen_1042, &
                         decl_rad_e, hour_angle_rad_e)
     print *, "cos_zenith at (90N, time=0) = ", cos_zen_1042

@@ -41,6 +41,21 @@ module iceberg_forcing
                                  reanalysis_reader_get, reanalysis_reader_ready
     implicit none
 
+    ! Stage 12.6a (D-57): generic real4/real8 interfaces so the untouched
+    ! app/main.f90 (real(8) state) and legacy real(4) tests both compile.
+    interface get_ocean_profile
+        module procedure get_ocean_profile_r4, get_ocean_profile_r8
+    end interface
+    interface get_atmos_forcing
+        module procedure get_atmos_forcing_r4, get_atmos_forcing_r8
+    end interface
+    interface model_coords_to_indices
+        module procedure model_coords_to_indices_r4, model_coords_to_indices_r8
+    end interface
+    interface model_coords_to_latlon
+        module procedure model_coords_to_latlon_r4, model_coords_to_latlon_r8, model_coords_to_latlon_mix
+    end interface
+
     ! ========================================================================
     !   КОНСТАНТЫ ИНТЕРПОЛЯЦИИ
     ! ========================================================================
@@ -87,8 +102,8 @@ contains
     !   prof             - выходной профиль океана (intent(out))
     !   ok               - флаг успеха (intent(out))
     ! ========================================================================
-    subroutine get_ocean_profile(x_model, y_model, lat, lon, draft, u_ice, v_ice, prof, ok, &
-                                 time_sec)
+    subroutine get_ocean_profile_r4(x_model, y_model, lat, lon, draft, u_ice, v_ice, prof, ok, &
+                                    time_sec)
         real, intent(in) :: x_model, y_model
         real, intent(in) :: lat, lon
         real, intent(in) :: draft
@@ -213,7 +228,7 @@ contains
         end do
 
         ok = .true.
-    end subroutine get_ocean_profile
+    end subroutine get_ocean_profile_r4
 
     ! ========================================================================
     !   STAGE 12.2: НАСТРОЙКА ИСТОЧНИКА ОКЕАНА
@@ -393,7 +408,7 @@ contains
     !   i_idx, j_idx     - индексы (выход)
     !   in_domain        - флаг внутри домена (выход)
     ! ========================================================================
-    subroutine model_coords_to_indices(x_model, y_model, i_idx, j_idx, in_domain)
+    subroutine model_coords_to_indices_r4(x_model, y_model, i_idx, j_idx, in_domain)
         real, intent(in) :: x_model, y_model
         integer, intent(out) :: i_idx, j_idx
         logical, intent(out) :: in_domain
@@ -409,7 +424,7 @@ contains
         else
             in_domain = .true.
         end if
-    end subroutine model_coords_to_indices
+    end subroutine model_coords_to_indices_r4
 
     ! ========================================================================
     !   ОБРАТНАЯ ПРОЕКЦИЯ: МОДЕЛЬНЫЕ КООРДИНАТЫ → ШИРОТА/ДОЛГОТА
@@ -433,7 +448,7 @@ contains
     !   lat, lon         - географическая позиция [°] (выход)
     !   ok               - флаг успеха (выход)
     ! ========================================================================
-    subroutine model_coords_to_latlon(x_model, y_model, lat, lon, ok)
+    subroutine model_coords_to_latlon_r4(x_model, y_model, lat, lon, ok)
         real, intent(in) :: x_model, y_model
         real, intent(out) :: lat, lon
         logical, intent(out) :: ok
@@ -497,7 +512,7 @@ contains
         if (lon .lt. -180.0) lon = lon + 360.0
 
         ok = .true.
-    end subroutine model_coords_to_latlon
+    end subroutine model_coords_to_latlon_r4
 
     ! ========================================================================
     !   ПРЯМАЯ ПРОЕКЦИЯ: ШИРОТА/ДОЛГОТА → МОДЕЛЬНЫЕ КООРДИНАТЫ
@@ -586,7 +601,7 @@ contains
     !   atmos            - выходная структура форсинга
     !   ok               - флаг успеха
     ! ========================================================================
-    subroutine get_atmos_forcing(lat, lon, model_time_sec, atmos, ok)
+    subroutine get_atmos_forcing_r4(lat, lon, model_time_sec, atmos, ok)
         real, intent(in) :: lat, lon
         real, intent(in) :: model_time_sec
         type(atmos_forcing), intent(out) :: atmos
@@ -635,7 +650,7 @@ contains
         atmos%snowfall = val8
 
         ok = .true.
-    end subroutine get_atmos_forcing
+    end subroutine get_atmos_forcing_r4
 
     ! ========================================================================
     !   ВЕРТИКАЛЬНАЯ ИНТЕРПОЛЯЦИЯ: T, S НА ГЛУБИНЕ ОСАДКИ
@@ -881,5 +896,53 @@ contains
             v_avg = 0.0
         end if
     end subroutine depth_integrated_currents
+
+    ! ---- real(8) wrappers (Stage 12.6a) ------------------------------------
+    subroutine get_ocean_profile_r8(x_model, y_model, lat, lon, draft, u_ice, v_ice, prof, ok, time_sec)
+        real(8), intent(in) :: x_model, y_model, lat, lon, draft, u_ice, v_ice
+        type(ocean_profile), intent(out) :: prof
+        logical, intent(out) :: ok
+        real(8), intent(in), optional :: time_sec
+        if (present(time_sec)) then
+            call get_ocean_profile_r4(real(x_model, 4), real(y_model, 4), real(lat, 4), &
+                                      real(lon, 4), real(draft, 4), real(u_ice, 4), &
+                                      real(v_ice, 4), prof, ok, time_sec)
+        else
+            call get_ocean_profile_r4(real(x_model, 4), real(y_model, 4), real(lat, 4), &
+                                      real(lon, 4), real(draft, 4), real(u_ice, 4), &
+                                      real(v_ice, 4), prof, ok)
+        end if
+    end subroutine get_ocean_profile_r8
+
+    subroutine get_atmos_forcing_r8(lat, lon, model_time_sec, atmos, ok)
+        real(8), intent(in) :: lat, lon
+        real(4), intent(in) :: model_time_sec
+        type(atmos_forcing), intent(out) :: atmos
+        logical, intent(out) :: ok
+        call get_atmos_forcing_r4(real(lat, 4), real(lon, 4), model_time_sec, atmos, ok)
+    end subroutine get_atmos_forcing_r8
+
+    subroutine model_coords_to_indices_r8(x_model, y_model, i_idx, j_idx, in_domain)
+        real(8), intent(in) :: x_model, y_model
+        integer, intent(out) :: i_idx, j_idx
+        logical, intent(out) :: in_domain
+        call model_coords_to_indices_r4(real(x_model, 4), real(y_model, 4), i_idx, j_idx, in_domain)
+    end subroutine model_coords_to_indices_r8
+
+    subroutine model_coords_to_latlon_r8(x_model, y_model, lat, lon, ok)
+        real(8), intent(in) :: x_model, y_model
+        real(8), intent(out) :: lat, lon
+        logical, intent(out) :: ok
+        real(4) :: lat4, lon4
+        call model_coords_to_latlon_r4(real(x_model, 4), real(y_model, 4), lat4, lon4, ok)
+        lat = real(lat4, 8); lon = real(lon4, 8)
+    end subroutine model_coords_to_latlon_r8
+
+    subroutine model_coords_to_latlon_mix(x_model, y_model, lat, lon, ok)
+        real(8), intent(in) :: x_model, y_model
+        real(4), intent(out) :: lat, lon
+        logical, intent(out) :: ok
+        call model_coords_to_latlon_r4(real(x_model, 4), real(y_model, 4), lat, lon, ok)
+    end subroutine model_coords_to_latlon_mix
 
 end module iceberg_forcing

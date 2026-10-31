@@ -466,39 +466,42 @@ module iceberg_types
     end type iceberg_diagnostics
 
     ! Прогностическое состояние айсберга (8 переменных)
+    ! Stage 12.6a (D-57): iceberg state migrated to real(8) for energy balance
+    ! precision (Transition doc §6.3: E~1e14 J, float32 boundary 2^-23~1.2e-7).
     type :: iceberg_state
         ! Позиция в модельных координатах [м]
         ! X ось → j (восток), Y ось → i (север, инвертирована)
-        real :: x                 ! Координата X [м]
-        real :: y                 ! Координата Y [м]
+        real(8) :: x                 ! Координата X [м]
+        real(8) :: y                 ! Координата Y [м]
 
         ! Скорость дрейфа [м/с]
-        real :: u                 ! Скорость по X
-        real :: v                 ! Скорость по Y
+        real(8) :: u                 ! Скорость по X
+        real(8) :: v                 ! Скорость по Y
 
         ! Геометрия [м]
-        real :: L                 ! Длина (вдоль X)
-        real :: W                 ! Ширина (вдоль Y)
-        real :: H                 ! Высота (вертикально)
+        real(8) :: L                 ! Длина (вдоль X)
+        real(8) :: W                 ! Ширина (вдоль Y)
+        real(8) :: H                 ! Высота (вертикально)
+        real(8) :: mass              ! Масса [кг] (diag/energy bookkeeping)
+        real(8) :: volume            ! Объём [м³]
 
         ! Географическая позиция [°]
-        ! ВНИМАНИЕ: не обновляется в time stepping (Stage 9.3 limitation)
-        real :: latitude          ! Широта [°]
-        real :: longitude         ! Долгота [°]
+        real(8) :: latitude          ! Широта [°]
+        real(8) :: longitude         ! Долгота [°]
 
         ! Прогностическая температура поверхности [°C] (Stage 10.2)
-        real :: T_surface         ! Температура поверхности льда
+        real(8) :: T_surface         ! Температура поверхности льда
 
         ! Прогностическая внутренняя температура льда [°C] (Stage 10.12)
-        real :: T_ice             ! Внутренняя температура льда
+        real(8) :: T_ice             ! Внутренняя температура льда
 
         ! Счетчики
-        integer :: nstep          ! Номер шага интегрирования
-        real :: time              ! Модельное время [с]
+        integer :: nstep             ! Номер шага интегрирования
+        real(8) :: time              ! Модельное время [с]
 
         ! Флаги
-        logical :: active         ! .TRUE. если айсберг существует
-        logical :: grounded       ! .TRUE. если загрунтован
+        logical :: active            ! .TRUE. если айсберг существует
+        logical :: grounded          ! .TRUE. если загрунтован
     end type iceberg_state
 
     ! ========================================================================

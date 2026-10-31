@@ -146,8 +146,8 @@ contains
                               cos_zenith, &
                               declination_rad, hour_angle_rad)
         integer, intent(in) :: year, month, day, hour
-        real, intent(in) :: model_time_sec
-        real, intent(in) :: latitude_deg, longitude_deg
+        real(8), intent(in) :: model_time_sec
+        real(8), intent(in) :: latitude_deg, longitude_deg
         real, intent(out) :: cos_zenith
         real, intent(out), optional :: declination_rad, hour_angle_rad
 
@@ -255,7 +255,8 @@ contains
 
         ! 1. Базальное плавление
         ! Характерная длина для базального плавления = L (длина в направлении X)
-        call compute_basal_melt(state, ocean_prof, diag%draft, state%L, state%u, state%v, &
+        call compute_basal_melt(state, ocean_prof, diag%draft, real(state%L, 4), &
+                                real(state%u, 4), real(state%v, 4), &
                                 t_draft, s_draft, tf_draft, &
                                 delta_t_basal, m_basal, &
                                 diag%t_interface, diag%s_interface, diag)
@@ -426,7 +427,7 @@ contains
                     if (thermal_evolution_enabled) then
                         call solve_three_equation_interface_natural(t_draft, s_draft, draft, &
                                                                     u_rel_draft, l_char, &
-                                                                    state%T_ice, .true., &
+                                                                    real(state%T_ice, 4), .true., &
                                                                     t_iface, s_iface, m_basal)
                     else
                         call solve_three_equation_interface_natural(t_draft, s_draft, draft, &
@@ -448,7 +449,7 @@ contains
                         if (thermal_evolution_enabled) then
                             call solve_three_equation_interface_low_flow( &
                                 t_draft, s_draft, draft, u_rel_draft, &
-                                state%T_ice, gamma_t_vel, gamma_s_vel, &
+                                real(state%T_ice, 4), gamma_t_vel, gamma_s_vel, &
                                 t_iface, s_iface, m_basal, diag)
                         else
                             call solve_three_equation_interface_low_flow( &
@@ -460,7 +461,7 @@ contains
                         call solve_three_equation_interface(t_draft, s_draft, draft, &
                                                             u_rel_draft, &
                                                             gamma_t_vel, gamma_s_vel, &
-                                                            state%T_ice, .true., &
+                                                            real(state%T_ice, 4), .true., &
                                                             t_iface, s_iface, m_basal)
                     else
                         call solve_three_equation_interface(t_draft, s_draft, draft, &
@@ -1069,8 +1070,7 @@ contains
         ! === КОРОТКОВОЛНОВАЯ РАДИАЦИЯ (Shortwave) ===
         ! Солнечная геометрия (Stage 10.1.1): астрономическая формула
         call solar_geometry(year, month, day, hour, &
-                            state%time, &
-                            state%latitude, state%longitude, &
+                            state%time, state%latitude, state%longitude, &
                             cos_zenith)
 
         ! === ДАВЛЕНИЕ ВОДЯНОГО ПАРА В АТМОСФЕРЕ (нужно всегда для LH, не зависит от солнечной геометрии) ===

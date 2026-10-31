@@ -39,6 +39,10 @@ program iceberg_test_10p17_melt_budget
     use param, only: nat
     implicit none
 
+    interface rel_diff
+        procedure :: rel_diff_r4, rel_diff_r8
+    end interface
+
     type(iceberg_state) :: state
     type(ocean_profile) :: prof
     type(atmos_forcing) :: at
@@ -190,7 +194,7 @@ program iceberg_test_10p17_melt_budget
     end if
     n_checks = n_checks + 1
     ! Боковое таяние: dL = -dt*m_l на каждом шаге
-    if (rel_diff((100.0 - state%L), 24.0*DT_DEFAULT*m_l_ref) .lt. 1.0e-3) then
+    if (rel_diff((100.0 - state%L), real(24.0*DT_DEFAULT*m_l_ref, 8)) .lt. 1.0e-3) then
         print *, "OK   B5. dL = -sum(dt*m_lateral): ", state%L
     else
         print *, "ERROR B5. dL mismatch: ", state%L, " exp ", 100.0 - 24.0*DT_DEFAULT*m_l_ref
@@ -198,7 +202,7 @@ program iceberg_test_10p17_melt_budget
     end if
     n_checks = n_checks + 1
     ! H-обновление: dH = -dt*(m_b + m_s - m_vapor/rho)
-    if (rel_diff(state%H, 100.0 - 24.0*DT_DEFAULT*(m_b + m_s - diag%m_vapor/RHO_ICE)) .lt. 1.0e-3) then
+    if (rel_diff(state%H, real(100.0 - 24.0*DT_DEFAULT*(m_b + m_s - diag%m_vapor/RHO_ICE), 8)) .lt. 1.0e-3) then
         print *, "OK   B6. dH = -dt*(m_b + m_s - m_vapor/rho)"
     else
         print *, "ERROR B6. dH mismatch: ", state%H
@@ -744,10 +748,15 @@ contains
     ! Вспомогательные процедуры
     ! ========================================================================
 
-    pure real function rel_diff(a, b) result(r)
+    pure real function rel_diff_r4(a, b) result(r)
         real, intent(in) :: a, b
         r = abs(a - b)/max(abs(b), 1.0e-30)
-    end function rel_diff
+    end function rel_diff_r4
+
+    pure real(8) function rel_diff_r8(a, b) result(r)
+        real(8), intent(in) :: a, b
+        r = abs(a - b)/max(abs(b), 1.0d-30)
+    end function rel_diff_r8
 
     ! Профиль океана: T(k) = Tf(S, z(k)) + dT, однородные S, u, v
     subroutine make_ocean_freezing_plus(prof, d_t, s_mass, u0, v0)

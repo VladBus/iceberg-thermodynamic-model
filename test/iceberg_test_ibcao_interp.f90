@@ -58,7 +58,7 @@ print *, "SKIP: KOORD.DAT not present (gitignored; run python/grid/build_real_gr
     print *, "Test 1: Bathymetry from model grid at TEST_11 position"
     x_model = 36.0*13890.0
     y_model = 60.0*13890.0
-    call model_coords_to_indices(x_model, y_model, i_idx, j_idx, forcing_ok)
+    call model_coords_to_indices(real(x_model, 8), real(y_model, 8), i_idx, j_idx, forcing_ok)
     if (forcing_ok) then
         bathymetry = real(ht(i_idx, j_idx))*0.01
         print *, "  Model grid indices: i=", i_idx, " j=", j_idx
@@ -80,7 +80,7 @@ print *, "SKIP: KOORD.DAT not present (gitignored; run python/grid/build_real_gr
     print *, "Test 2: Spatial variability of bathymetry"
     x_model = 10.0*13890.0
     y_model = 30.0*13890.0
-    call model_coords_to_indices(x_model, y_model, i_idx, j_idx, forcing_ok)
+    call model_coords_to_indices(real(x_model, 8), real(y_model, 8), i_idx, j_idx, forcing_ok)
     if (forcing_ok) then
         bathymetry = real(ht(i_idx, j_idx))*0.01
         print *, "  Bathymetry at (70N, 20E): ", bathymetry, " m"
@@ -232,10 +232,10 @@ print *, "SKIP: KOORD.DAT not present (gitignored; run python/grid/build_real_gr
 contains
 
     subroutine model_coords_to_indices(x_model_in, y_model_in, i_idx_out, j_idx_out, in_domain)
-        real, intent(in) :: x_model_in, y_model_in
+        real(8), intent(in) :: x_model_in, y_model_in
         integer, intent(out) :: i_idx_out, j_idx_out
         logical, intent(out) :: in_domain
-        real :: dx_model
+        real(8) :: dx_model
         dx_model = 13890.0
         j_idx_out = int(x_model_in/dx_model) + 1
         i_idx_out = int(y_model_in/dx_model) + 1

@@ -200,3 +200,12 @@ removed from the active list (their history lives in stage reports and
 - Concave silhouettes can double-count exposed faces (convex assumption).
 - Grid rotation (~50 degrees) neglected in `u_rel` (consistent with existing
   dynamics); one-way coupling (D-51).
+
+## Stage 12.6a (lat/lon + iceberg_run + real(8)) — open items
+
+- `iceberg_run` uses a constant cold atmosphere unless an ERA5 file is passed.
+- No wave erosion (12.6b), no sea-ice drag, no tides in the standalone.
+- Grounding uses the nearest 13.89 km IBCAO model cell; no sub-grid bathymetry
+  or grounding/un-grounding dynamics.
+- Lat/lon position update is first-order (no midpoint/Heun).
+- Real(8) migration changes model-mode round-off (~1e-6); all legacy tests pass.

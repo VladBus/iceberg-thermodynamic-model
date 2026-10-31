@@ -46,7 +46,34 @@ module iceberg
     use param, only: is, js, is1, js1, ht, kt1, fi, dl
     implicit none
 
+    ! Stage 12.6a (D-57): lat/lon drift mode (OCEAN_SOURCE=reanalysis).
+    logical, save :: latlon_drift = .false.
+    logical, save :: drift_mode_checked = .false.
+
 contains
+
+    ! Публичный сеттер режима (для iceberg_run/тестов; по умолчанию env).
+    subroutine iceberg_set_latlon_mode(flag)
+        logical, intent(in) :: flag
+        latlon_drift = flag
+        drift_mode_checked = .true.
+    end subroutine iceberg_set_latlon_mode
+
+    ! Аналитический шаг по географии: dlat=v·dt/R, dlon=u·dt/(R·cosφ).
+    pure subroutine geographic_increment(lat, lon, u, v, dt, dlat, dlon)
+        real(8), intent(in) :: lat, lon, u, v, dt
+        real(8), intent(out) :: dlat, dlon
+        real(8), parameter :: R_EARTH = 6371.0d3
+        real(8), parameter :: PI = 3.141592653589793d0
+        real(8) :: clat
+        dlat = (v*dt/R_EARTH)*(180.0d0/PI)
+        clat = cos(lat*PI/180.0d0)
+        if (abs(clat) < 1.0d-12) then
+            dlon = 0.0d0
+        else
+            dlon = (u*dt/(R_EARTH*clat))*(180.0d0/PI)
+        end if
+    end subroutine geographic_increment
 
     ! ========================================================================
     !   ИНИЦИАЛИЗАЦИЯ АЙСБЕРГА
@@ -90,6 +117,8 @@ contains
             state%v = 0.0
         end if
 
+        state%volume = state%L*state%W*state%H
+        state%mass = RHO_ICE*state%volume
         print *, "ICEBERG INIT: pos=(", x0, ",", y0, ") LWH=(", L0, ",", W0, ",", H0, &
             ") lat/lon=(", lat0, ",", lon0, ") vel=(", state%u, ",", state%v, ")"
     end subroutine iceberg_init
@@ -220,6 +249,8 @@ contains
 
         real :: f_coriolis
         real :: pressure_x, pressure_y
+        real(8) :: dlat, dlon, vol8
+        character(len=64) :: env_src
         real :: fk_x, fk_y
         real :: buoyancy_res
 
@@ -278,26 +309,38 @@ contains
                                        f_coriolis, pressure_x, pressure_y, &
                                        fk_x, fk_y, diag)
 
-            ! 9. Обновление позиции (простой Эйлер, явная схема)
-            state%x = state%x + dt*state%u
-            state%y = state%y + dt*state%v
-
-            ! 9a. Обновление географических координат из модельных (Stage 9.4A)
-            ! x/y — авторитетные координаты; lat/lon получаются обратной проекцией
-            ! Проверяем, что модельная сетка инициализирована (fi/dl не нули)
-            if (fi(1, 1) .ne. 0.0 .or. dl(1, 1) .ne. 0.0) then
-                call model_coords_to_latlon(state%x, state%y, state%latitude, state%longitude, &
-                                            diag%forcing_valid)
-                if (.not. diag%forcing_valid) then
-                    ! Вышли за границы модельной сетки
-                    print *, "WARNING: Iceberg outside model domain at step ", state%nstep
-                    print *, "  x=", state%x, " y=", state%y
-                    state%active = .false.
-                    return
-                end if
-            else
-                ! Сетка не инициализирована (тестовый режим без coup1) - сохраняем исходные lat/lon
+            ! 9. Обновление позиции (Stage 12.6a: lat/lon в reanalysis-режиме)
+            if (latlon_drift) then
+                ! lat/lon — авторитетные координаты; x/y не используются
+                call geographic_increment(state%latitude, state%longitude, &
+                                          state%u, state%v, real(dt, 8), dlat, dlon)
+                state%latitude = state%latitude + dlat
+                state%longitude = state%longitude + dlon
+                if (state%longitude > 180.0d0) state%longitude = state%longitude - 360.0d0
+                if (state%longitude < -180.0d0) state%longitude = state%longitude + 360.0d0
                 diag%forcing_valid = .true.
+            else
+                state%x = state%x + real(dt, 8)*state%u
+                state%y = state%y + real(dt, 8)*state%v
+
+                ! 9a. Обновление географических координат из модельных (Stage 9.4A)
+                if (fi(1, 1) .ne. 0.0 .or. dl(1, 1) .ne. 0.0) then
+                    block
+                        real(4) :: lat4, lon4
+                        call model_coords_to_latlon(real(state%x, 4), real(state%y, 4), &
+                                                    lat4, lon4, diag%forcing_valid)
+                        state%latitude = real(lat4, 8)
+                        state%longitude = real(lon4, 8)
+                    end block
+                    if (.not. diag%forcing_valid) then
+                        print *, "WARNING: Iceberg outside model domain at step ", state%nstep
+                        print *, "  x=", state%x, " y=", state%y
+                        state%active = .false.
+                        return
+                    end if
+                else
+                    diag%forcing_valid = .true.
+                end if
             end if
         else
             ! Загрунтован: все силы = 0
@@ -313,7 +356,9 @@ contains
             diag%f_fk_y = 0.0
         end if
 
-        ! 10. Инкремент времени
+        ! 10. Инкремент времени (масса/объём — real(8) bookkeeping)
+        state%volume = state%L*state%W*state%H
+        state%mass = RHO_ICE*state%volume
         state%nstep = state%nstep + 1
         state%time = state%time + dt
 

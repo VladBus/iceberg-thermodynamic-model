@@ -140,7 +140,7 @@ print *, "SKIP: KOORD.DAT not present (gitignored; run python/grid/build_real_gr
         end if
 
         ! 5c. Батиметрия на позиции
-        call model_coords_to_indices_local(state%x, state%y, i_idx, j_idx)
+        call model_coords_to_indices_local(real(state%x, 4), real(state%y, 4), i_idx, j_idx)
         if (i_idx .ge. 1 .and. i_idx .le. is1 .and. j_idx .ge. 1 .and. j_idx .le. js1) then
             bathymetry = real(ht(i_idx, j_idx))*0.01
         else

@@ -305,9 +305,9 @@ print *, "SKIP: KOORD.DAT not present (gitignored; run python/grid/build_real_gr
 contains
 
     subroutine model_coords_to_indices_local(x_model_in, y_model_in, i_idx_in, j_idx_in)
-        real, intent(in) :: x_model_in, y_model_in
+        real(8), intent(in) :: x_model_in, y_model_in
         integer, intent(out) :: i_idx_in, j_idx_in
-        real :: dx_model
+        real(8) :: dx_model
         dx_model = 13890.0
         j_idx_in = int(x_model_in/dx_model) + 1
         i_idx_in = int(y_model_in/dx_model) + 1

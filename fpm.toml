@@ -11,10 +11,15 @@ external-modules = ["netcdf"]
 
 [dependencies]
 
-[executable]
+[[executable]]
 name = "iceberg_model"
 source-dir = "app"
 main = "main.f90"
+
+[[executable]]
+name = "iceberg_run"
+source-dir = "app"
+main = "iceberg_run.f90"
 
 [test.iceberg_hydrostatic]
 source-dir = "test"

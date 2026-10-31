@@ -145,7 +145,7 @@ contains
     ! Синтетический океанский профиль — пространственно меняющийся (по x,y)
     ! --------------------------------------------------------------------------
     subroutine get_synthetic_ocean_profile(x_model_in, y_model_in, prof_out, ok_out)
-        real, intent(in) :: x_model_in, y_model_in
+        real(8), intent(in) :: x_model_in, y_model_in
         type(ocean_profile), intent(out) :: prof_out
         logical, intent(out) :: ok_out
 
@@ -182,7 +182,8 @@ contains
     ! Синтетический атмосферный форсинг — пространственно меняющийся (по x,y)
     ! --------------------------------------------------------------------------
     subroutine get_synthetic_atmos_forcing(x_model_in, y_model_in, model_time_sec_in, atmos_out, ok_out)
-        real, intent(in) :: x_model_in, y_model_in, model_time_sec_in
+        real(8), intent(in) :: x_model_in, y_model_in
+        real, intent(in) :: model_time_sec_in
         type(atmos_forcing), intent(out) :: atmos_out
         logical, intent(out) :: ok_out
 
@@ -208,7 +209,7 @@ contains
     ! Синтетическая батиметрия — пространственно меняющаяся (по x,y)
     ! --------------------------------------------------------------------------
     subroutine get_synthetic_bathymetry(x_model_in, y_model_in, bathymetry_out, ok_out)
-        real, intent(in) :: x_model_in, y_model_in
+        real(8), intent(in) :: x_model_in, y_model_in
         real, intent(out) :: bathymetry_out
         logical, intent(out) :: ok_out
 

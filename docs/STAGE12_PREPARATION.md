@@ -1,6 +1,6 @@
 # Stage 12 Preparation — Voxel Iceberg on Reanalysis Forcing
 
-**Status:** **STAGE 12.1–12.4 COMPLETE; STAGE 12.5 COMPLETE (voxel geometry drives drift; default OFF).**
+**Status:** **STAGE 12.1–12.5 COMPLETE; STAGE 12.6a COMPLETE (lat/lon drift + iceberg_run + real(8)).**
 **Date:** 2026-10-29
 **Base:** `386c850` (Stage 11 frozen; tag `stage11-final-frozen`)
 **Implementation:** Stage 12.2 reader/provider, 12.3 voxel core **and 12.4
@@ -66,7 +66,8 @@ no coupled feedback) must remain visible in the implementation.
 | 12.3 | Voxel thermal core | **COMPLETE** (`voxel_iceberg`+`voxel_thermal_solver`, D-53; FV conduction+phase change, Stefan/air melt, erosion, waterline; tests green; default OFF) |
 | 12.4 | Ice-water/ice-air boundary coupling | **COMPLETE**: Crank–Nicolson (θ-scheme, PCG, Rannacher), geometry fix, three-equation Stefan (γ_T/γ_S, Tf(S,P), profile, u_rel), melt cap/flush; D-54/D-55; tests green; default OFF |
 | 12.5 | Geometry/erosion/hydrostatic coupling | **COMPLETE**: voxel mass/draft/frontal A_sub_proj/A_sail drive drift (gated), GM estimate; D-56; tests green; default OFF |
-| 12.6 | Drift in lat/lon, `iceberg_run`, temporal interpolation, waves/ice, real(8) | **NEXT (not started)** |
+| 12.6a | Drift in lat/lon + `iceberg_run` + real(8) | **COMPLETE** (D-57; IBCAO grounding; NetCDF; tests green) |
+| 12.6b | Wave erosion (Bigg 1997), sea-ice drag, tides, lat/lon forcing refinements | **NEXT (not started)** |
 | 12.6 | Drift coupling with voxel-derived geometry | existing drift tests remain green; no two-way feedback |
 | 12.7 | Validation and diagnostics | documented observational comparison; no calibration claim |
 
@@ -129,8 +130,12 @@ face with per‑depth profile, `Tf(S,P)`, `u_rel` with iceberg velocity,
 (gated), metacentric estimate, tests; D‑56; default OFF. **DONE**
 (`stage12.5_voxel_geometry_drift.md`).
 
-**Stage 12.6 entry:** all of the above. lat/lon drift, `iceberg_run`, temporal
-interpolation, waves/ice, real(8). **NOT started.**
+**Stage 12.6a exit:** real(8) state; lat/lon drift on reanalysis; standalone
+`iceberg_run` (IBCAO grounding, NetCDF); tests green. **DONE**
+(`stage12.6a_drift_latlon_iceberg_run.md`).
+
+**Stage 12.6b entry:** all of the above. Wave erosion (Bigg 1997), sea-ice
+drag, tides. **NOT started.**
 
 ## 8. References
 

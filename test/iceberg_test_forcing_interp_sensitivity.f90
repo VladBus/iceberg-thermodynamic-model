@@ -310,7 +310,7 @@ contains
     end subroutine init_synthetic_forcing
 
     subroutine get_synthetic_atmos_bilinear(lat, lon, atmos_out)
-        real, intent(in) :: lat, lon
+        real(8), intent(in) :: lat, lon
         type(atmos_forcing), intent(out) :: atmos_out
 
         atmos_out%u10 = 10.0*sin(lat/57.2957795)
@@ -323,7 +323,7 @@ contains
     end subroutine get_synthetic_atmos_bilinear
 
     subroutine get_synthetic_atmos_nearest(lat, lon, atmos_out)
-        real, intent(in) :: lat, lon
+        real(8), intent(in) :: lat, lon
         type(atmos_forcing), intent(out) :: atmos_out
 
         ! Округление до ближайшего целого градуса (mock nearest)
@@ -341,7 +341,7 @@ contains
     end subroutine get_synthetic_atmos_nearest
 
     subroutine get_synthetic_ocean_bilinear(x, y, ocean_prof_out)
-        real, intent(in) :: x, y
+        real(8), intent(in) :: x, y
         type(ocean_profile), intent(out) :: ocean_prof_out
 
         integer :: nlevels, k_local
@@ -361,7 +361,7 @@ contains
     end subroutine get_synthetic_ocean_bilinear
 
     subroutine get_synthetic_ocean_nearest(x, y, ocean_prof_out)
-        real, intent(in) :: x, y
+        real(8), intent(in) :: x, y
         type(ocean_profile), intent(out) :: ocean_prof_out
 
         integer :: nlevels, k_local

@@ -726,3 +726,25 @@ not added.
   gated interface) + A_perp check in `test_voxel_integration`; full battery
   77 STOP 0; strict build clean.
 - **Docs:** `docs/validation/stage12.5_voxel_geometry_drift.md`.
+
+## D-57. Real(8) iceberg state; lat/lon drift on reanalysis; standalone iceberg_run (Stage 12.6a, 2026-10-31)
+
+- **Status:** ACTIVE.
+- **Decision:** migrate `iceberg_state` (x,y,u,v,L,W,H,latitude,longitude,
+  T_surface,T_ice,time) and mass/volume bookkeeping to **real(8)** per
+  Transition doc §6.3 (energy ~1e14 J; float32 boundary 2^-23). Ocean/atmos/
+  thermodynamics correlation interfaces remain float32 (inputs are float32);
+  generic real4/real8 interfaces preserve the untouched `app/main.f90` and
+  legacy tests. Model-mode results may differ at ~1e-6 level (expected,
+  accepted; no test failed).
+- **Lat/lon drift:** when `OCEAN_SOURCE=reanalysis` (or explicit
+  `iceberg_set_latlon_mode(.true.)`), `latitude/longitude` are authoritative
+  and updated as `dlat=v·dt/R`, `dlon=u·dt/(R·cosφ)` (R=6371 km); the
+  `model_coords_to_latlon` overwrite is blocked. Model mode keeps x/y.
+- **`iceberg_run`:** second `[[executable]]` in `fpm.toml`; offline Lagrangian
+  trajectory on GLORYS12 (+optional ERA5), IBCAO-derived bathymetry via
+  `coup1()` + `latlon_to_model_coords`, NetCDF output, SKIP without data.
+- **Verification:** lat/lon analytic 0.3002151048° (1e-12); real(8) energy
+  drift 0.0 over 100 steps; 1-day smoke run drifts and loses 1.18 % mass;
+  full battery 78 STOP 0; strict build clean.
+- **Docs:** `docs/validation/stage12.6a_drift_latlon_iceberg_run.md`.

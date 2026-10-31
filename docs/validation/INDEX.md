@@ -13,6 +13,17 @@ iceberg on GLORYS12 + ERA5 reanalysis, D-51).
 
 **Stage 10 is archived** to `docs/wiki/stages/stage10/`.
 
+## Active Stage 12 Reports
+
+| Document | Stage | Status | Purpose |
+| -------- | ----- | ------ | ------- |
+| `stage12.2_reanalysis_reader.md` | 12.2 | COMPLETE | GLORYS12 reader + ocean provider; `OCEAN_SOURCE` default model |
+| `stage12.3_voxel_thermal_core.md` | 12.3 | COMPLETE | Voxel thermal core; `VOXEL_ENABLED` default OFF |
+| `stage12.4_crank_nicolson_stefan.md` | 12.4 | COMPLETE | Crank–Nicolson + three-equation Stefan; default OFF |
+| `stage12.5_voxel_geometry_drift.md` | 12.5 | COMPLETE | Voxel mass/draft/areas drive drift; default OFF |
+| `stage12.6a_drift_latlon_iceberg_run.md` | 12.6a | COMPLETE | real(8), lat/lon drift, `iceberg_run` |
+| `stage12.6b_wave_erosion.md` | 12.6b | COMPLETE (wave part) | Bigg (1997) erosion + optional Stokes; gates default OFF; no real wave run |
+
 ## Active Stage 11 Reports
 
 Stage 11.0–11.7 historical reports are archived in `docs/archive/stage11/`; active Stage 11.8 reports remain below.

@@ -209,3 +209,16 @@ removed from the active list (their history lives in stage reports and
   or grounding/un-grounding dynamics.
 - Lat/lon position update is first-order (no midpoint/Heun).
 - Real(8) migration changes model-mode round-off (~1e-6); all legacy tests pass.
+
+
+## Stage 12.6b (wave erosion + Stokes) — open items
+
+- No Arctic WAM wave file locally: reader implemented but not validated against
+  product data; only the TEST-ONLY constant hook is exercised in CI.
+- Sea state `S_s` is Douglas from `Hs`; NEMO derives it from wind — documented
+  difference, not calibrated.
+- `siconc` is taken from GLORYS12 only in the reanalysis path; model-mode
+  profiles use `0` (no model sea-ice coupling).
+- Wave erosion reduces `L`/`W` only; no undercut/calving/shape change.
+- `Tp` and `dir` are read but not used yet.
+- Sea-ice drag and tides are still not implemented.

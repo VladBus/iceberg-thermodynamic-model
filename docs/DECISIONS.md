@@ -748,3 +748,23 @@ not added.
   drift 0.0 over 100 steps; 1-day smoke run drifts and loses 1.18 % mass;
   full battery 78 STOP 0; strict build clean.
 - **Docs:** `docs/validation/stage12.6a_drift_latlon_iceberg_run.md`.
+
+
+## D-58. Wave erosion (Bigg 1997) + optional Stokes drift (Stage 12.6b, 2026-10-31)
+
+- **Status:** ACTIVE (gates default OFF).
+- **Decision:** implement Bigg et al. (1997) wave erosion as in NEMO-ICB
+  `icbthm.F90`: `m_wave = max((1/12)(T_w+2) S_s [1+cos(pi c^3)], 0)/86400`.
+  `c=0` -> max (open water), `c=1` -> 0 (full cover). The task-text Test-2
+  expectations were inverted; NEMO/Bigg is authoritative.
+- **Sea state:** Douglas scale from `Hs` (transition doc section 6.5); NEMO
+  uses wind-based `S_s` -- documented difference.
+- **Coupling:** new `src/wave_forcing.f90`; `ocean_profile%siconc`; `m_wave`
+  + `wave_mass_loss` diagnostics; `L`/`W` recession (not `H`); optional
+  Stokes drift in water drag; `iceberg_run` optional `wave.nc`; NetCDF
+  `m_wave`/`wave_mass_loss`.
+- **Gates:** `ICEBERG_WAVE_EROSION` / `ICEBERG_STOKES_DRIFT` default OFF;
+  12.6a path unchanged.
+- **Verification:** `test_wave_erosion` 5 groups PASS; full battery 79 STOP 0;
+  strict build clean. No real wave-forcing run (no data).
+- **Docs:** `docs/validation/stage12.6b_wave_erosion.md`.

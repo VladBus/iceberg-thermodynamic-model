@@ -366,7 +366,8 @@ contains
         diag%total_mass_loss = diag%basal_mass_loss + &
                                diag%lateral_mass_loss + &
                                diag%surface_mass_loss + &
-                               diag%vapor_mass_loss
+                               diag%vapor_mass_loss + &
+                               diag%wave_mass_loss
     end subroutine iceberg_step
 
     ! ========================================================================

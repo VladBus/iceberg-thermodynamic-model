@@ -371,6 +371,7 @@ module iceberg_types
         real, allocatable :: u(:)          ! Скорость по X [м/с], размер (nlevels)
         real, allocatable :: v(:)          ! Скорость по Y [м/с], размер (nlevels)
         real, allocatable :: u_rel(:)      ! Относительная скорость [м/с], размер (nlevels)
+        real :: siconc = 0.0               ! Sea-ice concentration (0..1), Stage 12.6b
     end type ocean_profile
 
     ! Атмосферный форсинг от ERA5 (на позиции айсберга)
@@ -398,6 +399,8 @@ module iceberg_types
         real :: m_basal      ! Базальная скорость плавления
         real :: m_lateral    ! Боковая скорость плавления
         real :: m_surface    ! Поверхностная скорость плавления (melting)
+        real :: m_wave       ! Волновая эрозия [м/с] (Stage 12.6b)
+        real :: wave_mass_loss ! Потеря массы волновой эрозией за шаг [кг]
         real :: m_vapor      ! Скорость массы паровой фазы (сублимация/осаждение) [кг/(м²·с)]
         real :: q_net_surface ! Чистый тепловой поток на поверхности после плавления [Вт/м²]
         real :: q_surface    ! Полный тепловой поток на поверхности Q_nonlatent+Q_LH [Вт/м²] (Stage 10.4.2.1)

@@ -40,6 +40,7 @@ module iceberg_dynamics
     use iceberg_geometry, only: compute_full_geometry
     use iceberg_thermodynamics, only: voxel_geometry_active, voxel_geometry_mass, &
                                       voxel_geometry_draft, voxel_geometry_drag_areas
+    use wave_forcing, only: stokes_drift_enabled, get_wave_forcing, wave_forcing_epoch
     implicit none
 
 contains
@@ -225,6 +226,9 @@ contains
             return
         end if
 
+        ! Stage 12.6b: Stokes drift (default OFF; добавляется к течению).
+        call add_stokes_drift(state, u_avg, v_avg, u_prof, v_prof)
+
         if (voxel_geometry_active()) then
             ! Stage 12.5: projected submerged area perpendicular to flow
             du = u_avg - state%u
@@ -309,6 +313,7 @@ contains
             return
         end if
 
+        call add_stokes_drift(state, u_avg, v_avg, u_prof, v_prof)
         du = u_avg - state%u
         dv = v_avg - state%v
         speed_rel = sqrt(du**2 + dv**2)
@@ -348,5 +353,28 @@ contains
         f = 2.0*OMEGA*sin(latitude/57.2957795)
         T_inertial = 2.0*3.141592653589793/abs(f)
     end function inertial_period
+
+
+
+    ! ========================================================================
+    !   STAGE 12.6b: STOKES DRIFT (default OFF; ICEBERG_STOKES_DRIFT=true)
+    ! ========================================================================
+    subroutine add_stokes_drift(state, u_avg, v_avg, u_prof, v_prof)
+        type(iceberg_state), intent(in) :: state
+        real, intent(inout) :: u_avg, v_avg
+        real, intent(inout) :: u_prof(:), v_prof(:)
+        real(8) :: hs, tp, dirw, ust, vs
+        logical :: ok
+
+        if (.not. stokes_drift_enabled()) return
+        call get_wave_forcing(state%latitude, state%longitude, &
+                              state%time + wave_forcing_epoch(), &
+                              hs, tp, dirw, ust, vs, ok)
+        if (.not. ok) return
+        u_avg = u_avg + real(ust, 4)
+        v_avg = v_avg + real(vs, 4)
+        u_prof = u_prof + real(ust, 4)
+        v_prof = v_prof + real(vs, 4)
+    end subroutine add_stokes_drift
 
 end module iceberg_dynamics

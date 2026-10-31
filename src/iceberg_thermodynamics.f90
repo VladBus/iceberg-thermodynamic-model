@@ -41,6 +41,8 @@ module iceberg_thermodynamics
                              voxel_iceberg_get_areas, voxel_iceberg_get_frontal_area, &
                              voxel_iceberg_get_stability
     use param, only: nat
+    use wave_forcing, only: wave_erosion_enabled, get_wave_forcing, hs_to_sea_state, &
+                            bigg_wave_melt, wave_forcing_epoch
     implicit none
 
     ! ========================================================================
@@ -306,9 +308,55 @@ contains
         diag%q_net_surface = q_net
         diag%m_surface = m_surface
 
+        ! STAGE 12.6b: волновая эрозия (Bigg 1997), default OFF (D-58).
+        call apply_wave_erosion(state, dt, ocean_prof, diag)
+
         ! STAGE 12.3: воксельное термо-ядро (default OFF → ниже inert).
         call voxel_model_step(state, dt, ocean_prof, atmos, diag)
     end subroutine iceberg_thermodynamics_step
+
+    ! ========================================================================
+    !   STAGE 12.6b: ВОЛНОВАЯ ЭРОЗИЯ (Bigg et al. 1997; NEMO icbthm.F90)
+    ! ========================================================================
+    ! m_wave = MAX( (1/12)(T_w+2) Ss [1+cos(pi c^3)], 0 ) / day  [m/s]
+    ! c=0 → 2 (открытая вода, максимум), c=1 → 0 (сплошной лёд). Формула
+    ! проверена по NEMO release-4.0 icbthm.F90 (zMe). В ТЗ Test-2 знаки были
+    ! перепутаны; здесь — физически верный вариант.
+    ! Ss — Douglas sea state из Hs (переходный документ §6.5); NEMO берёт Ss
+    ! из ветра — задокументированное отличие.
+    ! Эрозия уменьшает L и W (не H); масса теряется с боковых граней.
+    ! ========================================================================
+    subroutine apply_wave_erosion(state, dt, prof, diag)
+        type(iceberg_state), intent(inout) :: state
+        real, intent(in) :: dt
+        type(ocean_profile), intent(in) :: prof
+        type(iceberg_diagnostics), intent(inout) :: diag
+
+        real(8) :: hs, tp, dirw, ust, vs, mw, l_old, w_old
+        real(8) :: tw
+        logical :: ok
+
+        diag%m_wave = 0.0
+        diag%wave_mass_loss = 0.0
+        if (.not. wave_erosion_enabled()) return
+        call get_wave_forcing(state%latitude, state%longitude, &
+                              state%time + wave_forcing_epoch(), &
+                              hs, tp, dirw, ust, vs, ok)
+        if (.not. ok) return
+
+        tw = 0.0_8
+        if (allocated(prof%temp)) then
+            if (prof%nlevels >= 1) tw = real(prof%temp(1), 8)
+        end if
+        mw = bigg_wave_melt(real(hs_to_sea_state(hs), 8), real(prof%siconc, 8), tw)
+        diag%m_wave = real(mw, 4)
+
+        l_old = state%L
+        w_old = state%W
+        state%L = max(real(MIN_THICKNESS, 8), l_old - real(dt, 8)*mw)
+        state%W = max(real(MIN_THICKNESS, 8), w_old - real(dt, 8)*mw)
+        diag%wave_mass_loss = real(RHO_ICE*(l_old*w_old - state%L*state%W)*state%H, 4)
+    end subroutine apply_wave_erosion
 
     ! ========================================================================
     !   БАЗАЛЬНОЕ ПЛАВЛЕНИЕ (Stage 10.6 — физически обоснованное, bulk formulation)

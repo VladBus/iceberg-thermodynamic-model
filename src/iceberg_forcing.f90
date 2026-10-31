@@ -191,6 +191,7 @@ contains
         prof%nlevels = kt
         allocate (prof%z(kt), prof%dz(kt), prof%temp(kt), prof%salt(kt), &
                   prof%u(kt), prof%v(kt), prof%u_rel(kt))
+        prof%siconc = 0.0   ! модель морского льда не подключена (Stage 12.6b)
 
         ! 6. Заполнить профиль и вычислить относительную скорость
         do k = 1, kt
@@ -296,11 +297,12 @@ contains
         real(8), intent(in), optional :: time_sec
 
         real(8), allocatable :: dep(:)
-        real(8) :: t8, tm, sm, um, vm, zos, siconc, sithick
+        real(8) :: t8, tm, sm, um, vm, zos, siconc, sithick, siconc_surf
         integer :: nd, k, nlevels
         logical :: rok
 
         ok = .false.
+        siconc_surf = 0.0_8
         if (.not. reanalysis_reader_ready(ocean_prov%reader)) then
             print *, 'FORCING ERROR: reanalysis provider not ready (OCEAN_SOURCE=reanalysis, ' &
                 //'данные недоступны — SKIP в CI)'
@@ -329,6 +331,7 @@ contains
             if (.not. rok) exit
             if (tm /= tm .or. sm /= sm .or. um /= um .or. vm /= vm) exit   ! def. NaN-guard
             nlevels = k
+            if (k == 1) siconc_surf = siconc
             prof%z(k) = real(dep(k))
             prof%temp(k) = real(tm)
             prof%salt(k) = real(sm)          ! mass fraction (so/1000 выполнен в reader)
@@ -356,6 +359,7 @@ contains
         end if
         deallocate (dep)
         prof%nlevels = nlevels
+        prof%siconc = real(siconc_surf, 4)
         ok = .true.
     end subroutine get_ocean_profile_reanalysis
 

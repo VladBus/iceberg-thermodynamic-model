@@ -222,3 +222,20 @@ removed from the active list (their history lives in stage reports and
 - Wave erosion reduces `L`/`W` only; no undercut/calving/shape change.
 - `Tp` and `dir` are read but not used yet.
 - Sea-ice drag and tides are still not implemented.
+
+
+## Stage 12.7a (Enderlin23 hindcast) — open items
+
+- Bulk median ratio 1.39 is close to observations, but the mean is 2.42
+  (heavy positive tail); small icebergs (`sqrt(A) <= 100 m`) are over-predicted
+  (median ratio 3.03) and large ones are slightly under-predicted (0.94).
+- Voxel under-melts by ~17x at the median (0.059); its rank correlation is only
+  marginally better than bulk (0.153 vs 0.136). This is not calibrated away;
+  the voxel three-equation/CN energy pathway needs a dedicated audit.
+- 49/190 rows (CG 2016/2018) have raw `Volume_i` inconsistent with
+  `SurfaceArea_mean`/`MedianDraft_mean`; H is draft-derived for those rows.
+- Constant cold atmosphere (no Antarctic ERA5), no wave erosion, no calving,
+  nearest-wet-cell fallback up to 0.5 deg at ice fronts.
+- CMEMS auth is geo/IP-blocked on this host; the native-S3 workaround is
+  functional but coarse (chunked HDF5) and should be replaced by CMEMS subset
+  access when available.

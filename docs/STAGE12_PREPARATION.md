@@ -1,6 +1,6 @@
 # Stage 12 Preparation — Voxel Iceberg on Reanalysis Forcing
 
-**Status:** **STAGE 12.1–12.6a COMPLETE; STAGE 12.6b wave erosion + Stokes COMPLETE. Sea-ice drag/tides remain.**
+**Status:** **STAGE 12.1–12.6b COMPLETE; STAGE 12.7a Enderlin23 hindcast COMPLETE. Next: 12.7b Barents experiments.**
 **Date:** 2026-10-29
 **Base:** `386c850` (Stage 11 frozen; tag `stage11-final-frozen`)
 **Implementation:** Stage 12.2 reader/provider, 12.3 voxel core **and 12.4
@@ -69,7 +69,7 @@ no coupled feedback) must remain visible in the implementation.
 | 12.6a | Drift in lat/lon + `iceberg_run` + real(8) | **COMPLETE** (D-57; IBCAO grounding; NetCDF; tests green) |
 | 12.6b | Wave erosion (Bigg 1997), sea-ice drag, tides, lat/lon forcing refinements | **PARTIAL: wave erosion + optional Stokes COMPLETE** (D-58; gates default OFF); sea-ice drag/tides remain |
 | 12.6 | Drift coupling with voxel-derived geometry | existing drift tests remain green; no two-way feedback |
-| 12.7 | Validation and diagnostics | documented observational comparison; no calibration claim |
+| 12.7 | Validation and diagnostics | **12.7a COMPLETE** (190 icebergs; bulk/voxel; no calibration); 12.7b Barents 2020 next |
 
 Stages may be reordered only with an explicit decision. Stage 12.1 must not
 start before its data plan is reviewed.
@@ -137,6 +137,10 @@ face with per‑depth profile, `Tf(S,P)`, `u_rel` with iceberg velocity,
 **Stage 12.6b exit (wave part):** Bigg (1997) erosion + optional Stokes,
 NEMO-verified formula, gates default OFF, diagnostics/NetCDF, tests green.
 **DONE** (`stage12.6b_wave_erosion.md`). Sea-ice drag and tides remain.
+
+**Stage 12.7a exit:** 190 Enderlin23 icebergs, prescribed trajectories,
+GLORYS12; bulk/voxel compared; no calibration. Bulk median ratio 1.39,
+voxel 0.059; D-59. **DONE** (`stage12.7a_enderlin23_hindcast.md`).
 
 ## 8. References
 

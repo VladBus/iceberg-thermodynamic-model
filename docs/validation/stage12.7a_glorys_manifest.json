@@ -1,0 +1,64 @@
+{
+  "source": "https://s3.waw3-1.cloudferro.com/mdl-native-14/native/GLOBAL_MULTIYEAR_PHY_001_030/cmems_mod_glo_phy_my_0.083deg_P1D-m_202311/",
+  "source_note": "public native S3; CMEMS auth 403 RBAC; ARCO chunks 403",
+  "sites": {
+    "BG": {
+      "n_days": 56,
+      "n_depth": 27,
+      "n_lat": 24,
+      "n_lon": 24,
+      "local_bytes": 1922082,
+      "est_remote_bytes": 3046400000
+    },
+    "CG": {
+      "n_days": 318,
+      "n_depth": 30,
+      "n_lat": 25,
+      "n_lon": 27,
+      "local_bytes": 10941119,
+      "est_remote_bytes": 21624000000
+    },
+    "HG": {
+      "n_days": 107,
+      "n_depth": 28,
+      "n_lat": 25,
+      "n_lon": 26,
+      "local_bytes": 4600503,
+      "est_remote_bytes": 5820800000
+    },
+    "LG": {
+      "n_days": 56,
+      "n_depth": 27,
+      "n_lat": 24,
+      "n_lon": 25,
+      "local_bytes": 1981143,
+      "est_remote_bytes": 3046400000
+    },
+    "SG": {
+      "n_days": 88,
+      "n_depth": 30,
+      "n_lat": 25,
+      "n_lon": 29,
+      "local_bytes": 2198520,
+      "est_remote_bytes": 5984000000
+    },
+    "TG": {
+      "n_days": 202,
+      "n_depth": 34,
+      "n_lat": 30,
+      "n_lon": 32,
+      "local_bytes": 8114551,
+      "est_remote_bytes": 13736000000
+    },
+    "WG": {
+      "n_days": 84,
+      "n_depth": 28,
+      "n_lat": 24,
+      "n_lon": 25,
+      "local_bytes": 2406265,
+      "est_remote_bytes": 4569600000
+    }
+  },
+  "local_total_bytes": 32164183,
+  "est_remote_total_bytes": 57827200000
+}

@@ -371,6 +371,48 @@ contains
     end subroutine iceberg_step
 
     ! ========================================================================
+    !   STAGE 12.7a: ШАГ С ПРЕДПИСАННОЙ ТРАЕКТОРИЕЙ (валидация, D-59)
+    ! ========================================================================
+    ! Для ретроспективного теста Enderlin23: позиция задаётся наблюдением,
+    ! динамика/дрейф не интегрируются. Термодинамика и геометрия — те же,
+    ! что в iceberg_step (базальное/боковое/поверхностное/волновое таяние).
+    ! ========================================================================
+    subroutine iceberg_step_prescribed(state, dt, ocean_prof, atmos, lat, lon, diag)
+        type(iceberg_state), intent(inout) :: state
+        real, intent(in) :: dt
+        type(ocean_profile), intent(in) :: ocean_prof
+        type(atmos_forcing), intent(in) :: atmos
+        real(8), intent(in) :: lat, lon
+        type(iceberg_diagnostics), intent(out) :: diag
+
+        state%latitude = lat
+        state%longitude = lon
+        state%u = 0.0d0
+        state%v = 0.0d0
+        diag%grounded = .false.
+        diag%bathymetry = 1.0e6
+        diag%forcing_valid = .true.
+
+        call iceberg_compute_geometry(state, diag)
+        call iceberg_thermodynamics_step(state, dt, ocean_prof, atmos, diag)
+        call iceberg_update_geometry(state, dt, diag)
+        call iceberg_compute_geometry(state, diag)
+
+        state%volume = state%L*state%W*state%H
+        state%mass = RHO_ICE*state%volume
+        state%nstep = state%nstep + 1
+        state%time = state%time + real(dt, 8)
+        diag%total_mass_loss = diag%basal_mass_loss + diag%lateral_mass_loss + &
+                               diag%surface_mass_loss + diag%vapor_mass_loss + &
+                               diag%wave_mass_loss
+
+        if (state%H < MIN_THICKNESS .or. state%L < MIN_THICKNESS &
+            .or. state%W < MIN_THICKNESS) then
+            state%active = .false.
+        end if
+    end subroutine iceberg_step_prescribed
+
+    ! ========================================================================
     !   ОБНОВЛЕНИЕ ГЕОМЕТРИИ ПОСЛЕ ПЛАВЛЕНИЯ (Stage 9.1 §26 + Stage 10.4)
     ! ========================================================================
     ! Использует геометрию ДО плавления (pre-melt) для консистентного

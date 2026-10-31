@@ -768,3 +768,30 @@ not added.
 - **Verification:** `test_wave_erosion` 5 groups PASS; full battery 79 STOP 0;
   strict build clean. No real wave-forcing run (no data).
 - **Docs:** `docs/validation/stage12.6b_wave_erosion.md`.
+
+
+## D-59. Enderlin23 Antarctic hindcast: bulk vs voxel (Stage 12.7a, 2026-11-01)
+
+- **Status:** ACTIVE (validation; no calibration).
+- **Decision:** run 190 Enderlin23 icebergs (interval <=120 d; WAP 125,
+  WAIS 65) with prescribed observed trajectories and GLORYS12 T/S/u/v;
+  compare bulk and voxel thermodynamics. 190/190 completed for both models.
+- **Data access:** CMEMS auth is geo/IP-blocked here (403 RBAC; ARCO data
+  chunks also 403). Public native S3 daily files were streamed by HDF5 chunk
+  (~57.8 GB estimated remote read; 32.2 MB local NetCDF). This is a
+  documented workaround, not a change to the model.
+- **Initialization exception:** 49/190 rows (CG 2016/2018) have `volume_i`
+  inconsistent with `surface_area`/`draft` (H=V/A up to 53 km); H is taken
+  from the observed draft for those rows. `H0_rule` in the manifest records
+  the choice.
+- **Results (median model/observed):** bulk **1.394**, voxel **0.059**;
+  Spearman 0.136 vs 0.153; MAE 0.0302 vs 0.0413 m/day; RMSE 0.0378 vs
+  0.0517 m/day. Bulk is close to the observed median but has a heavy
+  positive tail and over-predicts small icebergs; voxel under-melts by ~17x.
+  Neither reproduces rank ordering well.
+- **Constraints:** no melt-parameter calibration; T_ice=-10 C; constant cold
+  atmosphere; no wave erosion (no wave product); no calving; nearest wet
+  GLORYS cell within 0.5 deg at ice fronts.
+- **Docs:** `docs/validation/stage12.7a_enderlin23_hindcast.md`;
+  results `docs/validation/stage12.7a_results.csv`; manifest
+  `docs/validation/stage12.7a_glorys_manifest.json`.

@@ -835,3 +835,25 @@ not added.
 - **Bulk freeze:** bulk thermodynamics is ARCHIVED; all new science runs use
   `VOXEL_ENABLED=ON`; bulk retained for regression tests only.
 - **Docs:** `docs/validation/stage12.7b_autonomous_air.md`.
+
+
+## D-62. Free-convection closure for low-flow voxel regimes (Stage 12.7c, 2026-11-01)
+
+- **Status:** ACTIVE (physics lower bound; no calibration).
+- **Decision:** mixed convection in the three-equation interface:
+  `gamma_T = max(K_T*u_rel, 1e-5)`, `gamma_S = max(K_S*u_rel, 1e-6)`.
+  Physical basis: forced convection valid for u_rel >~0.1 m/s (Jenkins 2010);
+  free-convection exchange ~1e-5 m/s (Kerr & McPhee 2004; Hellmer & Olbers
+  1989); `max(forced,free)` is standard in NEMO-ICB/MITgcm. The previous
+  `u_rel<=0 -> m=0` early return was removed. Env overrides
+  `VOXEL_GAMMA_FREE_T`/`_S` are sensitivity hooks only.
+- **3-case ratios (K_T=1):** small 1.309 (was 1.057), medium 0.655 (0.258),
+  large 0.208 (0.089). Small/medium in [0.5,2]; large/low-dT still low.
+- **Sensitivity:** gamma_free_T 5e-6/1e-5/2e-5 gives large 0.148/0.208/0.327;
+  no value in range reaches 0.5. Higher values rejected as calibration.
+- **Full 190 not re-run** because the all-three gate is not met.
+- **Structural deficit:** weak GLORYS coastal currents (0.001-0.02 m/s), no
+  waves, no calving, no sea-ice coupling; large/low-dT remains a lower bound.
+- **12.8:** conditional GO for exploratory Barents runs (warm/high-dT);
+  NO-GO for quantitative low-dT/large-iceberg claims. Bulk remains archived.
+- **Docs:** `docs/validation/stage12.7c_free_convection.md`.

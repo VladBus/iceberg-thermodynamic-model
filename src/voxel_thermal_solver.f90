@@ -30,11 +30,17 @@ module voxel_thermal_solver
     public :: solve_heat_conduction, apply_boundary_fluxes, solve_cn
     public :: face_h, voxel_face_dphi, face_area
     public :: three_equation_melt, profile_at, voxel_kt_scale, voxel_air_flux_components
+    public :: voxel_gamma_free_t, voxel_gamma_free_s
 
     real(8), parameter :: EPS_PHI = 1.0d-12
     real(8), parameter :: WIND_MIN = 0.1_8
     logical, save :: kt_checked = .false.
     real(8), save :: kt_scale_saved = 1.0_8
+    real(8), parameter :: GAMMA_FREE_T_DEFAULT = 1.0d-5
+    real(8), parameter :: GAMMA_FREE_S_DEFAULT = 1.0d-6
+    logical, save :: free_checked = .false.
+    real(8), save :: gamma_free_t_saved = GAMMA_FREE_T_DEFAULT
+    real(8), save :: gamma_free_s_saved = GAMMA_FREE_S_DEFAULT
 
 contains
 
@@ -57,6 +63,40 @@ contains
         end if
         s = kt_scale_saved
     end function voxel_kt_scale
+
+    ! Free-convection floors (Kerr & McPhee 2004; Hellmer & Olbers 1989).
+    ! Audit/sensitivity hooks only: defaults are the physical lower bounds.
+    real(8) function voxel_gamma_free_t() result(g)
+        character(len=64) :: ev
+        real(8) :: v
+        integer :: ios
+        if (.not. free_checked) then
+            ev = ''
+            call get_environment_variable('VOXEL_GAMMA_FREE_T', ev)
+            v = GAMMA_FREE_T_DEFAULT
+            if (len_trim(ev) > 0) then
+                read (ev, *, iostat=ios) v
+                if (ios /= 0 .or. v < 0.0_8) v = GAMMA_FREE_T_DEFAULT
+            end if
+            gamma_free_t_saved = v
+            ev = ''
+            call get_environment_variable('VOXEL_GAMMA_FREE_S', ev)
+            v = GAMMA_FREE_S_DEFAULT
+            if (len_trim(ev) > 0) then
+                read (ev, *, iostat=ios) v
+                if (ios /= 0 .or. v < 0.0_8) v = GAMMA_FREE_S_DEFAULT
+            end if
+            gamma_free_s_saved = v
+            free_checked = .true.
+        end if
+        g = gamma_free_t_saved
+    end function voxel_gamma_free_t
+
+    real(8) function voxel_gamma_free_s() result(g)
+        real(8) :: dummy
+        dummy = voxel_gamma_free_t()
+        g = gamma_free_s_saved
+    end function voxel_gamma_free_s
 
     ! ==========================================================================
     ! Нормальный размер вокселя для грани d (A5 geometry fix):
@@ -523,13 +563,12 @@ contains
         sb_out = s_w_kgkg
         tb_out = tb_of(s_w_kgkg)
 
-        if (u_rel <= 0.0_8) then
-            m_out = 0.0_8
-            ok = .true.                      ! gamma_S=0 -> нет солевого обмена, m=0
-            return
-        end if
-        gamma_t = real(THREE_EQ_KT, 8)*u_rel*voxel_kt_scale()
-        gamma_s = real(THREE_EQ_KS, 8)*u_rel*voxel_kt_scale()
+        ! Mixed convection: forced + free-convection floor. The floor is a
+        ! physical lower bound for u_rel < ~0.05 m/s (D-62), not calibration.
+        gamma_t = max(real(THREE_EQ_KT, 8)*u_rel*voxel_kt_scale(), &
+                      voxel_gamma_free_t())
+        gamma_s = max(real(THREE_EQ_KS, 8)*u_rel*voxel_kt_scale(), &
+                      voxel_gamma_free_s())
         if (gamma_s <= 0.0_8) then
             m_out = 0.0_8; ok = .true.; return
         end if

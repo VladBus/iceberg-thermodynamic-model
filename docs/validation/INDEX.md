@@ -26,6 +26,7 @@ iceberg on GLORYS12 + ERA5 reanalysis, D-51).
 | `stage12.7a_enderlin23_hindcast.md` | 12.7a | COMPLETE (voxel column superseded) | 190 Enderlin23 icebergs, prescribed trajectories, GLORYS12; bulk median ratio 1.39; no calibration |
 | `stage12.7.audit_voxel_melt.md` | 12.7.audit | COMPLETE | Fixed 100 m-cube voxel bug + kg/s mapping; 3-case ratios 1.057/0.258/0.089; residual structural |
 | `stage12.7b_autonomous_air.md` | 12.7b | COMPLETE | Autonomous SW/LW/SH/LH Robin air balance; <1% closure; bulk archived |
+| `stage12.7c_free_convection.md` | 12.7c | COMPLETE | `gamma=max(K_T u,1e-5)`/`max(K_S u,1e-6)`; 3-case 1.309/0.655/0.208; large low-dT structural |
 
 ## Active Stage 11 Reports
 

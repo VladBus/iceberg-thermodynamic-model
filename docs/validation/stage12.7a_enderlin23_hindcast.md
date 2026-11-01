@@ -5,7 +5,8 @@
 > **POST-AUDIT NOTE (2026-11-01):** the voxel column below was produced with
 > the fixed 100 m-cube geometry bug. It is superseded by
 > `stage12.7.audit_voxel_melt.md`; corrected 3-case voxel ratios are
-> 1.057 / 0.258 / 0.089. The bulk column is unaffected.
+> 1.057 / 0.258 / 0.089; with the 12.7c free-convection floor they become
+> 1.309 / 0.655 / 0.208. The bulk column is unaffected.
 **Date:** 2026-10-31
 **Decision:** D-59
 **Base:** `3edadbb` (Stage 12.6b)

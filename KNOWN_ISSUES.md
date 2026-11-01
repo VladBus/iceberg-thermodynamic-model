@@ -255,3 +255,18 @@ removed from the active list (their history lives in stage reports and
 - Bulk thermodynamics is ARCHIVED for science; retained for regression.
 - Stage 12.8 Barents matrix is NO-GO for voxel-driven claims until a
   low-flow/free-convection closure (or approved 12.7c calibration) exists.
+
+
+## Stage 12.7c (free convection) — open items
+
+- Mixed-convection floor `gamma_T=max(K_T u,1e-5)`, `gamma_S=max(K_S u,1e-6)`
+  improved 3-case voxel ratios to 1.309/0.655/0.208. Small/medium are in
+  [0.5,2]; the large low-ΔT case remains below 0.5.
+- Sensitivity 5e-6/1e-5/2e-5 gives large ratios 0.148/0.208/0.327; no value in
+  range reaches 0.5. Higher floors were rejected as calibration.
+- Structural deficit remains: weak GLORYS coastal currents, no waves, no
+  calving, no sea-ice coupling.
+- Full 190-iceberg voxel hindcast was not re-run because the all-three gate
+  was not met.
+- 12.8 is conditional: exploratory Barents runs are allowed; quantitative
+  low-ΔT/large-iceberg claims are not.

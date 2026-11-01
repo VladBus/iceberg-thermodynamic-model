@@ -1,6 +1,6 @@
 # Stage 12 Preparation — Voxel Iceberg on Reanalysis Forcing
 
-**Status:** **STAGE 12.7a COMPLETE; 12.7.audit + 12.7b autonomous air COMPLETE. 12.8 Barents is NO-GO pending a low-flow/free-convection closure.**
+**Status:** **STAGE 12.7a COMPLETE; 12.7.audit + 12.7b + 12.7c free convection COMPLETE. 12.8: conditional GO for exploratory Barents voxel runs; NO-GO for quantitative low-dT/large-iceberg claims.**
 **Date:** 2026-10-29
 **Base:** `386c850` (Stage 11 frozen; tag `stage11-final-frozen`)
 **Implementation:** Stage 12.2 reader/provider, 12.3 voxel core **and 12.4
@@ -69,7 +69,7 @@ no coupled feedback) must remain visible in the implementation.
 | 12.6a | Drift in lat/lon + `iceberg_run` + real(8) | **COMPLETE** (D-57; IBCAO grounding; NetCDF; tests green) |
 | 12.6b | Wave erosion (Bigg 1997), sea-ice drag, tides, lat/lon forcing refinements | **PARTIAL: wave erosion + optional Stokes COMPLETE** (D-58; gates default OFF); sea-ice drag/tides remain |
 | 12.6 | Drift coupling with voxel-derived geometry | existing drift tests remain green; no two-way feedback |
-| 12.7 | Validation and diagnostics | **12.7a COMPLETE** (190 icebergs; no calibration); **12.7.audit COMPLETE** (fixed-cube bug fixed); **12.7b autonomous air COMPLETE**; 12.8 NO-GO pending low-flow closure |
+| 12.7 | Validation and diagnostics | **12.7a COMPLETE** (190 icebergs; no calibration); **12.7.audit COMPLETE** (fixed-cube bug fixed); **12.7b autonomous air COMPLETE**; **12.7c free convection COMPLETE**; 12.8 conditional GO |
 
 Stages may be reordered only with an explicit decision. Stage 12.1 must not
 start before its data plan is reviewed.
@@ -147,6 +147,10 @@ column superseded by the audit.
 fixed; residual medium/large under-melt is structural (weak currents, no
 low-flow floor/waves). Autonomous voxel air balance tested (<1% closure).
 **DONE** (`stage12.7.audit_voxel_melt.md`, `stage12.7b_autonomous_air.md`).
+
+**Stage 12.7c exit:** mixed-convection floor `max(K_T u, 1e-5)` and
+`max(K_S u, 1e-6)`; 3-case ratios 1.309/0.655/0.208; large low-dT remains
+structural; no calibration. **DONE** (`stage12.7c_free_convection.md`).
 
 ## 8. References
 

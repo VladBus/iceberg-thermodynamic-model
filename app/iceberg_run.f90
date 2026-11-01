@@ -28,9 +28,9 @@ program iceberg_run
     implicit none
 
     character(len=*), parameter :: DEF_DAILY = &
-        'data/input/raw/reanalysis/glorys12/2020/glorys12_barents_202001.nc'
+        'data/input/reanalysis/glorys/2020/glorys12_barents_2020_daily.nc'
     character(len=*), parameter :: DEF_STATIC = &
-        'data/input/raw/reanalysis/glorys12/static/glorys12_static_barents.nc'
+        'data/input/static/glorys_static_barents.nc'
     real(8), parameter :: EPOCH_2020 = 1577836800.0d0   ! 2020-01-01T00:00:00Z
 
     type(iceberg_state) :: st

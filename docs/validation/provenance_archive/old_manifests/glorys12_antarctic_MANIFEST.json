@@ -1,0 +1,26 @@
+{
+  "source": "https://s3.waw3-1.cloudferro.com/mdl-native-14/native/GLOBAL_MULTIYEAR_PHY_001_030/cmems_mod_glo_phy_my_0.083deg_P1D-m_202311",
+  "source_note": "public native S3; CMEMS auth endpoint geo-blocked on host",
+  "created": "2026-10-31T19:37:41.514719+00:00",
+  "max_interval_days": 120.0,
+  "n_icebergs": 4,
+  "sites": {
+    "BG": {
+      "n_icebergs": 4,
+      "n_days": 2,
+      "date_start": "2016-08-25",
+      "date_end": "2016-08-26",
+      "bbox": [
+        -65.71866445899578,
+        -63.70957998112364,
+        -63.08085363175928,
+        -61.04692185963441
+      ],
+      "max_depth_m": 200.0,
+      "daily_file": "glorys12_BG_daily.nc",
+      "daily_bytes": 94878,
+      "static_file": "glorys12_BG_static.nc",
+      "static_bytes": 12086
+    }
+  }
+}

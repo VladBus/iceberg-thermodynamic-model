@@ -313,3 +313,14 @@ FodyWeavers.xsd
 
 # Chutzpah Test files
 _Chutzpah*
+
+
+# Stage 12.9 canonical layout: reanalysis/runs ignored; static+observations tracked
+!data/input/
+data/input/reanalysis/
+data/input/raw/
+data/input/processed/
+data/input/generated/
+!data/input/static/
+!data/input/static/*.nc
+!data/input/observations

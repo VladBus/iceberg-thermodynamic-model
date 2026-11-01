@@ -1,6 +1,6 @@
 # Stage 12 Preparation — Voxel Iceberg on Reanalysis Forcing
 
-**Status:** **STAGE 12.7a COMPLETE; 12.7.audit + 12.7b + 12.7c free convection COMPLETE. 12.8: conditional GO for exploratory Barents voxel runs; NO-GO for quantitative low-dT/large-iceberg claims.**
+**Status:** **STAGE 12.8 COMPLETE (24/24 runs) with documented monthly-GLORYS/constant-atmosphere fallbacks. Stage 12.9 thesis writing: GO with fallback labeling; quantitative daily-forcing claims remain NO-GO.**
 **Date:** 2026-10-29
 **Base:** `386c850` (Stage 11 frozen; tag `stage11-final-frozen`)
 **Implementation:** Stage 12.2 reader/provider, 12.3 voxel core **and 12.4
@@ -69,7 +69,8 @@ no coupled feedback) must remain visible in the implementation.
 | 12.6a | Drift in lat/lon + `iceberg_run` + real(8) | **COMPLETE** (D-57; IBCAO grounding; NetCDF; tests green) |
 | 12.6b | Wave erosion (Bigg 1997), sea-ice drag, tides, lat/lon forcing refinements | **PARTIAL: wave erosion + optional Stokes COMPLETE** (D-58; gates default OFF); sea-ice drag/tides remain |
 | 12.6 | Drift coupling with voxel-derived geometry | existing drift tests remain green; no two-way feedback |
-| 12.7 | Validation and diagnostics | **12.7a COMPLETE** (190 icebergs; no calibration); **12.7.audit COMPLETE** (fixed-cube bug fixed); **12.7b autonomous air COMPLETE**; **12.7c free convection COMPLETE**; 12.8 conditional GO |
+| 12.7 | Validation and diagnostics | **12.7a COMPLETE**; **12.7.audit**; **12.7b**; **12.7c** free convection |
+| 12.8 | Barents 2020 matrix | **COMPLETE 24/24** with monthly-GLORYS/constant-atmosphere fallbacks (D-63); 12.9 thesis writing GO with caveats |
 
 Stages may be reordered only with an explicit decision. Stage 12.1 must not
 start before its data plan is reviewed.
@@ -151,6 +152,12 @@ low-flow floor/waves). Autonomous voxel air balance tested (<1% closure).
 **Stage 12.7c exit:** mixed-convection floor `max(K_T u, 1e-5)` and
 `max(K_S u, 1e-6)`; 3-case ratios 1.309/0.655/0.208; large low-dT remains
 structural; no calibration. **DONE** (`stage12.7c_free_convection.md`).
+
+**Stage 12.8 exit:** 24/24 voxel matrix runs (4 sizes x 2 seasons x 3 points)
+completed with monthly-mean GLORYS (18 months) and constant atmosphere;
+start points shifted to satisfy IBCAO depth + GLORYS mask; 7 figures; drift
+1.2-6.3 km/year (lower bound), lateral melt 55-83%. **DONE with fallback
+caveat** (`stage12.8_barents2020_matrix.md`).
 
 ## 8. References
 

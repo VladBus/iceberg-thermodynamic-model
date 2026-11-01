@@ -857,3 +857,26 @@ not added.
 - **12.8:** conditional GO for exploratory Barents runs (warm/high-dT);
   NO-GO for quantitative low-dT/large-iceberg claims. Bulk remains archived.
 - **Docs:** `docs/validation/stage12.7c_free_convection.md`.
+
+
+## D-63. Barents 2020 matrix: 24 voxel runs with documented forcing fallbacks (Stage 12.8, 2026-11-01)
+
+- **Status:** ACTIVE (exploratory; fallback forcing).
+- **Decision:** run the 4x2x3 matrix (24 voxel runs, 365 d, dt=3600) despite
+  the CMEMS auth block. Use the public native monthly-mean GLORYS12 subset
+  (18 months, 2020-01..2021-06, 306 MB) and a constant atmosphere; skip WAM.
+  This is **not** the requested daily/ERA5 matrix; it is a reproducible
+  fallback demonstration.
+- **Start points:** nominal brief points are too shallow/land for S500 and
+  some are land in GLORYS. Actual points: P1 82.924N 55.006E/600 m,
+  P2 81.316N 21.204E/553 m, P3 82.642N 50.407E/495 m (IBCAO + GLORYS ~500 m
+  valid).
+- **Results:** 24/24 OK (639 s, 363 MB peak). Drift 1.2-6.3 km/year (lower
+  bound: zero wind, monthly means, legacy Coriolis damping). Lateral melt
+  55-83% (mean ~65%), basal 17-45%, surface/wave 0. Only warm P2 reaches
+  t90: Jan 231/244/270 d and Jul 60/79/120 d for S50/S100/S200; S500 does not.
+  S100 P2 3-day melt 1.39 m (Jan) / 0.27 m (Jul) vs met.no ~5 m/3 d.
+- **GO/NO-GO 12.9:** GO for thesis writing with explicit fallback labeling;
+  NO-GO for quantitative daily-forcing drift/lifetime claims until daily
+  GLORYS, full-year ERA5, WAM, and corrected Coriolis/drift treatment.
+- **Docs:** `docs/validation/stage12.8_barents2020_matrix.md`.

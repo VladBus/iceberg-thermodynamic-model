@@ -41,6 +41,7 @@ program iceberg_run
     real(8) :: t, depth, draft, time_sec
     real(4) :: xm4, ym4
     real(8), allocatable :: rt(:), rlat(:), rlon(:), rmass(:), rdraft(:), rti(:), rmw(:), rwml(:)
+    real(8), allocatable :: rvol(:), rawet(:), rsic(:), rbl(:), rll(:), rsl(:), rvl(:), rwl(:)
     real(8), allocatable :: traj_t(:), traj_lat(:), traj_lon(:)
     character(len=512) :: out_nc, daily, static, era5f, wavef, trajf, arg
     integer :: nrec, irec, ncid, dimt, vt, vla, vlo, vma, vdr, vti, stt
@@ -131,7 +132,8 @@ program iceberg_run
 
     nrec = max(int(days*86400.0d0/dt) + 1, 1)
     allocate (rt(nrec), rlat(nrec), rlon(nrec), rmass(nrec), rdraft(nrec), rti(nrec), &
-              rmw(nrec), rwml(nrec))
+              rmw(nrec), rwml(nrec), rvol(nrec), rawet(nrec), rsic(nrec), rbl(nrec), &
+              rll(nrec), rsl(nrec), rvl(nrec), rwl(nrec))
     sum_b = 0.0d0; sum_l = 0.0d0; sum_s = 0.0d0; sum_v = 0.0d0; sum_w = 0.0d0
     sum_a = 0.0d0; sum_tf = 0.0d0; nsum = 0; vol0 = st%volume; warned_nearest = .false.
 
@@ -201,6 +203,11 @@ program iceberg_run
         rmass(irec) = st%mass; rdraft(irec) = st%H*real(RHO_ICE, 8)/real(RHO_WATER, 8)
         rti(irec) = st%T_ice
         rmw(irec) = real(diag%m_wave, 8); rwml(irec) = real(diag%wave_mass_loss, 8)
+        rvol(irec) = st%volume; rawet(irec) = real(diag%a_wet, 8)
+        rsic(irec) = real(prof%siconc, 8)
+        rbl(irec) = real(diag%basal_mass_loss, 8); rll(irec) = real(diag%lateral_mass_loss, 8)
+        rsl(irec) = real(diag%surface_mass_loss, 8); rvl(irec) = real(diag%vapor_mass_loss, 8)
+        rwl(irec) = real(diag%wave_mass_loss, 8)
         if (.not. st%active) then
             nrec = irec
             exit
@@ -214,7 +221,8 @@ program iceberg_run
     print '(a,11(1x,es18.10))', 'HINDCAST_SUMMARY', st%volume, vol0, &
         sum_b, sum_l, sum_s, sum_v, sum_w, sum_a/max(nsum, 1), real((nrec - 1)*dt, 8), st%mass, &
         sum_tf/max(nsum, 1)
-    call write_nc(trim(out_nc), nrec, rt, rlat, rlon, rmass, rdraft, rti, rmw, rwml)
+    call write_nc(trim(out_nc), nrec, rt, rlat, rlon, rmass, rdraft, rti, rmw, rwml, &
+                  rvol, rawet, rsic, rbl, rll, rsl, rvl, rwl)
     print '(a,i0,a,a)', 'iceberg_run: wrote ', nrec, ' records to ', trim(out_nc)
     print '(a,f10.5,a,f10.5,a,es12.4)', ' final lat/lon=', st%latitude, '/', &
         st%longitude, ' mass=', st%mass
@@ -314,42 +322,53 @@ contains
         a%tcc = 0.5; a%msl = 101325.0; a%snowfall = 0.0
     end subroutine constant_atmos
 
-    subroutine write_nc(path, n, tt, la, lo, ma, dr, ti, mw, wml)
+    subroutine write_nc(path, n, tt, la, lo, ma, dr, ti, mw, wml, vol, awet, sic, &
+                        bl, ll, sl, vl, wl)
         character(len=*), intent(in) :: path
         integer, intent(in) :: n
         real(8), intent(in) :: tt(:), la(:), lo(:), ma(:), dr(:), ti(:), mw(:), wml(:)
-        integer :: ncid, dimid, v1, v2, v3, v4, v5, v6, v7, v8, st
+        real(8), intent(in) :: vol(:), awet(:), sic(:), bl(:), ll(:), sl(:), vl(:), wl(:)
+        integer :: ncid, dimid, st
+        integer :: v(17)
         st = nf90_create(trim(path), nf90_clobber, ncid)
         if (st /= nf90_noerr) then
             print *, 'ERROR: cannot create ', trim(path), ': ', nf90_strerror(st)
             return
         end if
         st = nf90_def_dim(ncid, 'time', n, dimid)
-        st = nf90_def_var(ncid, 'time', nf90_double, (/dimid/), v1)
-        st = nf90_def_var(ncid, 'latitude', nf90_double, (/dimid/), v2)
-        st = nf90_def_var(ncid, 'longitude', nf90_double, (/dimid/), v3)
-        st = nf90_def_var(ncid, 'mass', nf90_double, (/dimid/), v4)
-        st = nf90_def_var(ncid, 'draft', nf90_double, (/dimid/), v5)
-        st = nf90_def_var(ncid, 'T_ice', nf90_double, (/dimid/), v6)
-        st = nf90_def_var(ncid, 'm_wave', nf90_double, (/dimid/), v7)
-        st = nf90_def_var(ncid, 'wave_mass_loss', nf90_double, (/dimid/), v8)
-        st = nf90_put_att(ncid, v1, 'units', 's since run start')
-        st = nf90_put_att(ncid, v2, 'units', 'degrees_north')
-        st = nf90_put_att(ncid, v3, 'units', 'degrees_east')
-        st = nf90_put_att(ncid, v4, 'units', 'kg')
-        st = nf90_put_att(ncid, v5, 'units', 'm')
-        st = nf90_put_att(ncid, v6, 'units', 'degrees_C')
-        st = nf90_put_att(ncid, v7, 'units', 'm s-1')
-        st = nf90_put_att(ncid, v8, 'units', 'kg')
+        st = nf90_def_var(ncid, 'time', nf90_double, (/dimid/), v(1))
+        st = nf90_def_var(ncid, 'latitude', nf90_double, (/dimid/), v(2))
+        st = nf90_def_var(ncid, 'longitude', nf90_double, (/dimid/), v(3))
+        st = nf90_def_var(ncid, 'mass', nf90_double, (/dimid/), v(4))
+        st = nf90_def_var(ncid, 'draft', nf90_double, (/dimid/), v(5))
+        st = nf90_def_var(ncid, 'T_ice', nf90_double, (/dimid/), v(6))
+        st = nf90_def_var(ncid, 'm_wave', nf90_double, (/dimid/), v(7))
+        st = nf90_def_var(ncid, 'wave_mass_loss', nf90_double, (/dimid/), v(8))
+        st = nf90_def_var(ncid, 'volume', nf90_double, (/dimid/), v(9))
+        st = nf90_def_var(ncid, 'a_wet', nf90_double, (/dimid/), v(10))
+        st = nf90_def_var(ncid, 'siconc', nf90_double, (/dimid/), v(11))
+        st = nf90_def_var(ncid, 'mass_loss_basal', nf90_double, (/dimid/), v(12))
+        st = nf90_def_var(ncid, 'mass_loss_lateral', nf90_double, (/dimid/), v(13))
+        st = nf90_def_var(ncid, 'mass_loss_surface', nf90_double, (/dimid/), v(14))
+        st = nf90_def_var(ncid, 'mass_loss_vapor', nf90_double, (/dimid/), v(15))
+        st = nf90_def_var(ncid, 'mass_loss_wave', nf90_double, (/dimid/), v(16))
         st = nf90_enddef(ncid)
-        st = nf90_put_var(ncid, v1, tt(1:n))
-        st = nf90_put_var(ncid, v2, la(1:n))
-        st = nf90_put_var(ncid, v3, lo(1:n))
-        st = nf90_put_var(ncid, v4, ma(1:n))
-        st = nf90_put_var(ncid, v5, dr(1:n))
-        st = nf90_put_var(ncid, v6, ti(1:n))
-        st = nf90_put_var(ncid, v7, mw(1:n))
-        st = nf90_put_var(ncid, v8, wml(1:n))
+        st = nf90_put_var(ncid, v(1), tt(1:n))
+        st = nf90_put_var(ncid, v(2), la(1:n))
+        st = nf90_put_var(ncid, v(3), lo(1:n))
+        st = nf90_put_var(ncid, v(4), ma(1:n))
+        st = nf90_put_var(ncid, v(5), dr(1:n))
+        st = nf90_put_var(ncid, v(6), ti(1:n))
+        st = nf90_put_var(ncid, v(7), mw(1:n))
+        st = nf90_put_var(ncid, v(8), wml(1:n))
+        st = nf90_put_var(ncid, v(9), vol(1:n))
+        st = nf90_put_var(ncid, v(10), awet(1:n))
+        st = nf90_put_var(ncid, v(11), sic(1:n))
+        st = nf90_put_var(ncid, v(12), bl(1:n))
+        st = nf90_put_var(ncid, v(13), ll(1:n))
+        st = nf90_put_var(ncid, v(14), sl(1:n))
+        st = nf90_put_var(ncid, v(15), vl(1:n))
+        st = nf90_put_var(ncid, v(16), wl(1:n))
         st = nf90_close(ncid)
     end subroutine write_nc
 

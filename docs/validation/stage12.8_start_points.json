@@ -1,0 +1,46 @@
+{
+  "source": "data/input/processed/grid/grid.nc",
+  "selection_rule": "nearest wet grid cell with depth >= 480.0 m within 8 deg",
+  "note": "Nominal brief coordinates are too shallow/land for S500 and some are land/ice shelf in GLORYS; actual points require depth >= 480 m and a valid GLORYS ~500 m profile.",
+  "points": [
+    {
+      "name": "Franz Victoria Trough (Novaya Zemlya)",
+      "nominal_lat": 77.0,
+      "nominal_lon": 55.0,
+      "nominal_depth_m": 210.0,
+      "lat": 82.9242,
+      "lon": 55.0058,
+      "depth_m": 600.0,
+      "levels": 17,
+      "glorys_lat": 82.91666412353516,
+      "glorys_lon": 55.0,
+      "distance_deg": 5.924202839201236
+    },
+    {
+      "name": "Svalbard shelf edge",
+      "nominal_lat": 77.5,
+      "nominal_lon": 20.0,
+      "nominal_depth_m": 122.0,
+      "lat": 81.3157,
+      "lon": 21.2045,
+      "depth_m": 553.0,
+      "levels": 16,
+      "glorys_lat": 81.33333587646484,
+      "glorys_lon": 21.16666603088379,
+      "distance_deg": 4.001298131856717
+    },
+    {
+      "name": "Central Basin (Franz Josef Land)",
+      "nominal_lat": 80.0,
+      "nominal_lon": 50.0,
+      "nominal_depth_m": 83.0,
+      "lat": 82.6424,
+      "lon": 50.4066,
+      "depth_m": 495.0,
+      "levels": 16,
+      "glorys_lat": 82.66666412353516,
+      "glorys_lon": 50.41666793823242,
+      "distance_deg": 2.673499826070683
+    }
+  ]
+}

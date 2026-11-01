@@ -270,3 +270,20 @@ removed from the active list (their history lives in stage reports and
   was not met.
 - 12.8 is conditional: exploratory Barents runs are allowed; quantitative
   low-ΔT/large-iceberg claims are not.
+
+
+## Stage 12.8 (Barents 2020 matrix) — open items
+
+- Forcing is **monthly-mean GLORYS** (18 months, 306 MB), not 365 daily files;
+  CMEMS daily auth is geo-blocked and native daily chunks would be ~100 GB.
+- Atmosphere is **constant** (zero wind, 253.15 K); full-year ERA5 was not
+  available/merged. WAM is skipped.
+- Start points were shifted far north (82.9N/81.3N/82.6N) because the nominal
+  southern points are too shallow for S500 and/or land in GLORYS.
+- Drift 1.2-6.3 km/year is a lower bound, not a physical prediction: zero
+  wind, monthly forcing, and legacy semi-implicit Coriolis damping.
+- Voxel large/low-dT under-melt remains (12.7c); S500 lifetimes are upper
+  bounds.
+- 24/24 runs completed; no full melt-out; lateral melt dominates (55-83%).
+- Stage 12.9 thesis writing is GO with explicit fallback labeling; quantitative
+  daily-forcing Barents drift/lifetime claims are NO-GO.

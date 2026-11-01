@@ -56,6 +56,11 @@ module iceberg_thermodynamics
     !   full geometry feedback is a Stage 12.4 concern. One-way (no feedback).
     ! ========================================================================
     type(voxel_iceberg_type), save :: vox_ice
+    integer, save :: vox_nx = 10, vox_ny = 10, vox_nz = 10
+    real(8), save :: vox_t_init = -10.0_8, vox_phi_init = 1.0_8, vox_phi_min = 0.01_8
+    integer, save :: vox_scheme = 1, vox_cg_maxit = 1000
+    real(8), save :: vox_theta = 0.5_8, vox_cg_tol = 1.0e-10_8, vox_melt_cap = 0.20_8
+    logical, save :: vox_dbg = .false., vox_dbg_once = .false.
     logical, save :: vox_checked = .false.
     logical, save :: vox_enabled = .false.
     logical, save :: vox_ready = .false.
@@ -1410,12 +1415,68 @@ contains
         cg_maxit = 10*nx*ny*nz
         call env_int('ICEBERG_CG_MAXIT', cg_maxit)
         call env_real('VOXEL_MELT_CAP', melt_cap)
-        call voxel_iceberg_init(vox_ice, nx, ny, nz, dx, dy, dz, t_init, phi_init, phi_min, &
-                                scheme, theta, cg_tol, cg_maxit, melt_cap)
-        vox_ready = .true.
+        vox_nx = nx; vox_ny = ny; vox_nz = nz
+        vox_t_init = t_init; vox_phi_init = phi_init; vox_phi_min = phi_min
+        vox_scheme = scheme; vox_theta = theta; vox_cg_tol = cg_tol
+        vox_cg_maxit = cg_maxit; vox_melt_cap = melt_cap
+        call get_environment_variable('VOXEL_DEBUG_MELT', ev)
+        vox_dbg = (trim(ev) == 'true' .or. trim(ev) == 'TRUE' .or. trim(ev) == '1')
+        vox_ready = .false.
         print '(a,3i4,a,3f6.1,a,i0,a,f4.2)', ' VOXEL core ON: grid', nx, ny, nz, &
             ' dx', dx, dy, dz, ' scheme', scheme, ' theta', theta
     end subroutine voxel_model_configure
+
+    ! ========================================================================
+    ! Автономные атмосферные входы вокселя (PDF 7.1-7.10).
+    ! Дублирует метеорологическую часть compute_surface_melt, но НЕ использует
+    ! Q_net bulk и не меняет T_surface. Возвращает SW_down, LW_down, T_air [K],
+    ! q_air [кг/кг], rho_air [кг/м3], wind [м/с], p_atm [Па].
+    ! ========================================================================
+    subroutine compute_atmos_inputs(state, atmos, year, month, day, hour, &
+                                    sw_down, lw_down, t_air_k, q_air, rho_air, wind, p_atm)
+        type(iceberg_state), intent(in) :: state
+        type(atmos_forcing), intent(in) :: atmos
+        integer, intent(in) :: year, month, day, hour
+        real(8), intent(out) :: sw_down, lw_down, t_air_k, q_air, rho_air, wind, p_atm
+        real(4) :: cos_zenith, sw_toa, air_mass, tau_rayleigh, t_rayleigh
+        real(4) :: t_water_vap, t_aerosol, t_clear, t_cloud, precipitable_water_cm
+        real(4) :: e_sat_air, e_sat_dew, rh, e_vap
+
+        t_air_k = real(atmos%t2m, 8)
+        p_atm = real(atmos%msl, 8)
+        rho_air = p_atm/(real(GAS_CONST_AIR, 8)*t_air_k)
+        wind = real(sqrt(atmos%u10**2 + atmos%v10**2), 8)
+        e_sat_air = SAT_VAPOR_0*10.0**(TETENS_A*(atmos%t2m - 273.15)/atmos%t2m)
+        e_sat_dew = SAT_VAPOR_0*10.0**(TETENS_A*(atmos%d2m - 273.15)/atmos%d2m)
+        rh = min(1.0, max(0.0, e_sat_dew/e_sat_air))
+        e_vap = rh*e_sat_air
+        q_air = real(0.622*e_vap/real(atmos%msl), 8)
+
+        call solar_geometry(year, month, day, hour, state%time, &
+                            state%latitude, state%longitude, cos_zenith)
+        if (cos_zenith <= 0.0) then
+            sw_down = 0.0_8
+        else
+            sw_toa = SOLAR_CONSTANT*cos_zenith
+            air_mass = 1.0/cos_zenith
+            if (air_mass .gt. 40.0) air_mass = 40.0
+            tau_rayleigh = TAU_RAYLEIGH_0*(atmos%msl/101325.0)
+            t_rayleigh = exp(-tau_rayleigh*air_mass)
+            t_rayleigh = max(0.0, min(1.0, t_rayleigh))
+            precipitable_water_cm = PRECIP_WATER_SCALE*(e_vap/100.0)*(101325.0/atmos%msl)
+            precipitable_water_cm = max(0.0, precipitable_water_cm)
+            t_water_vap = 1.0 - WV_ABSORP_COEFF*(precipitable_water_cm**WV_ABSORP_EXP)
+            t_water_vap = max(0.0, min(1.0, t_water_vap))
+            t_aerosol = AEROSOL_TRANS_ARCTIC
+            t_clear = max(0.0, min(1.0, t_rayleigh*t_water_vap*t_aerosol))
+            t_cloud = 1.0 - CLOUD_TRANS_COEFF*atmos%tcc
+            t_cloud = max(0.0, min(1.0, t_cloud))
+            sw_down = real(min(sw_toa*t_clear*t_cloud, sw_toa), 8)
+            sw_down = max(0.0_8, sw_down)
+        end if
+        lw_down = real(LW_EMISS*atmos%t2m**4*(1.0 + LW_CLOUD_FACTOR*atmos%tcc)* &
+                       (1.0 - LW_HUMID_COEFF*exp(-LW_HUMID_EXP*(273.15 - atmos%t2m)**2)), 8)
+    end subroutine compute_atmos_inputs
 
     ! Шаг воксельного ядра с форсингом из океана/атмосферы (те же источники,
     ! что и bulk). Записывает скорости плавления в diag; геометрию призмы НЕ меняет.
@@ -1427,31 +1488,58 @@ contains
         type(iceberg_diagnostics), intent(inout) :: diag
 
         real :: to, so, uo, vo
-        real(8) :: basal, lat, surf, wind, tair, qnet
+        real(8) :: basal, lat, surf, wind, tair
+        real(8) :: sw_down, lw_down, t_air_k, q_air, rho_air, p_atm
         real(8) :: area, vel_min
 
         call voxel_model_configure()
         if (.not. vox_enabled) return
-        if (.not. vox_ready) return
         if (.not. allocated(ocean_prof%temp)) return
+        if (.not. vox_ready) then
+            if (state%L <= 0.0_8 .or. state%W <= 0.0_8 .or. state%H <= 0.0_8) return
+            call voxel_iceberg_init(vox_ice, vox_nx, vox_ny, vox_nz, &
+                                    real(state%L, 8)/real(vox_nx, 8), &
+                                    real(state%W, 8)/real(vox_ny, 8), &
+                                    real(state%H, 8)/real(vox_nz, 8), &
+                                    vox_t_init, vox_phi_init, vox_phi_min, &
+                                    vox_scheme, vox_theta, vox_cg_tol, vox_cg_maxit, vox_melt_cap)
+            vox_ready = .true.
+            if (vox_dbg .and. .not. vox_dbg_once) then
+                block
+                    real(8) :: av_state, av_vox
+                    av_state = real(state%L, 8)*real(state%W, 8) + &
+                        2.0_8*(real(state%L, 8) + real(state%W, 8))* &
+                        real(state%H, 8)*real(RHO_ICE, 8)/real(RHO_WATER, 8)
+                    av_vox = vox_ice%submerged_area
+                    print '(a,10(1x,es14.6))', 'VOXEL_DEBUG_STATE', real(state%L, 8), &
+                        real(state%W, 8), real(state%H, 8), real(vox_ice%nx, 8)*vox_ice%dx, &
+                        real(vox_ice%ny, 8)*vox_ice%dy, real(vox_ice%nz, 8)*vox_ice%dz, &
+                        av_state, av_vox, vox_ice%total_mass, vox_ice%draft
+                end block
+                vox_dbg_once = .true.
+            end if
+        end if
 
         to = interp_at_draft(ocean_prof, diag%draft, 'temp')
         so = interp_at_draft(ocean_prof, diag%draft, 'salt')
         uo = interp_at_draft(ocean_prof, diag%draft, 'u')
         vo = interp_at_draft(ocean_prof, diag%draft, 'v')
-        wind = sqrt(atmos%u10*atmos%u10 + atmos%v10*atmos%v10)
-        tair = atmos%t2m - 273.15
-        qnet = diag%q_net_surface
+        tair = real(atmos%t2m - 273.15, 8)
+        call compute_atmos_inputs(state, atmos, nat(1), nat(2), nat(3), nat(4), &
+                                  sw_down, lw_down, t_air_k, q_air, rho_air, wind, p_atm)
 
         call voxel_iceberg_step_profile(vox_ice, real(dt, 8), ocean_prof, &
                                         real(state%u, 8), real(state%v, 8), &
-                                        real(tair, 8), real(qnet, 8), real(wind, 8), &
-                                        basal, lat, surf)
+                                        tair, 0.0_8, wind, &
+                                        basal, lat, surf, .true., sw_down, lw_down, &
+                                        t_air_k, q_air, rho_air, p_atm)
 
-        ! кг/с → м/с по соответствующей площади (basal=дно, lateral=бок, surf=верх)
-        area = max(vox_ice%waterline_area, 1.0d0)
-        vel_min = max(vox_ice%submerged_area, 1.0d0)
-        diag%m_basal = real(basal/(real(RHO_ICE, 8)*vel_min), 4)
+        ! кг/с → м/с по площадям, которые использует iceberg_update_geometry:
+        !   dV_basal = L W dt m_basal; dV_lateral = H(W+L) dt m_lateral;
+        !   dV_surface = L W dt m_surface. This preserves voxel mass loss exactly.
+        area = max(real(state%L, 8)*real(state%W, 8), 1.0d0)
+        vel_min = max(real(state%H, 8)*(real(state%L, 8) + real(state%W, 8)), 1.0d0)
+        diag%m_basal = real(basal/(real(RHO_ICE, 8)*area), 4)
         diag%m_lateral = real(lat/(real(RHO_ICE, 8)*vel_min), 4)
         diag%m_surface = real(surf/(real(RHO_ICE, 8)*area), 4)
         ! (state-геометрия призмы сохраняется отдельно; full feedback → Stage 12.4)

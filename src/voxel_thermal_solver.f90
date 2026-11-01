@@ -20,7 +20,8 @@
 ! ==============================================================================
 module voxel_thermal_solver
     use iceberg_types, only: RHO_ICE, RHO_WATER, GRAVITY, C_ICE, K_ICE, LATENT_HEAT, &
-                             CD_AIR, RHO_AIR, CP_AIR, CP_SEAWATER, &
+                             CD_AIR, RHO_AIR, CP_AIR, CP_SEAWATER, ALBEDO_ICE, &
+                             EMISSIVITY, STEFAN_BOLTZ, L_S, C_H_NEUTRAL, C_E_NEUTRAL, &
                              THREE_EQ_KT, THREE_EQ_KS, ocean_profile, &
                              ocean_freezing_point, ocean_heat_transfer_coeff
     implicit none
@@ -28,12 +29,34 @@ module voxel_thermal_solver
     private
     public :: solve_heat_conduction, apply_boundary_fluxes, solve_cn
     public :: face_h, voxel_face_dphi, face_area
-    public :: three_equation_melt, profile_at
+    public :: three_equation_melt, profile_at, voxel_kt_scale, voxel_air_flux_components
 
     real(8), parameter :: EPS_PHI = 1.0d-12
     real(8), parameter :: WIND_MIN = 0.1_8
+    logical, save :: kt_checked = .false.
+    real(8), save :: kt_scale_saved = 1.0_8
 
 contains
+
+    ! H1 diagnostic: VOXEL_KT_SCALE (default 1) scales gamma_T/gamma_S.
+    ! Calibration is NOT applied; this is an audit hook only.
+    real(8) function voxel_kt_scale() result(s)
+        character(len=64) :: ev
+        real(8) :: v
+        integer :: ios
+        if (.not. kt_checked) then
+            ev = ''
+            call get_environment_variable('VOXEL_KT_SCALE', ev)
+            v = 1.0_8
+            if (len_trim(ev) > 0) then
+                read (ev, *, iostat=ios) v
+                if (ios /= 0 .or. v <= 0.0_8) v = 1.0_8
+            end if
+            kt_scale_saved = v
+            kt_checked = .true.
+        end if
+        s = kt_scale_saved
+    end function voxel_kt_scale
 
     ! ==========================================================================
     ! Нормальный размер вокселя для грани d (A5 geometry fix):
@@ -233,7 +256,9 @@ contains
                         cg_tol, cg_maxit, draft, ocean_T, ocean_S, ocean_u, ocean_v, &
                         atmos_T, atmos_Q, atmos_wind, submerged_mask, exposed_mask, &
                         Tnew, iters, resid, converged, &
-                        dir_face_a, dir_T_a, dir_face_b, dir_T_b, tb_override)
+                        dir_face_a, dir_T_a, dir_face_b, dir_T_b, tb_override, &
+                        autonomous_air, air_sw_down, air_lw_down, air_t_air, &
+                        air_q_air, air_rho_air, air_p_atm)
         real(8), intent(in) :: T(:,:,:), phi(:,:,:)
         real(8), intent(in) :: dx, dy, dz, dt, k_ice, rho_ice, c_ice, theta
         real(8), intent(in) :: cg_tol
@@ -248,6 +273,9 @@ contains
         integer, intent(in), optional :: dir_face_a, dir_face_b
         real(8), intent(in), optional :: dir_T_a, dir_T_b
         real(8), intent(in), optional :: tb_override(:,:,:)
+        logical, intent(in), optional :: autonomous_air
+        real(8), intent(in), optional :: air_sw_down, air_lw_down, air_t_air
+        real(8), intent(in), optional :: air_q_air, air_rho_air, air_p_atm
 
         integer :: nx, ny, nz, i, j, k, d, it, mx
         integer :: di(6), dj(6), dk(6), ii, jj, kk, fa, fb
@@ -314,9 +342,33 @@ contains
                                 rhs(i, j, k) = rhs(i, j, k) + Gb*tf - (1.0_8 - theta)*Gb*Told
                             end if
                             if (exposed_mask(i, j, k)) then
-                                hA = hs*A
-                                diag(i, j, k) = diag(i, j, k) + hA
-                                rhs(i, j, k) = rhs(i, j, k) + hA*Tair + A*atmos_Q
+                                if (present(autonomous_air)) then
+                                    if (autonomous_air) then
+                                        block
+                                            real(8) :: chi, qsw, qlw, qsh, qlh
+                                            real(8) :: dlw, dsh, dlh, qsat, q0, dqdt
+                                            chi = 1.0_8
+                                            if (d < 5) chi = 0.5_8
+                                            call voxel_air_flux_components( &
+                                                Told, air_t_air, wind, air_sw_down, &
+                                                air_lw_down, air_q_air, air_rho_air, &
+                                                air_p_atm, chi, qsw, qlw, qsh, qlh, &
+                                                dlw, dsh, dlh, qsat)
+                                            q0 = qsw + qlw + qsh + qlh
+                                            dqdt = dlw + dsh + dlh
+                                            diag(i, j, k) = diag(i, j, k) - A*dqdt
+                                            rhs(i, j, k) = rhs(i, j, k) + A*(q0 - dqdt*Told)
+                                        end block
+                                    else
+                                        hA = hs*A
+                                        diag(i, j, k) = diag(i, j, k) + hA
+                                        rhs(i, j, k) = rhs(i, j, k) + hA*Tair + A*atmos_Q
+                                    end if
+                                else
+                                    hA = hs*A
+                                    diag(i, j, k) = diag(i, j, k) + hA
+                                    rhs(i, j, k) = rhs(i, j, k) + hA*Tair + A*atmos_Q
+                                end if
                             end if
                         end if
                     end do
@@ -400,6 +452,51 @@ contains
     end subroutine matvec_cn
 
     ! ==========================================================================
+    ! Автономный атмосферный баланс (PDF 7.1-7.10) для открытой грани.
+    ! Q = SW_abs + LW_net + SH + LH; производные dQ/dT для Robin-матрицы.
+    ! q_sat над льдом: Tetens ice (610.78 Pa, 21.875, 7.66).
+    ! ==========================================================================
+    subroutine voxel_air_flux_components(t_surf_c, t_air_k, wind, sw_down, lw_down, &
+                                         q_air, rho_air, p_atm, chi, sw_abs, lw_net, &
+                                         sh, lh, dlw_dt, dsh_dt, dlh_dt, qsat)
+        real(8), intent(in) :: t_surf_c, t_air_k, wind, sw_down, lw_down
+        real(8), intent(in) :: q_air, rho_air, p_atm
+        real(8), intent(in), optional :: chi
+        real(8), intent(out) :: sw_abs, lw_net, sh, lh, dlw_dt, dsh_dt, dlh_dt, qsat
+        real(8) :: ts_k, csky, esat, dq
+        real(8), parameter :: RHO_AIR_MIN = 1.0d-6
+        csky = 1.0_8
+        if (present(chi)) csky = max(0.0_8, min(1.0_8, chi))
+        ts_k = t_surf_c + 273.15_8
+        sw_abs = (1.0_8 - real(ALBEDO_ICE, 8))*sw_down*csky
+        lw_net = real(EMISSIVITY, 8)*real(STEFAN_BOLTZ, 8)*(t_air_k**4 - ts_k**4) + &
+                 (1.0_8 - real(EMISSIVITY, 8))*lw_down
+        dlw_dt = -4.0_8*real(EMISSIVITY, 8)*real(STEFAN_BOLTZ, 8)*ts_k**3
+        sh = max(rho_air, RHO_AIR_MIN)*real(CP_AIR, 8)*real(C_H_NEUTRAL, 8)* &
+             max(wind, WIND_MIN)*(t_air_k - ts_k)
+        dsh_dt = -max(rho_air, RHO_AIR_MIN)*real(CP_AIR, 8)*real(C_H_NEUTRAL, 8)* &
+                 max(wind, WIND_MIN)
+        esat = 610.78_8*exp(21.875_8*(ts_k - 273.15_8)/(ts_k - 7.66_8))
+        qsat = 0.622_8*esat/max(p_atm, 1.0_8)
+        lh = max(rho_air, RHO_AIR_MIN)*real(L_S, 8)*real(C_E_NEUTRAL, 8)* &
+             max(wind, WIND_MIN)*(q_air - qsat)
+        call qsat_one(ts_k + 0.5_8, p_atm, qsat)
+        call qsat_one(ts_k - 0.5_8, p_atm, dq)
+        dq = (qsat - dq)  ! dq_sat/dT over 1 K
+        call qsat_one(ts_k, p_atm, qsat)
+        dlh_dt = -max(rho_air, RHO_AIR_MIN)*real(L_S, 8)*real(C_E_NEUTRAL, 8)* &
+                 max(wind, WIND_MIN)*dq
+    contains
+        subroutine qsat_one(tk, p, q)
+            real(8), intent(in) :: tk, p
+            real(8), intent(out) :: q
+            real(8) :: es
+            es = 610.78_8*exp(21.875_8*(tk - 273.15_8)/(tk - 7.66_8))
+            q = 0.622_8*es/max(p, 1.0_8)
+        end subroutine qsat_one
+    end subroutine voxel_air_flux_components
+
+    ! ==========================================================================
     ! ТРЁХУРАВНЕННЫЙ ИНТЕРФЕЙС (PDF 6.1-6.10): тепловой+солевой баланс,
     ! EOS-80 Tf(S,P) на глубине грани. F(m) строго убывает; аккреция OFF
     ! (spec A5): если F(0)<=0 → m=0. Биссекция, m>=0.
@@ -431,8 +528,8 @@ contains
             ok = .true.                      ! gamma_S=0 -> нет солевого обмена, m=0
             return
         end if
-        gamma_t = real(THREE_EQ_KT, 8)*u_rel
-        gamma_s = real(THREE_EQ_KS, 8)*u_rel
+        gamma_t = real(THREE_EQ_KT, 8)*u_rel*voxel_kt_scale()
+        gamma_s = real(THREE_EQ_KS, 8)*u_rel*voxel_kt_scale()
         if (gamma_s <= 0.0_8) then
             m_out = 0.0_8; ok = .true.; return
         end if

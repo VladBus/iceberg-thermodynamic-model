@@ -42,6 +42,7 @@ module wave_forcing
     real(8), save :: epoch_unix = 0.0_8
     logical, save :: configured = .false.
     logical, save :: use_constant = .false.
+    logical, save :: env_const_checked = .false.
     logical, save :: ero_flag = .false., stk_flag = .false., gate_checked = .false.
     real(8), save :: c_hs = 0.0_8, c_tp = 0.0_8, c_dir = 0.0_8, c_ust = 0.0_8, c_vs = 0.0_8
 
@@ -151,6 +152,23 @@ contains
 
         ok = .false.
         Hs = 0.0_8; Tp = 0.0_8; dir_w = 0.0_8; u_stokes = 0.0_8; v_stokes = 0.0_8
+        if (.not. use_constant .and. .not. configured .and. .not. env_const_checked) then
+            block
+                character(len=64) :: ev
+                real(8) :: hs
+                integer :: ios
+                env_const_checked = .true.
+                ev = ''
+                call get_environment_variable('ICEBERG_WAVE_CONST_HS', ev)
+                if (len_trim(ev) > 0) then
+                    read (ev, *, iostat=ios) hs
+                    if (ios == 0 .and. hs >= 0.0_8) then
+                        use_constant = .true.; c_hs = hs; c_tp = 8.0_8
+                        c_dir = 0.0_8; c_ust = 0.0_8; c_vs = 0.0_8
+                    end if
+                end if
+            end block
+        end if
         if (use_constant) then
             Hs = c_hs; Tp = c_tp; dir_w = c_dir; u_stokes = c_ust; v_stokes = c_vs
             if (Hs >= 0.0_8) ok = .true.

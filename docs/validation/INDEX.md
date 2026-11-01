@@ -23,7 +23,9 @@ iceberg on GLORYS12 + ERA5 reanalysis, D-51).
 | `stage12.5_voxel_geometry_drift.md` | 12.5 | COMPLETE | Voxel mass/draft/areas drive drift; default OFF |
 | `stage12.6a_drift_latlon_iceberg_run.md` | 12.6a | COMPLETE | real(8), lat/lon drift, `iceberg_run` |
 | `stage12.6b_wave_erosion.md` | 12.6b | COMPLETE (wave part) | Bigg (1997) erosion + optional Stokes; gates default OFF; no real wave run |
-| `stage12.7a_enderlin23_hindcast.md` | 12.7a | COMPLETE | 190 Enderlin23 icebergs, prescribed trajectories, GLORYS12; bulk median ratio 1.39 vs voxel 0.059; no calibration |
+| `stage12.7a_enderlin23_hindcast.md` | 12.7a | COMPLETE (voxel column superseded) | 190 Enderlin23 icebergs, prescribed trajectories, GLORYS12; bulk median ratio 1.39; no calibration |
+| `stage12.7.audit_voxel_melt.md` | 12.7.audit | COMPLETE | Fixed 100 m-cube voxel bug + kg/s mapping; 3-case ratios 1.057/0.258/0.089; residual structural |
+| `stage12.7b_autonomous_air.md` | 12.7b | COMPLETE | Autonomous SW/LW/SH/LH Robin air balance; <1% closure; bulk archived |
 
 ## Active Stage 11 Reports
 

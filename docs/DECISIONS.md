@@ -795,3 +795,43 @@ not added.
 - **Docs:** `docs/validation/stage12.7a_enderlin23_hindcast.md`;
   results `docs/validation/stage12.7a_results.csv`; manifest
   `docs/validation/stage12.7a_glorys_manifest.json`.
+
+
+## D-60. Voxel melt-deficiency audit: fixed-cube geometry bug (Stage 12.7.audit, 2026-11-01)
+
+- **Status:** ACTIVE (bug fixed; residual structural deficit documented).
+- **Root cause (H3):** production voxel geometry was always a 100 m cube
+  (10x10x10 at 10 m), independent of `state%L/W/H`. Voxel area was ~46,000 m2
+  for every case vs ~14,400 (small), ~72,300 (medium), ~1,154,000 (large) m2.
+  This explains the size-dependent ~17x under-melt.
+- **Secondary fix:** voxel kg/s were converted to bulk geometry rates using
+  `submerged_area`; now `m_basal=basal/(rho L W)`, `m_lateral=lat/(rho H(L+W))`,
+  matching `iceberg_update_geometry` and preserving total mass loss.
+- **H1:** `VOXEL_KT_SCALE` (audit hook) gives non-uniform fits (3-case median
+  0.258 at 1, 0.890 at 5, 1.852 at 10); no permanent K_T change (would be
+  calibration).
+- **H2:** prescribed-mode trajectory speeds are ~1e-4 m/s; `u_rel=|u_ocean|`
+  is correct. No trajectory-derivative fix needed.
+- **H4:** WAM absent; synthetic Hs=2 with `siconc=0` gives unrepresentative
+  wave melt (1.17e8 kg vs 2.05e7 kg submarine); wave erosion stays OFF.
+- **Updated 3-case voxel ratios (K_T=1):** 1.057 (small), 0.258 (medium),
+  0.089 (large); median 0.258. Small/high-dT agrees; medium/large residual is
+  structural (weak GLORYS currents 0.001-0.02 m/s, three-equation forced
+  convection, no free-convection/low-flow floor, no waves/calving).
+- **12.7a voxel column is superseded** (fixed-cube bug); bulk column unaffected.
+- **Stage 12.8:** NO-GO for voxel-driven Barents experiments until a
+  physically justified low-flow/free-convection closure (or approved 12.7c
+  calibration) is added.
+- **Docs:** `docs/validation/stage12.7.audit_voxel_melt.md`.
+
+## D-61. Autonomous voxel air balance; bulk archived (Stage 12.7b, 2026-11-01)
+
+- **Status:** ACTIVE.
+- **Decision:** exposed voxel faces use autonomous SW/LW/SH/LH fluxes (PDF
+  7.1-7.10) instead of bulk `diag%q_net_surface`. Robin linearized matrix;
+  `VOXEL_ENABLED` remains default OFF for regression, science runs set it ON.
+- **Verification:** `test_voxel_air_balance` Q components sum 248.227 W/m2,
+  analytical match <1e-6; 1-voxel CN warms -10.000 -> -9.749 C.
+- **Bulk freeze:** bulk thermodynamics is ARCHIVED; all new science runs use
+  `VOXEL_ENABLED=ON`; bulk retained for regression tests only.
+- **Docs:** `docs/validation/stage12.7b_autonomous_air.md`.

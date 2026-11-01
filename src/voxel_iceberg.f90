@@ -12,10 +12,10 @@
 module voxel_iceberg
     use iceberg_types, only: RHO_ICE, RHO_WATER, C_ICE, K_ICE, LATENT_HEAT, &
                              ocean_freezing_point, ocean_heat_transfer_coeff, &
-                             ocean_profile
+                             ocean_profile, THREE_EQ_KT, THREE_EQ_KS
     use voxel_thermal_solver, only: solve_heat_conduction, apply_boundary_fluxes, &
                                     solve_cn, face_h, face_area, voxel_face_dphi, &
-                                    three_equation_melt, profile_at
+                                    three_equation_melt, profile_at, voxel_kt_scale
     implicit none
 
     private
@@ -30,6 +30,7 @@ module voxel_iceberg
 
     real(8), parameter :: EPS_PHI = 1.0d-12
     real(8), parameter :: DEFAULT_PHI_MIN = 0.01d0
+    logical, save :: dbg_melt = .false., dbg_checked = .false., dbg_face_done = .false., dbg_total_done = .false.
 
     type :: voxel_iceberg_type
         integer :: nx = 0, ny = 0, nz = 0
@@ -307,6 +308,15 @@ contains
         logical :: cn_conv
 
         basal_melt = 0.0_8; lateral_melt = 0.0_8; surface_melt = 0.0_8
+        if (.not. dbg_checked) then
+            block
+                character(len=64) :: ev
+                ev = ''
+                call get_environment_variable('VOXEL_DEBUG_MELT', ev)
+                dbg_melt = (trim(ev) == 'true' .or. trim(ev) == 'TRUE' .or. trim(ev) == '1')
+                dbg_checked = .true.
+            end block
+        end if
         if (.not. allocated(vox%T)) return
         rho8 = real(RHO_ICE, 8); c8 = real(C_ICE, 8); k8 = real(K_ICE, 8); lf8 = real(LATENT_HEAT, 8)
         V = vox%dx*vox%dy*vox%dz
@@ -416,6 +426,19 @@ contains
         vox%lateral_melt_rate = lateral_melt
         vox%surface_melt_rate = surface_melt
         call voxel_iceberg_compute_state(vox)
+        if (dbg_melt .and. .not. dbg_total_done) then
+            block
+                real(8) :: lv, wv, av
+                lv = real(vox%nx, 8)*vox%dx; wv = real(vox%ny, 8)*vox%dy
+                av = lv*wv + 2.0_8*(lv + wv)*vox%draft
+                print '(a,10(1x,es14.6))', 'VOXEL_DEBUG_TOTAL', vox%submerged_area, av, &
+                    vox%basal_melt_rate, vox%lateral_melt_rate, vox%surface_melt_rate, &
+                    vox%draft, lv, wv, real(vox%nz, 8)*vox%dz, vox%total_mass
+                print '(a,3(1x,es14.6))', 'VOXEL_DEBUG_MEAN', vox%stefan_mean_urel, &
+                    vox%stefan_mean_tb, vox%stefan_mean_sb
+            end block
+            dbg_total_done = .true.
+        end if
     end subroutine voxel_iceberg_step
 
     ! Перенос остаточной энергии при удалении (PDF 9.3 + сохранение Σ Cc·T).
@@ -463,13 +486,18 @@ contains
     ! ==========================================================================
     subroutine voxel_iceberg_step_profile(vox, dt, prof, v_ice_u, v_ice_v, &
                                           atmos_T, atmos_Q, atmos_wind, &
-                                          basal_melt, lateral_melt, surface_melt)
+                                          basal_melt, lateral_melt, surface_melt, &
+                                          autonomous_air, air_sw_down, air_lw_down, &
+                                          air_t_air, air_q_air, air_rho_air, air_p_atm)
         type(voxel_iceberg_type), intent(inout) :: vox
         real(8), intent(in) :: dt
         type(ocean_profile), intent(in) :: prof
         real(8), intent(in) :: v_ice_u, v_ice_v
         real(8), intent(in) :: atmos_T, atmos_Q, atmos_wind
         real(8), intent(out) :: basal_melt, lateral_melt, surface_melt
+        logical, intent(in), optional :: autonomous_air
+        real(8), intent(in), optional :: air_sw_down, air_lw_down, air_t_air
+        real(8), intent(in), optional :: air_q_air, air_rho_air, air_p_atm
 
         integer :: i, j, k, d, ii, jj, kk, removed
         integer :: di(6), dj(6), dk(6)
@@ -484,6 +512,15 @@ contains
         integer :: nface
 
         basal_melt = 0.0_8; lateral_melt = 0.0_8; surface_melt = 0.0_8
+        if (.not. dbg_checked) then
+            block
+                character(len=64) :: ev
+                ev = ''
+                call get_environment_variable('VOXEL_DEBUG_MELT', ev)
+                dbg_melt = (trim(ev) == 'true' .or. trim(ev) == 'TRUE' .or. trim(ev) == '1')
+                dbg_checked = .true.
+            end block
+        end if
         if (.not. allocated(vox%T)) return
         rho8 = real(RHO_ICE, 8); c8 = real(C_ICE, 8); k8 = real(K_ICE, 8); lf8 = real(LATENT_HEAT, 8)
         V = vox%dx*vox%dy*vox%dz
@@ -525,6 +562,15 @@ contains
                         call three_equation_melt(tw, sw, urel, dface, hn, &
                                                  vox%T(i, j, k), m, tb, sb, ok3)
                         if (.not. ok3) cycle
+                        if (dbg_melt .and. .not. dbg_face_done .and. d >= 5 .and. &
+                            i == vox%nx/2 .and. j == vox%ny/2) then
+                            print '(a,10(1x,es14.6))', 'VOXEL_DEBUG_FACE', tw, sw, urel, dface, &
+                                real(ocean_freezing_point(real(sw), real(dface)), 8), &
+                                real(THREE_EQ_KT, 8)*urel, real(THREE_EQ_KS, 8)*urel, tb, sb, m
+                            print '(a,5(1x,es14.6))', 'VOXEL_DEBUG_FACE2', real(THREE_EQ_KT, 8)*urel*voxel_kt_scale(), &
+                                real(THREE_EQ_KS, 8)*urel*voxel_kt_scale(), vox%T(i, j, k), hn, real(vox%draft, 8)
+                            dbg_face_done = .true.
+                        end if
                         dmelt(i, j, k) = dmelt(i, j, k) + m*dt/hn
                         if (d >= 5) then
                             dbasal(i, j, k) = dbasal(i, j, k) + rho8*A*m*dt
@@ -570,7 +616,9 @@ contains
                       vox%submerged_mask, vox%exposed_mask, Tn, &
                       vox%cg_iters, vox%cg_resid, vox%stefan_conv, &
                       vox%test_dir_face_a, vox%test_dir_T_a, &
-                      vox%test_dir_face_b, vox%test_dir_T_b, tb_field)
+                      vox%test_dir_face_b, vox%test_dir_T_b, tb_field, &
+                      autonomous_air, air_sw_down, air_lw_down, air_t_air, &
+                      air_q_air, air_rho_air, air_p_atm)
         vox%T = Tn
         deallocate (Tn)
 
@@ -642,6 +690,19 @@ contains
         vox%lateral_melt_rate = lateral_melt
         vox%surface_melt_rate = surface_melt
         call voxel_iceberg_compute_state(vox)
+        if (dbg_melt .and. .not. dbg_total_done) then
+            block
+                real(8) :: lv, wv, av
+                lv = real(vox%nx, 8)*vox%dx; wv = real(vox%ny, 8)*vox%dy
+                av = lv*wv + 2.0_8*(lv + wv)*vox%draft
+                print '(a,10(1x,es14.6))', 'VOXEL_DEBUG_TOTAL', vox%submerged_area, av, &
+                    vox%basal_melt_rate, vox%lateral_melt_rate, vox%surface_melt_rate, &
+                    vox%draft, lv, wv, real(vox%nz, 8)*vox%dz, vox%total_mass
+                print '(a,3(1x,es14.6))', 'VOXEL_DEBUG_MEAN', vox%stefan_mean_urel, &
+                    vox%stefan_mean_tb, vox%stefan_mean_sb
+            end block
+            dbg_total_done = .true.
+        end if
     end subroutine voxel_iceberg_step_profile
 
     ! ==========================================================================

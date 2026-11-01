@@ -239,3 +239,19 @@ removed from the active list (their history lives in stage reports and
 - CMEMS auth is geo/IP-blocked on this host; the native-S3 workaround is
   functional but coarse (chunked HDF5) and should be replaced by CMEMS subset
   access when available.
+
+
+## Stage 12.7.audit / 12.7b — open items
+
+- Voxel geometry bug fixed (fixed 100 m cube -> state-scaled dx/dy/dz) and
+  kg/s mapping corrected. Three-case voxel ratios: 1.057 / 0.258 / 0.089;
+  median 0.258, still below [0.5, 2.0] for medium/large.
+- Residual deficit is structural: GLORYS coastal currents are 0.001-0.02 m/s;
+  the three-equation forced-convection melt vanishes at low `u_rel`, and the
+  voxel has no free-convection/low-flow floor, waves, or calving.
+- `VOXEL_KT_SCALE` is an audit hook only; no K_T calibration was applied.
+- Wave H4 is untestable: no WAM/sea-ice concentration; synthetic Hs=2 with
+  `siconc=0` is unrepresentative and stays OFF.
+- Bulk thermodynamics is ARCHIVED for science; retained for regression.
+- Stage 12.8 Barents matrix is NO-GO for voxel-driven claims until a
+  low-flow/free-convection closure (or approved 12.7c calibration) exists.

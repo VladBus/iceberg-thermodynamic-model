@@ -1,0 +1,102 @@
+{
+  "dataset_id": "cmems_mod_glo_phy_my_0.083deg_P1D-m",
+  "bbox": [
+    63,
+    86,
+    5,
+    80
+  ],
+  "depth_m": [
+    0,
+    600
+  ],
+  "variables": [
+    "thetao",
+    "so",
+    "uo",
+    "vo",
+    "zos",
+    "siconc",
+    "sithick",
+    "usi",
+    "vsi"
+  ],
+  "months": {
+    "2020-02": {
+      "path": "data/input/reanalysis/glorys/2020/glorys12_barents_2020_02.nc",
+      "size_bytes": 468841676,
+      "sha256": "f28002e25b862ad2a331e4bc30c2bfa011c79a7b819c392d26ea18c0a21808c9"
+    },
+    "2020-01": {
+      "path": "data/input/reanalysis/glorys/2020/glorys12_barents_2020_01.nc",
+      "size_bytes": 497578623,
+      "sha256": "f2b2da1397fbb072ffce1c5e552049903ad3ce473da3638bd0b926f1741a1146"
+    },
+    "2020-03": {
+      "path": "data/input/reanalysis/glorys/2020/glorys12_barents_2020_03.nc",
+      "size_bytes": 495047580,
+      "sha256": "221cc47d8ab430b5d054efb5bc053339b00756acc7ae892561ac25a78db8f4d8"
+    },
+    "2020-04": {
+      "path": "data/input/reanalysis/glorys/2020/glorys12_barents_2020_04.nc",
+      "size_bytes": 496222883,
+      "sha256": "1440a6429f83a5f009b9863284c7a8fe8de7c0f85254489d9f5dae2f6b4e908c"
+    },
+    "2020-05": {
+      "path": "data/input/reanalysis/glorys/2020/glorys12_barents_2020_05.nc",
+      "size_bytes": 537800147,
+      "sha256": "f7690b059b0e35c291501b199b2df8d12af68ae70f0bf87aed6434a7e1a981af"
+    },
+    "2020-06": {
+      "path": "data/input/reanalysis/glorys/2020/glorys12_barents_2020_06.nc",
+      "size_bytes": 534828669,
+      "sha256": "b1d02eb94cfe488de4a2a5a66c87329e0b61bb9c8bc20e87e63efe5f0da573d6"
+    },
+    "2020-07": {
+      "path": "data/input/reanalysis/glorys/2020/glorys12_barents_2020_07.nc",
+      "size_bytes": 561169745,
+      "sha256": "b9ff7c28d4d2a9fd0be42e0e065d471049498a37695d51353f2452e91b4c35bd"
+    },
+    "2020-08": {
+      "path": "data/input/reanalysis/glorys/2020/glorys12_barents_2020_08.nc",
+      "size_bytes": 564641722,
+      "sha256": "10570a83e600992b9bb7ef2272e6b294b76f2a5de53af084b0aa0d9fd127d468"
+    },
+    "2020-09": {
+      "path": "data/input/reanalysis/glorys/2020/glorys12_barents_2020_09.nc",
+      "size_bytes": 536477409,
+      "sha256": "44d59da7dd703a63d604440dc225ac8db2da2577a54f1a04a237d0497de83744"
+    },
+    "2020-10": {
+      "path": "data/input/reanalysis/glorys/2020/glorys12_barents_2020_10.nc",
+      "size_bytes": 518251781,
+      "sha256": "f5afa2d0f87332b01637767c1d6a3403c83b7d4467bea422d8f182d4a1301b18"
+    },
+    "2020-11": {
+      "path": "data/input/reanalysis/glorys/2020/glorys12_barents_2020_11.nc",
+      "size_bytes": 498893010,
+      "sha256": "91a7670a299e32d2631b69973ec3f97a71b22adc7e2243a2a240ff7aa51ff82f"
+    },
+    "2020-12": {
+      "path": "data/input/reanalysis/glorys/2020/glorys12_barents_2020_12.nc",
+      "size_bytes": 497020501,
+      "sha256": "dffa017fe5d77912835c8f233a13eab7b2eb63d9447b065868ced88b2c582c04"
+    },
+    "2024-01": {
+      "path": "data/input/reanalysis/glorys/2024/glorys12_barents_2024_01.nc",
+      "size_bytes": 484871594,
+      "sha256": "ad2cc1f6df6dfc1a04d8894ecfba5a84aefd2d2349e7195cb560ccb6b1b6f781"
+    },
+    "2024-07": {
+      "path": "data/input/reanalysis/glorys/2024/glorys12_barents_2024_07.nc",
+      "size_bytes": 563185232,
+      "sha256": "3e2936aba575579f6ef2ad54010d3f47c91f894b4ad9366ff729235763dadc34"
+    }
+  },
+  "annual_2020": {
+    "path": "data/input/reanalysis/glorys/2020/glorys12_barents_2020_daily.nc",
+    "size_bytes": 6906263783,
+    "sha256": "c00feb218279f2d2ba510eacf831993aae1b7f0442e66de851fd34d0080e5d3f",
+    "records": 366
+  }
+}

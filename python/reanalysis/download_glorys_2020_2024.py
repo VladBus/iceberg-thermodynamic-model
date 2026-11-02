@@ -76,7 +76,7 @@ def main() -> int:
                 "--end-datetime", f"{y}-{m}-{nd:02d}T23:59:59",
                 "--output-directory", str(out.parent),
                 "--output-filename", out.name,
-                "--netcdf-compression-level", "4", "--chunk-size-limit", "100", "--overwrite"]
+                "--netcdf-compression-level", "4", "--chunk-size-limit", "50", "--overwrite"]
         print(f"download {ym}", flush=True)
         r = subprocess.run(cmd, env=env, capture_output=True, text=True)
         if r.returncode != 0:

@@ -91,6 +91,56 @@
       "path": "data/input/reanalysis/glorys/2024/glorys12_barents_2024_07.nc",
       "size_bytes": 563185232,
       "sha256": "3e2936aba575579f6ef2ad54010d3f47c91f894b4ad9366ff729235763dadc34"
+    },
+    "2024-02": {
+      "path": "data/input/reanalysis/glorys/2024/glorys12_barents_2024_02.nc",
+      "size_bytes": 459530468,
+      "sha256": "5a485db4c2e4c44e331824732de031c577ab01b5f659de490d3fd5dcce8f7e55"
+    },
+    "2024-03": {
+      "path": "data/input/reanalysis/glorys/2024/glorys12_barents_2024_03.nc",
+      "size_bytes": 485285683,
+      "sha256": "0c8c77464f3fbfab8d05aef39856c13376c54cd84e9212e9d6f4646527dc7f18"
+    },
+    "2024-04": {
+      "path": "data/input/reanalysis/glorys/2024/glorys12_barents_2024_04.nc",
+      "size_bytes": 489560196,
+      "sha256": "1cfaaf4a1e49cfba56ffe3b8660cea917391ad386ae5954303e3e716ffc14a04"
+    },
+    "2024-05": {
+      "path": "data/input/reanalysis/glorys/2024/glorys12_barents_2024_05.nc",
+      "size_bytes": 535796608,
+      "sha256": "03153d6e7d6d8e4c7ddb0e55ecb066aaf00757853e263bbb64e7a42dc3524d87"
+    },
+    "2024-06": {
+      "path": "data/input/reanalysis/glorys/2024/glorys12_barents_2024_06.nc",
+      "size_bytes": 539523011,
+      "sha256": "1b12244072d5ed1bec89af83c0ec7b7cea562119627b15bf25c22de2e55bae0d"
+    },
+    "2024-08": {
+      "path": "data/input/reanalysis/glorys/2024/glorys12_barents_2024_08.nc",
+      "size_bytes": 566188441,
+      "sha256": "8ea7bfdeda61f3c3d266c212aa3326566e9aaa789ea8727ac9e25789f3883a0f"
+    },
+    "2024-09": {
+      "path": "data/input/reanalysis/glorys/2024/glorys12_barents_2024_09.nc",
+      "size_bytes": 529453234,
+      "sha256": "82c46da6fc9c7cd7f93b6ac72fc61e71ab40ce391dfe3cbf38c2a8e1a3f514a3"
+    },
+    "2024-10": {
+      "path": "data/input/reanalysis/glorys/2024/glorys12_barents_2024_10.nc",
+      "size_bytes": 524963126,
+      "sha256": "2d09086edf30f5777f19a048cce1fcaaf7ce29845affe677d0278ba3f2e92c86"
+    },
+    "2024-11": {
+      "path": "data/input/reanalysis/glorys/2024/glorys12_barents_2024_11.nc",
+      "size_bytes": 496475148,
+      "sha256": "fb826c70181511466915a1ab7f88bf63bf4863c8dc3199417fb644da36615771"
+    },
+    "2024-12": {
+      "path": "data/input/reanalysis/glorys/2024/glorys12_barents_2024_12.nc",
+      "size_bytes": 495213970,
+      "sha256": "4c5ab19c9bc8714f76bc098aa47c93648400f7956b4d12aa2e2194489ae4ca09"
     }
   },
   "annual_2020": {

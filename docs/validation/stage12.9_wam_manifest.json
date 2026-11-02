@@ -1,0 +1,160 @@
+{
+  "worker": "A",
+  "parallelism": 2,
+  "subset_service_error": "No service available for dataset with command subset",
+  "dataset_id": "cmems_mod_arc_wav_my_3km_PT1H-i",
+  "version": "202511",
+  "variables": [
+    "VHM0",
+    "VSDX",
+    "VSDY"
+  ],
+  "skipped": {
+    "VTPK": "read-but-unused",
+    "VMDR": "read-but-unused"
+  },
+  "months": {
+    "2020-01": {
+      "path": "data/input/reanalysis/wam/2020/wam_2020-01.nc",
+      "size_bytes": 1193538193,
+      "sha256": "7949deba5bf7918d95f245163f93f812d8c107edb7afcd7b6d851ff0f7012ea9",
+      "days": 31,
+      "rlat": 1241,
+      "rlon": 906,
+      "wall_s": 5088.7,
+      "throughput_mb_s": 0.23
+    },
+    "2020-03": {
+      "path": "data/input/reanalysis/wam/2020/wam_2020-03.nc",
+      "size_bytes": 1128700063,
+      "sha256": "a46369426f4a4f4bbb1e5da59315531ead6ba635a24205575a98201fa7cf42cc",
+      "days": 31,
+      "rlat": 1241,
+      "rlon": 906,
+      "wall_s": 4895.0,
+      "throughput_mb_s": 0.23
+    },
+    "2020-05": {
+      "path": "data/input/reanalysis/wam/2020/wam_2020-05.nc",
+      "size_bytes": 1129931344,
+      "sha256": "3ea41843ade3870e6ec373202ba9d27f9bdb2e24f9120426e009c6f5024d20bb",
+      "days": 31,
+      "rlat": 1241,
+      "rlon": 906,
+      "wall_s": 4973.5,
+      "throughput_mb_s": 0.23
+    },
+    "2020-07": {
+      "path": "data/input/reanalysis/wam/2020/wam_2020-07.nc",
+      "size_bytes": 1316319325,
+      "sha256": "ecd0f6305db3fef63be12670f1afa94bccb9926af5d1638c80e0437020fe6a22",
+      "days": 31,
+      "rlat": 1241,
+      "rlon": 906,
+      "wall_s": 5055.7,
+      "throughput_mb_s": 0.26
+    },
+    "2020-09": {
+      "path": "data/input/reanalysis/wam/2020/wam_2020-09.nc",
+      "size_bytes": 1481284447,
+      "sha256": "2ed425149e34e90a5698a433bf4624a646ff4c743fc48e9e864e9622c7701d7b",
+      "days": 30,
+      "rlat": 1241,
+      "rlon": 906,
+      "wall_s": 4761.0,
+      "throughput_mb_s": 0.31
+    },
+    "2020-11": {
+      "path": "data/input/reanalysis/wam/2020/wam_2020-11.nc",
+      "size_bytes": 1361468256,
+      "sha256": "38c7b51edfdf489179c28e9a14391eccf8bb63154e75cd85a35ca1e1715d09df",
+      "days": 30,
+      "rlat": 1241,
+      "rlon": 906,
+      "wall_s": 3805.7,
+      "throughput_mb_s": 0.36
+    },
+    "2024-01": {
+      "path": "data/input/reanalysis/wam/2024/wam_2024-01.nc",
+      "size_bytes": 1082660392,
+      "sha256": "e50b9377061a1faeb7e36a8559c743a0e24248013aa0d00ddf212cc8967757cb",
+      "days": 31,
+      "rlat": 1241,
+      "rlon": 906,
+      "wall_s": 3710.7,
+      "throughput_mb_s": 0.29
+    },
+    "2020-02": {
+      "path": "data/input/reanalysis/wam/2020/wam_2020-02.nc",
+      "size_bytes": 1104037263,
+      "sha256": "fb33513ac2b512c3ce960bc8bb8976189f086d970bbe8a655d24ef5683f106ee",
+      "days": 29,
+      "rlat": 1241,
+      "rlon": 906,
+      "wall_s": 4768.8,
+      "throughput_mb_s": 0.23
+    },
+    "2020-04": {
+      "path": "data/input/reanalysis/wam/2020/wam_2020-04.nc",
+      "size_bytes": 1040134238,
+      "sha256": "37c54341ad653eece0254e2d6b4fd97dac72e0d53cdbcdf9702c891774ce6420",
+      "days": 30,
+      "rlat": 1241,
+      "rlon": 906,
+      "wall_s": 4723.3,
+      "throughput_mb_s": 0.22
+    },
+    "2020-06": {
+      "path": "data/input/reanalysis/wam/2020/wam_2020-06.nc",
+      "size_bytes": 1191160336,
+      "sha256": "4d0836ea3aafb4551286822700912ada2fdfbc578d4fc1dc16b4f85f7a97df3a",
+      "days": 30,
+      "rlat": 1241,
+      "rlon": 906,
+      "wall_s": 4986.1,
+      "throughput_mb_s": 0.24
+    },
+    "2020-08": {
+      "path": "data/input/reanalysis/wam/2020/wam_2020-08.nc",
+      "size_bytes": 1424165847,
+      "sha256": "dbbffa30c6bfaef3b43b7044dbd80d5c8e41591d4ff4d96f72249cead60555ca",
+      "days": 31,
+      "rlat": 1241,
+      "rlon": 906,
+      "wall_s": 5154.6,
+      "throughput_mb_s": 0.28
+    },
+    "2020-10": {
+      "path": "data/input/reanalysis/wam/2020/wam_2020-10.nc",
+      "size_bytes": 1456383285,
+      "sha256": "594988d59a0fbdfcc0b60c753b392601bb65008024c2a0f42122096109f62464",
+      "days": 31,
+      "rlat": 1241,
+      "rlon": 906,
+      "wall_s": 4942.2,
+      "throughput_mb_s": 0.29
+    },
+    "2020-12": {
+      "path": "data/input/reanalysis/wam/2020/wam_2020-12.nc",
+      "size_bytes": 1265542809,
+      "sha256": "21e88b2be79545639cd0e9f9818d45687fc92d60145f0b51aa9eb06cd13e6573",
+      "days": 31,
+      "rlat": 1241,
+      "rlon": 906,
+      "wall_s": 4069.2,
+      "throughput_mb_s": 0.31
+    },
+    "2024-07": {
+      "path": "data/input/reanalysis/wam/2024/wam_2024-07.nc",
+      "size_bytes": 1238668850,
+      "sha256": "233b74bf0bd1ae6104228cb831fcbe0e244de8d8ca80641738cb0547cc84b4df",
+      "days": 31,
+      "rlat": 1241,
+      "rlon": 906,
+      "wall_s": 4639.3,
+      "throughput_mb_s": 0.27
+    }
+  },
+  "n_months": 14,
+  "total_bytes": 17413994648
+}

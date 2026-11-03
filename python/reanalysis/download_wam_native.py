@@ -36,6 +36,7 @@ def args() -> argparse.Namespace:
     p.add_argument("--lon-min", type=float, default=5.0)
     p.add_argument("--lon-max", type=float, default=80.0)
     p.add_argument("--max-months", type=int, default=0)
+    p.add_argument("--months", default="")
     return p.parse_args()
 
 
@@ -55,7 +56,7 @@ def open_remote(url: str, attempts: int = 6):
     last = None
     for i in range(attempts):
         try:
-            of = fsspec.open(url, "rb", block_size=2**20).open()
+            of = fsspec.open(url, "rb", block_size=2**20, timeout=60).open()
             return of, h5py.File(of, "r")
         except Exception as e:
             last = e
@@ -74,7 +75,7 @@ def sha256(path: Path) -> str:
 
 def main() -> int:
     a = args()
-    months = worker_months(a.worker)
+    months = [m.strip() for m in a.months.split(",") if m.strip()] if a.months else worker_months(a.worker)
     if a.max_months:
         months = months[:a.max_months]
     OUT.mkdir(parents=True, exist_ok=True)

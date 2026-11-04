@@ -1,4 +1,9 @@
-# ERA5 download
+# ERA5 download — historical notes
+
+> **Archived.** These commands and paths describe the pre-Stage-12 workflow.
+> Current products, paths, and acquisition instructions are in
+> `docs/references/data_sources.md` and
+> `docs/references/reanalysis_data_plan.md`.
 
 ## CDS API credentials
 

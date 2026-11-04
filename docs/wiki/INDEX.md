@@ -39,9 +39,10 @@ validation.
 
 ## Cross-cutting topics
 
-`topics/` contains stable historical notes such as ERA5 retrieval, Fortran
-dependencies, and the Python environment. Stage reports remain in their stage
-folders rather than being duplicated here.
+`topics/` contains stable historical notes for Fortran dependencies and the
+Python environment. The old ERA5 download note is archived at
+`docs/archive/ERA5_download.md`. Stage reports remain in their stage folders
+rather than being duplicated here.
 
 ## Current documentation
 

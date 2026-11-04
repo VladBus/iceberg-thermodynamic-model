@@ -29,10 +29,10 @@ current documentation and link to the later decision or report.
 
 ## Cross-stage topics
 
-`topics/` contains stable reference notes, including the ERA5 retrieval guide,
-Fortran dependencies, and Python environment. These are not substitutes for the
-current data contract in `docs/references/` or the current work index in
-`docs/validation/`.
+`topics/` contains stable reference notes for Fortran dependencies and the
+Python environment. These are not substitutes for the current data contract in
+`docs/references/` or the current work index in `docs/validation/`. The old ERA5
+download note was moved to `docs/archive/ERA5_download.md`.
 
 ## Related indexes
 

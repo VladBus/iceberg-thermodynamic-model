@@ -6,6 +6,8 @@ artifacts that are no longer part of current model guidance.
 ## Contents
 
 - `PROJECT_ROADMAP.md` — historical roadmap snapshot; not a current work plan.
+- `ERA5_download.md` — superseded ERA5 download notes; current instructions are
+  in `../references/data_sources.md` and `../references/reanalysis_data_plan.md`.
 - `provenance_archive/` — superseded acquisition manifests and records retained
   for traceability.
 

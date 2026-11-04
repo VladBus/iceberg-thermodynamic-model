@@ -62,6 +62,19 @@ The Stage 11 research artifact is frozen. Its boundary and limitations are in
 - **Literature and data-source assumptions:** place them in `references/`, not
   in model descriptions or validation dumps.
 
+## Documentation checks
+
+Run these before committing a documentation change:
+
+| Check | What to verify |
+| --- | --- |
+| Table shape | Header, separator, and every body row have the same number of columns. Escape `\|` inside a cell; never leave a blank line inside a table. |
+| Links | Every relative link and referenced path resolves from the file that contains it. Update indexes in the same change as a move or rename. |
+| Single source | The fact is not duplicated from an authoritative report; link to it instead. |
+| Status | Update `KNOWN_ISSUES.md` when an issue opens, changes status, or closes; add a `DECISIONS.md` record when the reason for a choice changes. |
+| History | Do not rewrite archived scientific conclusions; record corrections in the living source and link the later decision. |
+| Whitespace | `git diff --check` is clean. |
+
 ## Repository-level guidance
 
 | File | Purpose |

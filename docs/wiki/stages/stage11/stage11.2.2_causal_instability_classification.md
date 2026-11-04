@@ -7,7 +7,7 @@
 ## Evidence base (verified against repository source)
 
 - **B (CA audit)**: `src/convective_adjustment.f90`: `eps_density = 0.9e-7` (line 69); float32 2^-23 ≈ 1.19e-7 > 0.9e-7 (lines 60-63); `convect_column_f64` (lines 268-378) shows f64 path eliminates guard (line 351-352: "guard_hit ожидаемо всегда FALSE" in f64 path); guard mechanism (`line 204-207`: `iter_count > 1000`); diagnostic counters (`ca_max_iter`, `ca_guard_hits`, `ca_affected_cols` — lines 73-76, read-only, do not affect algorithm).
-- **C (Density quantification)**: float32 ULP (2^-23 ≈ 1.19e-7) << observed `ro_min = -20.07` g/cm^3 (Stage 11.1 / `docs/validation/stage11.1_ocean_stability_seasonal_initial_conditions.md`: identical value for Apr/Jul/Oct). Float32 CANNOT quantitatively explain initial-state `-20.07`.
+- **C (Density quantification)**: float32 ULP (2^-23 ≈ 1.19e-7) << observed `ro_min = -20.07` g/cm^3 (Stage 11.1 / `docs/wiki/stages/stage11/stage11.1_ocean_stability_seasonal_initial_conditions.md`: identical value for Apr/Jul/Oct). Float32 CANNOT quantitatively explain initial-state `-20.07`.
 - **D (Timeline)**: Stage 11.1 + 10.22 audit chain: Day 0 (Jan EN4 init: `ro_min = 0.0`; Apr/Jul/Oct: `ro_min = -20.07`) -> first abnormal density (Day 4 s1: rho-anomaly < 0, min -1.946690e-04; rho-flip 10.4M cells Day 3) -> CA guard saturation (Day 5 s6: `CA_after ro_nan=198` at `F_after_conv`) -> Block 200 TRANSMISSION (`B200_before ro_nan=198` with clean momentum; `B200_after u2/v2_nan=333` — density + thermal-wind injection into momentum) -> Block 210 AMPLIFICATION (rhs_max 1.12608E+16, den_min 7.05833E-04 -> zombie Day 6, 142,081 NaN cells) -> 30-day gate `steps executed = 55` (acceptance 360 NOT met; `docs/validation/stage10.20_ocean_initialization_numerical_stabilization.md`).
 - **A/I (CSV/CFL-at-event)**: `STAGE112_CFL_DIAG=true` diagnostic module (`src/stage112_cfl_diagnostics.f90`) added behind env gate (`STAGE112_CFL_DIAG` / `STAGE112_FIRST_INVALID`); 90-day baseline completed; CFL values remain << 1 at all measured points. Diagnostic CSV (`stage112_cfl_timeseries.csv`, `stage112_stability_events.csv`) requires further verification (`wind_max`, `U`/`V`/`T`/`S`/`RO` fields — potential NaN/string/initialization artifacts per 11.2.2 Section 7).
 - **E/F (wind_max / euu)**: Not fully traced (`main.f90` variable definitions unverified; `euu` scale ~1e16-1e17 — mathematical meaning/units unverified per 11.2.2 Sections 8-9).
@@ -32,7 +32,7 @@
 
 ### 3. Float32 EOS quantization as complete zombie-state root cause
 **Status: PLAUSIBLE BUT UNPROVEN (REJECTED for initial-state; STRONGLY SUPPORTED for CA-component)**
-- C evidence (REJECTED for initial-state): `-20.07` >> float32 ULP (`1.19e-07`); EN4 initial-state pathology (`docs/validation/stage11.1_ocean_stability_seasonal_initial_conditions.md`) is a separate mechanism.
+- C evidence (REJECTED for initial-state): `-20.07` >> float32 ULP (`1.19e-07`); EN4 initial-state pathology (`docs/wiki/stages/stage11/stage11.1_ocean_stability_seasonal_initial_conditions.md`) is a separate mechanism.
 - B/D evidence (STRONGLY SUPPORTED for CA-component): float32 contributes to CA failure; CA failure contributes to downstream divergence; but removing CA does NOT prevent divergence -> upstream chain (B200/B210, initial EN4) operates independently.
 - Per 11.2.2 Section 16: must classify separately; must NOT label float32 as CONFIRMED for complete zombie explanation. PLAUSIBLE BUT UNPROVEN (REJECTED component for initial-state; STRONGLY SUPPORTED component for CA).
 

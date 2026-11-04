@@ -8,6 +8,9 @@ This directory defines the repository-facing bibliography and the mapping betwee
 
 - `references.bib` — curated repository bibliography. It contains the bibliographic union of the two Zotero exports, with local machine paths removed.
 - `literature_matrix.md` — working literature-to-model matrix and metadata audit.
+- `citation_map.md` — equation-to-source map.
+- `data_sources.md` — external products, acquisition, units, and provenance.
+- `reanalysis_data_plan.md` — Stage 12 reanalysis product selection and data contract.
 - `work_references.bib` — local working copy with Zotero PDF paths is intentionally **not** part of the repository.
 
 ## Bibliography policy
@@ -37,4 +40,6 @@ The model uses external products whose exact version and acquisition metadata mu
 
 ## Status
 
-This foundation is documentation-only. It does not change the production Fortran physics. Stage 10.6.1 remains classified **B — PASS WITH LIMITATIONS**.
+This directory contains sources and data provenance, not current stage plans or
+stage reports. Stage reports belong in `docs/wiki/stages/<stage>/`; current
+implementation status belongs in `docs/model/model_physics_status.md`.

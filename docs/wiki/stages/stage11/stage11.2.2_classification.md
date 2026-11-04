@@ -72,7 +72,7 @@
 - Evidence (11.1 audit): Apr/Jul/Oct EN4 initial state has `ro_min = -20.07 g/cm³` (pre-existing); frozen-ocean control (30 d stable, ro 0.0075–0.0082) proves atmosphere alone does NOT cause crash.
 - Evidence (10.20 audit): full-coverage ERA5 file adopted (`era5_2020_01_fullcoverage_merged.nc`, 124 slices) — CASE C resolved (3-day gate PASS); residual instability (CA guard, density-first divergence) remains UNFIXED.
 - Evidence (`python/ocean/build_initial_ts.py`): nearest-neighbor interpolation + vertical piecewise-linear regridding (`vertical_regrid` line 151-201; `eckart_ro` line 121); identical `ro_min = -20.07` across seasons suggests systematic processing error, not seasonal oceanography.
-- **Note**: Per 11.2.2 Section 13: EN4 fix is NOT executed (no physics change; `docs/validation/stage11.4_en4_stabilization.md` = SETUP ONLY).
+- **Note**: Per 11.2.2 Section 13: EN4 fix is NOT executed (no physics change; `docs/wiki/stages/stage11/stage11.4_en4_stabilization.md` = SETUP ONLY).
 
 ---
 
@@ -85,4 +85,4 @@
 3. **G (W verification)** — confirm corrected W produces finite, physically ordered values (post-`end if` fix at `main.f90:868`).
 4. **E/F (wind_max/euu)** — trace `wind_max` and `euu` definitions in `main.f90`; establish physical/mathematical meaning.
 5. **11.3 timestep sensitivity** — deferred; requires approved physics-stage decision.
-6. **11.4 EN4 stabilization** — deferred; requires approved physics-stage decision (D-21 from 11.1; `docs/validation/stage11.4_en4_stabilization.md` = SETUP).
+6. **11.4 EN4 stabilization** — deferred; requires approved physics-stage decision (D-21 from 11.1; `docs/wiki/stages/stage11/stage11.4_en4_stabilization.md` = SETUP).

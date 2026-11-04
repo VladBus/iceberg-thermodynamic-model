@@ -5,8 +5,8 @@
 **Frozen source commit:** `386c850` (`11.11.2: trace boundary heat/caps, iterative CA, synthetic tide control`)
 **Git tag:** `stage11-final-frozen` — annotated tag on the freeze-record commit
 (contains source `386c850` plus this document)
-**Supersedes for physical claims:** `docs/STAGE11_CLOSURE_DECLARATION.md` (administrative closure)
-**Living state:** `docs/STAGE11_STATE.md`
+**Supersedes for physical claims:** `STAGE11_CLOSURE_DECLARATION.md` (administrative closure)
+**Historical state snapshot:** `STAGE11_STATE_SNAPSHOT.md`
 
 ## 1. What is frozen
 
@@ -98,8 +98,8 @@ Evidence anchors:
 - `docs/wiki/stages/stage11/evidence/tide_integration_test.json`
 - `docs/wiki/stages/stage11/evidence/stratification_verification.json`
 - `docs/wiki/stages/stage11/evidence/heat_first_appearance.json`
-- `docs/validation/stage11.11.2_heat_forensics_root_cause.md`
-- `docs/validation/stage11.11_physical_validation_tides.md`
+- `docs/wiki/stages/stage11/stage11.11.2_heat_forensics_root_cause.md`
+- `docs/wiki/stages/stage11/stage11.11_physical_validation_tides.md`
 
 ## 7. Data footprint
 

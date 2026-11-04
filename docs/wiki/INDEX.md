@@ -1,56 +1,52 @@
-# Wiki Index — Historical Materials by Stage
+# Historical Stage Archive
 
-Statuses: **ARCHIVED** (stage materials completed and not edited).
-
-General rules: reports are not rewritten retroactively; the current model
-state is in `docs/model/`; decisions — in `docs/DECISIONS.md`; active validation
-reports (now Stage 12) — in `docs/validation/INDEX.md`. Stage 11 is **frozen**
-(D-51, tag `stage11-final-frozen`): its narrative reports live in
-`docs/validation/` and `docs/archive/stage11/`, and its JSON evidence +
-figures are archived under `stages/stage11/evidence/` and `stages/stage11/figures/`.
+`docs/wiki/stages/` is the permanent archive for completed stage reports and
+their curated evidence. Current work does not belong here until its stage closes.
 
 ## Stages
 
-| Stage | Directory         | Files      | Content                                                                                                                                                                                |
-| ----- | ----------------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 3     | `stages/stage03/` | 5          | 3D-momentum restoration (Stage 3.3), baroclinic–barotropic coupling (3.4), real model grid (3.5)                                                                                       |
-| 4     | `stages/stage04/` | 5          | ERA5 on the TEST grid (4.1), January 2020 (4.2), convective-cycle root cause (4.3), EOS float32 precision (4.3b), precision study (4.4)                                                |
-| 5     | `stages/stage05/` | 7          | Heat-input audit (5.1), HEAT enablement (5.2), monthly validation (5.3), snowfall (5.4), multi-month integration (5.5), Q1/units audit (5.5b)                                          |
-| 6     | `stages/stage06/` | 12         | Real-grid recovery (6.1), Barents domain (6.2), data cleanup (6.2–6.3), calendar semantics (6.3b), units (6.4), ERA5 data (6.5–6.7)                                                    |
-| 7     | `stages/stage07/` | 18         | Snow/ice and dynamics stability (7.1–7.4), real grid and ice initialization (7.5–7.6C), ocean forensics and stabilization (7.7–7.7C), spin-up and geostrophic initialization (7.8–7.9) |
-| 8     | `stages/stage08/` | 8          | EN4 preprocessing (8.0), energy instability (8.1), thermal-wind correction (8.2), spin-up (8.3), operator splitting (8.4–8.6), legacy iceberg module reconstruction (8.7)              |
-| 9     | `stages/stage09/` | 12 + plots | Lagrangian iceberg model: reconstruction (9.1–9.2), verification and calibration (9.3), core and forcing-pipeline corrections (9.4A–9.4C.2); diagnostic plots `plots_stage9.4b/`       |
-| 10    | `stages/stage10/` | 28         | Complete Stage 10 modernization (10.7–10.22): basal melt validation (10.7–10.9), three-equation interface (10.10), natural convection (10.11), internal thermal evolution (10.12), low-flow closure (10.13), rescoring (10.14), operational demonstration (10.15), trajectory audit & fix (10.15.1–2), drift dynamics (10.16), melt budget audit (10.17), lateral melt audit & observational constraint (10.18A–D), production coupling (10.19), ocean initialization stabilization (10.20), CA/EOS precision (10.21), Block-200/210 stability audit (10.22). Early reports (10.4.2, 10.4.2.1, 10.5) also archived. |
-| 11    | `stages/stage11/` | evidence + figures | **FROZEN** research artifact (D-51, tag `stage11-final-frozen`). JSON evidence (`evidence/`, 153 files) + diagnostic figures (`figures/t3c2/`). Stage 11 narrative reports remain in `docs/validation/` (11.8.x) and `docs/archive/stage11/` (11.0–11.7). Freeze record: `docs/STAGE11_FREEZE.md`. |
+| Stage | Directory | Contents |
+| --- | --- | --- |
+| 3 | `stages/stage03/` | Momentum restoration, coupling, and real-grid work |
+| 4 | `stages/stage04/` | ERA5 integration, EOS precision, and convective-cycle investigations |
+| 5 | `stages/stage05/` | Heat input, snowfall, and multi-month validation |
+| 6 | `stages/stage06/` | Grid recovery, domain, calendar, units, and ERA5 records |
+| 7 | `stages/stage07/` | Snow/ice, real grid, and ocean initialization |
+| 8 | `stages/stage08/` | EN4, ocean stability, and legacy iceberg reconstruction |
+| 9 | `stages/stage09/` | Lagrangian iceberg model reconstruction and verification |
+| 10 | `stages/stage10/` | Iceberg thermodynamics modernization, audits, and observational studies |
+| 11 | `stages/stage11/` | Frozen Stage 11 reports, freeze record, evidence, and figures |
+| 12 | `stages/stage12/` | Completed Stage 12 reports and evidence through Stage 12.8 |
 
-## Topics
+Every stage folder has a `README.md` with its report index and scope.
 
-| File                             | Topic                              |
-| -------------------------------- | ---------------------------------- |
-| `topics/ERA5_download.md`        | ERA5 download and conversion       |
-| `topics/Fortran_dependencies.md` | Fortran dependencies (fpm, netcdf) |
-| `topics/Python_environment.md`   | Conda environment, tools, LSP      |
+## Stage 11 freeze
 
-## Live TODO
+Stage 11 is a **frozen research artifact**, not a production-validated ocean.
+Its N², real-tide, 90-day, and production-scheduler validation gates remain
+unresolved. The authoritative record is
+`stages/stage11/STAGE11_FREEZE.md`; the consolidated summary is
+`stages/stage11/SUMMARY.md`.
 
-- `ERA5_INTEGRATION_TODO.md` — local ERA5 integration journal (not in Git).
+## Stage 12 status
 
-## Links to current documentation
+Completed reports and evidence through Stage 12.8 are archived in
+`stages/stage12/`. Stage 12.9 daily-forcing acquisition was resumed on
+2026-11-04 and is in progress; active manifests remain in `docs/validation/`.
+Do not start additional downloads unless explicitly requested. Stage 12.8
+fallback-forcing results are exploratory lower bounds, not daily-forcing
+validation.
 
-- Current physics status: `../model/model_physics_status.md`
-- Equations and conventions: `../model/model_equation_ledger.md`
-- Active validation: `../validation/INDEX.md`
-- Decisions: `../DECISIONS.md`
-- Project plan: `../PROJECT_ROADMAP.md`
+## Cross-cutting topics
 
-## Commits
+`topics/` contains stable historical notes such as ERA5 retrieval, Fortran
+dependencies, and the Python environment. Stage reports remain in their stage
+folders rather than being duplicated here.
 
-Links to specific commits are present inside individual reports (fields
-`Git Baseline`, `Files changed`). The overall stage history is in
-`CHANGELOG.md` (repository root).
+## Current documentation
 
-## Historical reference notes
-
-See `docs/wiki/README.md` — some archived reports reference files that are no
-longer present (`promt.md`, `experiment_design.md`); these references are
-preserved as part of the historical record.
+- Current physics and equations: `docs/model/README.md`.
+- Current validation work: `docs/validation/INDEX.md`.
+- Data sources and assumptions: `docs/references/README.md`.
+- Superseded plans and provenance: `docs/archive/README.md`.
+- Full documentation map: `docs/README.md`.

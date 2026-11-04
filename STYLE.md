@@ -51,9 +51,14 @@ and `fortls` (Fortran), ruff-like care (Python), standard Markdown.
 
 ## Report naming
 
-- Stage reports: `docs/validation/stage<NN>[_<substage>]_<topic>.md` (active) and `docs/wiki/stages/stage<NN>/Stage<NN>...md` (archived).
+- Stage reports: unfinished work goes in `docs/validation/`; completed reports
+  and curated evidence go in `docs/wiki/stages/stage<NN>/` for every stage.
+  `docs/archive/` is for superseded plans and non-stage operational records, not
+  completed stage reports.
 - Design notes: `stage<NN>_<topic>_design_note.md`.
-- Indexes: `docs/validation/INDEX.md`, `docs/wiki/INDEX.md`, `README.md` (directories).
+- Indexes: `docs/validation/INDEX.md` (current validation),
+  `docs/wiki/INDEX.md` (historical archive), `docs/README.md` (documentation
+  map), and per-directory `README.md` files where present.
 
 ## Report conventions
 

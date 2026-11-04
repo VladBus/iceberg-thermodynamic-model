@@ -1,56 +1,70 @@
-# Project Documentation — Map
+# Documentation Map
 
-This page is the entry point to all documentation. From here you can descend
-from general to specific: rules → model → validation → history.
+This directory follows a short lifecycle: **working validation → completed
+stage archive → long-term archive**. Start here, then use the directory index
+closest to the document you need.
 
-## Navigation chain
+## Current sources of truth
 
-```
-README.md (root)
- └─ docs/README.md                    ← you are here
-     ├─ ../RULES.md                   development process
-     ├─ ../KNOWN_ISSUES.md            current known issues
-     ├─ ../CHANGELOG.md               history of significant changes
-     │
-     ├─ model/README.md               current model specification
-     │   ├─ model_description.md      narrative description
-     │   ├─ model_physics_status.md   physics block status
-     │   ├─ model_equation_ledger.md  equations and conventions
-     │   └─ stage10_modernization_plan.md — Stage 10 modernization plan
-     │
-     ├─ validation/INDEX.md           active validation (Stage 12; Stage 11 reports frozen)
-     │
-     ├─ wiki/README.md                historical archive
-     │   ├─ wiki/INDEX.md             index of stages 3–11
-     │   └─ stages/stage11/evidence/  archived Stage 11 JSON evidence + figures
-     │
-     ├─ DECISIONS.md                  key decisions journal
-     ├─ PROJECT_ROADMAP.md            project plan and stage status
-     ├─ STAGE11_FREEZE.md             frozen Stage 11 research artifact
-     ├─ STAGE12_PREPARATION.md        Stage 12 voxel/reanalysis plan
-     ├─ REANALYSIS_DATA_PLAN.md       GLORYS12 + ERA5 data contract
-     ├─ data_sources.md               external data products: sources, retrieval, units
-     └─ references/                   bibliography, literature matrix
-```
+| Need | Authoritative document |
+| --- | --- |
+| Current Stage 12.9 work and pause status | `validation/INDEX.md` |
+| Current physics, switches, and limitations | `model/model_physics_status.md` |
+| Equations, units, and sign conventions | `model/model_equation_ledger.md` |
+| Model narrative | `model/model_description.md` |
+| Current decisions | `DECISIONS.md` |
+| Current issues and technical constraints | `../KNOWN_ISSUES.md` |
+| Data products and literature provenance | `references/data_sources.md` and `references/README.md` |
+| Reanalysis product/data contract | `references/reanalysis_data_plan.md` |
+| Production vs legacy I/O policy | `LEGACY_IO_POLICY.md` |
 
-## Documentation layers
+The Stage 11 research artifact is frozen. Its boundary and limitations are in
+`wiki/stages/stage11/STAGE11_FREEZE.md`; it is not a production-validated ocean.
 
-| Layer             | Where                                      | What to look for                                                 |
-| ----------------- | ------------------------------------------ | ---------------------------------------------------------------- |
-| Working rules     | `AGENTS.md`, `RULES.md`, `STYLE.md` (root) | how to change the project, style, constraints                    |
-| Current model     | `docs/model/`                              | how the model works now: physics, equations, status, limitations |
-| Active validation | `docs/validation/`                         | current-stage reports (Stage 12), design notes, validation JSONs |
-| History           | `docs/wiki/`                               | archive of completed stages 3–11, forensic audits, references; Stage 11 evidence JSONs + figures live in `docs/wiki/stages/stage11/evidence/` |
-| Decisions         | `docs/DECISIONS.md`                        | why the model is structured the way it is                        |
-| Navigation        | `docs/README.md`, directory indexes        | how to move from general to specific                             |
+## Documentation areas
+
+| Directory | Role | Entry point |
+| --- | --- | --- |
+| `model/` | Current physical and mathematical model description only | `model/README.md` |
+| `references/` | Literature, data products, provenance, and formulation premises | `references/README.md` |
+| `validation/` | Temporary work for the active, unfinished validation stage only | `validation/INDEX.md` |
+| `wiki/stages/stageXX/` | Completed stage/commit reports and their curated evidence | `wiki/INDEX.md` and each stage's `README.md` |
+| `wiki/topics/` | Cross-stage historical reference notes | `wiki/README.md` |
+| `archive/` | Superseded plans and records with no active operational role | `archive/README.md` |
+
+## Where documents go
+
+- **Model physics and mathematics:** `model/`. Keep stage plans and reports out
+  of this directory.
+- **A stage is still active:** put only temporary working notes and manifests
+  in `validation/`. Do not leave completed reports there.
+- **A stage is complete:** move its report and curated evidence into
+  `wiki/stages/<stage>/`, update that stage's `README.md` and `wiki/INDEX.md`,
+  and remove only verified-regenerable temporary files.
+- **A plan, audit, or instruction is obsolete:** move it to `archive/` if it
+  still has historical value. Delete only confirmed duplicates or files with
+  no unique information, provenance, or references.
+- **Literature and data-source assumptions:** place them in `references/`, not
+  in model descriptions or validation dumps.
+
+## Repository-level guidance
+
+| File | Purpose |
+| --- | --- |
+| `../AGENTS.md` | Short agent entry point, constraints, and resource limits |
+| `../RULES.md` | Development, documentation, verification, commit, and archive rules |
+| `../STYLE.md` | Code and Markdown conventions |
+| `../README.md` | User-facing project overview |
+| `../KNOWN_ISSUES.md` | Current known issues only |
+| `../CHANGELOG.md` | Significant implementation and documentation history |
 
 ## Principles
 
-1. **One fact — one authoritative source.** Current physics status —
-   `model/model_physics_status.md`; equations — `model/model_equation_ledger.md`;
-   rules — `RULES.md`; decisions — `DECISIONS.md`; known issues —
-   `KNOWN_ISSUES.md`. Other documents link, they do not copy.
-2. **Living documents are current.** `docs/model/`, `README.md`, `AGENTS.md`,
-   `KNOWN_ISSUES.md` are updated whenever the model changes.
-3. **History is not rewritten.** `docs/wiki/` is an immutable archive; later
-   stages add links and records in `DECISIONS.md`, but do not edit old reports.
+1. One current fact has one authoritative source. Other documents link to it.
+2. Keep current status concise; stage reports hold the details and evidence.
+3. Preserve scientific history and provenance. Do not rewrite old conclusions;
+   record corrections in current model documentation and `DECISIONS.md`.
+4. Update incoming references and indexes whenever a document moves or is
+   renamed. Do not use the archive or wiki as a substitute for current status.
+5. Work within the WSL2 memory budget: avoid parallel downloads, builds,
+   analyses, and broad repository scans. See `../RULES.md`.

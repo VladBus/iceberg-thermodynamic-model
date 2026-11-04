@@ -1,3 +1,5 @@
+# Data Sources — External Input and Observational Products
+
 ## Production I/O source of truth (Stage 11.10)
 
 NetCDF is the only production input path. Legacy `.DAT`/`.bar`/`.ice`/`GRM2`
@@ -11,8 +13,6 @@ symlinks were removed. See `docs/LEGACY_IO_POLICY.md`.
 | ERA5 atmosphere | `data/input/processed/era5/**/*merged.nc` |
 | Sea ice | `data/input/processed/ice/seaice_initial.nc` |
 | Tides | `data/input/processed/tides/tides.nc` (null-tides; plan pending) |
-
-# Data Sources — External Input and Observational Products
 
 This page is the **single authoritative index of external data products** used
 by the model: forcing, initialization, grid, and observational validation
@@ -32,8 +32,9 @@ the cited stage reports; the equation/unit conventions live in
 
 | Product | Version / spec | Used for | Source (URL / DOI) | Local raw path | Regeneration / download | Units in model | Authoritative report |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| ERA5 | ECMWF ERA5, hourly, single levels (u10, v10, msl, t2m, d2m, tcc, precip, sf) | Atmospheric forcing (wind, pressure, temperature, humidity, clouds, snowfall) | Copernicus Climate Data Store (CDS), `reanalysis-era5-single-levels`; requires `~/.cdsapirc` credentials | `data/input/raw/era5/2020/` | `python python/era5/download_era5.py --year 2020 --month 1` (see script header for domain variants) | u10/v10 m/s → ×100 → cm/s; msl Pa → ×0.01 → hPa; t2m K → −273.15 → °C | `docs/wiki/stages/stage06/Stage6.5_era5_barents_data.md`, `docs/wiki/stages/stage06/Stage6.5b_era5_forcing_impact.md`, `Stage6.6_snowfall_forcing.md` |
-| GLORYS12 (Stage 12) | Copernicus `GLOBAL_MULTIYEAR_PHY_001_030`, daily 1/12°, dataset `cmems_mod_glo_phy_my_0.083deg_P1D-m`; DOI `10.48670/moi-00021` | Prescribed ocean T/S/currents/SSH/sea ice for the Stage 12 voxel iceberg | Copernicus Marine Data Store via `copernicusmarine` CLI; credentials outside git | planned `data/input/raw/reanalysis/glorys12/2020/` | `python python/reanalysis/copernicus_probe.py` (catalogue only); acquisition in Stage 12.1 per `docs/REANALYSIS_DATA_PLAN.md` | `thetao` °C; `so` 1e−3 → mass fraction at reader; `uo/vo` m/s; `zos` m; `siconc` fraction; `sithick` m | `docs/REANALYSIS_DATA_PLAN.md`, `docs/STAGE12_PREPARATION.md` |
+| ERA5 | ECMWF ERA5, hourly single-level fields retrieved from CDS and aggregated locally to daily means (u10, v10, t2m, d2m, tcc, msl, sf) | Atmospheric forcing (wind, pressure, temperature, humidity, clouds, snowfall) | Copernicus Climate Data Store (CDS), `reanalysis-era5-single-levels`; requires `~/.cdsapirc` credentials | `data/input/reanalysis/era5/{2020,2024}/era5_YYYY_MM_daily.nc` | `python python/era5/download_era5_daily.py --months YYYY-MM` (hourly retrieval → daily mean; `sf` daily total / 86400; manifest `docs/validation/stage12.9_era5_manifest.json`) | u10/v10 m/s → ×100 → cm/s; msl Pa → ×0.01 → hPa; t2m K → −273.15 → °C | `docs/validation/INDEX.md`, `docs/wiki/stages/stage06/Stage6.5_era5_barents_data.md`, `docs/wiki/stages/stage06/Stage6.5b_era5_forcing_impact.md`, `Stage6.6_snowfall_forcing.md` |
+| GLORYS12 (Stage 12) | Copernicus `GLOBAL_MULTIYEAR_PHY_001_030`, daily 1/12°, dataset `cmems_mod_glo_phy_my_0.083deg_P1D-m`; DOI `10.48670/moi-00021` | Prescribed ocean T/S/currents/SSH/sea ice for the Stage 12 voxel iceberg | Copernicus Marine Data Store via `copernicusmarine` CLI; credentials outside git | `data/input/reanalysis/glorys/{2020,2024}/glorys12_barents_YYYY_MM.nc` | `python python/reanalysis/download_glorys_2020_2024.py` (monthly acquisition; see script and Stage 12.1/12.7a reports) | `thetao` °C; `so` 1e−3 → mass fraction at reader; `uo/vo` m/s; `zos` m; `siconc` fraction; `sithick` m | `docs/references/reanalysis_data_plan.md`, `docs/wiki/stages/stage12/README.md` |
+| Arctic WAM (Stage 12.9) | Copernicus Arctic wave reanalysis, monthly native fields (`Hs`, `Tp`, direction, Stokes components as available) | Wave erosion and optional Stokes drift forcing (gated) | Copernicus Marine Data Store via `copernicusmarine` CLI; credentials outside git | `data/input/reanalysis/wam/{2020,2024}/wam_YYYY-MM.nc` | `python python/reanalysis/download_wam_native.py` (monthly acquisition; manifests under `data/input/reanalysis/wam/`) | wave height m; period s; direction degrees; Stokes m/s | `docs/wiki/stages/stage12/stage12.6b_wave_erosion.md`, `docs/validation/INDEX.md` |
 | EN4 | Met Office Hadley Centre EN4.2.2, monthly analysis (`g10`, 1°×1°, 42 levels) | Ocean initial T/S (2020-01-01) | `https://www.metoffice.gov.uk/hadobs/en4/` (yearly zips `EN.4.2.2.analyses.g10.YYYY.zip`) | `data/input/raw/ocean/EN.4.2.2.f.analysis.g10.202001.nc` | documented in `docs/wiki/stages/stage07/Stage7.7_Ocean_Dataset_Selection.md` §2.1 | °C, PSU; converted to model salinity mass fraction 0.033–0.035 | `docs/wiki/stages/stage07/Stage7.7_Ocean_Dataset_Selection.md`, `Stage7.7_Realistic_Ocean_Initialisation.md` |
 | IBCAO | IBCAO V5.2, 400 m bathymetry GeoTIFF, EPSG:3996 | Real model grid reconstruction (`grid.nc` production; legacy .DAT offline) | NOAA/NCEI IBCAO v5.2 (GeoTIFF 400 m) | `data/input/raw/ibcao/ibcao_v5_2_2026_depth_400m.tiff` | `python python/grid/build_ibcao_grid.py` | m (bathymetry); grid in EPSG:3996 | `docs/wiki/stages/stage07/Stage7.6A_IBCAO_real_grid_reconstruction.md` |
 | OSI-SAF SIC | OSI-SAF Sea Ice Concentration CDR v3.1 (EASE2-250) | Real sea-ice initialization (2020-01-01) | EUMETSAT OSI-SAF `ice_conc_nh_ease2-250_cdr-v3p1` | `data/input/raw/ice/osisaf/ice_conc_nh_ease2-250_cdr-v3p1_202001011200.nc` | documented in `docs/wiki/stages/stage07/Stage7.6C.1_Real_ice_initialization.md` | fraction 0–1 | `docs/wiki/stages/stage07/Stage7.6C.1_Real_ice_initialization.md` |
@@ -103,9 +104,16 @@ derived CSV is the reproducible artifact).
 
 ### 3.2 ERA5
 
+**Acquisition status (2026-11-04):** Stage 12.9 daily-forcing acquisition was
+resumed by explicit user request. Complete months are recorded in
+`docs/validation/stage12.9_era5_manifest.json`; do not start additional
+downloads unless the user asks.
+
 ```bash
 conda run -n iceberg-thermodynamic-model \
-    python python/era5/download_era5.py --year 2020 --month 1
+    python python/era5/download_era5_daily.py --months 2020-04
+# The script retrieves hourly ERA5 from CDS and writes monthly daily means:
+#   data/input/reanalysis/era5/<year>/era5_<year>_<month>_daily.nc
 # CDS credentials: ~/.cdsapirc (NEVER commit; gitignored)
 ```
 
@@ -144,7 +152,8 @@ Full detail: `docs/model/model_equation_ledger.md`, `AGENTS.md` (Unit Systems).
 
 | Product | Stage report / document |
 | --- | --- |
-| ERA5 | `docs/wiki/stages/stage06/Stage6.5_era5_barents_data.md`, `Stage6.6_snowfall_forcing.md`; downloader `python/era5/download_era5.py` |
+| ERA5 | `docs/validation/INDEX.md`, `docs/validation/stage12.9_era5_manifest.json`; historical: `docs/wiki/stages/stage06/Stage6.5_era5_barents_data.md`, `Stage6.6_snowfall_forcing.md`; downloader `python/era5/download_era5_daily.py` |
+| GLORYS12 / WAM | `docs/references/reanalysis_data_plan.md`, `docs/wiki/stages/stage12/README.md`; downloaders `python/reanalysis/download_glorys_2020_2024.py`, `python/reanalysis/download_wam_native.py` |
 | EN4 | `docs/wiki/stages/stage07/Stage7.7_Ocean_Dataset_Selection.md`, `Stage7.7_Realistic_Ocean_Initialisation.md`; reader `src/initial_ocean_reader.f90` |
 | IBCAO | `docs/wiki/stages/stage07/Stage7.6A_IBCAO_real_grid_reconstruction.md`, `Stage7.6B_Real_grid_input_reconstruction.md`; builder `python/grid/build_real_grid_inputs.py` |
 | OSI-SAF SIC / C3S SIT | `docs/wiki/stages/stage07/Stage7.6C.1_Real_ice_initialization.md` |

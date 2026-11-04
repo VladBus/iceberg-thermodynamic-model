@@ -2,7 +2,8 @@
 
 Stage 10 modernization of the iceberg thermodynamics is **complete**. All reports have been archived here.
 
-This directory contains all 25 Stage 10 validation reports (10.7 through 10.22).
+This directory contains 27 Stage 10 validation reports (10.7 through 10.22),
+three early validation reports, and the historical Stage 10 modernization plan.
 
 ## Reports (25)
 
@@ -46,11 +47,14 @@ These reports were created before the `docs/validation/` structure was adopted:
 | `Stage10.4.2_Independent_monotonicity_validation.md` | Stage 10.4.2 — Independent Monotonicity Validation |
 | `Stage10.5_Ocean_Thermal_Forcing.md` | Stage 10.5 — Ocean Thermal Forcing |
 
+The historical plan/journal is `stage10_modernization_plan.md`; it is not a
+current work plan or model specification.
+
 ## Status
 
 - **ARCHIVED** — stage materials are complete and not edited retroactively.
 - Current model state: `../../../model/`; decisions: `../../../DECISIONS.md`.
-- Active validation reports (Stage 11+): `../../../validation/INDEX.md`.
+- Active validation workspace (Stage 12.9): `../../../validation/INDEX.md`.
 - General navigation: `../../README.md` → `../../INDEX.md`.
 
 ---
@@ -81,5 +85,5 @@ Stage 10 (iceberg thermodynamics modernization) spanned **10.7–10.22** and ach
 
 - **Current model specification**: `../../../model/`
 - **Decisions**: `../../../DECISIONS.md`
-- **Active validation (Stage 11)**: `../../../validation/INDEX.md`
+- **Active validation workspace (Stage 12.9)**: `../../../validation/INDEX.md`
 - **General navigation**: `../../README.md` → `../../INDEX.md`

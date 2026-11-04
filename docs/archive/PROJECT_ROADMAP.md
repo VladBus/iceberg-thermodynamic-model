@@ -1,10 +1,15 @@
 # Project Roadmap
 
-**Updated:** 2026-10-29
-**Current scientific stage:** **Stage 11 FROZEN (research artifact); Stage 12.0 preparation complete.** Stage 12 implementation has **not started**; Stage 12 uses GLORYS12 + ERA5 reanalysis (D-51).
-**Current status:** Stages 10.14–11.11.2 committed at `386c850`; Stage 11 freeze tag `stage11-final-frozen`. **11.11.2:** first hot cell day10 i1/j93; H1-H3 rejected; N² fails at 9,813 interfaces; 30-day tide incomplete. These are frozen limitations, not production claims. Historical "Stage 12 NO-GO" labels in the stage-by-stage sections below predate D-51 and are retained as stage history.
-**Test suite:** 77 Fortran test source files (`ls test/*.f90 | wc -l`); 77 executable test targets (`grep -lE '^\s*program ' test/*.f90 | wc -l`). Counting method (Stage 11.8.0 T0): every current `test/*.f90` holds a top-level `program`, so file count == target count (verified 2026-10-29).
-**Stage 11.5H-RC COMPLETE** (release-candidate gate: self-contained production scheduler, docs synced D-22…D-28). Plan: 11.8.0 diagnostic ladder (T0–T6) → 11.8A validation → 11.8B audit → 11.9 closure → 12.0 voxel (planning open; implementation not started, D-28).
+> **Archived snapshot:** this roadmap contains superseded plans and historical
+> stage summaries. Do not use it to choose current work; see
+> `../validation/INDEX.md` for active work and `../wiki/INDEX.md` for completed
+> stage records. Some citations below preserve the paths used when this
+> snapshot was written.
+
+**Updated:** 2026-11-03
+**Current scientific stage:** **Stage 11 FROZEN (research artifact); Stage 12 active.** Stage 12.8's 24-run Barents matrix is the latest completed validation stage. Stage 12.9 daily-forcing acquisition is incomplete and paused; do not resume it unless explicitly requested.
+**Current status:** Stage 12 uses offline/prescribed reanalysis forcing for a voxel iceberg. The Stage 12.8 matrix used documented monthly-GLORYS/constant-atmosphere fallbacks, so its drift and lifetime results are lower bounds, not daily-forcing validation. Stage 11 limitations remain frozen; see `STAGE11_FREEZE.md`, `model/model_physics_status.md`, and `KNOWN_ISSUES.md`.
+**Roadmap note:** Detailed stage-by-stage entries below are historical planning and completion records; they are not the current status source. Use this header and `validation/INDEX.md` for the latest stage state.
 
 ## Completed foundation
 
@@ -872,7 +877,7 @@ production scheduler change (T-39 remains BLOCKED).
   incomplete. **This is a frozen Stage 11 limitation** (not a Stage 12.0
   blocker); D-51 moves Stage 12 to GLORYS12 + ERA5.
 - Report: `docs/validation/stage11.11.2_heat_forensics_root_cause.md`; freeze:
-  `docs/STAGE11_FREEZE.md`.
+  `docs/wiki/stages/stage11/STAGE11_FREEZE.md`.
 
 ### Stage 11.8 Prerequisite: Ocean Stabilization (MANDATORY GATE)
 

@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-27 (freeze addendum 2026-10-29)
 **Status:** **Stage 11 CLOSED administratively; FROZEN as a research artifact.**
-Freeze authority: `docs/STAGE11_FREEZE.md` (commit `386c850`, tag
+Freeze authority: `docs/wiki/stages/stage11/STAGE11_FREEZE.md` (commit `386c850`, tag
 `stage11-final-frozen`). data/runs cleanup was executed in Stage 11.10
 (26 runs / 0.510 GB); no closure dependency.
 
@@ -27,11 +27,11 @@ part of the N=1 closure claim.
 
 ## Evidence
 
-- `docs/STAGE11_SUMMARY.md`
-- `docs/validation/stage11.8B_runs_inventory.md`
+- `docs/wiki/stages/stage11/SUMMARY.md`
+- `docs/wiki/stages/stage11/stage11.8B_runs_inventory.md`
 - `docs/wiki/stages/stage11/evidence/runs_inventory_final.json`
 - `docs/wiki/stages/stage11/evidence/default_eos80_verification.json`
 - `docs/wiki/stages/stage11/evidence/reproducibility_audit.json`
 - `docs/MIGRATION_GUIDE_EOS80_DEFAULT.md`
-- `docs/STAGE11_CLOSURE_DECLARATION.md`
-- `docs/validation/stage11.9_final_review.md`
+- `docs/wiki/stages/stage11/STAGE11_CLOSURE_DECLARATION.md`
+- `docs/wiki/stages/stage11/stage11.9_final_review.md`

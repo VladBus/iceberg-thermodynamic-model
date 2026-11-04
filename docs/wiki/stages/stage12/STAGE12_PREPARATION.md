@@ -1,14 +1,16 @@
 # Stage 12 Preparation — Voxel Iceberg on Reanalysis Forcing
 
-**Status:** **STAGE 12.8 COMPLETE (24/24 runs) with documented monthly-GLORYS/constant-atmosphere fallbacks. Stage 12.9 thesis writing: GO with fallback labeling; quantitative daily-forcing claims remain NO-GO.**
-**Date:** 2026-10-29
-**Base:** `386c850` (Stage 11 frozen; tag `stage11-final-frozen`)
-**Implementation:** Stage 12.2 reader/provider, 12.3 voxel core **and 12.4
-Crank–Nicolson + three-equation Stefan are DONE** (`src/voxel_iceberg.f90`,
-`src/voxel_thermal_solver.f90`, gated in `src/iceberg_thermodynamics.f90`
-behind `VOXEL_ENABLED` default OFF → bulk path bit-identical; D-53/D-54/D-55).
-Next is **12.7a** validation (real wave forcing deferred until the Arctic
-WAM subset is staged); `fpm.toml`/CI unchanged (tests auto-discovered).
+**Status:** **Stage 12.8 COMPLETE (24/24 exploratory runs)** with documented
+monthly-GLORYS/constant-atmosphere fallbacks. Stage 12.9 thesis writing may
+proceed with explicit fallback labeling; quantitative daily-forcing claims
+remain NO-GO. Daily-forcing acquisition was resumed on 2026-11-04 and is in
+progress; do not start additional downloads unless explicitly requested.
+**Updated:** 2026-11-04
+**Base:** Stage 11 freeze tag `stage11-final-frozen`.
+**Implementation:** Stage 12.2–12.8 are complete as listed in
+`docs/validation/INDEX.md`. The voxel path remains offline/prescribed and gated;
+see `docs/model/model_physics_status.md` and `docs/DECISIONS.md` for current
+switches and formulation status.
 
 ## 1. Objective
 
@@ -33,7 +35,7 @@ diagnostics, and a documented observational comparison.
 | Coupling | offline/prescribed, one-way | fixed for Stage 12 |
 
 The Stage 11 N=24 ocean is **not** the Stage 12 ocean of record. It remains a
-frozen numerical cross-check (`docs/STAGE11_FREEZE.md`).
+frozen numerical cross-check (`docs/wiki/stages/stage11/STAGE11_FREEZE.md`).
 
 Fallback/cross-check only: `ARCTIC_MULTIYEAR_PHY_002_003` (TOPAZ4, daily).
 Do not mix products inside one run.
@@ -161,8 +163,8 @@ caveat** (`stage12.8_barents2020_matrix.md`).
 
 ## 8. References
 
-- `docs/STAGE11_FREEZE.md`
-- `docs/REANALYSIS_DATA_PLAN.md`
+- `docs/wiki/stages/stage11/STAGE11_FREEZE.md`
+- `docs/references/reanalysis_data_plan.md`
 - `docs/DECISIONS.md` D-51
 - `docs/references/Iceberg/Iceberg_Voxel_Thermal_Model_8.pdf`
-- `docs/data_sources.md`
+- `docs/references/data_sources.md`

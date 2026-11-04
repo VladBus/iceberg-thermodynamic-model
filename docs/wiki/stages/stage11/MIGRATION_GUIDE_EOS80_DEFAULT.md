@@ -18,7 +18,7 @@ correction:
   mean max |U| −0.14 %, KE30/KE15 +0.33 %, CA nmix −12.85 %.
 
 D-29 therefore **PROMOTES EOS-80 for the N=1 30-day validated model**. See
-`docs/validation/stage11.8A_phase2_seasonal_results.md` and
+`docs/wiki/stages/stage11/stage11.8A_phase2_seasonal_results.md` and
 `docs/DECISIONS.md` (D-47/D-48).
 
 ## What changed

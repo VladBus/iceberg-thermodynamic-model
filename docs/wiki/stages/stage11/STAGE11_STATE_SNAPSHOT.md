@@ -1,5 +1,10 @@
 # Stage 11 — Living State (≤150 lines)
 
+> Historical snapshot from 2026-10-29. Its “next stage” and working-status
+> entries are superseded; Stage 11 is frozen and Stage 12 is active. Use
+> `STAGE11_FREEZE.md` for the freeze boundary and `docs/validation/INDEX.md`
+> for current work status.
+
 **Updated:** 2026-10-29
 **Base commit:** `386c850` (Stage 11.11.2 source); freeze tag includes the Stage 12.0 record.
 **Branch policy:** `main` = frozen Stage 11 research artifact; no Stage 11 physics/EOS/scheduler changes under this label (D-51).
@@ -9,7 +14,7 @@
 | Field | Value |
 |---|---|
 | Current stage | **Stage 11 FROZEN** (research artifact); **Stage 12.0 preparation** complete; Stage 12 implementation not started |
-| Freeze authority | `docs/STAGE11_FREEZE.md`; decision D-51 |
+| Freeze authority | `STAGE11_FREEZE.md`; decision D-51 |
 | EOS default | **EOS80** (`EOS_MODE` unset); `EOS_MODE=LEGACY` explicit fallback |
 | I/O default | **NetCDF only production path**; root legacy symlinks removed |
 | Physical baseline | **D-50:** 90-day no NaN/S<0/T>30; drift <1e-4; N² ≥ −ε; N=1 not final |
@@ -136,13 +141,13 @@ frozen as a research artifact; Stage 12 uses GLORYS12 + ERA5 (D-51).
 - T-19: `docs/wiki/stages/stage11/evidence/t19_cds_probe_v2.json`, `snowfall_period_result.json`
 - Sponge tests: `t3c3_sponge_results.json`, `t3c3_sponge2_results.json`,
   `t3c3_sponge3_results.json`
-- 11.8B: `default_eos80_verification.json`, `reproducibility_audit.json`, `runs_inventory_final.json`; `docs/MIGRATION_GUIDE_EOS80_DEFAULT.md`, `docs/STAGE11_SUMMARY.md`, `docs/STAGE11_CLOSURE_CHECKLIST.md`
+- 11.8B: `default_eos80_verification.json`, `reproducibility_audit.json`, `runs_inventory_final.json`; `MIGRATION_GUIDE_EOS80_DEFAULT.md`, `SUMMARY.md`, `STAGE11_CLOSURE_CHECKLIST.md`
 - Regression: full `fpm test` battery + strict build; Python suites.
 
 ## Next action
 
 1. **Stage 11 FROZEN** (2026-10-29): commit `386c850`, tag
-   `stage11-final-frozen`; authority `docs/STAGE11_FREEZE.md`.
+   `stage11-final-frozen`; authority `STAGE11_FREEZE.md`.
 2. **Open physical gates are frozen limitations, not solved:** N² min
    −0.01639 s⁻² (9,813 interfaces), no real tides/30-day tide validation, no
    90-day validated run, T-39 production scheduler still BLOCKED.

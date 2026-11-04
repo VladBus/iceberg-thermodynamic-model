@@ -8,7 +8,7 @@
 
 Stage 11 is **FROZEN as a research artifact** at commit `386c850`, tag
 `stage11-final-frozen`. The administrative closure below is historical; the
-authoritative physical scope and limitations are in `docs/STAGE11_FREEZE.md`.
+authoritative physical scope and limitations are in `docs/wiki/stages/stage11/STAGE11_FREEZE.md`.
 Stage 11 is **not a production-validated ocean**: the N=24 no-tide 30-day run
 is bounded, but N² fails (9,813 interfaces), real tides/30-day tide validation
 are absent, and 90-day operation is not validated. Stage 12 uses GLORYS12 +
@@ -23,7 +23,7 @@ ERA5 reanalysis under D-51; Stage 12 implementation has not started.
 **Closure commit:** `ab10490` (Stage 11 closure package)
 **Freeze source commit:** `386c850`; the annotated tag `stage11-final-frozen`
 points to the Stage 12.0 freeze-record commit.
-**Final review:** `docs/validation/stage11.9_final_review.md`
+**Final review:** `docs/wiki/stages/stage11/stage11.9_final_review.md`
 
 ## Achievements
 
@@ -71,6 +71,6 @@ Closure is based on the validated N=1 30-day scope; production-scheduler and
 ---
 
 **Closure timestamp:** 2026-10-27T01:20:00+03:00
-**Reference:** `docs/STAGE11_SUMMARY.md`,
-`docs/STAGE11_CLOSURE_CHECKLIST.md`,
-`docs/STAGE12_PREPARATION.md`
+**Reference:** `SUMMARY.md`,
+`STAGE11_CLOSURE_CHECKLIST.md`,
+`docs/wiki/stages/stage12/STAGE12_PREPARATION.md`

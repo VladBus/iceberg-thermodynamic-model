@@ -109,8 +109,8 @@ Full `fpm test` battery green (model path unaffected); no `src/`ocean, `app`,
   `test/test_iceberg_forcing_reanalysis.f90`.
 - Modified: `src/iceberg_forcing.f90` (added provider integration + optional
   `time_sec`; model path unchanged/OFF default).
-- Doc: this report, D-52, `docs/STAGE12_PREPARATION.md`,
-  `docs/REANALYSIS_DATA_PLAN.md`.
+- Doc: this report, D-52, `docs/wiki/stages/stage12/STAGE12_PREPARATION.md`,
+  `docs/references/reanalysis_data_plan.md`.
 
 ## GO / NO-GO for Stage 12.3 (voxel thermal core)
 

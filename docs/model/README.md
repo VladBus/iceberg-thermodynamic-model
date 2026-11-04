@@ -1,8 +1,8 @@
 # Current Model Documentation
 
-This directory describes **how the model works now**. The documents here are
-living: they are updated whenever the model changes and are not a historical
-archive. History lives in `docs/wiki/`.
+This directory describes **how the model works now**: physical formulations,
+equations, units, switches, and numerical schemes. It contains no stage plans
+or historical reports. History lives in `docs/wiki/`.
 
 ## Authoritative sources (one fact — one source)
 
@@ -11,23 +11,24 @@ archive. History lives in `docs/wiki/`.
 | `model_description.md`          | integral narrative description: formulation, components, data, processes, numerical implementation             |
 | `model_physics_status.md`       | status of every physics block: implemented/experimental/limitations; what is on by default, what is selectable |
 | `model_equation_ledger.md`      | mathematical specification: equations, variables, units, sign conventions, coefficients, EOS, code links       |
-| `numerical_scheme_inventory.md` | authoritative (Stage 11.3C forensic) inventory of the actual numerical schemes                                |
-| `stage10_modernization_plan.md` | Stage 10 modernization plan and journal (**historical** — Stage 10 complete)                                   |
+| `numerical_scheme_inventory.md` | inventory of the numerical schemes currently implemented |
 
 ## Current development status
 
 - **Stage 11 — FROZEN** research artifact (D-51, tag `stage11-final-frozen`;
-  see `../STAGE11_FREEZE.md`). The prognostic ocean is **not** a
+  see `../wiki/stages/stage11/STAGE11_FREEZE.md`). The prognostic ocean is **not** a
   production-validated ocean (N²/tides/90-day gates unresolved).
-- **Stage 12 — active**, offline/prescribed **GLORYS12 + ERA5** forcing for a
-  voxel iceberg (D-51); see `../STAGE12_PREPARATION.md` and
-  `../REANALYSIS_DATA_PLAN.md`. No Stage 12 Fortran reader written yet
-  (Stage 12.1 reconnaissance complete).
+- **Stage 12 — active**, offline/prescribed reanalysis forcing for a voxel
+  iceberg (D-51). Stage 12.8's Barents matrix is the latest completed validation
+  stage; daily-forcing acquisition was resumed on 2026-11-04 and is in progress.
+  Do not infer quantitative daily-forcing validation from the fallback runs. See
+  `../references/reanalysis_data_plan.md` and
+  `../validation/INDEX.md`.
 
 ## Related directories
 
 - Active Stage 12 validation reports: `../validation/INDEX.md`
-- Historical stage reports 3–11: `../wiki/INDEX.md`
+- Historical stage reports: `../wiki/INDEX.md`
 - Key decisions: `../DECISIONS.md`
 - Current known issues: `../../KNOWN_ISSUES.md`
 

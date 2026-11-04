@@ -35,7 +35,12 @@ under atmospheric, oceanic, bathymetric, and sea-ice forcing.
 
 ## 📑 Project status
 
-- **Current stage:** **Stage 11 FROZEN** as a research artifact (tag `stage11-final-frozen`); **Stage 12 active**: 12.0 prep + 12.1 GLORYS12 reconnaissance + **12.2 reanalysis reader & ocean provider** (`OCEAN_SOURCE` default `model` → Stage 11 bit-identical; D-51/D-52) + **12.3 voxel thermal core COMPLETE** (`VOXEL_ENABLED` default OFF → bulk untouched; D-53). Stage 12 uses GLORYS12 + ERA5 reanalysis (one-way); **12.4 Crank–Nicolson + three-equation Stefan COMPLETE** (`ICEBERG_THETA`, PCG, Rannacher, per-depth profile, `Tf(S,P)`, `u_rel`; `VOXEL_ENABLED` default OFF → bulk untouched; D-54/D-55); **12.5 voxel geometry→drift COMPLETE** (mass/draft/frontal A_sub_proj/A_sail, GM estimate; `VOXEL_ENABLED` default OFF → bulk untouched; D-56); **12.6a lat/lon drift + `iceberg_run` + real(8) COMPLETE** (D-57; IBCAO grounding; NetCDF); **12.6b wave erosion (Bigg 1997) + optional Stokes COMPLETE** (NEMO-verified formula, gates default OFF; D-58); **12.7a Enderlin23 Antarctic hindcast COMPLETE** (190 icebergs; bulk median ratio 1.39; voxel column superseded); **12.7.audit COMPLETE** (fixed-cube voxel bug fixed; residual structural deficit); **12.7b autonomous voxel air balance COMPLETE** (D-61); **12.7c free-convection closure COMPLETE** (D-62); **12.8 Barents 2020 matrix COMPLETE 24/24** with monthly-GLORYS/constant-atmosphere fallbacks (D-63; 7 figures; drift/lifetime are lower bounds); 12.9 thesis writing GO with caveats. Sea-ice drag/tides not started. EOS-80 remains default. See `docs/STAGE11_FREEZE.md`, `docs/STAGE12_PREPARATION.md`, `docs/validation/stage12.2_reanalysis_reader.md`, `docs/validation/stage12.3_voxel_thermal_core.md`, `docs/validation/stage12.4_crank_nicolson_stefan.md`, `docs/validation/stage12.5_voxel_geometry_drift.md`, `docs/validation/stage12.6a_drift_latlon_iceberg_run.md`, `docs/validation/stage12.6b_wave_erosion.md`, `docs/validation/stage12.7a_enderlin23_hindcast.md`, `docs/validation/stage12.7.audit_voxel_melt.md`, `docs/validation/stage12.7b_autonomous_air.md`, `docs/validation/stage12.7c_free_convection.md`, `docs/validation/stage12.8_barents2020_matrix.md`.
+- **Current stage:** **Stage 11 FROZEN** as a research artifact (tag `stage11-final-frozen`); **Stage 12 active**: 12.0 prep + 12.1 GLORYS12 reconnaissance + **12.2 reanalysis reader & ocean provider** (`OCEAN_SOURCE` default `model` → Stage 11 bit-identical; D-51/D-52) + **12.3 voxel thermal core COMPLETE** (`VOXEL_ENABLED` default OFF → bulk untouched; D-53). Stage 12 uses GLORYS12 + ERA5 reanalysis (one-way); **12.4 Crank–Nicolson + three-equation Stefan COMPLETE** (`ICEBERG_THETA`, PCG, Rannacher, per-depth profile, `Tf(S,P)`, `u_rel`; `VOXEL_ENABLED` default OFF → bulk untouched; D-54/D-55); **12.5 voxel geometry→drift COMPLETE** (mass/draft/frontal A_sub_proj/A_sail, GM estimate; `VOXEL_ENABLED` default OFF → bulk untouched; D-56); **12.6a lat/lon drift + `iceberg_run` + real(8) COMPLETE** (D-57; IBCAO grounding; NetCDF); **12.6b wave erosion (Bigg 1997) + optional Stokes COMPLETE** (NEMO-verified formula, gates default OFF; D-58); **12.7a Enderlin23 Antarctic hindcast COMPLETE** (190 icebergs; bulk median ratio 1.39; voxel column superseded); **12.7.audit COMPLETE** (fixed-cube voxel bug fixed; residual structural deficit); **12.7b autonomous voxel air balance COMPLETE** (D-61); **12.7c free-convection closure COMPLETE** (D-62); **12.8 Barents 2020 matrix COMPLETE 24/24** with monthly-GLORYS/constant-atmosphere fallbacks (D-63; 7 figures; drift/lifetime are lower bounds); 12.9 thesis writing GO with caveats. Sea-ice drag/tides not started. EOS-80 remains default. See `docs/wiki/stages/stage11/STAGE11_FREEZE.md`, `docs/wiki/stages/stage12/STAGE12_PREPARATION.md`, `docs/wiki/stages/stage12/stage12.2_reanalysis_reader.md`, `docs/wiki/stages/stage12/stage12.3_voxel_thermal_core.md`, `docs/wiki/stages/stage12/stage12.4_crank_nicolson_stefan.md`, `docs/wiki/stages/stage12/stage12.5_voxel_geometry_drift.md`, `docs/wiki/stages/stage12/stage12.6a_drift_latlon_iceberg_run.md`, `docs/wiki/stages/stage12/stage12.6b_wave_erosion.md`, `docs/wiki/stages/stage12/stage12.7a_enderlin23_hindcast.md`, `docs/wiki/stages/stage12/stage12.7.audit_voxel_melt.md`, `docs/wiki/stages/stage12/stage12.7b_autonomous_air.md`, `docs/wiki/stages/stage12/stage12.7c_free_convection.md`, `docs/wiki/stages/stage12/stage12.8_barents2020_matrix.md`.
+- **Daily forcing:** Stage 12.9 acquisition was explicitly resumed on 2026-11-04
+  and is running sequentially; do not start additional downloads without a
+  request. Stage 12.8 used documented monthly-GLORYS/constant-atmosphere
+  fallbacks, so its drift and lifetime outputs are lower bounds, not
+  daily-forcing validation.
 - **BREAKING CHANGE (Stage 11.8B):** `EOS_MODE` unset now selects **EOS80**, not LEGACY. Set `EOS_MODE=LEGACY` to restore the historical Eckart fallback. See `docs/MIGRATION_GUIDE_EOS80_DEFAULT.md`.
   [Historical note from Stage 10.19, SUPERSEDED by Stage 10.20 restoration
   (full-coverage ERA5: 3-day gate PASS, residual characterized, NOT fixed):
@@ -48,7 +53,7 @@ under atmospheric, oceanic, bathymetric, and sea-ice forcing.
   reports "steps executed: 0"; production physics unchanged; the offline
   real-forcing iceberg path remains fully validated).
 - **Physics status and switches:** `docs/model/model_physics_status.md`
-- **Stage plan and status:** `docs/PROJECT_ROADMAP.md`
+- **Stage plan and status:** `docs/validation/INDEX.md`
 
 ## 🔧 Repository components
 
@@ -96,36 +101,29 @@ Python: conda environment `iceberg-thermodynamic-model`
 ## 🗺️ Documentation navigation
 
 ```
-README.md ──→ docs/
-               ├─ /model/
-               |    ├─ model_physics_status.md (physics status)
-               |    ├─ model_equation_ledger.md (equations)
-               |    ├─ model_description.md (narrative)
-               |    └─ README.md
-               ├─ /references/
-               |    ├─ citation_map.md
-               |    ├─ literature_matrix.md
-               |    ├─ references.bib
-               |    └─ README.md
-               ├─ /validation/INDEX.md (active validation, Stage 11)
-               ├─ /wiki/
-               |    ├─ INDEX.md (historical stage reports 3–10)
-               |    └─ README.md
-               ├─ DECISIONS.md (key decisions)
-               ├─ PROJECT_ROADMAP.md (stages plan)
-               └─ README.md
+README.md
+  └─ docs/README.md                 documentation map
+      ├─ model/README.md            current model specification
+      ├─ validation/INDEX.md        current Stage 12 validation
+      ├─ PROJECT_ROADMAP.md         current stage and next work
+      ├─ DECISIONS.md               decision journal
+      ├─ STAGE11_FREEZE.md          frozen Stage 11 boundary
+      ├─ REANALYSIS_DATA_PLAN.md    Stage 12 data contract/status
+      ├─ references/README.md       bibliography and literature matrix
+      └─ wiki/README.md             historical archive
 ```
 
 | Looking for                      | Go to                                |
 | -------------------------------- | ------------------------------------ |
-| AI-agent operating rules         | `AGENTS.md`                          |
-| Development process              | `RULES.md`                           |
+| Agent and project constraints    | `AGENTS.md`                          |
+| Development and commit process   | `RULES.md`                           |
 | Code and documentation style     | `STYLE.md`                           |
 | Current known issues             | `KNOWN_ISSUES.md`                    |
 | Change history                   | `CHANGELOG.md`                       |
-| Physics status                   | `docs/model/model_physics_status.md` |
-| Active validation                | `docs/validation/INDEX.md`           |
-| Historical archive (stages 3–10) | `docs/wiki/INDEX.md`                 |
+| Physics status and switches      | `docs/model/model_physics_status.md` |
+| Current validation status        | `docs/validation/INDEX.md`           |
+| Historical reports               | `docs/wiki/INDEX.md`                 |
+| Full documentation map           | `docs/README.md`                     |
 
 ## 🔗 References
 

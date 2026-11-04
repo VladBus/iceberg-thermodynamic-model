@@ -12,6 +12,17 @@ The main document on **how** the project is changed (what to do — in
 2. **Before changing physics:** find the historical algorithm, match it with the current arrays, check units and dimensions, determine the place in the time loop, and check the impact on existing modules.
 3. **Do not change physical equations merely to pass tests.**
 
+## Resource discipline
+
+- The user's WSL2 instance has **8 GB allocated RAM** (user-reported on
+  2026-11-03; CPU allocation has not been measured). Run builds, full test
+  batteries, analyses, and data transfers one at a time; do not overlap
+  expensive jobs.
+- Do not launch multiple downloads or broad recursive repository scans together.
+  Use targeted commands and bounded output, and stop one heavy process before
+  starting another.
+- Paused data acquisition must not be resumed unless the user explicitly asks.
+
 ## Physics-change rules
 
 - Every physical change MUST have: a literature basis, explicit equations, parameter provenance, independent tests, and a documented limitation statement.
@@ -58,6 +69,27 @@ The main document on **how** the project is changed (what to do — in
 - Living documents (`docs/model/`, `README.md`, `AGENTS.md`, `KNOWN_ISSUES.md`) are updated when the model changes.
 - History is not rewritten: archived reports in `docs/wiki/` remain unchanged; when a later stage overturns a conclusion, add a link in the current document and a record in `docs/DECISIONS.md`.
 - Important notes that might be lost due to context limits MUST be written to `docs/wiki/` or an appropriately named .md file.
+- Before reorganizing documentation, inventory the existing files and incoming
+  references. Classify documents as living guidance, current status, stage
+  evidence, historical archive, or local/untracked material; do not delete a
+  historical report merely because its conclusion is superseded.
+- `docs/model/` is reserved for the current model narrative, equations, physics
+  status, and numerical schemes. Do not keep roadmaps or stage plans there.
+- `docs/references/` owns literature, scientific premises, data contracts, and
+  product provenance.
+- `docs/validation/` is a temporary workspace for the currently active stage
+  only. On stage closure, move the report and curated evidence to
+  `docs/wiki/stages/<stage>/` and update its README and `docs/wiki/INDEX.md`.
+- `docs/wiki/stages/<stage>/` is the permanent home for reports organized by
+  stage/commit. `docs/archive/` is for superseded plans or other historical
+  records that are not stage reports.
+- Keep indexes navigational: state the latest completed stage and link to
+  reports rather than copying their scientific results into multiple indexes.
+- When moving or renaming Markdown, update links and directory indexes in the
+  same change. Preserve report content and provenance; make scientific
+  corrections in living documents, not by rewriting old conclusions.
+- For documentation-only work, run `git diff --check` and validate the links
+  changed or introduced; do not run model builds unless source code changed.
 
 ## Stage-report format
 
@@ -89,8 +121,12 @@ decision made (in the stage report and, when needed, in `docs/DECISIONS.md`).
 
 - Check `.gitignore` before committing (it blocks `opencode.jsonc`, `.opencode/`, `data/`, `*.nc`, `*.vtk`, `*.dat`, `*.bak`; exception — `data/validation/observations/`; `docs/wiki/ERA5_INTEGRATION_TODO.md` is intentionally outside Git).
 - Never commit secrets: `~/.cdsapirc` (CDS credentials) — never in Git.
-- Do not delete root-level symlinks `KOORD.DAT`, `hhh.bar` (required by the model, gitignored, point to `data/input/generated/real_grid/`).
-- One commit per stage; check `git diff` and `git diff --check` before committing.
+- Do not add or restore root-level legacy symlinks. Production grid and sea-ice
+  inputs are NetCDF; legacy files are offline regression fixtures.
+- Before staging, inspect `git status --short` and stage only the intended paths;
+  do not use blanket staging when unrelated or untracked work is present.
+- Keep documentation cleanup in a focused commit separate from scientific
+  code/data changes. Check `git diff` and `git diff --check` before committing.
 - Push only if it matches the current workflow.
 - Do not commit/push unless the user explicitly requests it.
 

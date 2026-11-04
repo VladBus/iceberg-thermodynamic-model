@@ -1,54 +1,39 @@
-# Stage 11 — Archived Research Artifact
+# Stage 11 — Frozen Research Archive
 
-**Status:** **FROZEN** (D-51). Tag: `stage11-final-frozen` (source `386c850`).
-Freeze record: [`../../../STAGE11_FREEZE.md`](../../../STAGE11_FREEZE.md).
+Stage 11 is **FROZEN** as a research artifact (D-51, tag
+`stage11-final-frozen`). It is not a production-validated prognostic ocean.
+Stage 12 uses offline/prescribed reanalysis forcing instead. For current project
+status, use `docs/validation/INDEX.md`; this directory is historical and should
+not be treated as a working area.
 
-Stage 11 modernized the prognostic ocean, EOS-80, forcing, and N>1 dynamics.
-It reached a **numerically bounded** state but is **not a production-validated
-ocean** (N² inversion, real-tide, and 90-day gates are unresolved). It is
-therefore preserved as a reference artifact and Stage 12 uses reanalysis
-forcing instead (D-51).
+> **Path note:** individual reports preserve their original wording, including
+> paths used before this archive was consolidated. Use this README and
+> `docs/wiki/INDEX.md` for the current locations; do not infer current workflow
+> from paths written inside historical reports.
 
-## What lives here
+## Authoritative and summary documents
 
-| Path | Contents |
-|---|---|
-| `evidence/` | 153 Stage 11 validation **JSON** artifacts (the numbers the reports cite: `t3c4_*`, `t5c*`, `matrix_*`, `obc_*`, `stratification_verification.json`, `n24_30day_*.json`, `tide_integration_test.json`, `reproducibility_audit.json`, …) |
-| `figures/t3c2/` | diagnostic PNGs referenced by the T3-CORRECTIVE-2 forensics |
+- `STAGE11_FREEZE.md` — authoritative freeze boundary, measured outcome, and
+  unresolved physical gates.
+- `SUMMARY.md` — consolidated historical summary of the former root-level
+  `STAGE11_SUMMARY.md` and `STAGE11_FINAL_SUMMARY.md`.
+- `STAGE11_CLOSURE_CHECKLIST.md` and `STAGE11_CLOSURE_DECLARATION.md` — the
+  administrative closure record.
+- `STAGE11_STATE_SNAPSHOT.md` — dated, superseded snapshot of the former living
+  state document; do not use for current project status.
+- `MIGRATION_GUIDE_EOS80_DEFAULT.md`, `OBC_N4_N24_AUDIT.md`,
+  `TIDES_IMPLEMENTATION_PLAN.md`, and `DATA_RUNS_CLEANUP_REPORT.md` — stage
+  records and technical notes associated with the Stage 11 closure.
+- `stage11.*.md` — detailed reports for Stage 11.1 through Stage 11.11.2.
 
-## What did NOT move
+## Evidence
 
-- Stage 11 **narrative reports** stay in place:
-  - `docs/validation/stage11.*.md` — the 11.8.x active-report series,
-  - `docs/archive/stage11/stage11.*.md` — the 11.0–11.7 forensic series,
-  - top-level `docs/STAGE11_*.md` — summary/state/closure/freeze.
-- The curated `data/validation/observations/` dataset stays in `data/validation/`
-  (CI depends on it). `data/validation/` is otherwise reserved for **Stage 12**.
+- `evidence/` — Stage 11 JSON result snapshots cited by the reports.
+- `figures/` — diagnostic figures generated for Stage 11 investigations.
 
-## Why archived now
+## Freeze boundary
 
-Stage 11 was administratively closed (D-49), then physically validated as
-partial (11.11–11.11.2), then frozen (D-51). Moving its raw JSON evidence into
-the immutable wiki archive keeps `data/validation/` clean for Stage 12 while
-preserving every number behind the reports. Document references were rewritten
-from `data/validation/<name>.json` to
-`docs/wiki/stages/stage11/evidence/<name>.json`.
-
-## Known limitations (frozen, NOT solved)
-
-- **N² stratification:** min −0.01639 s⁻², 9,813 wet interfaces < −1e−6 — FAIL.
-- **Tides:** synthetic M2 only; no FES2014/TPXO; 30-day tide validation not run.
-- **90-day forced runs:** not validated (T-38).
-- **N=4:** unstable; only N=24 (30-day, no-tide) is bounded.
-- **Production scheduler:** T-39 ice/cadence artifact — BLOCKED.
-- **N=1:** diagnostic only, not the frozen baseline.
-
-## How to reproduce
-
-```bash
-git checkout stage11-final-frozen
-fpm test --flag "-I/usr/include"      # full battery, exit 0
-```
-
-The `evidence/` JSONs are result snapshots; individual reports describe the
-gates they satisfy or fail.
+The N=24 no-tide 30-day run is bounded, but N², real-tide, 90-day, and
+production-scheduler validation gates remain unresolved. Do not present Stage 11
+as a validated ocean climatology or alter its frozen physics under the Stage 11
+label. Full details and reproduction instructions are in `STAGE11_FREEZE.md`.

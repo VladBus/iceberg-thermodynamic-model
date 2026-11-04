@@ -1,12 +1,11 @@
 # Reanalysis Data Plan — Stage 12.1
 
-**Status:** Stage 12.1 COMPLETE (Jan-2020 Barents subset downloaded + inspected);
-**Stage 12.2 COMPLETE — the Fortran reader is implemented** in
-`src/reanalysis_reader.f90` + `src/ocean_provider.f90`, integrated in
-`src/iceberg_forcing.f90` behind `OCEAN_SOURCE` (default `model`; see
-`docs/validation/stage12.2_reanalysis_reader.md`, D-52). Full-year download NOT
-started.
-**Date:** 2026-10-29
+**Status:** Stage 12.1 reconnaissance and Stage 12.2 reader are complete; Stage
+12.8's fallback-forcing matrix is the latest completed validation. Daily-forcing
+acquisition was resumed by explicit user request on 2026-11-04 and is running
+month by month. Do not start additional downloads unless the user asks. See
+`docs/validation/INDEX.md` for current stage status.
+**Date:** 2026-11-04
 **Decision:** D-51 (+D-52).
 **Purpose:** define the exact ocean/sea-ice source and validation gate for the
 Stage 12 voxel iceberg. The atmosphere remains ERA5.

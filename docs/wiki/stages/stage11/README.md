@@ -25,6 +25,8 @@ not be treated as a working area.
   `TIDES_IMPLEMENTATION_PLAN.md`, and `DATA_RUNS_CLEANUP_REPORT.md` — stage
   records and technical notes associated with the Stage 11 closure.
 - `stage11.*.md` — detailed reports for Stage 11.1 through Stage 11.11.2.
+- `t5c*.md` — supporting literature/reference notes for the Stage 11.5C
+  stability forensics.
 
 ## Evidence
 

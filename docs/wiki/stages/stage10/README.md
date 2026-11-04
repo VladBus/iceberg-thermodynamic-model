@@ -5,7 +5,7 @@ Stage 10 modernization of the iceberg thermodynamics is **complete**. All report
 This directory contains 27 Stage 10 validation reports (10.7 through 10.22),
 three early validation reports, and the historical Stage 10 modernization plan.
 
-## Reports (25)
+## Reports (27)
 
 | # | File | Report | Stage | Status |
 |---|------|--------|-------|--------|

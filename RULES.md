@@ -73,16 +73,19 @@ The main document on **how** the project is changed (what to do — in
   references. Classify documents as living guidance, current status, stage
   evidence, historical archive, or local/untracked material; do not delete a
   historical report merely because its conclusion is superseded.
-- `docs/model/` is reserved for the current model narrative, equations, physics
-  status, and numerical schemes. Do not keep roadmaps or stage plans there.
-- `docs/references/` owns literature, scientific premises, data contracts, and
-  product provenance.
-- `docs/validation/` is a temporary workspace for the currently active stage
-  only. On stage closure, move the report and curated evidence to
-  `docs/wiki/stages/<stage>/` and update its README and `docs/wiki/INDEX.md`.
-- `docs/wiki/stages/<stage>/` is the permanent home for reports organized by
-  stage/commit. `docs/archive/` is for superseded plans or other historical
-  records that are not stage reports.
+| Document kind | Mandatory location | Must not contain |
+| --- | --- | --- |
+| Current model narrative, physics status, equations, numerical schemes | `docs/model/` | stage plans, stage reports, roadmaps |
+| Literature, scientific premises, data contracts, product provenance | `docs/references/` | current work status, stage reports |
+| Completed stage/commit report and curated evidence | `docs/wiki/stages/<stage>/` | unfinished working notes |
+| Currently active, unfinished validation work | `docs/validation/` | completed reports or permanent archives |
+| Superseded plan, local operational note, old provenance | `docs/archive/` | current model guidance |
+
+On stage closure, move the report and curated evidence to
+`docs/wiki/stages/<stage>/` and update its `README.md` and
+`docs/wiki/INDEX.md`. Do not leave completed material in `docs/validation/`.
+Do not create a second index or a duplicate report for a fact already covered by
+an authoritative source; link to the existing source instead.
 - Keep indexes navigational: state the latest completed stage and link to
   reports rather than copying their scientific results into multiple indexes.
 - When moving or renaming Markdown, update links and directory indexes in the

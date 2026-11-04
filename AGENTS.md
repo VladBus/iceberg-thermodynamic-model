@@ -17,6 +17,18 @@ in `KNOWN_ISSUES.md`; the documentation map is `docs/README.md`.
 - Check `docs/model/model_physics_status.md`, `docs/DECISIONS.md`, and
   `KNOWN_ISSUES.md` before making claims about physics, switches, or open issues.
 
+## Before starting work
+
+1. Read `AGENTS.md`, `docs/README.md`, current `git status`, and the relevant
+   stage index before opening a new report.
+2. Search `KNOWN_ISSUES.md` and `docs/DECISIONS.md` for the issue or topic; if it
+   is already recorded, update or close that entry instead of creating a
+   duplicate document.
+3. Open the linked stage report, test, or decision to see what was actually
+   verified. Do not infer results from file names or old summaries.
+4. If a new document is still needed, follow the placement rules below and add
+   it to the existing index; do not create a second navigation tree.
+
 ## Documentation routing
 
 | Need | Read |
@@ -34,6 +46,28 @@ in `KNOWN_ISSUES.md`; the documentation map is `docs/README.md`.
 | Superseded plans/provenance | `docs/archive/README.md` |
 | Decisions | `docs/DECISIONS.md` |
 | Data products and provenance | `docs/references/data_sources.md` |
+
+## Documentation placement (mandatory)
+
+Before creating or editing a document, classify it:
+
+1. **Current model physics, mathematics, equations, or switches** → `docs/model/`.
+   This directory contains no stage plans and no stage reports.
+2. **Literature, scientific premises, data sources, or provenance** →
+   `docs/references/`.
+3. **Completed stage/commit report and its curated evidence** →
+   `docs/wiki/stages/<stage>/`. Update that stage's `README.md` and
+   `docs/wiki/INDEX.md` in the same change.
+4. **Unfinished current validation work** → `docs/validation/` only. It is a
+   temporary workspace; move the report and evidence out when the stage closes.
+5. **Superseded plans, local operational notes, or old provenance** →
+   `docs/archive/`.
+
+Never create a parallel top-level documentation tree, a second index for the
+same fact, or a new report when a current source already covers the topic.
+Link to the authoritative report, test, or decision instead of copying its
+contents. The detailed rules are in `RULES.md`; the map and read order are in
+`docs/README.md`.
 
 ## Resource discipline
 

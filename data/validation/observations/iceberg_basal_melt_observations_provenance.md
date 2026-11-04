@@ -50,7 +50,7 @@ holds for flat tabular bergs with D/L < ~0.25.
 ## Selected vs. otherwise
 
 See the 12-section report
-`docs/validation/stage10.8.2_observational_validation.md` for selection rules
+`docs/wiki/stages/stage10/stage10.8.2_observational_validation.md` for selection rules
 (study must report a repeatable melt rate of the submerged surface of icebergs;
 Rignot et al. 2010 calving-face rates are excluded as glacier-terminus,
 plume-driven values; Budd/Jacka/Morgan and Orheim 1980 are excluded as

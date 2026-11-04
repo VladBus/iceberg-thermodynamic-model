@@ -4,6 +4,21 @@ This directory follows a short lifecycle: **working validation → completed
 stage archive → long-term archive**. Start here, then use the directory index
 closest to the document you need.
 
+## Read order
+
+```
+README.md (project overview)
+  └─ docs/README.md                         ← you are here
+      ├─ model/README.md                    current physics, equations, status
+      ├─ validation/INDEX.md                active, unfinished work only
+      ├─ wiki/INDEX.md                      completed stage reports 3–12
+      │   └─ wiki/stages/stageXX/README.md  index for one stage
+      ├─ references/README.md               literature, data sources, provenance
+      ├─ DECISIONS.md                       why a choice was made
+      ├─ archive/README.md                  superseded plans and old records
+      └─ ../KNOWN_ISSUES.md                 live issue/constraint index
+```
+
 ## Current sources of truth
 
 | Need | Authoritative document |

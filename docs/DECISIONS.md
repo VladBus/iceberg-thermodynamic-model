@@ -6,6 +6,19 @@ historical basis lives in `docs/wiki/`.
 
 Format: `ID | stage/date | status` + short description. Details — via links.
 
+## Decision map
+
+| Range | Theme |
+| --- | --- |
+| D-01–D-16 | Model foundations: grid, units, EOS/freezing point, three-equation interface, basal/lateral melt, internal temperature, switches, sea-ice initialization |
+| D-17–D-33 | Production coupling, ocean-init stabilization, CA/EOS precision, Stage 11 temporal architecture and EOS-80 policy |
+| D-34–D-50 | Stage 11.8 diagnostic ladder, numerical stabilization, forcing fixes, closure, EOS-80 default |
+| D-51–D-63 | Stage 12: reanalysis reader, voxel thermal core, CN/three-equation, geometry/drift, waves, Enderlin23, Barents matrix |
+
+Earlier records are historical decisions; current applicability is governed by
+later decisions and `docs/model/model_physics_status.md`. D-51 onward are the
+active Stage 12 decisions.
+
 ---
 
 ## D-01. Real grid reconstructed from IBCAO, not from missing historical files
@@ -393,12 +406,6 @@ remains unchanged until the production-default decision in 11.7F.
 - **Sources:** `docs/wiki/stages/stage11/stage11.8.0_ocean_diagnostic_plan.md` (AC-5), `docs/wiki/stages/stage11/stage11.8.0.0_diagnostic_contract_correction.md` (Phase 5).
 - **Next:** D-33 gate must be passed before any physics change lands on stage11-physics branch.
 
-## How to add decisions
-
-A new decision is appended with an ID, stage, status, and links to reports.
-A decision must be confirmed by code/tests/history; unverified assumptions are
-not added.
-
 ## D-34. T-03 root cause: CA density-writeback -> baroclinic PGF feedback (Stage 11.8.0 T3-CORRECTIVE-2, 2026-10-25)
 
 - **Context:** T3-CORRECTIVE fixed T-28/T-29 and improved conservation 26x, but the 30-day rest state remained unstable (LEGACY 3.924 m/s / KE 8.09e15; EOS-80 4.713 / 6.84e15). T3-CORRECTIVE-2 was diagnostic only.
@@ -548,7 +555,7 @@ not added.
 - **Status:** Stage 11.10 has not yet met the 90-day/N>1 gates. One-day N=4 blew up (max U 4352 m/s); N=24 grew to max U 1.89 m/s. OBC is the immediate blocker; N=1 remains diagnostic only.
 - **Consequences:** The administrative Stage 11 closure remains historical, but Stage 12 must not treat the N=1 ocean as final. No bit-identity test may block an approved physical improvement.
 - **Note:** D-49 is the Stage 11 closure decision; this is D-50 because D-49 was already occupied.
-- **References:** `docs/OBC_N4_N24_AUDIT.md`, `docs/wiki/stages/stage11/evidence/n4_n24_audit.json`, `docs/LEGACY_IO_POLICY.md`.
+- **References:** `docs/wiki/stages/stage11/OBC_N4_N24_AUDIT.md`, `docs/wiki/stages/stage11/evidence/n4_n24_audit.json`, `docs/LEGACY_IO_POLICY.md`.
 
 ## D-51. Stage 11 frozen as a research artifact; Stage 12 uses GLORYS12 + ERA5 reanalysis (Stage 12.0, 2026-10-29)
 
@@ -793,8 +800,8 @@ not added.
   atmosphere; no wave erosion (no wave product); no calving; nearest wet
   GLORYS cell within 0.5 deg at ice fronts.
 - **Docs:** `docs/wiki/stages/stage12/stage12.7a_enderlin23_hindcast.md`;
-  results `docs/wiki/stages/stage12/stage12.7a_results.csv`; manifest
-  `docs/wiki/stages/stage12/stage12.7a_glorys_manifest.json`.
+  results `docs/wiki/stages/stage12/evidence/stage12.7a_results.csv`; manifest
+  `docs/wiki/stages/stage12/evidence/stage12.7a_glorys_manifest.json`.
 
 
 ## D-60. Voxel melt-deficiency audit: fixed-cube geometry bug (Stage 12.7.audit, 2026-11-01)
@@ -880,3 +887,9 @@ not added.
   NO-GO for quantitative daily-forcing drift/lifetime claims until daily
   GLORYS, full-year ERA5, WAM, and corrected Coriolis/drift treatment.
 - **Docs:** `docs/wiki/stages/stage12/stage12.8_barents2020_matrix.md`.
+
+## How to add decisions
+
+A new decision is appended with an ID, stage, status, and links to reports.
+A decision must be confirmed by code/tests/history; unverified assumptions are
+not added.

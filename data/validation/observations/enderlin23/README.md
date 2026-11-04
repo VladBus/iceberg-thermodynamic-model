@@ -16,7 +16,7 @@ so the voxel-model validation does not depend on a stage-specific folder name.
 
 The raw USAP-DC archive and its 54 extracted CSVs are **not duplicated here**;
 they remain under `stage10.18d/raw/` (gitignored). Re-fetch instructions are in
-`stage10.18d/provenance.md` and `docs/data_sources.md`.
+`stage10.18d/provenance.md` and `docs/references/data_sources.md`.
 
 ## Provenance summary
 

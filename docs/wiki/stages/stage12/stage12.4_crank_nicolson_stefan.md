@@ -73,7 +73,7 @@ On `φ < φ_min` the voxel is removed **with energy transfer** (doc §6.2 item v
 | A‑T1 adiabatic closed box, 100×3600 s | `ΣC_iT_i` drift **1.58e−10** (<1e−8); φ unchanged |
 | A‑T2 dt = 1e6 s | stable, no NaN, T within initial [min,max] |
 | A‑T3 temporal order (dt=3000 vs 1500) | err 2.995e−6 / 7.495e−7, **ratio 3.996** (~2nd order) |
-| A‑T4 CN vs explicit (Fo≈1e−4) | `max|ΔT| = 2.65e−8` (≤1e−6) |
+| A‑T4 CN vs explicit (Fo≈1e−4) | `max\|ΔT\| = 2.65e−8` (≤1e−6) |
 | A‑T5 steady two‑face Dirichlet | max deviation from linear **5.6e−12** |
 | A‑T6i exact ablation (T₀=0, T_b=+2) | melt depth = E_in/(ρL) to **<1e−6**; vs q₀t/(ρL) within 2% (CN O(dt)) |
 | A‑T6ii cold ice (T₀=−5) | global energy balance closes (flux = latent + sensible + sensible of melted mass); fitted exponent **1.23** reported — **fallback**: half‑cell fixed‑T_b is constant‑flux, whose late melt is linear, not √t (fixed‑T similarity deferred to 12.7a) |
@@ -131,7 +131,7 @@ Getter `voxel_iceberg_get_stefan` (+ existing `get_solver/get_flush/get_melt`).
 |---|---|
 | B‑T1 single face vs brute‑force 200‑iter bisection | `m = 4.1319e‑6 m/s`, diff **7.4e‑14**; `S_B=0.01606 < S_w`; `Tf(S_w,P) < T_B=-0.8839 < 0` |
 | B‑T2 PDF §6.2 worked example (`S_w=35`, `ΔT=3 K`, `u_rel=0.1`, `h=0.5`) | `m/m_ref = 0.993` (m≈0.248 m/day), `S_B=19.23 PSU`, `T_B=−1.041 °C` — all within 20% |
-| B‑T3 salinity guard | `Tf(35,0)=−1.9223`; kg/kg-as-PSU gives `|Tf|=0.002` (order guard) |
+| B‑T3 salinity guard | `Tf(35,0)=−1.9223`; kg/kg-as-PSU gives `\|Tf\|=0.002` (order guard) |
 | B‑T4 pressure | `ΔTf(300 m)=−0.2277 °C` (−0.226±0.005); **m increases with depth** because `Tf` falls with `P` (PDF eq 8.1; the prompt's “decreases” is physically inverted) |
 | B‑T5 u_rel | `m(0.2)/m(0.1)=2.03` ∈ [1.3,2.5]; co‑moving → `u_rel=0 → m=0` |
 | B‑T6 stratified profile | `m_top=3.56e‑6` vs `m_deep=6.78e‑7` (>3×); per‑depth forcing used |

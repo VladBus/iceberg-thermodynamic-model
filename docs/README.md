@@ -8,7 +8,7 @@ closest to the document you need.
 
 | Need | Authoritative document |
 | --- | --- |
-| Current Stage 12.9 work and pause status | `validation/INDEX.md` |
+| Current Stage 12.9 work and acquisition status | `validation/INDEX.md` |
 | Current physics, switches, and limitations | `model/model_physics_status.md` |
 | Equations, units, and sign conventions | `model/model_equation_ledger.md` |
 | Model narrative | `model/model_description.md` |

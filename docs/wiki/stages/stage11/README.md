@@ -28,6 +28,16 @@ not be treated as a working area.
 - `t5c*.md` — supporting literature/reference notes for the Stage 11.5C
   stability forensics.
 
+## Report groups
+
+| Substage | Scope | File pattern |
+| --- | --- | --- |
+| 11.1–11.4 | Seasonal stability, CFL/numerical audits, architecture, EOS-80 | `stage11.1*`–`stage11.4*` |
+| 11.5A–11.5H | Temporal architecture, substepping forensics, coupling, production scheduler | `stage11.5*` |
+| 11.6–11.7 | EOS-80 re-baseline, NetCDF contracts, reader switches, provenance | `stage11.6*`, `stage11.7*` |
+| 11.8.0–11.8B | Diagnostic ladder, seasonal validation, EOS-80 default | `stage11.8*` |
+| 11.9–11.11 | Closure review, ocean remediation, physical/tide validation | `stage11.9*`–`stage11.11*`, `t5c*` |
+
 ## Evidence
 
 - `evidence/` — Stage 11 JSON result snapshots cited by the reports.

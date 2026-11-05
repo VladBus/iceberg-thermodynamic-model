@@ -7,6 +7,19 @@ Decisions —
 `docs/DECISIONS.md`, physics status — `docs/model/model_physics_status.md`.
 Full commit list — `git log`.
 
+## Documentation architecture audit (2026-11-05)
+
+- Rewrote `KNOWN_ISSUES.md` as one consistent N/T/Q register with unique IDs,
+  evidence links, and no interrupted tables; split Stage 12.9 into the
+  12.9a acquisition and 12.9b thesis workstreams.
+- Updated the current model description, numerical-scheme inventory, equation
+  ledger (Stage 12 section), bibliography count, and Stage 12 evidence paths.
+- Added strict document-placement/reuse rules to `AGENTS.md` and `RULES.md`,
+  a navigation read order to `docs/README.md`, and a decision map/supersession
+  notes to `DECISIONS.md`.
+- Added `scripts/check_docs_links.py`, documented its use, and added it to CI.
+  No scientific code, data, or experiment results were changed.
+
 ## Documentation maintenance (2026-11-03)
 
 - Consolidated repository documentation routing and current Stage 12 status in
@@ -18,7 +31,8 @@ Full commit list — `git log`.
   moved the historical Stage 10 plan journal into the Stage 10 wiki archive. Merged the two
   overlapping Stage 11 summaries. No stage report or data product was deleted.
 - Added resource-safety, documentation-maintenance, and focused-staging rules.
-  No commit or push was made for that earlier cleanup.
+  This cleanup was subsequently committed in the documentation series ending at
+  `bcb3465`.
 
 ## Stage 12 (voxel iceberg on GLORYS12 + ERA5 reanalysis — active)
 

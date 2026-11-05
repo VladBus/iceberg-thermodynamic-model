@@ -75,4 +75,4 @@ iteration), confirming the Robin boundary is active.
   `src/iceberg_thermodynamics.f90`
 - Test: `test/test_voxel_air_balance.f90`
 - Decisions: D-61
-- Related audit: `docs/validation/stage12.7.audit_voxel_melt.md`
+- Related audit: `docs/wiki/stages/stage12/stage12.7.audit_voxel_melt.md`

@@ -499,4 +499,4 @@ cm.subset(
 - Løkkegaard A. et al. Greenland and Canadian Arctic ice temperature profiles database // The Cryosphere, 2023, 17, 3829: https://tc.copernicus.org/articles/17/3829/2023/
 - Jolliff J.K. et al. Summary diagrams for coupled hydrodynamic-ecosystem model skill assessment // J. Mar. Syst., 2009, 76, 64–82.
 - Taylor K.E. Summarizing multiple aspects of model performance in a single diagram // J. Geophys. Res., 2001, 106(D7), 7183–7192.
-- Репозиторий: `docs/validation/stage11.11_physical_validation_tides.md`, `stage11.11.2_heat_forensics_root_cause.md`, `docs/DATA_RUNS_CLEANUP_RECOMMENDATION.md`, `docs/wiki/stages/stage12/STAGE12_PREPARATION.md`, `KNOWN_ISSUES.md`, `src/iceberg_*.f90`.
+- Репозиторий: `docs/wiki/stages/stage11/stage11.11_physical_validation_tides.md`, `docs/wiki/stages/stage11/stage11.11.2_heat_forensics_root_cause.md`, `docs/wiki/stages/stage11/DATA_RUNS_CLEANUP_REPORT.md`, `docs/wiki/stages/stage12/STAGE12_PREPARATION.md`, `KNOWN_ISSUES.md`, `src/iceberg_*.f90`.

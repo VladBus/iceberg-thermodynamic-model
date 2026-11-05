@@ -65,7 +65,7 @@ instrumented). Sites:
 | TG | WAIS | 65 | 202 | 34 | 8.1 |
 | WG | WAP | 14 | 84 | 28 | 2.4 |
 
-Manifest: `docs/validation/stage12.7a_glorys_manifest.json`.
+Manifest: `docs/wiki/stages/stage12/evidence/stage12.7a_glorys_manifest.json`.
 
 ## 2. Hindcast method
 
@@ -75,7 +75,7 @@ Manifest: `docs/validation/stage12.7a_glorys_manifest.json`.
 - **Trajectory:** linear interpolation between `(lat_i, lon_i)` and
   `(lat_f, lon_f)` over `time_separation_days`; daily positions are written to
   `data/validation/trajectories/enderlin23/` (manifest:
-  `docs/validation/stage12.7a_trajectory_manifest.csv`).
+  `docs/wiki/stages/stage12/evidence/stage12.7a_trajectory_manifest.csv`).
 - **Forcing:** GLORYS12 T/S/u/v interpolated to the iceberg draft and time.
   At ice-front cells where GLORYS is land/NaN, the nearest wet cell within
   0.5° is used (documented fallback; not applied to open-ocean points).
@@ -96,7 +96,7 @@ Manifest: `docs/validation/stage12.7a_glorys_manifest.json`.
 
 ## 3. Results
 
-All 190 icebergs completed for both models (`docs/validation/stage12.7a_results.csv`).
+All 190 icebergs completed for both models (`docs/wiki/stages/stage12/evidence/stage12.7a_results.csv`).
 
 | Metric | Bulk | Voxel |
 | ------ | ---: | ----: |
@@ -194,7 +194,7 @@ forcing into melt as efficiently.
 | Metrics (median ratio, Spearman, MAE, RMSE) | PASS |
 | Stratification | PASS (region/size/ΔT) |
 | Bulk vs voxel | PASS |
-| Plots | PASS (`docs/validation/figures/enderlin23/`) |
+| Plots | PASS (`docs/wiki/stages/stage12/figures/enderlin23/`) |
 | Full tests / strict build / CI | PASS (80 STOP 0; strict clean; CI #205 green) |
 | No Stage 11 ocean code or `app/main.f90` modified | PASS |
 | Documentation + D-59 | PASS |

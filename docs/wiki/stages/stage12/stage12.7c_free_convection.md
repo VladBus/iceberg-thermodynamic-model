@@ -119,6 +119,7 @@ waves, calving, and/or a validated low-flow closure are included. Bulk remains
 
 - Source: `src/voxel_thermal_solver.f90`
 - Audit driver: `python/validation/audit_voxel_melt.py`
-- Results: `docs/validation/stage12.7c_results.csv`,
-  `stage12.7c_sensitivity.csv`, `stage12.7c_summary.json`
+- Results: `docs/wiki/stages/stage12/evidence/stage12.7c_results.csv`,
+  `docs/wiki/stages/stage12/evidence/stage12.7c_sensitivity.csv`,
+  `docs/wiki/stages/stage12/evidence/stage12.7c_summary.json`
 - Related: `stage12.7.audit_voxel_melt.md`, `stage12.7b_autonomous_air.md`

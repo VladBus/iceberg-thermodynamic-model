@@ -35,7 +35,7 @@ valid GLORYS ~500 m temperature**:
 | P2 Svalbard shelf edge | 77.5N 20.0E | **81.316N 21.204E** | 553 m | 122 m |
 | P3 Central Basin/FJL | 80.0N 50.0E | **82.642N 50.407E** | 495 m | 83 m |
 
-Manifest: `docs/validation/stage12.8_start_points.json`.
+Manifest: `docs/wiki/stages/stage12/evidence/stage12.8_start_points.json`.
 
 ## 3. Matrix
 
@@ -43,7 +43,7 @@ Manifest: `docs/validation/stage12.8_start_points.json`.
   3 points = **24 voxel runs**, 365 days, `dt=3600`.
 - `VOXEL_ENABLED=ON`; free-convection floor from 12.7c; wave erosion OFF.
 - **24/24 completed**, total wall 639 s, peak RSS 363 MB.
-- Manifest: `docs/validation/stage12.8_matrix_manifest.csv`.
+- Manifest: `docs/wiki/stages/stage12/evidence/stage12.8_matrix_manifest.csv`.
 - No complete melt-out; S50/S100/S200 P2 ends at ~6.5 % of initial volume;
   S500 P2 at ~15 %.
 
@@ -78,7 +78,7 @@ Only the warm Svalbard point P2 reaches 90 % melt within a year:
 
 P1/P3 (cold, low ΔT) do not reach 90 % melt; final volume fractions are
 0.15–0.59. Summer melting is much faster at P2 (t90 60–120 d vs 231–270 d);
-S500 never reaches t90. `docs/validation/figures/barents2020/lifetime_heatmap.png`
+S500 never reaches t90. `docs/wiki/stages/stage12/figures/barents2020/lifetime_heatmap.png`
 uses t90 with 365 d for “not reached”.
 
 ### 4.3 Melt components
@@ -98,7 +98,7 @@ bound. No calibration was applied.
 
 ## 5. Figures
 
-`docs/validation/figures/barents2020/`:
+`docs/wiki/stages/stage12/figures/barents2020/`:
 
 - `drift_map_Jan.png`, `drift_map_Jul.png` — trajectories colored by day and
   speed; IBCAO depth contours, land mask, 15 % sea-ice contour.
@@ -108,8 +108,8 @@ bound. No calibration was applied.
   lateral/surface/wave mass loss for S100 at 3 points.
 - `lifetime_heatmap.png` — t90 by size and season (mean of 3 points).
 
-Results: `docs/validation/stage12.8_results.csv`,
-`stage12.8_summary.json`.
+Results: `docs/wiki/stages/stage12/evidence/stage12.8_results.csv`,
+`docs/wiki/stages/stage12/evidence/stage12.8_summary.json`.
 
 ## 6. Structural limits
 

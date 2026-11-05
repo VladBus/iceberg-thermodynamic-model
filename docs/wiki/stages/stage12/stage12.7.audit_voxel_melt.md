@@ -8,8 +8,8 @@
 
 ## 1. Representative cases
 
-Selected from `docs/validation/stage12.7a_trajectory_manifest.csv` and
-`docs/validation/stage12.7a_results.csv`:
+Selected from `docs/wiki/stages/stage12/evidence/stage12.7a_trajectory_manifest.csv` and
+`docs/wiki/stages/stage12/evidence/stage12.7a_results.csv`:
 
 | Case | Regime | √A, m | mean ΔT, °C | observed melt, m/day | baseline voxel ratio |
 | ---- | ------ | ----: | ----------: | -------------------: | -------------------: |
@@ -113,6 +113,6 @@ bug and is **superseded**; the bulk column is unaffected.
 ## 6. Artifacts
 
 - Audit driver: `python/validation/audit_voxel_melt.py`
-- Results: `docs/validation/stage12.7.audit_results.csv`
+- Results: `docs/wiki/stages/stage12/evidence/stage12.7.audit_results.csv`
 - Baseline/fixed JSON: local `data/validation/results/audit_voxel_*/audit.json`
-- Air balance: `docs/validation/stage12.7b_autonomous_air.md`, D-61
+- Air balance: `docs/wiki/stages/stage12/stage12.7b_autonomous_air.md`, D-61

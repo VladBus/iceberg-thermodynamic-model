@@ -5,22 +5,25 @@ not a permanent report archive. Completed reports and their retained evidence
 belong in `docs/wiki/stages/<stage>/`; obsolete working plans belong in
 `docs/archive/`.
 
-## Current work: Stage 12.9 daily-forcing acquisition
+## Current work: Stage 12.9
 
-**Status (2026-11-04):** acquisition was resumed by explicit user request and is
-running month by month. Do not start additional downloads unless the user asks.
-Stage 12.8 remains the latest completed published validation; its
-monthly-GLORYS/constant-atmosphere fallbacks do not validate daily forcing.
+Stage 12.9 has two distinct workstreams:
 
-Local Stage 12.9 acquisition manifests currently in this workspace:
+| Workstream | Status | Evidence |
+| --- | --- | --- |
+| 12.9a Daily-forcing acquisition (ERA5/GLORYS/WAM) | **IN PROGRESS**; resumed by explicit user request on 2026-11-04 and running month by month. Do not start additional downloads unless the user asks. | Acquisition manifests in this directory; Stage 12.8 remains the latest completed published validation. |
+| 12.9b Thesis writing | **GO with fallback labeling**; can use Stage 12.8 exploratory results, but must not claim quantitative daily-forcing validation. | [`stage12.8`](../wiki/stages/stage12/stage12.8_barents2020_matrix.md), [`DECISIONS.md`](../DECISIONS.md) D-63. |
 
-- `stage12.9_era5_manifest.json`
-- `stage12.9_glorys_manifest.json`
-- `stage12.9_wam_manifest.json`
+### Acquisition manifest policy
 
-These manifests describe unfinished local work and are not Stage 12 validation
-reports. Do not copy them into the archive or commit them as completed evidence
-until acquisition is complete, verified, and explicitly closed.
+| Manifest | Git state | Meaning |
+| --- | --- | --- |
+| `stage12.9_glorys_manifest.json` | tracked | Versioned acquisition provenance for the GLORYS12 subset. |
+| `stage12.9_wam_manifest.json` | tracked | Versioned acquisition provenance for the WAM subset. |
+| `stage12.9_era5_manifest.json` | local/untracked while acquisition is active | Operational state for the in-progress monthly ERA5 acquisition. Commit it only after the acquisition is complete, verified, and explicitly closed. |
+
+These manifests are provenance/operational records, not Stage 12 validation
+reports. Do not present partial month counts as scientific results.
 
 ## Completion and archival rule
 

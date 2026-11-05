@@ -29,23 +29,33 @@ in `KNOWN_ISSUES.md`; the documentation map is `docs/README.md`.
 4. If a new document is still needed, follow the placement rules below and add
    it to the existing index; do not create a second navigation tree.
 
+## Knowledge reuse decision tree
+
+| Situation | Action |
+| --- | --- |
+| Information is documented and current | Use the authoritative source; do not create another report. |
+| Information is documented but outdated | Verify against code/tests/newer reports; update the authoritative document; preserve history; record a decision if scientific applicability changes. |
+| Information exists only in a historical report | Update the current source of truth, link to the historical report, and do not copy it wholesale. |
+| Information is genuinely new | Choose the correct document category, create one document only when justified, and update indexes/incoming links. |
+| Evidence is insufficient | State exactly what is missing, investigate only that gap, and never invent a result or assume an unverified conclusion. |
+
 ## Documentation routing
 
 | Need | Read |
 | --- | --- |
-| Full map and document roles | `docs/README.md` |
-| Development, verification, commit, and documentation rules | `RULES.md` |
-| Code and Markdown style | `STYLE.md` |
-| Current issues and constraints | `KNOWN_ISSUES.md` |
-| Current physics and switches | `docs/model/model_physics_status.md` |
-| Equations and conventions | `docs/model/model_equation_ledger.md` |
-| Active work status | `docs/validation/INDEX.md` |
-| Stage 11 freeze | `docs/wiki/stages/stage11/STAGE11_FREEZE.md` |
-| Stage 12 data contract | `docs/references/reanalysis_data_plan.md` |
-| Completed stage reports | `docs/wiki/INDEX.md` and `docs/wiki/stages/<stage>/README.md` |
-| Superseded plans/provenance | `docs/archive/README.md` |
-| Decisions | `docs/DECISIONS.md` |
-| Data products and provenance | `docs/references/data_sources.md` |
+| Full map and document roles | [`docs/README.md`](docs/README.md) |
+| Development, verification, commit, and documentation rules | [`RULES.md`](RULES.md) |
+| Code and Markdown style | [`STYLE.md`](STYLE.md) |
+| Current issues and constraints | [`KNOWN_ISSUES.md`](KNOWN_ISSUES.md) |
+| Current physics and switches | [`docs/model/model_physics_status.md`](docs/model/model_physics_status.md) |
+| Equations and conventions | [`docs/model/model_equation_ledger.md`](docs/model/model_equation_ledger.md) |
+| Active work status | [`docs/validation/INDEX.md`](docs/validation/INDEX.md) |
+| Stage 11 freeze | [`docs/wiki/stages/stage11/STAGE11_FREEZE.md`](docs/wiki/stages/stage11/STAGE11_FREEZE.md) |
+| Stage 12 data contract | [`docs/references/reanalysis_data_plan.md`](docs/references/reanalysis_data_plan.md) |
+| Completed stage reports | [`docs/wiki/INDEX.md`](docs/wiki/INDEX.md) and each stage `README.md` |
+| Superseded plans/provenance | [`docs/archive/README.md`](docs/archive/README.md) |
+| Decisions | [`docs/DECISIONS.md`](docs/DECISIONS.md) |
+| Data products and provenance | [`docs/references/data_sources.md`](docs/references/data_sources.md) |
 
 ## Documentation placement (mandatory)
 

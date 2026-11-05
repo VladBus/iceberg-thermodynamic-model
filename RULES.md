@@ -86,6 +86,21 @@ On stage closure, move the report and curated evidence to
 `docs/wiki/INDEX.md`. Do not leave completed material in `docs/validation/`.
 Do not create a second index or a duplicate report for a fact already covered by
 an authoritative source; link to the existing source instead.
+
+Before creating a report:
+
+1. Search existing reports, `KNOWN_ISSUES.md`, and `DECISIONS.md` for the topic.
+2. Open the linked report/test to see what was actually verified.
+3. Update an existing authoritative document when the information is already
+   covered; create a new report only for genuinely new work.
+4. If evidence is insufficient, state exactly what is missing; never invent a
+   result or silently assume a conclusion.
+
+When a stage is completed: move the final report and curated evidence to
+`docs/wiki/stages/<stage>/`, update the stage `README.md` and
+`docs/wiki/INDEX.md`, update current model/issue/decision documents as needed,
+remove only confirmed regenerable temporary files, and verify all moved-file
+references.
 - Keep indexes navigational: state the latest completed stage and link to
   reports rather than copying their scientific results into multiple indexes.
 - When moving or renaming Markdown, update links and directory indexes in the
@@ -93,6 +108,16 @@ an authoritative source; link to the existing source instead.
   corrections in living documents, not by rewriting old conclusions.
 - For documentation-only work, run `git diff --check` and validate the links
   changed or introduced; do not run model builds unless source code changed.
+- Run the documentation link checker for current guidance, model, references,
+  validation, stage indexes, and Stage 12 reports:
+
+  ```bash
+  python scripts/check_docs_links.py
+  ```
+
+  Use `--all` to include historical report bodies and `--anchors` to check
+  Markdown heading anchors. Local-only/gitignored artifacts are reported
+  separately; do not convert them into normal repository links.
 
 ## Stage-report format
 

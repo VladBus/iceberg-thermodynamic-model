@@ -1,15 +1,16 @@
 # Model Physics Block Status
 
-**Date:** 2026-11-03
+**Date:** 2026-11-05
 **Current repository stage:** **Stage 11 — FROZEN** research artifact (D-51,
 tag `stage11-final-frozen`); **Stage 12 — active**, using offline/prescribed
 reanalysis forcing for the voxel iceberg. Stage 12.8 is the latest completed
-published validation; daily-forcing acquisition was resumed on 2026-11-04 and is
-in progress. The Stage 11 prognostic ocean is **not production-validated**; its
-N², tide, and
-long-run limitations remain as recorded in `../wiki/stages/stage11/STAGE11_FREEZE.md` and
-`../../KNOWN_ISSUES.md`. EOS-80 remains the runtime default. Current switches
-and formulation details below describe the implemented model; the roadmap and
+published validation; 12.9a daily-forcing acquisition was resumed on 2026-11-04
+and is in progress, while 12.9b thesis writing is GO with fallback labeling.
+The Stage 11 prognostic ocean is **not production-validated**; its N², tide, and
+long-run limitations remain as recorded in
+`../wiki/stages/stage11/STAGE11_FREEZE.md` and `../../KNOWN_ISSUES.md`.
+EOS-80 remains the runtime default. Current switches and formulation details
+below describe the implemented model; the roadmap and
 validation index identify current work status.
 **Ocean EOS statement:** the prognostic ocean uses **UNESCO EOS-80** by default from Stage 11.8B (`src/eos80_unesco.f90`; `EOS_MODE` unset → EOS80). Legacy Eckart remains available as an explicit fallback (`EOS_MODE=LEGACY`, bit-identical historical path). D-29/D-47 promotion is valid for the N=1 30-day matrix; production scheduler stays BLOCKED (T-39). Iceberg side uses freezing-point only (table row "Full seawater EOS" below refers to the iceberg module).
 **Production baseline:** Stage 10.13 (low-flow closure behind `low_flow_closure_enabled`; OFF = Stage 10.12/10.10 legacy unchanged); Stage 10.19 adds the env-gated production iceberg connection (inert by default); Stage 10.20 adopts the full-coverage ERA5 Jan file for production gates (`src/param.f90` default path NOT changed); Stage 10.21 adds CA/EOS f32-precision research switches (`STAGE1021_CA_F64`, `STAGE1021_CA_MIX`, `STAGE1021_CA_SCOPE`, `STAGE1021_CA_EPS`) — all OFF by default, production bit-identical (KEEP_CURRENT); Stage 10.22 adds Block-200 stability-audit diagnostic switches (`STAGE1022_DIAG`, `STAGE1022_FREEZE_RO`, `STAGE1022_FREEZE_THERMAL_WIND`, `STAGE1022_FREEZE_TS`, `STAGE1022_FREEZE_RO_DOWNSTREAM`; env names `_FREEZE_RO`/`_FREEZE_TS`/`_FREEZE_RO_DOWNSTREAM`/`_FREEZE_THERMAL_WIND` + `_DIAG`) — all OFF by default, production bit-identical (KEEP_CURRENT); Stage 11.4-D32 adds the ERA5 nearest-edge coverage fallback in `era5_wind()` (loader-only production fix, Jan bit-identical); Stage 11.4-D33 fixes Ocean Baseline 11.x (Jan30/Apr29/Jul30/Oct30, 0 NaN); Stage 11.3C adds `STAGE113_DT/DT1` measurement-only timestep override (defaults = legacy 3600/120); Stage 11.3C.1 adds mm2/mm3 scaling (active only with override) + `s112_cfl_dist` percentiles (DIAG-gated)
@@ -390,7 +391,7 @@ Report: `docs/wiki/stages/stage11/stage11.8.0_T6-SEASONAL_validation.md`.
   files MD5-identical); LEGACY fallback = matrix LEGACY (32/32 identical).
 - Matrix: 8/8 N=1 cells PASS with the corrected absolute-density gate (T-41).
 - Production scheduler: NOT changed; T-39 BLOCKED (ice/cadence artifact).
-- Migration: `docs/MIGRATION_GUIDE_EOS80_DEFAULT.md`.
+- Migration: `docs/wiki/stages/stage11/MIGRATION_GUIDE_EOS80_DEFAULT.md`.
 - Audit: `docs/wiki/stages/stage11/stage11.8B_runs_inventory.md`,
   `docs/wiki/stages/stage11/evidence/reproducibility_audit.json`.
 

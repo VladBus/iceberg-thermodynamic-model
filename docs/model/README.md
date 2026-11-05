@@ -20,8 +20,9 @@ or historical reports. History lives in `docs/wiki/`.
   production-validated ocean (N²/tides/90-day gates unresolved).
 - **Stage 12 — active**, offline/prescribed reanalysis forcing for a voxel
   iceberg (D-51). Stage 12.8's Barents matrix is the latest completed validation
-  stage; daily-forcing acquisition was resumed on 2026-11-04 and is in progress.
-  Do not infer quantitative daily-forcing validation from the fallback runs. See
+  stage; 12.9a daily-forcing acquisition is in progress and 12.9b thesis writing
+  is GO with fallback labeling. Do not infer quantitative daily-forcing
+  validation from the fallback runs. See
   `../references/reanalysis_data_plan.md` and
   `../validation/INDEX.md`.
 

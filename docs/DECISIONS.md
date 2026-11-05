@@ -332,7 +332,9 @@ active Stage 12 decisions.
 
 ## D-28. Stage 12 (voxel iceberg thermodynamics) blocked until Stage 11 complete (Stage 11.5H-RC, 2026-10-08)
 
-> **Status update 2026-10-27:** Stage 11 is CLOSED; Stage 12 planning is open. Implementation has not started (D-49).
+> **Status update 2026-11-05:** Stage 11 is CLOSED; Stage 12 was entered and
+> completed through Stage 12.8. This entry gate is historical; current Stage 12
+> decisions are D-52…D-63.
 
 - **Stage:** 11.5H-RC | **Status:** DECIDED (entry gate locked)
 - **Problem:** premature voxel work on an unvalidated temporal/thermodynamic interface risks building on a regime-change artifact.
@@ -344,7 +346,7 @@ active Stage 12 decisions.
 
 ## D-29. EOS-80 stays OPTIONAL; legacy Eckart remains default (Stage 11.6, 2026-10-10)
 
-- **Stage:** 11.6 | **Status:** DECIDED (re-decide at 11.8A with sea-ice gate evidence)
+- **Stage:** 11.6 | **Status:** SUPERSEDED by D-47/D-48 (EOS-80 promoted and made default; historical decision retained)
 - **Problem:** under the corrected criterion (physical correctness + reference tests + numerical stability + impact on model — NOT "improvement vs observations"), should the validated EOS-80 pathway become production default?
 - **Decision:** OPTIONAL (`EOS_MODE=EOS80` opt-in; default LEGACY untouched, OFF bit-identical incl. Jan NDIFF=0). **Historical: superseded by D-47/D-48 (EOS80 promoted and made default in Stage 11.8B).**
 - **Why:** FOR — correctness (UNESCO compressibility), 28/28 reference tests, 4/4 April + 4/4 Jan green (0 NaN, CA converges maxiter 20–29/guard 0, salt 10× better at STALE, heat nearer legacy at STALE, 6.5× faster at STALE). AGAINST — ice response large (+36% N1 / +58% STALE d7, +96% d29 N1) and UNVALIDATED vs observations; April EUU process review (11.4) still open; per-cell velocity maps unavailable. Matches 11.4's recommendation.
@@ -806,7 +808,11 @@ remains unchanged until the production-default decision in 11.7F.
 
 ## D-60. Voxel melt-deficiency audit: fixed-cube geometry bug (Stage 12.7.audit, 2026-11-01)
 
-- **Status:** ACTIVE (bug fixed; residual structural deficit documented).
+- **Status:** SUPERSEDED IN PART by D-62/D-63: the geometry bug fix and residual
+  structural deficit remain current, but the unconditional 12.8 NO-GO condition
+  was replaced by the free-convection closure (D-62) and the exploratory Barents
+  matrix with documented fallback forcing (D-63). Quantitative low-ΔT/large-
+  iceberg claims remain NO-GO.
 - **Root cause (H3):** production voxel geometry was always a 100 m cube
   (10x10x10 at 10 m), independent of `state%L/W/H`. Voxel area was ~46,000 m2
   for every case vs ~14,400 (small), ~72,300 (medium), ~1,154,000 (large) m2.
@@ -830,6 +836,7 @@ remains unchanged until the production-default decision in 11.7F.
   physically justified low-flow/free-convection closure (or approved 12.7c
   calibration) is added.
 - **Docs:** `docs/wiki/stages/stage12/stage12.7.audit_voxel_melt.md`.
+- **Superseded by:** D-62 (free-convection closure) and D-63 (Barents matrix).
 
 ## D-61. Autonomous voxel air balance; bulk archived (Stage 12.7b, 2026-11-01)
 

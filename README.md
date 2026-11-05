@@ -35,25 +35,10 @@ under atmospheric, oceanic, bathymetric, and sea-ice forcing.
 
 ## 📑 Project status
 
-- **Current stage:** **Stage 11 FROZEN** as a research artifact (tag `stage11-final-frozen`); **Stage 12 active**: 12.0 prep + 12.1 GLORYS12 reconnaissance + **12.2 reanalysis reader & ocean provider** (`OCEAN_SOURCE` default `model` → Stage 11 bit-identical; D-51/D-52) + **12.3 voxel thermal core COMPLETE** (`VOXEL_ENABLED` default OFF → bulk untouched; D-53). Stage 12 uses GLORYS12 + ERA5 reanalysis (one-way); **12.4 Crank–Nicolson + three-equation Stefan COMPLETE** (`ICEBERG_THETA`, PCG, Rannacher, per-depth profile, `Tf(S,P)`, `u_rel`; `VOXEL_ENABLED` default OFF → bulk untouched; D-54/D-55); **12.5 voxel geometry→drift COMPLETE** (mass/draft/frontal A_sub_proj/A_sail, GM estimate; `VOXEL_ENABLED` default OFF → bulk untouched; D-56); **12.6a lat/lon drift + `iceberg_run` + real(8) COMPLETE** (D-57; IBCAO grounding; NetCDF); **12.6b wave erosion (Bigg 1997) + optional Stokes COMPLETE** (NEMO-verified formula, gates default OFF; D-58); **12.7a Enderlin23 Antarctic hindcast COMPLETE** (190 icebergs; bulk median ratio 1.39; voxel column superseded); **12.7.audit COMPLETE** (fixed-cube voxel bug fixed; residual structural deficit); **12.7b autonomous voxel air balance COMPLETE** (D-61); **12.7c free-convection closure COMPLETE** (D-62); **12.8 Barents 2020 matrix COMPLETE 24/24** with monthly-GLORYS/constant-atmosphere fallbacks (D-63; 7 figures; drift/lifetime are lower bounds); 12.9 thesis writing GO with caveats. Sea-ice drag/tides not started. EOS-80 remains default. See `docs/wiki/stages/stage11/STAGE11_FREEZE.md`, `docs/wiki/stages/stage12/STAGE12_PREPARATION.md`, `docs/wiki/stages/stage12/stage12.2_reanalysis_reader.md`, `docs/wiki/stages/stage12/stage12.3_voxel_thermal_core.md`, `docs/wiki/stages/stage12/stage12.4_crank_nicolson_stefan.md`, `docs/wiki/stages/stage12/stage12.5_voxel_geometry_drift.md`, `docs/wiki/stages/stage12/stage12.6a_drift_latlon_iceberg_run.md`, `docs/wiki/stages/stage12/stage12.6b_wave_erosion.md`, `docs/wiki/stages/stage12/stage12.7a_enderlin23_hindcast.md`, `docs/wiki/stages/stage12/stage12.7.audit_voxel_melt.md`, `docs/wiki/stages/stage12/stage12.7b_autonomous_air.md`, `docs/wiki/stages/stage12/stage12.7c_free_convection.md`, `docs/wiki/stages/stage12/stage12.8_barents2020_matrix.md`.
-- **Daily forcing:** Stage 12.9 acquisition was explicitly resumed on 2026-11-04
-  and is running sequentially; do not start additional downloads without a
-  request. Stage 12.8 used documented monthly-GLORYS/constant-atmosphere
-  fallbacks, so its drift and lifetime outputs are lower bounds, not
-  daily-forcing validation.
-- **BREAKING CHANGE (Stage 11.8B):** `EOS_MODE` unset now selects **EOS80**, not LEGACY. Set `EOS_MODE=LEGACY` to restore the historical Eckart fallback. See `docs/wiki/stages/stage11/MIGRATION_GUIDE_EOS80_DEFAULT.md`.
-  [Historical note from Stage 10.19, SUPERSEDED by Stage 10.20 restoration
-  (full-coverage ERA5: 3-day gate PASS, residual characterized, NOT fixed):
-  coupling recovery (completed: the Lagrangian iceberg module is now
-  connected to the production executable behind the
-  `ICEBERG_PRODUCTION=true` env gate (default OFF → legacy bit-identical);
-  the online-coupled 1/7/30-day gates expose the documented ocean zombie
-  state — 56.5 % NaN from day 1 (CASE C BLOCKER, CASE D root cause:
-  EN4-init momentum instability, T-03 family) — so the iceberg correctly
-  reports "steps executed: 0"; production physics unchanged; the offline
-  real-forcing iceberg path remains fully validated).
-- **Physics status and switches:** `docs/model/model_physics_status.md`
-- **Stage plan and status:** `docs/validation/INDEX.md`
+- **Current stage:** **Stage 11 FROZEN** as a research artifact; **Stage 12 active**, completed through Stage 12.8 (voxel iceberg on GLORYS12 + ERA5, offline/one-way). Stage 12.9a daily-forcing acquisition is in progress; Stage 12.9b thesis writing is GO with fallback labeling.
+- **Validation boundary:** Stage 12.8 used monthly-mean GLORYS and a constant atmosphere; its drift and lifetime are lower bounds, not daily-forcing validation. The Stage 11 ocean is not production-validated.
+- **Physics default:** EOS-80 (`EOS_MODE` unset); `EOS_MODE=LEGACY` is the historical fallback. See [`docs/model/model_physics_status.md`](docs/model/model_physics_status.md).
+- **Start here:** [`docs/README.md`](docs/README.md); active work: [`docs/validation/INDEX.md`](docs/validation/INDEX.md).
 
 ## 🔧 Repository components
 
@@ -102,28 +87,28 @@ Python: conda environment `iceberg-thermodynamic-model`
 
 ```
 README.md
-  └─ docs/README.md                 documentation map
-      ├─ model/README.md            current model specification
-      ├─ validation/INDEX.md        current Stage 12 validation
-      ├─ PROJECT_ROADMAP.md         current stage and next work
-      ├─ DECISIONS.md               decision journal
-      ├─ STAGE11_FREEZE.md          frozen Stage 11 boundary
-      ├─ REANALYSIS_DATA_PLAN.md    Stage 12 data contract/status
-      ├─ references/README.md       bibliography and literature matrix
-      └─ wiki/README.md             historical archive
+  └─ docs/README.md                     documentation map
+      ├─ model/README.md                current physics and equations
+      ├─ validation/INDEX.md            active, unfinished work
+      ├─ wiki/INDEX.md                  completed stages 3–12
+      ├─ DECISIONS.md                   decision journal
+      ├─ references/README.md           literature and data sources
+      ├─ references/reanalysis_data_plan.md  Stage 12 data contract
+      └─ archive/README.md              superseded plans and provenance
 ```
 
-| Looking for                      | Go to                                |
-| -------------------------------- | ------------------------------------ |
-| Agent and project constraints    | `AGENTS.md`                          |
-| Development and commit process   | `RULES.md`                           |
-| Code and documentation style     | `STYLE.md`                           |
-| Current known issues             | `KNOWN_ISSUES.md`                    |
-| Change history                   | `CHANGELOG.md`                       |
-| Physics status and switches      | `docs/model/model_physics_status.md` |
-| Current validation status        | `docs/validation/INDEX.md`           |
-| Historical reports               | `docs/wiki/INDEX.md`                 |
-| Full documentation map           | `docs/README.md`                     |
+| Looking for | Go to |
+| --- | --- |
+| Agent and project constraints | [`AGENTS.md`](AGENTS.md) |
+| Development and commit process | [`RULES.md`](RULES.md) |
+| Code and documentation style | [`STYLE.md`](STYLE.md) |
+| Current known issues | [`KNOWN_ISSUES.md`](KNOWN_ISSUES.md) |
+| Change history | [`CHANGELOG.md`](CHANGELOG.md) |
+| Physics status and switches | [`docs/model/model_physics_status.md`](docs/model/model_physics_status.md) |
+| Current active work | [`docs/validation/INDEX.md`](docs/validation/INDEX.md) |
+| Completed stage reports | [`docs/wiki/INDEX.md`](docs/wiki/INDEX.md) |
+| Stage 11 frozen boundary | [`docs/wiki/stages/stage11/STAGE11_FREEZE.md`](docs/wiki/stages/stage11/STAGE11_FREEZE.md) |
+| Full documentation map | [`docs/README.md`](docs/README.md) |
 
 ## 🔗 References
 

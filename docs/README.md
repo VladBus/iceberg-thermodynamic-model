@@ -23,29 +23,30 @@ README.md (project overview)
 
 | Need | Authoritative document |
 | --- | --- |
-| Current Stage 12.9 work and acquisition status | `validation/INDEX.md` |
-| Current physics, switches, and limitations | `model/model_physics_status.md` |
-| Equations, units, and sign conventions | `model/model_equation_ledger.md` |
-| Model narrative | `model/model_description.md` |
-| Current decisions | `DECISIONS.md` |
-| Current issues and technical constraints | `../KNOWN_ISSUES.md` |
-| Data products and literature provenance | `references/data_sources.md` and `references/README.md` |
-| Reanalysis product/data contract | `references/reanalysis_data_plan.md` |
-| Production vs legacy I/O policy | `LEGACY_IO_POLICY.md` |
+| Current active work (12.9a acquisition / 12.9b thesis) | [`validation/INDEX.md`](validation/INDEX.md) |
+| Current physics, switches, and limitations | [`model/model_physics_status.md`](model/model_physics_status.md) |
+| Equations, units, and sign conventions | [`model/model_equation_ledger.md`](model/model_equation_ledger.md) |
+| Model narrative | [`model/model_description.md`](model/model_description.md) |
+| Current decisions | [`DECISIONS.md`](DECISIONS.md) |
+| Current issues and technical constraints | [`../KNOWN_ISSUES.md`](../KNOWN_ISSUES.md) |
+| Data products and literature provenance | [`references/data_sources.md`](references/data_sources.md) and [`references/README.md`](references/README.md) |
+| Reanalysis product/data contract | [`references/reanalysis_data_plan.md`](references/reanalysis_data_plan.md) |
+| Production vs legacy I/O policy | [`LEGACY_IO_POLICY.md`](LEGACY_IO_POLICY.md) |
 
 The Stage 11 research artifact is frozen. Its boundary and limitations are in
-`wiki/stages/stage11/STAGE11_FREEZE.md`; it is not a production-validated ocean.
+[`wiki/stages/stage11/STAGE11_FREEZE.md`](wiki/stages/stage11/STAGE11_FREEZE.md);
+it is not a production-validated ocean.
 
 ## Documentation areas
 
 | Directory | Role | Entry point |
 | --- | --- | --- |
-| `model/` | Current physical and mathematical model description only | `model/README.md` |
-| `references/` | Literature, data products, provenance, and formulation premises | `references/README.md` |
-| `validation/` | Temporary work for the active, unfinished validation stage only | `validation/INDEX.md` |
-| `wiki/stages/stageXX/` | Completed stage/commit reports and their curated evidence | `wiki/INDEX.md` and each stage's `README.md` |
-| `wiki/topics/` | Cross-stage historical reference notes | `wiki/README.md` |
-| `archive/` | Superseded plans and records with no active operational role | `archive/README.md` |
+| `model/` | Current physical and mathematical model description only | [`model/README.md`](model/README.md) |
+| `references/` | Literature, data products, provenance, and formulation premises | [`references/README.md`](references/README.md) |
+| `validation/` | Temporary work for the active, unfinished validation stage only | [`validation/INDEX.md`](validation/INDEX.md) |
+| `wiki/stages/stageXX/` | Completed stage/commit reports and their curated evidence | [`wiki/INDEX.md`](wiki/INDEX.md) and each stage's `README.md` |
+| `wiki/topics/` | Cross-stage historical reference notes | [`wiki/README.md`](wiki/README.md) |
+| `archive/` | Superseded plans and records with no active operational role | [`archive/README.md`](archive/README.md) |
 
 ## Where documents go
 
@@ -74,6 +75,11 @@ Run these before committing a documentation change:
 | Status | Update `KNOWN_ISSUES.md` when an issue opens, changes status, or closes; add a `DECISIONS.md` record when the reason for a choice changes. |
 | History | Do not rewrite archived scientific conclusions; record corrections in the living source and link the later decision. |
 | Whitespace | `git diff --check` is clean. |
+
+Run `python scripts/check_docs_links.py` for current guidance, model,
+references, validation, and Stage 12 reports. Use `--all` to include historical
+report bodies and `--anchors` to check heading anchors. Local-only/gitignored
+artifacts are reported separately.
 
 ## Repository-level guidance
 

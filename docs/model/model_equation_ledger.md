@@ -1,7 +1,7 @@
 # Model Equation Ledger — Mathematical Specification of the Current Model
 
-**Date:** 2026-10-29
-**Current repository stage:** **Stage 11 FROZEN** (D-51, tag `stage11-final-frozen`); **Stage 12 active** (GLORYS12 + ERA5 voxel iceberg, `../STAGE12_PREPARATION.md`). The equations below are the **rectangular-prism Stage-11 physical specification** and are unchanged by the freeze; temporal integration architecture (operator cadence, substepping, STALE coupling, production scheduler) is documented separately in `../archive/stage11/stage11.5H_production_temporal_architecture.md`. Stage 12 will add a **voxel thermal section** (per-voxel `T`/`φ`, finite-volume conduction, Stefan/three-equation boundary flux) and a **reanalysis forcing interface** once implemented — neither exists yet, so they are intentionally not written here.
+**Date:** 2026-11-05
+**Current repository stage:** **Stage 11 FROZEN** (D-51, tag `stage11-final-frozen`); **Stage 12 active** (GLORYS12 + ERA5 voxel iceberg). Sections 1–16 are the rectangular-prism and Stage 11 ocean specification and remain valid for the legacy/regression path. Section 17 specifies the implemented Stage 12 voxel, reanalysis, and wave formulations; it does not retroactively change the Stage 11 reference. Stage 12.9 acquisition is in progress; see `docs/validation/INDEX.md`.
 **Production baseline:** Stage 10.13 (low-flow closure behind `low_flow_closure_enabled`; OFF = Stage 10.12/10.10 behavior unchanged)
 **Units:** SI in the iceberg module unless explicitly noted.
 
@@ -468,3 +468,120 @@ corrected here, coverage is added. Full inventory:
 - Block 210: genuine IMPLICIT Thomas solve for vertical viscosity
   (forward `uca/unu`, backward substitution; pivots negative by
   construction per Stage 10.22).
+
+## 17. Stage 12 voxel, three-equation, wave, and reanalysis formulation
+
+This section is the mathematical specification of the **implemented Stage 12
+path**. It is supplementary to Sections 1–16 and does not alter the frozen
+Stage 11 reference. Detailed derivations, tests, and limitations are in
+[`../wiki/stages/stage12/`](../wiki/stages/stage12/).
+
+### 17.1 Voxel energy balance (Crank–Nicolson)
+
+For active voxels (`φ > 1e-12`) with heat capacity `C_i = φ_i ρ_ice c_ice V`:
+
+```text
+(C_i/Δt) (T_i^{n+1} − T_i^n) = θ F_i(T^{n+1}) + (1−θ) F_i(T^n)
+```
+
+- Meaning: implicit/explicit blend of conduction and boundary fluxes for each voxel.
+- Units: `C_i` in J/K, `T` in °C, `F_i` in W, `Δt` in s.
+- Parameters: `θ = ICEBERG_THETA = 0.5` (default); `θ=1` is backward Euler.
+- Implementation: `src/voxel_thermal_solver.f90`; PCG+Jacobi with
+  `ICEBERG_CG_TOL=1e-10`; two Rannacher backward-Euler steps after geometry
+  changes.
+- Limitations: boundary linearisation, melt cap, and grid-rotation neglect are
+  model assumptions; see Stage 12.4.
+
+### 17.2 Submerged-face conduction boundary
+
+```text
+G_b = 2 k_ice A_f / h_norm
+T_b = Tf(S, P)
+```
+
+- Meaning: Dirichlet ice–water face temperature and conductance.
+- Units: `G_b` in W/K, `k_ice` in W/(m·K), `A_f` in m², `h_norm` in m, `T_b` in °C.
+- Implementation: `src/voxel_thermal_solver.f90`; `Tf` from EOS-80.
+- Limitations: face-normal geometry is approximated; no cavity exchange.
+
+### 17.3 Three-equation Stefan interface
+
+For each submerged face at depth `d_f`:
+
+```text
+S_B(m) = ρ_w γ_S S_w / (ρ_w γ_S + ρ_ice m)
+T_B(m) = Tf(S_B, P_f),   P_f = ρ_w g d_f / 1e4
+F(m) = ρ_w c_w γ_T (T_w − T_B) − ρ_ice L_f m
+       − (2 k_ice/h_norm) (T_B − T_voxel)
+```
+
+- Meaning: salt balance, interface freezing temperature, and heat balance.
+- Units: `m` m/s (ice-equivalent melt rate), `γ` m/s, `S` mass fraction at the
+  boundary, `P_f` dbar, `F` W/m².
+- Closure: `γ_T = K_T u_rel`, `γ_S = K_S u_rel`, `K_T=1.1e-3`,
+  `K_S=3.1e-5`; `F(m)` is solved by bisection with `m ≥ 0` (no accretion).
+- Implementation: `src/voxel_thermal_solver.f90`; per-face `F(m)`; converged
+  `T_B` is fed back as the CN Dirichlet value.
+- Limitations: coefficients uncalibrated; no accretion; cavity/spray exchange
+  absent; large/low-ΔT under-melt remains.
+
+### 17.4 Free-convection floor
+
+```text
+γ_T = max(K_T u_rel, 1e-5)
+γ_S = max(K_S u_rel, 1e-6)
+```
+
+- Meaning: mixed forced/free convection at low relative flow.
+- Units: `γ` m/s, `u_rel` m/s.
+- Implementation: `src/voxel_thermal_solver.f90`; defaults
+  `VOXEL_GAMMA_FREE_T=1e-5`, `VOXEL_GAMMA_FREE_S=1e-6`.
+- Limitations: large/low-ΔT ratios remain below 0.5; the full 190-iceberg
+  hindcast was not rerun (Stage 12.7c).
+
+### 17.5 Voxel geometry and drag
+
+```text
+F_water = 0.5 ρ_w C_Dw A_sub_proj |u_rel| u_rel
+F_wind  = 0.5 ρ_a C_Da A_sail     |v_rel| v_rel
+```
+
+- Meaning: water and wind drag using voxel-derived projected submerged area and
+  exposed sail area.
+- Units: forces N, areas m², velocities m/s.
+- Implementation: `src/voxel_iceberg.f90` (`A_sub_proj`, `A_sail`, `GM`) and
+  `src/iceberg_dynamics.f90` (gated use).
+- Limitations: uniform flow direction; `A_sail` is total exposed surface, not a
+  projected sail; no capsize/roll; concave silhouettes approximated.
+
+### 17.6 Wave erosion (Bigg/NEMO)
+
+```text
+m_wave = max( (1/12)(T_w + 2) S_s [1 + cos(π c^3)], 0 ) / 86400
+```
+
+- Meaning: wave-driven lateral erosion rate.
+- Units: `m_wave` m/s, `T_w` °C, `S_s` dimensionless Douglas sea state.
+- Closure: `S_s` from significant wave height by Douglas/WMO bins; optional
+  Stokes drift added to water drag.
+- Implementation: `src/wave_forcing.f90`; gates `ICEBERG_WAVE_EROSION` and
+  `ICEBERG_STOKES_DRIFT` default OFF.
+- Limitations: no real WAM validation; `Tp`/direction unused; no sea-ice drag
+  or tides; length/width recession only.
+
+### 17.7 Reanalysis interpolation and position update
+
+```text
+T(x,y,z,t), S, u, v: bilinear in (lat,lon), linear in depth and time
+dlat = v·dt/R
+dlon = u·dt/(R cosφ)
+```
+
+- Meaning: offline/prescribed GLORYS12 ocean forcing and first-order geographic
+  iceberg position in reanalysis mode.
+- Units: positions rad, velocities m/s, depth m, time s.
+- Implementation: `src/reanalysis_reader.f90`, `src/ocean_provider.f90`,
+  `src/iceberg.f90`, `src/iceberg_run.f90`.
+- Limitations: coarse coastal currents; no two-way coupling; first-order
+  position update; grid rotation neglected in relative flow.

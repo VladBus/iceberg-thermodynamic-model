@@ -4,11 +4,12 @@ Frozen 2026-09-29. Method: read ACTUAL Fortran code, not comments. Where code
 and comments disagree, CODE wins (flagged HISTORICAL NOTE). No scheme was
 changed in this audit.
 
-> **Scope note (2026-10-29):** this inventory describes the **Stage 11 frozen**
-> prognostic ocean. Stage 12 (D-51) drives the iceberg from **GLORYS12 + ERA5
-> reanalysis** (offline/prescribed) and does **not** reuse this prognostic
-> ocean, so these schemes are the Stage 11 reference, not the Stage 12 forcing
-> path. The Stage 12 voxel thermal schemes will be added here when implemented.
+> **Scope note (2026-11-05):** Sections 1–3 describe the **Stage 11 frozen**
+> prognostic ocean and its timestep audit. Stage 12 (D-51) drives the iceberg
+> from **GLORYS12 + ERA5 reanalysis** (offline/prescribed) and does not reuse
+> this prognostic ocean. The Stage 12 voxel, reanalysis, and wave schemes are
+> listed in the final section; they are implemented and gated separately from
+> the Stage 11 ocean reference.
 
 ## Summary table
 
@@ -53,3 +54,23 @@ issue). Caveats: `mm2=12` fixed ⇒ simulated hours/day scale with DT
 (documented, not calendar-equivalent runs); `s112` barotropic-CFL probe uses
 hardcoded 120 s (`main.f90:1245`), so the Cwave column does not reflect DT1
 changes (instrumentation note for 11.3C-follow-up, not a physics issue).
+
+## Stage 12 — voxel iceberg, reanalysis forcing, and wave schemes
+
+These schemes are implemented in the Stage 12 code path and are **gated**; they
+do not change the Stage 11 ocean reference. Reports are in
+`docs/wiki/stages/stage12/`.
+
+| Block | Implementation | Method | Default / switch | Verification | Limitations |
+| --- | --- | --- | --- | --- | --- |
+| Voxel heat conduction | `src/voxel_thermal_solver.f90` | Finite-volume conduction on state-scaled voxels; explicit path retained | `VOXEL_THERMAL_SCHEME=explicit` | Stage 12.3/12.4 synthetic tests | No cavity exchange; grid-rotation neglected |
+| Crank–Nicolson core | `src/voxel_thermal_solver.f90` | θ-scheme with `θ=ICEBERG_THETA=0.5`; symmetric 7-diagonal system solved by PCG+Jacobi (`ICEBERG_CG_TOL=1e-10`) | Default `cn` | A‑T1…A‑T9; temporal order ~2 (ratio 3.996), energy drift ~1.6e−10 | BC linearisation and melt-cap choices are model assumptions |
+| Rannacher smoothing | `src/voxel_thermal_solver.f90` | Two backward-Euler steps after any geometry change, then return to CN | Automatic after removal | A‑T8 | Added for stability, not calibrated |
+| Stefan / three-equation boundary | `src/voxel_thermal_solver.f90` | Per-face `F(m)` bisection; `S_B(m)`, `T_B=Tf(S_B,P_f)`; `m≥0`, no accretion | Voxel submerged faces | B‑T1…B‑T8; mass budget closes to 8.96e−16 | K_T/K_S uncalibrated; no accretion; per-face assumptions |
+| Free-convection floor | `src/voxel_thermal_solver.f90` | `gamma_T=max(K_T u_rel, 1e-5)`, `gamma_S=max(K_S u_rel, 1e-6)` | `VOXEL_ENABLED=ON` voxel path | Stage 12.7c 3-case rerun | Large/low-ΔT under-melt remains; full 190 not rerun |
+| Voxel geometry / drift | `src/voxel_iceberg.f90`, `src/iceberg_dynamics.f90` | Voxel mass, Archimedes draft, projected submerged area `A_sub_proj`, exposed sail area `A_sail`; `GM` diagnostic | `VOXEL_ENABLED=ON` | Stage 12.5 tests T1–T6 | Uniform flow direction; no capsize; concave silhouettes approximated |
+| Wave erosion | `src/wave_forcing.f90` | Bigg/NEMO rate `m_wave=max((1/12)(T_w+2)S_s[1+cos(pi c^3)],0)/day`; Douglas `Hs→S_s` | `ICEBERG_WAVE_EROSION` default OFF | Stage 12.6b formula/switch tests | No real WAM validation; `Tp`/direction unused; no sea-ice drag/tides |
+| Optional Stokes drift | `src/wave_forcing.f90`, `src/iceberg_dynamics.f90` | Adds Stokes velocity to water drag | `ICEBERG_STOKES_DRIFT` default OFF | Stage 12.6b switch tests | Optional/offline; not validated against drifter data |
+| Reanalysis ocean reader | `src/reanalysis_reader.f90`, `src/ocean_provider.f90` | Packed-int16 decode; bilinear lat/lon; linear depth and time; NaN=land | `OCEAN_SOURCE=reanalysis` (default `model`) | Stage 12.2 tests 9/9 + 4/4 + 4/4 | Coastal currents coarse; no two-way coupling |
+| ERA5 atmosphere | `src/netcdf_input.f90`, `src/wind_forcing.f90` | Bilinear spatial interpolation; nearest-time selection; D32 edge clamp | Existing Stage 11 path | ERA5 contract tests | 3-hourly step forcing; no temporal interpolation |
+| Lat/lon drift | `src/iceberg.f90`, `src/iceberg_run.f90` | `dlat=v·dt/R`, `dlon=u·dt/(R cosφ)`; first-order update | `OCEAN_SOURCE=reanalysis` | Stage 12.6a tests | First-order; grid rotation neglected |

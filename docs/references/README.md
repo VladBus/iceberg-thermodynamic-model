@@ -19,7 +19,7 @@ The repository bibliography must be reproducible on another machine. Zotero `fil
 
 No bibliographic metadata should be invented merely to complete a record. DOI, publisher, journal, volume, pages, year and official URLs are preferred when available. Duplicate records are resolved by bibliographic identity, not by citation-key similarity alone.
 
-The current curated bibliography contains **137 unique records**: 126 retained records from the original 127-record collection after removing one incomplete duplicate, plus 11 references verified as required by the current model documentation and implementation.
+The current committed bibliography contains **156 entries** (`grep -c '^@' docs/references/references.bib`). The earlier count of 137 was stale and has been removed. Bibliographic identity, not citation-key similarity, is used when resolving duplicates.
 
 ## Current model references
 

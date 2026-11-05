@@ -1,9 +1,10 @@
 # Reanalysis Data Plan — Stage 12.1
 
 **Status:** Stage 12.1 reconnaissance and Stage 12.2 reader are complete; Stage
-12.8's fallback-forcing matrix is the latest completed validation. Daily-forcing
-acquisition was resumed by explicit user request on 2026-11-04 and is running
-month by month. Do not start additional downloads unless the user asks. See
+12.8's fallback-forcing matrix is the latest completed validation. The
+**12.9a daily-forcing acquisition** was resumed by explicit user request on
+2026-11-04 and is running month by month. Do not start additional downloads
+unless the user asks. See
 `docs/validation/INDEX.md` for current stage status.
 **Date:** 2026-11-04
 **Decision:** D-51 (+D-52).

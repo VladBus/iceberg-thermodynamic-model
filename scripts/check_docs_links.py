@@ -51,7 +51,6 @@ LOCAL_ONLY_PREFIXES = (
     "data/input/",
     "data/runs/",
     "data/output/",
-    "docs/validation/stage12.9_era5_manifest.json",
     "docs/wiki/ERA5_INTEGRATION_TODO.md",
     "docs/references/work_references.bib",
     "data/validation/observations/stage10.18d/raw/",

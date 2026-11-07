@@ -2,11 +2,11 @@
 
 **Status:** Stage 12.1 reconnaissance and Stage 12.2 reader are complete; Stage
 12.8's fallback-forcing matrix is the latest completed validation. The
-**12.9a daily-forcing acquisition** was resumed by explicit user request on
-2026-11-04 and is running month by month. Do not start additional downloads
-unless the user asks. See
+**12.9a daily-forcing acquisition is COMPLETE (2026-11-07)**: 24/24 months for
+ERA5, GLORYS12, and WAM. No further downloads are needed. Stage 12.9b thesis
+writing is GO with fallback labeling. See
 `docs/validation/INDEX.md` for current stage status.
-**Date:** 2026-11-04
+**Date:** 2026-11-07
 **Decision:** D-51 (+D-52).
 **Purpose:** define the exact ocean/sea-ice source and validation gate for the
 Stage 12 voxel iceberg. The atmosphere remains ERA5.

@@ -25,10 +25,10 @@ decisions are in [`../DECISIONS.md`](../DECISIONS.md). Stage 12 reports are in
 
 **Current status.** Stage 12.8 is the latest completed published validation.
 Its Barents matrix used monthly-mean GLORYS and a constant atmosphere; drift and
-lifetime are lower bounds, not daily-forcing validation. Stage 12.9 separates
-into **12.9a daily-forcing acquisition** (in progress) and **12.9b thesis
-writing** (GO with explicit fallback labeling). Stage 12 is not an
-operationally validated forecast system.
+lifetime are lower bounds, not daily-forcing validation. Stage 12.9a
+daily-forcing acquisition is complete; **12.9b thesis writing** is GO with
+explicit fallback labeling. Stage 12 is not an operationally validated forecast
+system.
 
 ## 2. Grid and coordinates
 

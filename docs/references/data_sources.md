@@ -104,10 +104,10 @@ derived CSV is the reproducible artifact).
 
 ### 3.2 ERA5
 
-**Acquisition status (2026-11-04):** Stage 12.9 daily-forcing acquisition was
-resumed by explicit user request. Complete months are recorded in
-`docs/validation/stage12.9_era5_manifest.json`; do not start additional
-downloads unless the user asks.
+**Acquisition status (2026-11-07): COMPLETE.** Stage 12.9a acquired all 24
+months for 2020 and 2024. Complete months and checksums are recorded in
+`docs/validation/stage12.9_era5_manifest.json`; no further downloads are needed.
+Acquisition provenance is not a validation result.
 
 ```bash
 conda run -n iceberg-thermodynamic-model \

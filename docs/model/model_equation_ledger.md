@@ -7,7 +7,7 @@
 > Section 17 is the current Stage 12 voxel/reanalysis specification.
 
 **Date:** 2026-11-05
-**Current repository stage:** **Stage 11 FROZEN** (D-51, tag `stage11-final-frozen`); **Stage 12 active** (GLORYS12 + ERA5 voxel iceberg). Sections 1–16 are the rectangular-prism and Stage 11 ocean specification and remain valid for the legacy/regression path. Section 17 specifies the implemented Stage 12 voxel, reanalysis, and wave formulations; it does not retroactively change the Stage 11 reference. Stage 12.9 acquisition is in progress; see `docs/validation/INDEX.md`.
+**Current repository stage:** **Stage 11 FROZEN** (D-51, tag `stage11-final-frozen`); **Stage 12 active** (GLORYS12 + ERA5 voxel iceberg). Sections 1–16 are the rectangular-prism and Stage 11 ocean specification and remain valid for the legacy/regression path. Section 17 specifies the implemented Stage 12 voxel, reanalysis, and wave formulations; it does not retroactively change the Stage 11 reference. Stage 12.9a acquisition is complete; see `docs/validation/INDEX.md`.
 **Production baseline:** Stage 10.13 (low-flow closure behind `low_flow_closure_enabled`; OFF = Stage 10.12/10.10 behavior unchanged)
 **Units:** SI in the iceberg module unless explicitly noted.
 

@@ -1,11 +1,11 @@
 # Model Physics Block Status
 
-**Date:** 2026-11-05
+**Date:** 2026-11-07
 **Current repository stage:** **Stage 11 — FROZEN** research artifact (D-51,
 tag `stage11-final-frozen`); **Stage 12 — active**, using offline/prescribed
 reanalysis forcing for the voxel iceberg. Stage 12.8 is the latest completed
-published validation; 12.9a daily-forcing acquisition was resumed on 2026-11-04
-and is in progress, while 12.9b thesis writing is GO with fallback labeling.
+published validation; 12.9a daily-forcing acquisition is complete (24/24
+months), while 12.9b thesis writing is GO with fallback labeling.
 The Stage 11 prognostic ocean is **not production-validated**; its N², tide, and
 long-run limitations remain as recorded in
 `../wiki/stages/stage11/STAGE11_FREEZE.md` and `../../KNOWN_ISSUES.md`.

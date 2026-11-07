@@ -10,9 +10,9 @@ in `KNOWN_ISSUES.md`; the documentation map is `docs/README.md`.
   production-validated prognostic ocean; see
   `docs/wiki/stages/stage11/STAGE11_FREEZE.md`.
 - **Stage 12 is active.** Stage 12.8's 24-run Barents matrix is the latest
-  completed stage in the published validation index. Daily-forcing acquisition
-  was explicitly resumed on 2026-11-04 and is running sequentially; do not start
-  additional downloads unless explicitly requested. See
+  completed published validation. Stage 12.9a daily-forcing acquisition is
+  complete (24/24 months for ERA5, GLORYS12, and WAM; 2026-11-07); do not start
+  additional downloads. Stage 12.9b thesis writing is the active workstream. See
   `docs/validation/INDEX.md` and `docs/references/reanalysis_data_plan.md`.
 - Check `docs/model/model_physics_status.md`, `docs/DECISIONS.md`, and
   `KNOWN_ISSUES.md` before making claims about physics, switches, or open issues.

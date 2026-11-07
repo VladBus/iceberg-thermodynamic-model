@@ -21,7 +21,7 @@ links identify the work that closed them.
 | --- | --- |
 | Stage 11 | **FROZEN** research artifact (`stage11-final-frozen`); not a production-validated ocean. See [`STAGE11_FREEZE.md`](docs/wiki/stages/stage11/STAGE11_FREEZE.md). |
 | Stage 12 | **Active**; offline/prescribed reanalysis forcing for the voxel iceberg. Latest completed published validation: Stage 12.8. |
-| Stage 12.9 data acquisition | In progress; sequential ERA5 months are tracked in [`stage12.9_era5_manifest.json`](docs/validation/stage12.9_era5_manifest.json). Do not start additional downloads. |
+| Stage 12.9 data acquisition | **COMPLETE (2026-11-07)**; ERA5, GLORYS12, and WAM each have 24/24 months. Manifests are tracked; no further downloads are needed. Daily forcing has been acquired but is not yet validated. |
 | Ocean EOS default | UNESCO EOS-80 (`EOS_MODE` unset); `EOS_MODE=LEGACY` is the explicit historical fallback. |
 | Iceberg forcing | Offline/prescribed, one-way; no ocean feedback. |
 | Scope of this file | Index only; details live in the linked reports, tests, and decisions. |

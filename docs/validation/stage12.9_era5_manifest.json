@@ -1,0 +1,184 @@
+{
+  "dataset_id": "reanalysis-era5-single-levels",
+  "cds_daily_means_attempt": {
+    "dataset": "reanalysis-era5-single-levels-daily-means",
+    "status": "404 process not found"
+  },
+  "aggregation": "hourly 00-23 UTC -> daily arithmetic mean; sf total/86400",
+  "area": [
+    86.0,
+    5.0,
+    63.0,
+    80.0
+  ],
+  "months": {
+    "2020-01": {
+      "path": "data/input/reanalysis/era5/2020/era5_2020_01_daily.nc",
+      "size_bytes": 13086558,
+      "sha256": "e2e8e012279a96ede4d452188763e5fb4b9314aa58216572265b9bffd9c11437",
+      "source": "reanalysis-era5-single-levels",
+      "aggregation": "hourly 00-23 UTC; mean except sf total/86400"
+    },
+    "2020-03": {
+      "path": "data/input/reanalysis/era5/2020/era5_2020_03_daily.nc",
+      "size_bytes": 13038645,
+      "sha256": "0f80d6941e6b4aa24e61f2021314f259a6db6c49dc7fc4e32cc8b76d2e50a5e3",
+      "source": "reanalysis-era5-single-levels",
+      "aggregation": "hourly 00-23 UTC; mean except sf total/86400"
+    },
+    "2020-02": {
+      "path": "data/input/reanalysis/era5/2020/era5_2020_02_daily.nc",
+      "size_bytes": 12278493,
+      "sha256": "2157ec633e8673e77ddd7fcc0b88fe8fbf49b7bda70d328fcea01100efaf2c06",
+      "source": "cds",
+      "aggregation": "hourly 00-23 UTC; mean except sf total/86400"
+    },
+    "2020-04": {
+      "path": "data/input/reanalysis/era5/2020/era5_2020_04_daily.nc",
+      "size_bytes": 12530785,
+      "sha256": "c863977ad27eaefc8351757b3512c9bd7c2cd0c5fd665457d0418868aea7f632",
+      "source": "reanalysis-era5-single-levels",
+      "aggregation": "hourly 00-23 UTC; mean except sf total/86400"
+    },
+    "2020-05": {
+      "path": "data/input/reanalysis/era5/2020/era5_2020_05_daily.nc",
+      "size_bytes": 12301555,
+      "sha256": "8031d26cfdae2eb0bc0fd00cf770aad92ab4df5939a56bd025334a954c9f37f8",
+      "source": "reanalysis-era5-single-levels",
+      "aggregation": "hourly 00-23 UTC; mean except sf total/86400"
+    },
+    "2020-06": {
+      "path": "data/input/reanalysis/era5/2020/era5_2020_06_daily.nc",
+      "size_bytes": 11153248,
+      "sha256": "abac4118693bc412e1c292943d71af76704e9acac158c89231870d65809cf3e7",
+      "source": "reanalysis-era5-single-levels",
+      "aggregation": "hourly 00-23 UTC; mean except sf total/86400"
+    },
+    "2020-07": {
+      "path": "data/input/reanalysis/era5/2020/era5_2020_07_daily.nc",
+      "size_bytes": 10488729,
+      "sha256": "eae51cf6efafcd084a858de5474513808d967c7cb8f290b7abfa1bff115a317e",
+      "source": "reanalysis-era5-single-levels",
+      "aggregation": "hourly 00-23 UTC; mean except sf total/86400"
+    },
+    "2020-08": {
+      "path": "data/input/reanalysis/era5/2020/era5_2020_08_daily.nc",
+      "size_bytes": 10613100,
+      "sha256": "5cfb275de6fd2e9290f0488f850540decaecc269da469eb22f8b3b9c45cda007",
+      "source": "reanalysis-era5-single-levels",
+      "aggregation": "hourly 00-23 UTC; mean except sf total/86400"
+    },
+    "2020-09": {
+      "path": "data/input/reanalysis/era5/2020/era5_2020_09_daily.nc",
+      "size_bytes": 10876199,
+      "sha256": "167ac7bf9333342db4c0c34487a76e953283b7f2ac0ee622604003faf14aa6ca",
+      "source": "reanalysis-era5-single-levels",
+      "aggregation": "hourly 00-23 UTC; mean except sf total/86400"
+    },
+    "2020-10": {
+      "path": "data/input/reanalysis/era5/2020/era5_2020_10_daily.nc",
+      "size_bytes": 12337807,
+      "sha256": "e3705f1167c4221173d2dc52d93634d300d11b6db2f25a1c66ec71ed5d592f88",
+      "source": "reanalysis-era5-single-levels",
+      "aggregation": "hourly 00-23 UTC; mean except sf total/86400"
+    },
+    "2020-11": {
+      "path": "data/input/reanalysis/era5/2020/era5_2020_11_daily.nc",
+      "size_bytes": 12256189,
+      "sha256": "3a2848ace598d3ba9b7d0a38304da383c639b80194a70324c80cd4629bd0be72",
+      "source": "reanalysis-era5-single-levels",
+      "aggregation": "hourly 00-23 UTC; mean except sf total/86400"
+    },
+    "2020-12": {
+      "path": "data/input/reanalysis/era5/2020/era5_2020_12_daily.nc",
+      "size_bytes": 13099247,
+      "sha256": "e408f9c5efd4f257f5fe3faf521e3f6e73e8ce6c4bb5d33781eb3dc240cc219d",
+      "source": "reanalysis-era5-single-levels",
+      "aggregation": "hourly 00-23 UTC; mean except sf total/86400"
+    },
+    "2024-01": {
+      "path": "data/input/reanalysis/era5/2024/era5_2024_01_daily.nc",
+      "size_bytes": 13193613,
+      "sha256": "be1f6641e8f8fcab448ce42ac634931c33ff2929caeb615740fd565301a3771c",
+      "source": "reanalysis-era5-single-levels",
+      "aggregation": "hourly 00-23 UTC; mean except sf total/86400"
+    },
+    "2024-02": {
+      "path": "data/input/reanalysis/era5/2024/era5_2024_02_daily.nc",
+      "size_bytes": 12287285,
+      "sha256": "cb54c37a606e4270469f9d0aa0bc405919713189c35878dfbc5af1d5f9c72038",
+      "source": "reanalysis-era5-single-levels",
+      "aggregation": "hourly 00-23 UTC; mean except sf total/86400"
+    },
+    "2024-03": {
+      "path": "data/input/reanalysis/era5/2024/era5_2024_03_daily.nc",
+      "size_bytes": 13095608,
+      "sha256": "b53c41bc9bf8b9333ec7687896399103a3276b3e99442b970f33fd10eac5f32d",
+      "source": "reanalysis-era5-single-levels",
+      "aggregation": "hourly 00-23 UTC; mean except sf total/86400"
+    },
+    "2024-04": {
+      "path": "data/input/reanalysis/era5/2024/era5_2024_04_daily.nc",
+      "size_bytes": 12613073,
+      "sha256": "39c357312119ec3c796958666bbb2b73738d18c1105c090ad7fad498af1c8c00",
+      "source": "reanalysis-era5-single-levels",
+      "aggregation": "hourly 00-23 UTC; mean except sf total/86400"
+    },
+    "2024-05": {
+      "path": "data/input/reanalysis/era5/2024/era5_2024_05_daily.nc",
+      "size_bytes": 12588711,
+      "sha256": "e09dcd3f5d6761b653a355154a0ba430d9a8f5065cda6c0c6f71e360ff51e1bb",
+      "source": "reanalysis-era5-single-levels",
+      "aggregation": "hourly 00-23 UTC; mean except sf total/86400"
+    },
+    "2024-06": {
+      "path": "data/input/reanalysis/era5/2024/era5_2024_06_daily.nc",
+      "size_bytes": 11383873,
+      "sha256": "36a986e97fdb968fd3ef28373bd2a7312507d0a35ca45033a1bb80dff8eb56d5",
+      "source": "reanalysis-era5-single-levels",
+      "aggregation": "hourly 00-23 UTC; mean except sf total/86400"
+    },
+    "2024-07": {
+      "path": "data/input/reanalysis/era5/2024/era5_2024_07_daily.nc",
+      "size_bytes": 10894818,
+      "sha256": "744b5ad09b706ce24f23b5b10371a47b5d3396494abaa848de6df1faee8fa7b5",
+      "source": "reanalysis-era5-single-levels",
+      "aggregation": "hourly 00-23 UTC; mean except sf total/86400"
+    },
+    "2024-08": {
+      "path": "data/input/reanalysis/era5/2024/era5_2024_08_daily.nc",
+      "size_bytes": 10707730,
+      "sha256": "ed4b215665c944214c2274e707f6294b479e4f97ce1dabebda51ed2bcb407419",
+      "source": "reanalysis-era5-single-levels",
+      "aggregation": "hourly 00-23 UTC; mean except sf total/86400"
+    },
+    "2024-09": {
+      "path": "data/input/reanalysis/era5/2024/era5_2024_09_daily.nc",
+      "size_bytes": 10982093,
+      "sha256": "dc6e2a13fc22e5ea5e96ba7928ec5a2d292276a98bdb24e6c6a0b86a1751c220",
+      "source": "reanalysis-era5-single-levels",
+      "aggregation": "hourly 00-23 UTC; mean except sf total/86400"
+    },
+    "2024-10": {
+      "path": "data/input/reanalysis/era5/2024/era5_2024_10_daily.nc",
+      "size_bytes": 12212139,
+      "sha256": "598b6705d1a4bd284c4762afdc1107870b48cb146347e3968630da825fc17b52",
+      "source": "reanalysis-era5-single-levels",
+      "aggregation": "hourly 00-23 UTC; mean except sf total/86400"
+    },
+    "2024-11": {
+      "path": "data/input/reanalysis/era5/2024/era5_2024_11_daily.nc",
+      "size_bytes": 12503137,
+      "sha256": "d415d6ec27b786f3923eb5519f95ba26b48d83ab197b4f99ca39feca275d5c8c",
+      "source": "reanalysis-era5-single-levels",
+      "aggregation": "hourly 00-23 UTC; mean except sf total/86400"
+    },
+    "2024-12": {
+      "path": "data/input/reanalysis/era5/2024/era5_2024_12_daily.nc",
+      "size_bytes": 13100391,
+      "sha256": "89b98cf61105982f2d1160756c5e74f9c88a84aaf0b74b15d9cc214219276e50",
+      "source": "reanalysis-era5-single-levels",
+      "aggregation": "hourly 00-23 UTC; mean except sf total/86400"
+    }
+  }
+}

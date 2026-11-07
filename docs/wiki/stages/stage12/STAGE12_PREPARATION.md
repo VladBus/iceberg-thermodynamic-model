@@ -3,10 +3,10 @@
 **Status:** **Stage 12.8 COMPLETE (24/24 exploratory runs)** with documented
 monthly-GLORYS/constant-atmosphere fallbacks. Stage 12.9 thesis writing may
 proceed with explicit fallback labeling; quantitative daily-forcing claims
-remain NO-GO. Workstreams: **12.9a daily-forcing acquisition** is in progress
-(resumed 2026-11-04; do not start additional downloads unless explicitly
-requested); **12.9b thesis writing** is GO with fallback labeling.
-**Updated:** 2026-11-04
+remain NO-GO. **12.9a daily-forcing acquisition is COMPLETE (2026-11-07)** with
+24/24 months for ERA5, GLORYS12, and WAM; no further downloads are needed.
+**12.9b thesis writing** is GO with fallback labeling.
+**Updated:** 2026-11-07
 **Base:** Stage 11 freeze tag `stage11-final-frozen`.
 **Implementation:** Stage 12.2–12.8 are complete as listed in
 `docs/validation/INDEX.md`. The voxel path remains offline/prescribed and gated;

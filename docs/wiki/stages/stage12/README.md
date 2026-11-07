@@ -2,8 +2,9 @@
 
 Stage 12 is the current scientific stage. This directory stores completed
 stage reports and their evidence; it is not the working directory for unfinished
-tasks. Current Stage 12.9a acquisition work remains in `docs/validation/` and
-is in progress.
+tasks. Stage 12.9a acquisition is complete; its manifests remain in
+`docs/validation/` as canonical provenance. Stage 12.9b thesis writing is the
+active workstream.
 
 > **Path note:** older planning notes in this directory preserve their original
 > wording and paths. Use this README and `docs/validation/INDEX.md` for current
@@ -25,6 +26,7 @@ is in progress.
 | 12.7b | [`stage12.7b_autonomous_air.md`](stage12.7b_autonomous_air.md) | Autonomous voxel air balance |
 | 12.7c | [`stage12.7c_free_convection.md`](stage12.7c_free_convection.md) | Free-convection closure and remaining deficit |
 | 12.8 | [`stage12.8_barents2020_matrix.md`](stage12.8_barents2020_matrix.md) | Exploratory 24-run Barents matrix with fallback forcing |
+| 12.9a | [`stage12.9a_daily_forcing_acquisition.md`](stage12.9a_daily_forcing_acquisition.md) | Completed 24-month ERA5/GLORYS/WAM acquisition with provenance |
 
 The 12.8 drift and lifetime results are lower bounds from monthly GLORYS and
 constant-atmosphere fallbacks; they are not daily-forcing validation. No stage
@@ -44,7 +46,7 @@ Stage 12.9 separates into two workstreams:
 
 | Workstream | Status |
 | --- | --- |
-| 12.9a Daily-forcing acquisition | **In progress**; resumed by explicit request on 2026-11-04, running sequentially. Do not start additional downloads unless the user asks. |
+| 12.9a Daily-forcing acquisition | **COMPLETE (2026-11-07)**; 24/24 months for ERA5, GLORYS12, and WAM. No further downloads are needed. |
 | 12.9b Thesis writing | **GO with fallback labeling**; Stage 12.8 results are exploratory, not daily-forcing validation. |
 
 Check `docs/validation/INDEX.md` for active work and

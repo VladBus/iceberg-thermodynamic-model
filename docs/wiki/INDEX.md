@@ -30,13 +30,13 @@ unresolved. The authoritative record is
 
 ## Stage 12 status
 
-Completed reports and evidence through Stage 12.8 are archived in
-[`stages/stage12/`](stages/stage12/). Stage 12.9 has two workstreams:
-**12.9a daily-forcing acquisition** is in progress (resumed 2026-11-04;
-active manifests remain in [`docs/validation/`](../validation/INDEX.md)); do not
-start additional downloads unless explicitly requested. **12.9b thesis writing**
-is GO with fallback labeling. Stage 12.8 fallback-forcing results are
-exploratory lower bounds, not daily-forcing validation.
+Completed reports and evidence through Stage 12.8, plus the Stage 12.9a
+acquisition report, are archived in [`stages/stage12/`](stages/stage12/).
+**12.9a daily-forcing acquisition is COMPLETE (2026-11-07)** with 24/24 months
+for ERA5, GLORYS12, and WAM; no further downloads are needed. **12.9b thesis
+writing** is the active workstream, GO with fallback labeling. Stage 12.8
+fallback-forcing results are exploratory lower bounds, not daily-forcing
+validation.
 
 ## Cross-cutting topics
 

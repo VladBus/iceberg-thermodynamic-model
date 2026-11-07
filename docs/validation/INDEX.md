@@ -5,25 +5,27 @@ not a permanent report archive. Completed reports and their retained evidence
 belong in `docs/wiki/stages/<stage>/`; obsolete working plans belong in
 `docs/archive/`.
 
-## Current work: Stage 12.9
+## Stage 12.9 status
 
 Stage 12.9 has two distinct workstreams:
 
 | Workstream | Status | Evidence |
 | --- | --- | --- |
-| 12.9a Daily-forcing acquisition (ERA5/GLORYS/WAM) | **IN PROGRESS**; resumed by explicit user request on 2026-11-04 and running month by month. Do not start additional downloads unless the user asks. | Acquisition manifests in this directory; Stage 12.8 remains the latest completed published validation. |
+| 12.9a Daily-forcing acquisition (ERA5/GLORYS/WAM) | **COMPLETE (2026-11-07)**; all 24 months for 2020 and 2024 acquired. No further downloads are needed. | [`stage12.9a`](../wiki/stages/stage12/stage12.9a_daily_forcing_acquisition.md); acquisition manifests in this directory. |
 | 12.9b Thesis writing | **GO with fallback labeling**; can use Stage 12.8 exploratory results, but must not claim quantitative daily-forcing validation. | [`stage12.8`](../wiki/stages/stage12/stage12.8_barents2020_matrix.md), [`DECISIONS.md`](../DECISIONS.md) D-63. |
 
-### Acquisition manifest policy
+### Acquisition manifests
 
 | Manifest | Git state | Meaning |
 | --- | --- | --- |
-| `stage12.9_glorys_manifest.json` | tracked | Versioned acquisition provenance for the GLORYS12 subset. |
-| `stage12.9_wam_manifest.json` | tracked | Versioned acquisition provenance for the WAM subset. |
-| `stage12.9_era5_manifest.json` | local/untracked while acquisition is active | Operational state for the in-progress monthly ERA5 acquisition. Commit it only after the acquisition is complete, verified, and explicitly closed. |
+| `stage12.9_glorys_manifest.json` | tracked | Versioned acquisition provenance for the completed GLORYS12 subset. |
+| `stage12.9_wam_manifest.json` | tracked | Versioned acquisition provenance for the completed WAM subset. |
+| `stage12.9_era5_manifest.json` | tracked | Versioned acquisition provenance for the completed ERA5 subset. |
 
-These manifests are provenance/operational records, not Stage 12 validation
-reports. Do not present partial month counts as scientific results.
+The manifests remain in this directory because the acquisition tools use these
+paths as their canonical provenance location. They are provenance records, not
+Stage 12 validation reports; do not present partial month counts as scientific
+results.
 
 ## Completion and archival rule
 

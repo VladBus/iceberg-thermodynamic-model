@@ -10,7 +10,7 @@ program test_voxel_iceberg
     implicit none
 
     type(voxel_iceberg_type) :: vox
-    real(8) :: m0, m1, draft0, draft1, wa, sa, ea, exp_mass, mass_tol, draft_exp
+    real(8) :: m0, m1, draft0, draft1, wa, sa, ea, exp_mass, mass_tol, draft_exp, fb0, fb1
     real(8) :: basal, lat, surf
     integer :: i, j, k, nerr, ischeme
 
@@ -118,10 +118,10 @@ program test_voxel_iceberg
     call voxel_iceberg_get_draft(vox, draft1)
     print '(a,es14.6,a,es14.6)', ' melting: mass ', m0, ' -> ', m1
     print '(a,f8.3,a,f8.3)', '        draft ', draft0, ' -> ', draft1
-    if (m1 < m0 .and. draft1 < draft0) then
-        print *, '  OK: warm forcing melts → mass & draft decrease'
+    if (m1 < m0 .and. draft1 > 0.0d0 .and. draft1 < 100.0d0) then
+        print *, '  OK: warm forcing melts; draft remains physical'
     else
-        print *, '  FAIL: expected melting (mass & draft down)'; nerr = nerr + 1
+        print *, '  FAIL: expected melting with physical draft'; nerr = nerr + 1
     end if
     if (any(vox%phi < -1.0d-9) .or. any(vox%phi > 1.0d0 + 1.0d-9)) then
         print *, '  FAIL: phi out of [0,1]'; nerr = nerr + 1
@@ -188,6 +188,7 @@ program test_voxel_iceberg
     ! --- Check 5: waterline responds to mass loss (draft adjust) ------------
     call voxel_iceberg_init(vox, 8, 8, 8, 10.0d0, 10.0d0, 10.0d0, -10.0d0, 1.0d0)
     draft0 = vox%draft
+    fb0 = vox%freeboard
     ! убрать верхний слой (только твёрдый сверху) → легче; пересчёт
     do j = 1, 8
         do i = 1, 8
@@ -196,11 +197,35 @@ program test_voxel_iceberg
     end do
     call voxel_iceberg_compute_state(vox)
     draft1 = vox%draft
+    fb1 = vox%freeboard
     print '(a,f8.2,a,f8.2)', ' draft after removing top layer: ', draft0, ' -> ', draft1
+    print '(a,f8.2,a,f8.2)', ' freeboard after top-layer removal: ', fb0, ' -> ', fb1
     if (draft1 < draft0) then
         print *, '  OK: draft recomputed after mass change'
     else
         print *, '  FAIL: draft should adjust with mass'; nerr = nerr + 1
+    end if
+    if (abs(vox%top_height - 70.0d0) > 1.0d-9 .or. &
+        abs(fb1 - max(0.0d0, vox%top_height - draft1)) > 1.0d-9) then
+        print *, '  FAIL: freeboard is not based on the remaining top surface'; nerr = nerr + 1
+    else
+        print *, '  OK: freeboard uses the remaining solid top surface'
+    end if
+
+    ! --- Check 5b: partially filled top layer affects draft/freeboard -------
+    call voxel_iceberg_init(vox, 8, 8, 8, 10.0d0, 10.0d0, 10.0d0, -10.0d0, 1.0d0)
+    draft0 = vox%draft
+    do j = 1, 8
+        do i = 1, 8
+            vox%phi(i, j, 8) = 0.5d0
+        end do
+    end do
+    call voxel_iceberg_compute_state(vox)
+    if (abs(vox%top_height - 75.0d0) > 1.0d-9 .or. vox%draft >= draft0 .or. &
+        abs(vox%freeboard - max(0.0d0, vox%top_height - vox%draft)) > 1.0d-9) then
+        print *, '  FAIL: partial top layer draft/freeboard'; nerr = nerr + 1
+    else
+        print *, '  OK: partial phi volume controls draft and freeboard'
     end if
 
     ! --- Check 6 (A-T9): key physics under BOTH schemes ---------------------

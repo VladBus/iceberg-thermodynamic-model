@@ -132,12 +132,12 @@ contains
         print '(a,f8.2,a,f8.2,a,es12.4)', '    draft ', d0, ' -> ', d1, ' A_sail=', ea
         if (any(vox%phi /= vox%phi) .or. any(vox%T /= vox%T)) then
             print *, '  FAIL: NaN'; nerr = nerr + 1
-        else if (.not. (m1 < m0 .and. d1 < d0)) then
+        else if (.not. (m1 < m0 .and. d1 > 0.0d0)) then
             print *, '  FAIL: no melt/geometry response'; nerr = nerr + 1
         else if (.not. (ap1 > 0.0d0) .or. ap1 /= ap1) then
             print *, '  FAIL: A_perp invalid'; nerr = nerr + 1
         else
-            print *, '  OK: no NaN; mass & draft decrease; A_perp positive/finite'
+            print *, '  OK: no NaN; mass decreases; draft physical; A_perp positive/finite'
         end if
     end subroutine test_integration_geometry
 

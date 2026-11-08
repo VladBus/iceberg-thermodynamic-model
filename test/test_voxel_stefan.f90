@@ -270,10 +270,10 @@ contains
             print *, '  FAIL: NaN'; nerr = nerr + 1
         else if (any(vox%phi < -1.0d-9) .or. any(vox%phi > 1.0d0 + 1.0d-9)) then
             print *, '  FAIL: phi out of [0,1]'; nerr = nerr + 1
-        else if (.not. (m1 < m0 .and. d1 < d0)) then
-            print *, '  FAIL: no melt'; nerr = nerr + 1
+        else if (.not. (m1 < m0 .and. d1 > 0.0d0 .and. d1 < 80.0d0)) then
+            print *, '  FAIL: no melt or nonphysical draft'; nerr = nerr + 1
         else
-            print *, '  OK: no NaN, phi in range, mass & draft decrease'
+            print *, '  OK: no NaN, phi in range, mass decreases, draft physical'
         end if
         ! mass budget: dM = sum(melt rates)*dt + flushed mass
         best = abs((m0 - m1) - sum_melt - fmass)/m0

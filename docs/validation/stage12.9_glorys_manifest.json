@@ -148,5 +148,11 @@
     "size_bytes": 6906263783,
     "sha256": "c00feb218279f2d2ba510eacf831993aae1b7f0442e66de851fd34d0080e5d3f",
     "records": 366
+  },
+  "annual_2024": {
+    "path": "data/input/reanalysis/glorys/2024/glorys12_barents_2024_daily.nc",
+    "size_bytes": 6882981632,
+    "sha256": "fc85f053374e676259a4c0c677a1997e7ed34be5753725b706b40f1defa8ef0e",
+    "records": 366
   }
 }

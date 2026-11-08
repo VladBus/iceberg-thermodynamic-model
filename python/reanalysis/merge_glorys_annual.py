@@ -1,23 +1,28 @@
 #!/usr/bin/env python3
-"""Merge monthly GLORYS subsets into the 2020 annual reader file.
+"""Merge monthly GLORYS subsets into an annual reader file.
 
 Preserves packed int16 variables and scale/offset; time concatenated.
-Output: data/input/reanalysis/glorys/2020/glorys12_barents_2020_daily.nc
+Usage: python python/reanalysis/merge_glorys_annual.py --year 2024
 """
 from pathlib import Path
+import argparse
+import hashlib
 import json
 import netCDF4 as nc
 import numpy as np
 
-MONTHS = [f"2020-{m:02d}" for m in range(1, 13)]
-BASE = Path("data/input/reanalysis/glorys/2020")
-OUT = BASE / "glorys12_barents_2020_daily.nc"
 VARS3 = ["thetao", "so", "uo", "vo"]
 VARS2 = ["zos", "siconc", "sithick", "usi", "vsi"]
 
 
 def main() -> int:
-    files = [BASE / f"glorys12_barents_2020_{m:02d}.nc" for m in range(1, 13)]
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--year", type=int, choices=(2020, 2024), default=2020)
+    args = parser.parse_args()
+    year = args.year
+    base = Path("data/input/reanalysis/glorys") / str(year)
+    out_path = base / f"glorys12_barents_{year}_daily.nc"
+    files = [base / f"glorys12_barents_{year}_{m:02d}.nc" for m in range(1, 13)]
     missing = [str(f) for f in files if not f.exists()]
     if missing:
         raise SystemExit(f"missing monthly files: {missing}")
@@ -27,9 +32,9 @@ def main() -> int:
         d.set_auto_maskandscale(False)
         srcs.append(d)
     d0 = srcs[0]
-    if OUT.exists():
-        OUT.unlink()
-    root = nc.Dataset(OUT, "w", format="NETCDF4")
+    if out_path.exists():
+        out_path.unlink()
+    root = nc.Dataset(out_path, "w", format="NETCDF4")
     root.set_auto_maskandscale(False)
     root.createDimension("time", None)
     for name in ("depth", "latitude", "longitude"):
@@ -51,25 +56,28 @@ def main() -> int:
         var.set_auto_maskandscale(False)
         var.scale_factor = float(a.scale_factor); var.add_offset = float(a.add_offset)
     pos = 0
+    chunk = 5
     for d in srcs:
         n = len(d.variables["time"][:])
-        tv[pos:pos + n] = d.variables["time"][:]
-        for name in VARS3 + VARS2:
-            root.variables[name][pos:pos + n, ...] = d.variables[name][:]
-        pos += n; d.close()
+        for t0 in range(0, n, chunk):
+            t1 = min(n, t0 + chunk)
+            tv[pos + t0:pos + t1] = d.variables["time"][t0:t1]
+            for name in VARS3 + VARS2:
+                root.variables[name][pos + t0:pos + t1, ...] = d.variables[name][t0:t1, ...]
+        pos += n
+        d.close()
     root.close()
-    print(f"wrote {OUT} {OUT.stat().st_size/1e9:.3f} GB, {pos} records")
+    print(f"wrote {out_path} {out_path.stat().st_size/1e9:.3f} GB, {pos} records")
     # update manifest if present
     manp = Path("docs/validation/stage12.9_glorys_manifest.json")
     if manp.exists():
         m = json.loads(manp.read_text())
-        import hashlib
         h = hashlib.sha256()
-        with OUT.open("rb") as f:
+        with out_path.open("rb") as f:
             for c in iter(lambda: f.read(1 << 20), b""):
                 h.update(c)
-        m["annual_2020"] = {"path": str(OUT), "size_bytes": OUT.stat().st_size,
-                            "sha256": h.hexdigest(), "records": pos}
+        m[f"annual_{year}"] = {"path": str(out_path), "size_bytes": out_path.stat().st_size,
+                               "sha256": h.hexdigest(), "records": pos}
         manp.write_text(json.dumps(m, indent=2) + "\n")
     return 0
 

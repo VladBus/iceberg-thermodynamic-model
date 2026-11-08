@@ -1,0 +1,1868 @@
+{
+  "years": [
+    2020,
+    2024
+  ],
+  "era5": {
+    "2020": {
+      "product": "ERA5",
+      "year": 2020,
+      "months": {
+        "2020-01": {
+          "path": "data/input/reanalysis/era5/2020/era5_2020_01_daily.nc",
+          "file_size": 13086558,
+          "time": {
+            "ok": true,
+            "records": 31,
+            "expected": 31,
+            "monotonic": true,
+            "unique": true,
+            "start": "2020-01-01",
+            "end": "2020-01-31"
+          },
+          "coverage": {
+            "ok": true,
+            "lat_min": 63.0,
+            "lat_max": 86.0,
+            "lon_min": 5.0,
+            "lon_max": 80.0
+          },
+          "variables": {
+            "ok": true,
+            "missing": [],
+            "units": {
+              "u10": "m s**-1",
+              "v10": "m s**-1",
+              "t2m": "K",
+              "d2m": "K",
+              "tcc": "(0 - 1)",
+              "msl": "Pa",
+              "sf": "m s-1"
+            }
+          }
+        },
+        "2020-02": {
+          "path": "data/input/reanalysis/era5/2020/era5_2020_02_daily.nc",
+          "file_size": 12278493,
+          "time": {
+            "ok": true,
+            "records": 29,
+            "expected": 29,
+            "monotonic": true,
+            "unique": true,
+            "start": "2020-02-01",
+            "end": "2020-02-29"
+          },
+          "coverage": {
+            "ok": true,
+            "lat_min": 63.0,
+            "lat_max": 86.0,
+            "lon_min": 5.0,
+            "lon_max": 80.0
+          },
+          "variables": {
+            "ok": true,
+            "missing": [],
+            "units": {
+              "u10": "m s**-1",
+              "v10": "m s**-1",
+              "t2m": "K",
+              "d2m": "K",
+              "tcc": "(0 - 1)",
+              "msl": "Pa",
+              "sf": "m s-1"
+            }
+          }
+        },
+        "2020-03": {
+          "path": "data/input/reanalysis/era5/2020/era5_2020_03_daily.nc",
+          "file_size": 13038645,
+          "time": {
+            "ok": true,
+            "records": 31,
+            "expected": 31,
+            "monotonic": true,
+            "unique": true,
+            "start": "2020-03-01",
+            "end": "2020-03-31"
+          },
+          "coverage": {
+            "ok": true,
+            "lat_min": 63.0,
+            "lat_max": 86.0,
+            "lon_min": 5.0,
+            "lon_max": 80.0
+          },
+          "variables": {
+            "ok": true,
+            "missing": [],
+            "units": {
+              "u10": "m s**-1",
+              "v10": "m s**-1",
+              "t2m": "K",
+              "d2m": "K",
+              "tcc": "(0 - 1)",
+              "msl": "Pa",
+              "sf": "m s-1"
+            }
+          }
+        },
+        "2020-04": {
+          "path": "data/input/reanalysis/era5/2020/era5_2020_04_daily.nc",
+          "file_size": 12530785,
+          "time": {
+            "ok": true,
+            "records": 30,
+            "expected": 30,
+            "monotonic": true,
+            "unique": true,
+            "start": "2020-04-01",
+            "end": "2020-04-30"
+          },
+          "coverage": {
+            "ok": true,
+            "lat_min": 63.0,
+            "lat_max": 86.0,
+            "lon_min": 5.0,
+            "lon_max": 80.0
+          },
+          "variables": {
+            "ok": true,
+            "missing": [],
+            "units": {
+              "u10": "m s**-1",
+              "v10": "m s**-1",
+              "t2m": "K",
+              "d2m": "K",
+              "tcc": "(0 - 1)",
+              "msl": "Pa",
+              "sf": "m s-1"
+            }
+          }
+        },
+        "2020-05": {
+          "path": "data/input/reanalysis/era5/2020/era5_2020_05_daily.nc",
+          "file_size": 12301555,
+          "time": {
+            "ok": true,
+            "records": 31,
+            "expected": 31,
+            "monotonic": true,
+            "unique": true,
+            "start": "2020-05-01",
+            "end": "2020-05-31"
+          },
+          "coverage": {
+            "ok": true,
+            "lat_min": 63.0,
+            "lat_max": 86.0,
+            "lon_min": 5.0,
+            "lon_max": 80.0
+          },
+          "variables": {
+            "ok": true,
+            "missing": [],
+            "units": {
+              "u10": "m s**-1",
+              "v10": "m s**-1",
+              "t2m": "K",
+              "d2m": "K",
+              "tcc": "(0 - 1)",
+              "msl": "Pa",
+              "sf": "m s-1"
+            }
+          }
+        },
+        "2020-06": {
+          "path": "data/input/reanalysis/era5/2020/era5_2020_06_daily.nc",
+          "file_size": 11153248,
+          "time": {
+            "ok": true,
+            "records": 30,
+            "expected": 30,
+            "monotonic": true,
+            "unique": true,
+            "start": "2020-06-01",
+            "end": "2020-06-30"
+          },
+          "coverage": {
+            "ok": true,
+            "lat_min": 63.0,
+            "lat_max": 86.0,
+            "lon_min": 5.0,
+            "lon_max": 80.0
+          },
+          "variables": {
+            "ok": true,
+            "missing": [],
+            "units": {
+              "u10": "m s**-1",
+              "v10": "m s**-1",
+              "t2m": "K",
+              "d2m": "K",
+              "tcc": "(0 - 1)",
+              "msl": "Pa",
+              "sf": "m s-1"
+            }
+          }
+        },
+        "2020-07": {
+          "path": "data/input/reanalysis/era5/2020/era5_2020_07_daily.nc",
+          "file_size": 10488729,
+          "time": {
+            "ok": true,
+            "records": 31,
+            "expected": 31,
+            "monotonic": true,
+            "unique": true,
+            "start": "2020-07-01",
+            "end": "2020-07-31"
+          },
+          "coverage": {
+            "ok": true,
+            "lat_min": 63.0,
+            "lat_max": 86.0,
+            "lon_min": 5.0,
+            "lon_max": 80.0
+          },
+          "variables": {
+            "ok": true,
+            "missing": [],
+            "units": {
+              "u10": "m s**-1",
+              "v10": "m s**-1",
+              "t2m": "K",
+              "d2m": "K",
+              "tcc": "(0 - 1)",
+              "msl": "Pa",
+              "sf": "m s-1"
+            }
+          }
+        },
+        "2020-08": {
+          "path": "data/input/reanalysis/era5/2020/era5_2020_08_daily.nc",
+          "file_size": 10613100,
+          "time": {
+            "ok": true,
+            "records": 31,
+            "expected": 31,
+            "monotonic": true,
+            "unique": true,
+            "start": "2020-08-01",
+            "end": "2020-08-31"
+          },
+          "coverage": {
+            "ok": true,
+            "lat_min": 63.0,
+            "lat_max": 86.0,
+            "lon_min": 5.0,
+            "lon_max": 80.0
+          },
+          "variables": {
+            "ok": true,
+            "missing": [],
+            "units": {
+              "u10": "m s**-1",
+              "v10": "m s**-1",
+              "t2m": "K",
+              "d2m": "K",
+              "tcc": "(0 - 1)",
+              "msl": "Pa",
+              "sf": "m s-1"
+            }
+          }
+        },
+        "2020-09": {
+          "path": "data/input/reanalysis/era5/2020/era5_2020_09_daily.nc",
+          "file_size": 10876199,
+          "time": {
+            "ok": true,
+            "records": 30,
+            "expected": 30,
+            "monotonic": true,
+            "unique": true,
+            "start": "2020-09-01",
+            "end": "2020-09-30"
+          },
+          "coverage": {
+            "ok": true,
+            "lat_min": 63.0,
+            "lat_max": 86.0,
+            "lon_min": 5.0,
+            "lon_max": 80.0
+          },
+          "variables": {
+            "ok": true,
+            "missing": [],
+            "units": {
+              "u10": "m s**-1",
+              "v10": "m s**-1",
+              "t2m": "K",
+              "d2m": "K",
+              "tcc": "(0 - 1)",
+              "msl": "Pa",
+              "sf": "m s-1"
+            }
+          }
+        },
+        "2020-10": {
+          "path": "data/input/reanalysis/era5/2020/era5_2020_10_daily.nc",
+          "file_size": 12337807,
+          "time": {
+            "ok": true,
+            "records": 31,
+            "expected": 31,
+            "monotonic": true,
+            "unique": true,
+            "start": "2020-10-01",
+            "end": "2020-10-31"
+          },
+          "coverage": {
+            "ok": true,
+            "lat_min": 63.0,
+            "lat_max": 86.0,
+            "lon_min": 5.0,
+            "lon_max": 80.0
+          },
+          "variables": {
+            "ok": true,
+            "missing": [],
+            "units": {
+              "u10": "m s**-1",
+              "v10": "m s**-1",
+              "t2m": "K",
+              "d2m": "K",
+              "tcc": "(0 - 1)",
+              "msl": "Pa",
+              "sf": "m s-1"
+            }
+          }
+        },
+        "2020-11": {
+          "path": "data/input/reanalysis/era5/2020/era5_2020_11_daily.nc",
+          "file_size": 12256189,
+          "time": {
+            "ok": true,
+            "records": 30,
+            "expected": 30,
+            "monotonic": true,
+            "unique": true,
+            "start": "2020-11-01",
+            "end": "2020-11-30"
+          },
+          "coverage": {
+            "ok": true,
+            "lat_min": 63.0,
+            "lat_max": 86.0,
+            "lon_min": 5.0,
+            "lon_max": 80.0
+          },
+          "variables": {
+            "ok": true,
+            "missing": [],
+            "units": {
+              "u10": "m s**-1",
+              "v10": "m s**-1",
+              "t2m": "K",
+              "d2m": "K",
+              "tcc": "(0 - 1)",
+              "msl": "Pa",
+              "sf": "m s-1"
+            }
+          }
+        },
+        "2020-12": {
+          "path": "data/input/reanalysis/era5/2020/era5_2020_12_daily.nc",
+          "file_size": 13099247,
+          "time": {
+            "ok": true,
+            "records": 31,
+            "expected": 31,
+            "monotonic": true,
+            "unique": true,
+            "start": "2020-12-01",
+            "end": "2020-12-31"
+          },
+          "coverage": {
+            "ok": true,
+            "lat_min": 63.0,
+            "lat_max": 86.0,
+            "lon_min": 5.0,
+            "lon_max": 80.0
+          },
+          "variables": {
+            "ok": true,
+            "missing": [],
+            "units": {
+              "u10": "m s**-1",
+              "v10": "m s**-1",
+              "t2m": "K",
+              "d2m": "K",
+              "tcc": "(0 - 1)",
+              "msl": "Pa",
+              "sf": "m s-1"
+            }
+          }
+        }
+      },
+      "ok": true,
+      "annual_daily": {
+        "path": "data/input/reanalysis/era5/2020/era5_2020_daily.nc",
+        "file_size": 145006334,
+        "time": {
+          "ok": true,
+          "records": 366,
+          "expected": 366,
+          "monotonic": true,
+          "unique": true,
+          "start": "2020-01-01",
+          "end": "2020-12-31"
+        },
+        "coverage": {
+          "ok": true,
+          "lat_min": 63.0,
+          "lat_max": 86.0,
+          "lon_min": 5.0,
+          "lon_max": 80.0
+        },
+        "variables": {
+          "ok": true,
+          "missing": [],
+          "units": {
+            "u10": "m s**-1",
+            "v10": "m s**-1",
+            "t2m": "K",
+            "d2m": "K",
+            "tcc": "(0 - 1)",
+            "msl": "Pa",
+            "sf": "m s-1"
+          }
+        }
+      }
+    },
+    "2024": {
+      "product": "ERA5",
+      "year": 2024,
+      "months": {
+        "2024-01": {
+          "path": "data/input/reanalysis/era5/2024/era5_2024_01_daily.nc",
+          "file_size": 13193613,
+          "time": {
+            "ok": true,
+            "records": 31,
+            "expected": 31,
+            "monotonic": true,
+            "unique": true,
+            "start": "2024-01-01",
+            "end": "2024-01-31"
+          },
+          "coverage": {
+            "ok": true,
+            "lat_min": 63.0,
+            "lat_max": 86.0,
+            "lon_min": 5.0,
+            "lon_max": 80.0
+          },
+          "variables": {
+            "ok": true,
+            "missing": [],
+            "units": {
+              "u10": "m s**-1",
+              "v10": "m s**-1",
+              "t2m": "K",
+              "d2m": "K",
+              "tcc": "(0 - 1)",
+              "msl": "Pa",
+              "sf": "m s-1"
+            }
+          }
+        },
+        "2024-02": {
+          "path": "data/input/reanalysis/era5/2024/era5_2024_02_daily.nc",
+          "file_size": 12287285,
+          "time": {
+            "ok": true,
+            "records": 29,
+            "expected": 29,
+            "monotonic": true,
+            "unique": true,
+            "start": "2024-02-01",
+            "end": "2024-02-29"
+          },
+          "coverage": {
+            "ok": true,
+            "lat_min": 63.0,
+            "lat_max": 86.0,
+            "lon_min": 5.0,
+            "lon_max": 80.0
+          },
+          "variables": {
+            "ok": true,
+            "missing": [],
+            "units": {
+              "u10": "m s**-1",
+              "v10": "m s**-1",
+              "t2m": "K",
+              "d2m": "K",
+              "tcc": "(0 - 1)",
+              "msl": "Pa",
+              "sf": "m s-1"
+            }
+          }
+        },
+        "2024-03": {
+          "path": "data/input/reanalysis/era5/2024/era5_2024_03_daily.nc",
+          "file_size": 13095608,
+          "time": {
+            "ok": true,
+            "records": 31,
+            "expected": 31,
+            "monotonic": true,
+            "unique": true,
+            "start": "2024-03-01",
+            "end": "2024-03-31"
+          },
+          "coverage": {
+            "ok": true,
+            "lat_min": 63.0,
+            "lat_max": 86.0,
+            "lon_min": 5.0,
+            "lon_max": 80.0
+          },
+          "variables": {
+            "ok": true,
+            "missing": [],
+            "units": {
+              "u10": "m s**-1",
+              "v10": "m s**-1",
+              "t2m": "K",
+              "d2m": "K",
+              "tcc": "(0 - 1)",
+              "msl": "Pa",
+              "sf": "m s-1"
+            }
+          }
+        },
+        "2024-04": {
+          "path": "data/input/reanalysis/era5/2024/era5_2024_04_daily.nc",
+          "file_size": 12613073,
+          "time": {
+            "ok": true,
+            "records": 30,
+            "expected": 30,
+            "monotonic": true,
+            "unique": true,
+            "start": "2024-04-01",
+            "end": "2024-04-30"
+          },
+          "coverage": {
+            "ok": true,
+            "lat_min": 63.0,
+            "lat_max": 86.0,
+            "lon_min": 5.0,
+            "lon_max": 80.0
+          },
+          "variables": {
+            "ok": true,
+            "missing": [],
+            "units": {
+              "u10": "m s**-1",
+              "v10": "m s**-1",
+              "t2m": "K",
+              "d2m": "K",
+              "tcc": "(0 - 1)",
+              "msl": "Pa",
+              "sf": "m s-1"
+            }
+          }
+        },
+        "2024-05": {
+          "path": "data/input/reanalysis/era5/2024/era5_2024_05_daily.nc",
+          "file_size": 12588711,
+          "time": {
+            "ok": true,
+            "records": 31,
+            "expected": 31,
+            "monotonic": true,
+            "unique": true,
+            "start": "2024-05-01",
+            "end": "2024-05-31"
+          },
+          "coverage": {
+            "ok": true,
+            "lat_min": 63.0,
+            "lat_max": 86.0,
+            "lon_min": 5.0,
+            "lon_max": 80.0
+          },
+          "variables": {
+            "ok": true,
+            "missing": [],
+            "units": {
+              "u10": "m s**-1",
+              "v10": "m s**-1",
+              "t2m": "K",
+              "d2m": "K",
+              "tcc": "(0 - 1)",
+              "msl": "Pa",
+              "sf": "m s-1"
+            }
+          }
+        },
+        "2024-06": {
+          "path": "data/input/reanalysis/era5/2024/era5_2024_06_daily.nc",
+          "file_size": 11383873,
+          "time": {
+            "ok": true,
+            "records": 30,
+            "expected": 30,
+            "monotonic": true,
+            "unique": true,
+            "start": "2024-06-01",
+            "end": "2024-06-30"
+          },
+          "coverage": {
+            "ok": true,
+            "lat_min": 63.0,
+            "lat_max": 86.0,
+            "lon_min": 5.0,
+            "lon_max": 80.0
+          },
+          "variables": {
+            "ok": true,
+            "missing": [],
+            "units": {
+              "u10": "m s**-1",
+              "v10": "m s**-1",
+              "t2m": "K",
+              "d2m": "K",
+              "tcc": "(0 - 1)",
+              "msl": "Pa",
+              "sf": "m s-1"
+            }
+          }
+        },
+        "2024-07": {
+          "path": "data/input/reanalysis/era5/2024/era5_2024_07_daily.nc",
+          "file_size": 10894818,
+          "time": {
+            "ok": true,
+            "records": 31,
+            "expected": 31,
+            "monotonic": true,
+            "unique": true,
+            "start": "2024-07-01",
+            "end": "2024-07-31"
+          },
+          "coverage": {
+            "ok": true,
+            "lat_min": 63.0,
+            "lat_max": 86.0,
+            "lon_min": 5.0,
+            "lon_max": 80.0
+          },
+          "variables": {
+            "ok": true,
+            "missing": [],
+            "units": {
+              "u10": "m s**-1",
+              "v10": "m s**-1",
+              "t2m": "K",
+              "d2m": "K",
+              "tcc": "(0 - 1)",
+              "msl": "Pa",
+              "sf": "m s-1"
+            }
+          }
+        },
+        "2024-08": {
+          "path": "data/input/reanalysis/era5/2024/era5_2024_08_daily.nc",
+          "file_size": 10707730,
+          "time": {
+            "ok": true,
+            "records": 31,
+            "expected": 31,
+            "monotonic": true,
+            "unique": true,
+            "start": "2024-08-01",
+            "end": "2024-08-31"
+          },
+          "coverage": {
+            "ok": true,
+            "lat_min": 63.0,
+            "lat_max": 86.0,
+            "lon_min": 5.0,
+            "lon_max": 80.0
+          },
+          "variables": {
+            "ok": true,
+            "missing": [],
+            "units": {
+              "u10": "m s**-1",
+              "v10": "m s**-1",
+              "t2m": "K",
+              "d2m": "K",
+              "tcc": "(0 - 1)",
+              "msl": "Pa",
+              "sf": "m s-1"
+            }
+          }
+        },
+        "2024-09": {
+          "path": "data/input/reanalysis/era5/2024/era5_2024_09_daily.nc",
+          "file_size": 10982093,
+          "time": {
+            "ok": true,
+            "records": 30,
+            "expected": 30,
+            "monotonic": true,
+            "unique": true,
+            "start": "2024-09-01",
+            "end": "2024-09-30"
+          },
+          "coverage": {
+            "ok": true,
+            "lat_min": 63.0,
+            "lat_max": 86.0,
+            "lon_min": 5.0,
+            "lon_max": 80.0
+          },
+          "variables": {
+            "ok": true,
+            "missing": [],
+            "units": {
+              "u10": "m s**-1",
+              "v10": "m s**-1",
+              "t2m": "K",
+              "d2m": "K",
+              "tcc": "(0 - 1)",
+              "msl": "Pa",
+              "sf": "m s-1"
+            }
+          }
+        },
+        "2024-10": {
+          "path": "data/input/reanalysis/era5/2024/era5_2024_10_daily.nc",
+          "file_size": 12212139,
+          "time": {
+            "ok": true,
+            "records": 31,
+            "expected": 31,
+            "monotonic": true,
+            "unique": true,
+            "start": "2024-10-01",
+            "end": "2024-10-31"
+          },
+          "coverage": {
+            "ok": true,
+            "lat_min": 63.0,
+            "lat_max": 86.0,
+            "lon_min": 5.0,
+            "lon_max": 80.0
+          },
+          "variables": {
+            "ok": true,
+            "missing": [],
+            "units": {
+              "u10": "m s**-1",
+              "v10": "m s**-1",
+              "t2m": "K",
+              "d2m": "K",
+              "tcc": "(0 - 1)",
+              "msl": "Pa",
+              "sf": "m s-1"
+            }
+          }
+        },
+        "2024-11": {
+          "path": "data/input/reanalysis/era5/2024/era5_2024_11_daily.nc",
+          "file_size": 12503137,
+          "time": {
+            "ok": true,
+            "records": 30,
+            "expected": 30,
+            "monotonic": true,
+            "unique": true,
+            "start": "2024-11-01",
+            "end": "2024-11-30"
+          },
+          "coverage": {
+            "ok": true,
+            "lat_min": 63.0,
+            "lat_max": 86.0,
+            "lon_min": 5.0,
+            "lon_max": 80.0
+          },
+          "variables": {
+            "ok": true,
+            "missing": [],
+            "units": {
+              "u10": "m s**-1",
+              "v10": "m s**-1",
+              "t2m": "K",
+              "d2m": "K",
+              "tcc": "(0 - 1)",
+              "msl": "Pa",
+              "sf": "m s-1"
+            }
+          }
+        },
+        "2024-12": {
+          "path": "data/input/reanalysis/era5/2024/era5_2024_12_daily.nc",
+          "file_size": 13100391,
+          "time": {
+            "ok": true,
+            "records": 31,
+            "expected": 31,
+            "monotonic": true,
+            "unique": true,
+            "start": "2024-12-01",
+            "end": "2024-12-31"
+          },
+          "coverage": {
+            "ok": true,
+            "lat_min": 63.0,
+            "lat_max": 86.0,
+            "lon_min": 5.0,
+            "lon_max": 80.0
+          },
+          "variables": {
+            "ok": true,
+            "missing": [],
+            "units": {
+              "u10": "m s**-1",
+              "v10": "m s**-1",
+              "t2m": "K",
+              "d2m": "K",
+              "tcc": "(0 - 1)",
+              "msl": "Pa",
+              "sf": "m s-1"
+            }
+          }
+        }
+      },
+      "ok": true,
+      "annual_daily": {
+        "path": "data/input/reanalysis/era5/2024/era5_2024_daily.nc",
+        "file_size": 146399595,
+        "time": {
+          "ok": true,
+          "records": 366,
+          "expected": 366,
+          "monotonic": true,
+          "unique": true,
+          "start": "2024-01-01",
+          "end": "2024-12-31"
+        },
+        "coverage": {
+          "ok": true,
+          "lat_min": 63.0,
+          "lat_max": 86.0,
+          "lon_min": 5.0,
+          "lon_max": 80.0
+        },
+        "variables": {
+          "ok": true,
+          "missing": [],
+          "units": {
+            "u10": "m s**-1",
+            "v10": "m s**-1",
+            "t2m": "K",
+            "d2m": "K",
+            "tcc": "(0 - 1)",
+            "msl": "Pa",
+            "sf": "m s-1"
+          }
+        }
+      }
+    }
+  },
+  "glorys": {
+    "2020": {
+      "product": "GLORYS12",
+      "year": 2020,
+      "months": {
+        "2020-01": {
+          "path": "data/input/reanalysis/glorys/2020/glorys12_barents_2020_01.nc",
+          "file_size": 497578623,
+          "time": {
+            "ok": true,
+            "records": 31,
+            "expected": 31,
+            "monotonic": true,
+            "unique": true,
+            "start": "2020-01-01",
+            "end": "2020-01-31"
+          },
+          "coverage": {
+            "ok": true,
+            "lat_min": 63.0,
+            "lat_max": 86.0,
+            "lon_min": 5.0,
+            "lon_max": 80.0
+          },
+          "variables": {
+            "ok": true,
+            "missing": [],
+            "units": {
+              "thetao": "degrees_C",
+              "so": "1e-3",
+              "uo": "m s-1",
+              "vo": "m s-1",
+              "zos": "m",
+              "siconc": "1",
+              "sithick": "m",
+              "usi": "m s-1",
+              "vsi": "m s-1"
+            }
+          },
+          "depth_levels": 32
+        },
+        "2020-02": {
+          "path": "data/input/reanalysis/glorys/2020/glorys12_barents_2020_02.nc",
+          "file_size": 468841676,
+          "time": {
+            "ok": true,
+            "records": 29,
+            "expected": 29,
+            "monotonic": true,
+            "unique": true,
+            "start": "2020-02-01",
+            "end": "2020-02-29"
+          },
+          "coverage": {
+            "ok": true,
+            "lat_min": 63.0,
+            "lat_max": 86.0,
+            "lon_min": 5.0,
+            "lon_max": 80.0
+          },
+          "variables": {
+            "ok": true,
+            "missing": [],
+            "units": {
+              "thetao": "degrees_C",
+              "so": "1e-3",
+              "uo": "m s-1",
+              "vo": "m s-1",
+              "zos": "m",
+              "siconc": "1",
+              "sithick": "m",
+              "usi": "m s-1",
+              "vsi": "m s-1"
+            }
+          },
+          "depth_levels": 32
+        },
+        "2020-03": {
+          "path": "data/input/reanalysis/glorys/2020/glorys12_barents_2020_03.nc",
+          "file_size": 495047580,
+          "time": {
+            "ok": true,
+            "records": 31,
+            "expected": 31,
+            "monotonic": true,
+            "unique": true,
+            "start": "2020-03-01",
+            "end": "2020-03-31"
+          },
+          "coverage": {
+            "ok": true,
+            "lat_min": 63.0,
+            "lat_max": 86.0,
+            "lon_min": 5.0,
+            "lon_max": 80.0
+          },
+          "variables": {
+            "ok": true,
+            "missing": [],
+            "units": {
+              "thetao": "degrees_C",
+              "so": "1e-3",
+              "uo": "m s-1",
+              "vo": "m s-1",
+              "zos": "m",
+              "siconc": "1",
+              "sithick": "m",
+              "usi": "m s-1",
+              "vsi": "m s-1"
+            }
+          },
+          "depth_levels": 32
+        },
+        "2020-04": {
+          "path": "data/input/reanalysis/glorys/2020/glorys12_barents_2020_04.nc",
+          "file_size": 496222883,
+          "time": {
+            "ok": true,
+            "records": 30,
+            "expected": 30,
+            "monotonic": true,
+            "unique": true,
+            "start": "2020-04-01",
+            "end": "2020-04-30"
+          },
+          "coverage": {
+            "ok": true,
+            "lat_min": 63.0,
+            "lat_max": 86.0,
+            "lon_min": 5.0,
+            "lon_max": 80.0
+          },
+          "variables": {
+            "ok": true,
+            "missing": [],
+            "units": {
+              "thetao": "degrees_C",
+              "so": "1e-3",
+              "uo": "m s-1",
+              "vo": "m s-1",
+              "zos": "m",
+              "siconc": "1",
+              "sithick": "m",
+              "usi": "m s-1",
+              "vsi": "m s-1"
+            }
+          },
+          "depth_levels": 32
+        },
+        "2020-05": {
+          "path": "data/input/reanalysis/glorys/2020/glorys12_barents_2020_05.nc",
+          "file_size": 537800147,
+          "time": {
+            "ok": true,
+            "records": 31,
+            "expected": 31,
+            "monotonic": true,
+            "unique": true,
+            "start": "2020-05-01",
+            "end": "2020-05-31"
+          },
+          "coverage": {
+            "ok": true,
+            "lat_min": 63.0,
+            "lat_max": 86.0,
+            "lon_min": 5.0,
+            "lon_max": 80.0
+          },
+          "variables": {
+            "ok": true,
+            "missing": [],
+            "units": {
+              "thetao": "degrees_C",
+              "so": "1e-3",
+              "uo": "m s-1",
+              "vo": "m s-1",
+              "zos": "m",
+              "siconc": "1",
+              "sithick": "m",
+              "usi": "m s-1",
+              "vsi": "m s-1"
+            }
+          },
+          "depth_levels": 32
+        },
+        "2020-06": {
+          "path": "data/input/reanalysis/glorys/2020/glorys12_barents_2020_06.nc",
+          "file_size": 534828669,
+          "time": {
+            "ok": true,
+            "records": 30,
+            "expected": 30,
+            "monotonic": true,
+            "unique": true,
+            "start": "2020-06-01",
+            "end": "2020-06-30"
+          },
+          "coverage": {
+            "ok": true,
+            "lat_min": 63.0,
+            "lat_max": 86.0,
+            "lon_min": 5.0,
+            "lon_max": 80.0
+          },
+          "variables": {
+            "ok": true,
+            "missing": [],
+            "units": {
+              "thetao": "degrees_C",
+              "so": "1e-3",
+              "uo": "m s-1",
+              "vo": "m s-1",
+              "zos": "m",
+              "siconc": "1",
+              "sithick": "m",
+              "usi": "m s-1",
+              "vsi": "m s-1"
+            }
+          },
+          "depth_levels": 32
+        },
+        "2020-07": {
+          "path": "data/input/reanalysis/glorys/2020/glorys12_barents_2020_07.nc",
+          "file_size": 561169745,
+          "time": {
+            "ok": true,
+            "records": 31,
+            "expected": 31,
+            "monotonic": true,
+            "unique": true,
+            "start": "2020-07-01",
+            "end": "2020-07-31"
+          },
+          "coverage": {
+            "ok": true,
+            "lat_min": 63.0,
+            "lat_max": 86.0,
+            "lon_min": 5.0,
+            "lon_max": 80.0
+          },
+          "variables": {
+            "ok": true,
+            "missing": [],
+            "units": {
+              "thetao": "degrees_C",
+              "so": "1e-3",
+              "uo": "m s-1",
+              "vo": "m s-1",
+              "zos": "m",
+              "siconc": "1",
+              "sithick": "m",
+              "usi": "m s-1",
+              "vsi": "m s-1"
+            }
+          },
+          "depth_levels": 32
+        },
+        "2020-08": {
+          "path": "data/input/reanalysis/glorys/2020/glorys12_barents_2020_08.nc",
+          "file_size": 564641722,
+          "time": {
+            "ok": true,
+            "records": 31,
+            "expected": 31,
+            "monotonic": true,
+            "unique": true,
+            "start": "2020-08-01",
+            "end": "2020-08-31"
+          },
+          "coverage": {
+            "ok": true,
+            "lat_min": 63.0,
+            "lat_max": 86.0,
+            "lon_min": 5.0,
+            "lon_max": 80.0
+          },
+          "variables": {
+            "ok": true,
+            "missing": [],
+            "units": {
+              "thetao": "degrees_C",
+              "so": "1e-3",
+              "uo": "m s-1",
+              "vo": "m s-1",
+              "zos": "m",
+              "siconc": "1",
+              "sithick": "m",
+              "usi": "m s-1",
+              "vsi": "m s-1"
+            }
+          },
+          "depth_levels": 32
+        },
+        "2020-09": {
+          "path": "data/input/reanalysis/glorys/2020/glorys12_barents_2020_09.nc",
+          "file_size": 536477409,
+          "time": {
+            "ok": true,
+            "records": 30,
+            "expected": 30,
+            "monotonic": true,
+            "unique": true,
+            "start": "2020-09-01",
+            "end": "2020-09-30"
+          },
+          "coverage": {
+            "ok": true,
+            "lat_min": 63.0,
+            "lat_max": 86.0,
+            "lon_min": 5.0,
+            "lon_max": 80.0
+          },
+          "variables": {
+            "ok": true,
+            "missing": [],
+            "units": {
+              "thetao": "degrees_C",
+              "so": "1e-3",
+              "uo": "m s-1",
+              "vo": "m s-1",
+              "zos": "m",
+              "siconc": "1",
+              "sithick": "m",
+              "usi": "m s-1",
+              "vsi": "m s-1"
+            }
+          },
+          "depth_levels": 32
+        },
+        "2020-10": {
+          "path": "data/input/reanalysis/glorys/2020/glorys12_barents_2020_10.nc",
+          "file_size": 518251781,
+          "time": {
+            "ok": true,
+            "records": 31,
+            "expected": 31,
+            "monotonic": true,
+            "unique": true,
+            "start": "2020-10-01",
+            "end": "2020-10-31"
+          },
+          "coverage": {
+            "ok": true,
+            "lat_min": 63.0,
+            "lat_max": 86.0,
+            "lon_min": 5.0,
+            "lon_max": 80.0
+          },
+          "variables": {
+            "ok": true,
+            "missing": [],
+            "units": {
+              "thetao": "degrees_C",
+              "so": "1e-3",
+              "uo": "m s-1",
+              "vo": "m s-1",
+              "zos": "m",
+              "siconc": "1",
+              "sithick": "m",
+              "usi": "m s-1",
+              "vsi": "m s-1"
+            }
+          },
+          "depth_levels": 32
+        },
+        "2020-11": {
+          "path": "data/input/reanalysis/glorys/2020/glorys12_barents_2020_11.nc",
+          "file_size": 498893010,
+          "time": {
+            "ok": true,
+            "records": 30,
+            "expected": 30,
+            "monotonic": true,
+            "unique": true,
+            "start": "2020-11-01",
+            "end": "2020-11-30"
+          },
+          "coverage": {
+            "ok": true,
+            "lat_min": 63.0,
+            "lat_max": 86.0,
+            "lon_min": 5.0,
+            "lon_max": 80.0
+          },
+          "variables": {
+            "ok": true,
+            "missing": [],
+            "units": {
+              "thetao": "degrees_C",
+              "so": "1e-3",
+              "uo": "m s-1",
+              "vo": "m s-1",
+              "zos": "m",
+              "siconc": "1",
+              "sithick": "m",
+              "usi": "m s-1",
+              "vsi": "m s-1"
+            }
+          },
+          "depth_levels": 32
+        },
+        "2020-12": {
+          "path": "data/input/reanalysis/glorys/2020/glorys12_barents_2020_12.nc",
+          "file_size": 497020501,
+          "time": {
+            "ok": true,
+            "records": 31,
+            "expected": 31,
+            "monotonic": true,
+            "unique": true,
+            "start": "2020-12-01",
+            "end": "2020-12-31"
+          },
+          "coverage": {
+            "ok": true,
+            "lat_min": 63.0,
+            "lat_max": 86.0,
+            "lon_min": 5.0,
+            "lon_max": 80.0
+          },
+          "variables": {
+            "ok": true,
+            "missing": [],
+            "units": {
+              "thetao": "degrees_C",
+              "so": "1e-3",
+              "uo": "m s-1",
+              "vo": "m s-1",
+              "zos": "m",
+              "siconc": "1",
+              "sithick": "m",
+              "usi": "m s-1",
+              "vsi": "m s-1"
+            }
+          },
+          "depth_levels": 32
+        }
+      },
+      "ok": true,
+      "annual_daily": {
+        "path": "data/input/reanalysis/glorys/2020/glorys12_barents_2020_daily.nc",
+        "file_size": 6906263783,
+        "time": {
+          "ok": true,
+          "records": 366,
+          "expected": 366,
+          "monotonic": true,
+          "unique": true,
+          "start": "2020-01-01",
+          "end": "2020-12-31"
+        },
+        "coverage": {
+          "ok": true,
+          "lat_min": 63.0,
+          "lat_max": 86.0,
+          "lon_min": 5.0,
+          "lon_max": 80.0
+        },
+        "variables": {
+          "ok": true,
+          "missing": [],
+          "units": {
+            "thetao": null,
+            "so": null,
+            "uo": null,
+            "vo": null,
+            "zos": null,
+            "siconc": null,
+            "sithick": null,
+            "usi": null,
+            "vsi": null
+          }
+        }
+      }
+    },
+    "2024": {
+      "product": "GLORYS12",
+      "year": 2024,
+      "months": {
+        "2024-01": {
+          "path": "data/input/reanalysis/glorys/2024/glorys12_barents_2024_01.nc",
+          "file_size": 484871594,
+          "time": {
+            "ok": true,
+            "records": 31,
+            "expected": 31,
+            "monotonic": true,
+            "unique": true,
+            "start": "2024-01-01",
+            "end": "2024-01-31"
+          },
+          "coverage": {
+            "ok": true,
+            "lat_min": 63.0,
+            "lat_max": 86.0,
+            "lon_min": 5.0,
+            "lon_max": 80.0
+          },
+          "variables": {
+            "ok": true,
+            "missing": [],
+            "units": {
+              "thetao": "degrees_C",
+              "so": "1e-3",
+              "uo": "m s-1",
+              "vo": "m s-1",
+              "zos": "m",
+              "siconc": "1",
+              "sithick": "m",
+              "usi": "m s-1",
+              "vsi": "m s-1"
+            }
+          },
+          "depth_levels": 32
+        },
+        "2024-02": {
+          "path": "data/input/reanalysis/glorys/2024/glorys12_barents_2024_02.nc",
+          "file_size": 459530468,
+          "time": {
+            "ok": true,
+            "records": 29,
+            "expected": 29,
+            "monotonic": true,
+            "unique": true,
+            "start": "2024-02-01",
+            "end": "2024-02-29"
+          },
+          "coverage": {
+            "ok": true,
+            "lat_min": 63.0,
+            "lat_max": 86.0,
+            "lon_min": 5.0,
+            "lon_max": 80.0
+          },
+          "variables": {
+            "ok": true,
+            "missing": [],
+            "units": {
+              "thetao": "degrees_C",
+              "so": "1e-3",
+              "uo": "m s-1",
+              "vo": "m s-1",
+              "zos": "m",
+              "siconc": "1",
+              "sithick": "m",
+              "usi": "m s-1",
+              "vsi": "m s-1"
+            }
+          },
+          "depth_levels": 32
+        },
+        "2024-03": {
+          "path": "data/input/reanalysis/glorys/2024/glorys12_barents_2024_03.nc",
+          "file_size": 485285683,
+          "time": {
+            "ok": true,
+            "records": 31,
+            "expected": 31,
+            "monotonic": true,
+            "unique": true,
+            "start": "2024-03-01",
+            "end": "2024-03-31"
+          },
+          "coverage": {
+            "ok": true,
+            "lat_min": 63.0,
+            "lat_max": 86.0,
+            "lon_min": 5.0,
+            "lon_max": 80.0
+          },
+          "variables": {
+            "ok": true,
+            "missing": [],
+            "units": {
+              "thetao": "degrees_C",
+              "so": "1e-3",
+              "uo": "m s-1",
+              "vo": "m s-1",
+              "zos": "m",
+              "siconc": "1",
+              "sithick": "m",
+              "usi": "m s-1",
+              "vsi": "m s-1"
+            }
+          },
+          "depth_levels": 32
+        },
+        "2024-04": {
+          "path": "data/input/reanalysis/glorys/2024/glorys12_barents_2024_04.nc",
+          "file_size": 489560196,
+          "time": {
+            "ok": true,
+            "records": 30,
+            "expected": 30,
+            "monotonic": true,
+            "unique": true,
+            "start": "2024-04-01",
+            "end": "2024-04-30"
+          },
+          "coverage": {
+            "ok": true,
+            "lat_min": 63.0,
+            "lat_max": 86.0,
+            "lon_min": 5.0,
+            "lon_max": 80.0
+          },
+          "variables": {
+            "ok": true,
+            "missing": [],
+            "units": {
+              "thetao": "degrees_C",
+              "so": "1e-3",
+              "uo": "m s-1",
+              "vo": "m s-1",
+              "zos": "m",
+              "siconc": "1",
+              "sithick": "m",
+              "usi": "m s-1",
+              "vsi": "m s-1"
+            }
+          },
+          "depth_levels": 32
+        },
+        "2024-05": {
+          "path": "data/input/reanalysis/glorys/2024/glorys12_barents_2024_05.nc",
+          "file_size": 535796608,
+          "time": {
+            "ok": true,
+            "records": 31,
+            "expected": 31,
+            "monotonic": true,
+            "unique": true,
+            "start": "2024-05-01",
+            "end": "2024-05-31"
+          },
+          "coverage": {
+            "ok": true,
+            "lat_min": 63.0,
+            "lat_max": 86.0,
+            "lon_min": 5.0,
+            "lon_max": 80.0
+          },
+          "variables": {
+            "ok": true,
+            "missing": [],
+            "units": {
+              "thetao": "degrees_C",
+              "so": "1e-3",
+              "uo": "m s-1",
+              "vo": "m s-1",
+              "zos": "m",
+              "siconc": "1",
+              "sithick": "m",
+              "usi": "m s-1",
+              "vsi": "m s-1"
+            }
+          },
+          "depth_levels": 32
+        },
+        "2024-06": {
+          "path": "data/input/reanalysis/glorys/2024/glorys12_barents_2024_06.nc",
+          "file_size": 539523011,
+          "time": {
+            "ok": true,
+            "records": 30,
+            "expected": 30,
+            "monotonic": true,
+            "unique": true,
+            "start": "2024-06-01",
+            "end": "2024-06-30"
+          },
+          "coverage": {
+            "ok": true,
+            "lat_min": 63.0,
+            "lat_max": 86.0,
+            "lon_min": 5.0,
+            "lon_max": 80.0
+          },
+          "variables": {
+            "ok": true,
+            "missing": [],
+            "units": {
+              "thetao": "degrees_C",
+              "so": "1e-3",
+              "uo": "m s-1",
+              "vo": "m s-1",
+              "zos": "m",
+              "siconc": "1",
+              "sithick": "m",
+              "usi": "m s-1",
+              "vsi": "m s-1"
+            }
+          },
+          "depth_levels": 32
+        },
+        "2024-07": {
+          "path": "data/input/reanalysis/glorys/2024/glorys12_barents_2024_07.nc",
+          "file_size": 563185232,
+          "time": {
+            "ok": true,
+            "records": 31,
+            "expected": 31,
+            "monotonic": true,
+            "unique": true,
+            "start": "2024-07-01",
+            "end": "2024-07-31"
+          },
+          "coverage": {
+            "ok": true,
+            "lat_min": 63.0,
+            "lat_max": 86.0,
+            "lon_min": 5.0,
+            "lon_max": 80.0
+          },
+          "variables": {
+            "ok": true,
+            "missing": [],
+            "units": {
+              "thetao": "degrees_C",
+              "so": "1e-3",
+              "uo": "m s-1",
+              "vo": "m s-1",
+              "zos": "m",
+              "siconc": "1",
+              "sithick": "m",
+              "usi": "m s-1",
+              "vsi": "m s-1"
+            }
+          },
+          "depth_levels": 32
+        },
+        "2024-08": {
+          "path": "data/input/reanalysis/glorys/2024/glorys12_barents_2024_08.nc",
+          "file_size": 566188441,
+          "time": {
+            "ok": true,
+            "records": 31,
+            "expected": 31,
+            "monotonic": true,
+            "unique": true,
+            "start": "2024-08-01",
+            "end": "2024-08-31"
+          },
+          "coverage": {
+            "ok": true,
+            "lat_min": 63.0,
+            "lat_max": 86.0,
+            "lon_min": 5.0,
+            "lon_max": 80.0
+          },
+          "variables": {
+            "ok": true,
+            "missing": [],
+            "units": {
+              "thetao": "degrees_C",
+              "so": "1e-3",
+              "uo": "m s-1",
+              "vo": "m s-1",
+              "zos": "m",
+              "siconc": "1",
+              "sithick": "m",
+              "usi": "m s-1",
+              "vsi": "m s-1"
+            }
+          },
+          "depth_levels": 32
+        },
+        "2024-09": {
+          "path": "data/input/reanalysis/glorys/2024/glorys12_barents_2024_09.nc",
+          "file_size": 529453234,
+          "time": {
+            "ok": true,
+            "records": 30,
+            "expected": 30,
+            "monotonic": true,
+            "unique": true,
+            "start": "2024-09-01",
+            "end": "2024-09-30"
+          },
+          "coverage": {
+            "ok": true,
+            "lat_min": 63.0,
+            "lat_max": 86.0,
+            "lon_min": 5.0,
+            "lon_max": 80.0
+          },
+          "variables": {
+            "ok": true,
+            "missing": [],
+            "units": {
+              "thetao": "degrees_C",
+              "so": "1e-3",
+              "uo": "m s-1",
+              "vo": "m s-1",
+              "zos": "m",
+              "siconc": "1",
+              "sithick": "m",
+              "usi": "m s-1",
+              "vsi": "m s-1"
+            }
+          },
+          "depth_levels": 32
+        },
+        "2024-10": {
+          "path": "data/input/reanalysis/glorys/2024/glorys12_barents_2024_10.nc",
+          "file_size": 524963126,
+          "time": {
+            "ok": true,
+            "records": 31,
+            "expected": 31,
+            "monotonic": true,
+            "unique": true,
+            "start": "2024-10-01",
+            "end": "2024-10-31"
+          },
+          "coverage": {
+            "ok": true,
+            "lat_min": 63.0,
+            "lat_max": 86.0,
+            "lon_min": 5.0,
+            "lon_max": 80.0
+          },
+          "variables": {
+            "ok": true,
+            "missing": [],
+            "units": {
+              "thetao": "degrees_C",
+              "so": "1e-3",
+              "uo": "m s-1",
+              "vo": "m s-1",
+              "zos": "m",
+              "siconc": "1",
+              "sithick": "m",
+              "usi": "m s-1",
+              "vsi": "m s-1"
+            }
+          },
+          "depth_levels": 32
+        },
+        "2024-11": {
+          "path": "data/input/reanalysis/glorys/2024/glorys12_barents_2024_11.nc",
+          "file_size": 496475148,
+          "time": {
+            "ok": true,
+            "records": 30,
+            "expected": 30,
+            "monotonic": true,
+            "unique": true,
+            "start": "2024-11-01",
+            "end": "2024-11-30"
+          },
+          "coverage": {
+            "ok": true,
+            "lat_min": 63.0,
+            "lat_max": 86.0,
+            "lon_min": 5.0,
+            "lon_max": 80.0
+          },
+          "variables": {
+            "ok": true,
+            "missing": [],
+            "units": {
+              "thetao": "degrees_C",
+              "so": "1e-3",
+              "uo": "m s-1",
+              "vo": "m s-1",
+              "zos": "m",
+              "siconc": "1",
+              "sithick": "m",
+              "usi": "m s-1",
+              "vsi": "m s-1"
+            }
+          },
+          "depth_levels": 32
+        },
+        "2024-12": {
+          "path": "data/input/reanalysis/glorys/2024/glorys12_barents_2024_12.nc",
+          "file_size": 495213970,
+          "time": {
+            "ok": true,
+            "records": 31,
+            "expected": 31,
+            "monotonic": true,
+            "unique": true,
+            "start": "2024-12-01",
+            "end": "2024-12-31"
+          },
+          "coverage": {
+            "ok": true,
+            "lat_min": 63.0,
+            "lat_max": 86.0,
+            "lon_min": 5.0,
+            "lon_max": 80.0
+          },
+          "variables": {
+            "ok": true,
+            "missing": [],
+            "units": {
+              "thetao": "degrees_C",
+              "so": "1e-3",
+              "uo": "m s-1",
+              "vo": "m s-1",
+              "zos": "m",
+              "siconc": "1",
+              "sithick": "m",
+              "usi": "m s-1",
+              "vsi": "m s-1"
+            }
+          },
+          "depth_levels": 32
+        }
+      },
+      "ok": true,
+      "annual_daily": {
+        "path": "data/input/reanalysis/glorys/2024/glorys12_barents_2024_daily.nc",
+        "file_size": 6882981632,
+        "time": {
+          "ok": true,
+          "records": 366,
+          "expected": 366,
+          "monotonic": true,
+          "unique": true,
+          "start": "2024-01-01",
+          "end": "2024-12-31"
+        },
+        "coverage": {
+          "ok": true,
+          "lat_min": 63.0,
+          "lat_max": 86.0,
+          "lon_min": 5.0,
+          "lon_max": 80.0
+        },
+        "variables": {
+          "ok": true,
+          "missing": [],
+          "units": {
+            "thetao": null,
+            "so": null,
+            "uo": null,
+            "vo": null,
+            "zos": null,
+            "siconc": null,
+            "sithick": null,
+            "usi": null,
+            "vsi": null
+          }
+        }
+      }
+    }
+  },
+  "wam": {
+    "2020": {
+      "path": "data/input/reanalysis/wam/2020/wam_2020-01.nc",
+      "dimensions": {
+        "rlat": 1241,
+        "rlon": 906,
+        "time": 744
+      },
+      "variables": [
+        "lat",
+        "lon",
+        "VHM0",
+        "VSDX",
+        "VSDY"
+      ],
+      "rotated_grid": true,
+      "compatible_with_wave_forcing": false,
+      "reason": "native rotated grid and Hs/Stokes variable mapping not implemented"
+    },
+    "2024": {
+      "path": "data/input/reanalysis/wam/2024/wam_2024-01.nc",
+      "dimensions": {
+        "rlat": 1241,
+        "rlon": 906,
+        "time": 744
+      },
+      "variables": [
+        "lat",
+        "lon",
+        "VHM0",
+        "VSDX",
+        "VSDY"
+      ],
+      "rotated_grid": true,
+      "compatible_with_wave_forcing": false,
+      "reason": "native rotated grid and Hs/Stokes variable mapping not implemented"
+    }
+  }
+}

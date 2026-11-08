@@ -13,7 +13,7 @@ Format: `ID | stage/date | status` + short description. Details — via links.
 | D-01–D-16 | Model foundations: grid, units, EOS/freezing point, three-equation interface, basal/lateral melt, internal temperature, switches, sea-ice initialization |
 | D-17–D-33 | Production coupling, ocean-init stabilization, CA/EOS precision, Stage 11 temporal architecture and EOS-80 policy |
 | D-34–D-50 | Stage 11.8 diagnostic ladder, numerical stabilization, forcing fixes, closure, EOS-80 default |
-| D-51–D-64 | Stage 12: reanalysis reader, voxel thermal core, CN/three-equation, geometry/drift, waves, Enderlin23, Barents matrix, face-specific boundaries |
+| D-51–D-65 | Stage 12: reanalysis reader, voxel thermal core, CN/three-equation, geometry/drift, waves, Enderlin23, Barents matrix, face-specific boundaries, freeboard/draft audit |
 
 Earlier records are historical decisions; current applicability is governed by
 later decisions and `docs/model/model_physics_status.md`. D-51 onward are the
@@ -334,7 +334,7 @@ active Stage 12 decisions.
 
 > **Status update 2026-11-05:** Stage 11 is CLOSED; Stage 12 was entered and
 > completed through Stage 12.8. This entry gate is historical; current Stage 12
-> decisions are D-52…D-64.
+> decisions are D-52…D-65.
 
 - **Stage:** 11.5H-RC | **Status:** DECIDED (entry gate locked)
 - **Problem:** premature voxel work on an unvalidated temporal/thermodynamic interface risks building on a regime-change artifact.
@@ -916,6 +916,24 @@ remains unchanged until the production-default decision in 11.7F.
   validation. `c_ice=2100` versus 2009 J/(kg K) remains a parameter question.
 - **Docs:** `docs/model/model_equation_ledger.md` §17.2;
   `docs/wiki/stages/stage12/stage12.10_voxel_thermodynamics_improvement.md`.
+
+## D-65. Voxel draft/freeboard use remaining solid surfaces; zero-mass stop (Stage 12.11, 2026-11-08)
+
+- **Status:** ACTIVE (diagnostic/geometry correction; no calibration).
+- **Decision:** measure draft from the lowest remaining solid cell to the
+  computed waterline, and freeboard from that waterline to the actual remaining
+  solid top. Stop the run before dynamics when voxel mass reaches zero.
+- **Why:** the old freeboard used the full initial grid height and the old
+  draft implicitly assumed solid material from the domain bottom. After bottom
+  erosion those assumptions became invalid; a zero-mass body also caused a
+  division by zero in dynamics.
+- **Evidence:** `test_voxel_iceberg` partial-top/freeboard checks; 2024 annual
+  melt-out stops cleanly at 268.8 d instead of producing NaN; mass budgets close
+  to <1e-7 relative.
+- **Limits:** the voxel grid is not vertically repositioned as the bottom
+  melts; a strongly eroded body can remain over-submerged. This decision does
+  not solve that limitation.
+- **Docs:** `docs/wiki/stages/stage12/stage12.11_final_audit_2020_2024.md`.
 
 ## How to add decisions
 

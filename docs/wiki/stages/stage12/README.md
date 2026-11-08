@@ -2,7 +2,7 @@
 
 Stage 12 is the current scientific stage. This directory stores completed
 stage reports and their evidence; it is not the working directory for unfinished
-tasks. Stage 12.9a acquisition and Stage 12.10 voxel-thermodynamics work are complete;
+tasks. Stage 12.9a acquisition, Stage 12.10 voxel thermodynamics, and the Stage 12.11 final audit are complete;
 the acquisition manifests remain in `docs/validation/` as canonical provenance.
 Stage 12.9b thesis writing is the active workstream.
 
@@ -28,6 +28,7 @@ Stage 12.9b thesis writing is the active workstream.
 | 12.8 | [`stage12.8_barents2020_matrix.md`](stage12.8_barents2020_matrix.md) | Exploratory 24-run Barents matrix with fallback forcing |
 | 12.9a | [`stage12.9a_daily_forcing_acquisition.md`](stage12.9a_daily_forcing_acquisition.md) | Completed 24-month ERA5/GLORYS/WAM acquisition with provenance |
 | 12.10 | [`stage12.10_voxel_thermodynamics_improvement.md`](stage12.10_voxel_thermodynamics_improvement.md) | Face-specific thermal BCs, cavity classification, 3D output and short real-data experiments |
+| 12.11 | [`stage12.11_final_audit_2020_2024.md`](stage12.11_final_audit_2020_2024.md) | Final audit, visualization/freeboard corrections, data audit and 2020/2024 readiness |
 
 The 12.8 drift and lifetime results are lower bounds from monthly GLORYS and
 constant-atmosphere fallbacks; they are not daily-forcing validation. No stage
@@ -39,6 +40,7 @@ report currently claims quantitative daily-forcing performance.
 - `figures/enderlin23/` — plots from Stage 12.7a.
 - `figures/barents2020/` — plots from Stage 12.8.
 - `figures/voxel_demo/` — spatial fields and diagnostics from Stage 12.10.
+- `figures/stage12.11/` — control and annual diagnostics for 2020/2024 (Stage 12.11).
 - `STAGE12_PREPARATION.md` and `transition_analysis.md` — archived planning
   records, not active work plans.
 
@@ -50,6 +52,11 @@ Stage 12.9 separates into two workstreams:
 | --- | --- |
 | 12.9a Daily-forcing acquisition | **COMPLETE (2026-11-07)**; 24/24 months for ERA5, GLORYS12, and WAM. No further downloads are needed. |
 | 12.9b Thesis writing | **GO with fallback labeling**; Stage 12.8 results are exploratory, not daily-forcing validation. |
+
+**12.11 audit status:** the 2020 annual run is a 365-day run with 3,154
+land/no-data forcing fallback warnings; the 2024 run melts out at 268.8 days.
+Neither is a publication-quality full-year comparison. See
+[`stage12.11_final_audit_2020_2024.md`](stage12.11_final_audit_2020_2024.md).
 
 Check `docs/validation/INDEX.md` for active work and
 `docs/references/reanalysis_data_plan.md` for the data contract.

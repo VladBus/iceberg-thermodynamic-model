@@ -499,6 +499,25 @@ For active voxels (`φ > 1e-12`) with heat capacity `C_i = φ_i ρ_ice c_ice V`:
 - Limitations: boundary linearisation, melt cap, and grid-rotation neglect are
   model assumptions; see Stage 12.4.
 
+### 17.1a Voxel draft and freeboard
+
+For the remaining solid cells, with `z_b` the lowest solid cell bottom and
+`z_t` the highest partially filled solid cell top:
+
+```text
+z_w = level at which cumulative phi*V equals (mass/rho_w)
+D   = z_w - z_b
+F_b = z_t - z_w
+```
+
+- Meaning: `D` is the draft measured from the remaining lower surface;
+  `F_b` is the actual geometric freeboard of the remaining body.
+- Implementation: `voxel_iceberg_compute_state`; `waterline_height` is retained
+  separately for the submerged/face-depth calculation.
+- Limitation: vertical coordinates are fixed; the voxel body is not
+  repositioned upward as its bottom melts. A body can therefore appear
+  over-submerged after strong bottom erosion.
+
 ### 17.2 Submerged-face conduction boundary
 
 ```text

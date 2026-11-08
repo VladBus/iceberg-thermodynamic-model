@@ -6,6 +6,10 @@
 ERA5, GLORYS12, and WAM. No further downloads are needed. Stage 12.9b thesis
 writing is GO with fallback labeling. See
 `docs/validation/INDEX.md` for current stage status.
+**Stage 12.11 local readiness:** annual daily files exist for ERA5 and GLORYS12
+for both 2020 and 2024, built from the local monthly files; the audit is in
+`docs/validation/stage12.11_data_audit.json`. WAM remains on its native rotated
+grid and is not integrated with `wave_forcing.f90`.
 **Date:** 2026-11-07
 **Decision:** D-51 (+D-52).
 **Purpose:** define the exact ocean/sea-ice source and validation gate for the

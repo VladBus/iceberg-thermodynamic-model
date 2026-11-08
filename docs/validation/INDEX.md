@@ -15,8 +15,10 @@ Stage 12.9 has two distinct workstreams:
 | 12.9b Thesis writing | **GO with fallback labeling**; can use Stage 12.8 exploratory results, but must not claim quantitative daily-forcing validation. | [`stage12.8`](../wiki/stages/stage12/stage12.8_barents2020_matrix.md), [`DECISIONS.md`](../DECISIONS.md) D-63. |
 
 Stage 12.10 (voxel thermal-boundary improvement and short real-data
-experiments) is complete; its report is in
-[`docs/wiki/stages/stage12/stage12.10_voxel_thermodynamics_improvement.md`](../wiki/stages/stage12/stage12.10_voxel_thermodynamics_improvement.md).
+experiments) and Stage 12.11 (final audit, visualization/freeboard corrections,
+data readiness, and 2020/2024 experiments) are complete; the reports are in
+[`stage12.10`](../wiki/stages/stage12/stage12.10_voxel_thermodynamics_improvement.md)
+and [`stage12.11`](../wiki/stages/stage12/stage12.11_final_audit_2020_2024.md).
 
 ### Acquisition manifests
 
@@ -26,8 +28,10 @@ experiments) is complete; its report is in
 | `stage12.9_wam_manifest.json` | tracked | Versioned acquisition provenance for the completed WAM subset. |
 | `stage12.9_era5_manifest.json` | tracked | Versioned acquisition provenance for the completed ERA5 subset. |
 
-The manifests remain in this directory because the acquisition tools use these
-paths as their canonical provenance location. They are provenance records, not
+The Stage 12.11 local data audit is
+[`stage12.11_data_audit.json`](stage12.11_data_audit.json). The manifests remain
+in this directory because the acquisition tools use these paths as their
+canonical provenance location. They are provenance records, not
 Stage 12 validation reports; do not present partial month counts as scientific
 results.
 

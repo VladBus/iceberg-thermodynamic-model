@@ -27,8 +27,11 @@ decisions are in [`../DECISIONS.md`](../DECISIONS.md). Stage 12 reports are in
 Its Barents matrix used monthly-mean GLORYS and a constant atmosphere; drift and
 lifetime are lower bounds, not daily-forcing validation. Stage 12.9a
 daily-forcing acquisition is complete; **12.9b thesis writing** is GO with
-explicit fallback labeling. Stage 12 is not an operationally validated forecast
-system.
+explicit fallback labeling. Stage 12.10 improved the voxel boundary/geometry
+diagnostics, and Stage 12.11 audited the 2020/2024 readiness: the 2024 run melts
+out before year end and the 2020 annual run has substantial land-forcing
+fallback warnings, so neither is a publication-quality full-year experiment.
+Stage 12 is not an operationally validated forecast system.
 
 ## 2. Grid and coordinates
 
@@ -201,7 +204,10 @@ Test counts and current battery status are maintained in
 
 The CN matrix receives one local `T_B` per exposed submerged face and uses an
 `open_face` mask from a six-neighbour exterior flood fill. Isolated cavities do
-not exchange with the ocean or atmosphere. When `VOXEL_ENABLED=ON`,
+not exchange with the ocean or atmosphere. The diagnostic draft is measured
+from the lowest remaining solid cell to the waterline, and freeboard from the
+waterline to the actual top of the remaining solid cells; the vertical grid is
+not repositioned after bottom erosion. When `VOXEL_ENABLED=ON`,
 `iceberg_run` can write three compact snapshots (`T`, `phi`, `open_mask`,
 `tb_face`, mass, draft, energy) to `<run>_voxel.nc`; the time-series file also
 records `sensible_energy` and `flushed_energy`. Plotting from saved NetCDF is
@@ -231,6 +237,9 @@ may use those results only with explicit fallback labeling.
   are absent.
 - The Stage 12.8 matrix uses monthly-mean GLORYS and constant atmosphere; its
   drift and lifetime are lower bounds.
+- The voxel grid is vertically fixed: after strong bottom erosion the remaining
+  body is not repositioned buoyantly, so draft/freeboard diagnostics can show
+  an over-submerged body.
 - Internal temperature is a lumped two-node model; internal melt and removed-ice
   enthalpy are incomplete.
 - No full observational validation of the coupled thermodynamic trajectory.

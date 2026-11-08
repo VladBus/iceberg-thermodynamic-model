@@ -184,10 +184,10 @@ contains
             print *, '  OK: melt scales with u_rel'
         end if
         call three_equation_melt(tw, sw, 0.0d0, depth, hn, tv, m1, tb, sb, ok)
-        if (m1 == 0.0d0) then
-            print *, '  OK: co-moving (u_rel=0) -> m=0'
+        if (m1 > 0.0d0 .and. m1 < m2) then
+            print *, '  OK: co-moving (u_rel=0) uses the free-convection floor'
         else
-            print *, '  FAIL: u_rel=0 should give m=0'; nerr = nerr + 1
+            print *, '  FAIL: expected 0 < m(u_rel=0) < m(u_rel=0.2)'; nerr = nerr + 1
         end if
     end subroutine test_B5
 

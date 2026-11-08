@@ -28,6 +28,7 @@ program test_voxel_cn
     call test_A3_order()
     call test_A4_vs_explicit()
     call test_A5_steady()
+    call test_face_bc()
     call test_A6_phase()
     call test_A7_geometry()
     call test_A8_rannacher()
@@ -227,6 +228,75 @@ contains
             print *, '  OK: steady linear profile reached'
         end if
     end subroutine test_A5_steady
+
+    ! --- face-specific Dirichlet boundary conditions -----------------------
+    subroutine test_face_bc()
+        integer, parameter :: n = 1
+        real(8) :: T(n, n, n), phi(n, n, n)
+        logical :: sm(n, n, n), em(n, n, n), of(n, n, n, 6)
+        real(8) :: tbf(n, n, n, 6), expected
+        integer :: cg
+        real(8) :: res
+        logical :: conv
+
+        phi = 1.0d0
+        sm = .true.; em = .false.; of = .false.; tbf = 0.0d0
+
+        ! One active face: steady state must equal its local TB.
+        T = -20.0d0
+        of(1, 1, 1, 1) = .true.; tbf(1, 1, 1, 1) = -2.0d0
+        call advance_face(T, phi, sm, em, of, tbf, cg, res, conv)
+        print '(a,f10.5,a,es12.4)', ' face-BC one-face T=', T(1, 1, 1), ' resid=', res
+        if (abs(T(1, 1, 1) + 2.0d0) > 1.0d-5 .or. .not. conv) then
+            print *, '  FAIL: one-face Dirichlet steady state'; nerr = nerr + 1
+        else
+            print *, '  OK: one face uses its local TB'
+        end if
+
+        ! x-face has G=4k, top face has G=k for dx=dy=1, dz=2.
+        T = -20.0d0
+        of = .false.; of(1, 1, 1, 1) = .true.; of(1, 1, 1, 5) = .true.
+        tbf = 0.0d0; tbf(1, 1, 1, 1) = -2.0d0; tbf(1, 1, 1, 5) = -6.0d0
+        expected = (4.0d0*(-2.0d0) + 1.0d0*(-6.0d0))/5.0d0
+        call advance_face(T, phi, sm, em, of, tbf, cg, res, conv)
+        print '(a,f10.5,a,f10.5,a,es12.4)', ' face-BC two-face T=', T(1, 1, 1), &
+            ' expected=', expected, ' resid=', res
+        if (abs(T(1, 1, 1) - expected) > 1.0d-5 .or. .not. conv) then
+            print *, '  FAIL: face-specific Dirichlet weighting'; nerr = nerr + 1
+        else
+            print *, '  OK: distinct face TBs are not averaged'
+        end if
+
+        ! Symmetric case: equal TBs must reproduce the old uniform result.
+        T = -20.0d0
+        tbf(1, 1, 1, 1) = -4.0d0; tbf(1, 1, 1, 5) = -4.0d0
+        call advance_face(T, phi, sm, em, of, tbf, cg, res, conv)
+        if (abs(T(1, 1, 1) + 4.0d0) > 1.0d-5 .or. .not. conv) then
+            print *, '  FAIL: symmetric face TB case'; nerr = nerr + 1
+        else
+            print *, '  OK: equal face TBs give the uniform result'
+        end if
+    end subroutine test_face_bc
+
+    subroutine advance_face(T, phi, sm, em, of, tbf, cg, res, conv)
+        real(8), intent(inout) :: T(:, :, :)
+        real(8), intent(in) :: phi(:, :, :), tbf(:, :, :, :)
+        logical, intent(in) :: sm(:, :, :), em(:, :, :), of(:, :, :, :)
+        integer, intent(out) :: cg
+        real(8), intent(out) :: res
+        logical, intent(out) :: conv
+        real(8), allocatable :: Tn(:, :, :)
+        integer :: it
+        allocate (Tn(size(T, 1), size(T, 2), size(T, 3)))
+        do it = 1, 2000
+            call solve_cn(T, phi, 1.0d0, 1.0d0, 2.0d0, 1.0d6, k8, rho8, c8, 0.5d0, &
+                          1.0d-12, 2000, 0.0d0, 0.0d0, 0.0d0, 0.0d0, 0.0d0, &
+                          0.0d0, 0.0d0, 0.0d0, sm, em, Tn, cg, res, conv, &
+                          open_face=of, tb_face=tbf)
+            T = Tn
+        end do
+        deallocate (Tn)
+    end subroutine advance_face
 
     real(8) function fit_slope(x, y, n) result(s)
         integer, intent(in) :: n

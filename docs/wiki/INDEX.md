@@ -16,7 +16,7 @@ their curated evidence. Current work does not belong here until its stage closes
 | 9 | [`stages/stage09/`](stages/stage09/) | Lagrangian iceberg model reconstruction and verification |
 | 10 | [`stages/stage10/`](stages/stage10/) | Iceberg thermodynamics modernization, audits, and observational studies |
 | 11 | [`stages/stage11/`](stages/stage11/) | Frozen Stage 11 reports, freeze record, evidence, and figures |
-| 12 | [`stages/stage12/`](stages/stage12/) | Completed Stage 12 reports and evidence through Stage 12.8 |
+| 12 | [`stages/stage12/`](stages/stage12/) | Stage 12 reports and evidence through 12.8, plus 12.9a acquisition and 12.10 model work |
 
 Every stage folder has a `README.md` with its report index and scope.
 
@@ -31,12 +31,12 @@ unresolved. The authoritative record is
 ## Stage 12 status
 
 Completed reports and evidence through Stage 12.8, plus the Stage 12.9a
-acquisition report, are archived in [`stages/stage12/`](stages/stage12/).
-**12.9a daily-forcing acquisition is COMPLETE (2026-11-07)** with 24/24 months
-for ERA5, GLORYS12, and WAM; no further downloads are needed. **12.9b thesis
-writing** is the active workstream, GO with fallback labeling. Stage 12.8
-fallback-forcing results are exploratory lower bounds, not daily-forcing
-validation.
+acquisition report and the Stage 12.10 voxel-thermodynamics improvement report,
+are archived in [`stages/stage12/`](stages/stage12/). **12.9a daily-forcing
+acquisition is COMPLETE (2026-11-07)** with 24/24 months for ERA5, GLORYS12, and
+WAM; no further downloads are needed. **12.9b thesis writing** is the active
+workstream, GO with fallback labeling. Stage 12.8 fallback-forcing results are
+exploratory lower bounds, not daily-forcing validation.
 
 ## Cross-cutting topics
 

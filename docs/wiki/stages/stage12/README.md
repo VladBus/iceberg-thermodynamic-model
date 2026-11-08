@@ -2,9 +2,9 @@
 
 Stage 12 is the current scientific stage. This directory stores completed
 stage reports and their evidence; it is not the working directory for unfinished
-tasks. Stage 12.9a acquisition is complete; its manifests remain in
-`docs/validation/` as canonical provenance. Stage 12.9b thesis writing is the
-active workstream.
+tasks. Stage 12.9a acquisition and Stage 12.10 voxel-thermodynamics work are complete;
+the acquisition manifests remain in `docs/validation/` as canonical provenance.
+Stage 12.9b thesis writing is the active workstream.
 
 > **Path note:** older planning notes in this directory preserve their original
 > wording and paths. Use this README and `docs/validation/INDEX.md` for current
@@ -27,6 +27,7 @@ active workstream.
 | 12.7c | [`stage12.7c_free_convection.md`](stage12.7c_free_convection.md) | Free-convection closure and remaining deficit |
 | 12.8 | [`stage12.8_barents2020_matrix.md`](stage12.8_barents2020_matrix.md) | Exploratory 24-run Barents matrix with fallback forcing |
 | 12.9a | [`stage12.9a_daily_forcing_acquisition.md`](stage12.9a_daily_forcing_acquisition.md) | Completed 24-month ERA5/GLORYS/WAM acquisition with provenance |
+| 12.10 | [`stage12.10_voxel_thermodynamics_improvement.md`](stage12.10_voxel_thermodynamics_improvement.md) | Face-specific thermal BCs, cavity classification, 3D output and short real-data experiments |
 
 The 12.8 drift and lifetime results are lower bounds from monthly GLORYS and
 constant-atmosphere fallbacks; they are not daily-forcing validation. No stage
@@ -37,6 +38,7 @@ report currently claims quantitative daily-forcing performance.
 - `evidence/` — Stage 12.7 and 12.8 manifests, result tables, and summaries.
 - `figures/enderlin23/` — plots from Stage 12.7a.
 - `figures/barents2020/` — plots from Stage 12.8.
+- `figures/voxel_demo/` — spatial fields and diagnostics from Stage 12.10.
 - `STAGE12_PREPARATION.md` and `transition_analysis.md` — archived planning
   records, not active work plans.
 

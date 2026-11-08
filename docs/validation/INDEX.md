@@ -14,6 +14,10 @@ Stage 12.9 has two distinct workstreams:
 | 12.9a Daily-forcing acquisition (ERA5/GLORYS/WAM) | **COMPLETE (2026-11-07)**; all 24 months for 2020 and 2024 acquired. No further downloads are needed. | [`stage12.9a`](../wiki/stages/stage12/stage12.9a_daily_forcing_acquisition.md); acquisition manifests in this directory. |
 | 12.9b Thesis writing | **GO with fallback labeling**; can use Stage 12.8 exploratory results, but must not claim quantitative daily-forcing validation. | [`stage12.8`](../wiki/stages/stage12/stage12.8_barents2020_matrix.md), [`DECISIONS.md`](../DECISIONS.md) D-63. |
 
+Stage 12.10 (voxel thermal-boundary improvement and short real-data
+experiments) is complete; its report is in
+[`docs/wiki/stages/stage12/stage12.10_voxel_thermodynamics_improvement.md`](../wiki/stages/stage12/stage12.10_voxel_thermodynamics_improvement.md).
+
 ### Acquisition manifests
 
 | Manifest | Git state | Meaning |

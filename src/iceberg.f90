@@ -269,6 +269,16 @@ contains
         ! 3. Термодинамика
         call iceberg_thermodynamics_step(state, dt, ocean_prof, atmos, diag)
 
+        ! The voxel body can disappear while the legacy prism still has
+        ! L/W/H > 0; stop before dynamics divides by a zero voxel mass.
+        if (voxel_geometry_active()) then
+            if (voxel_geometry_mass() <= 0.0) then
+                state%active = .false.
+                print *, 'ICEBERG: voxel mass reached zero; stopping'
+                return
+            end if
+        end if
+
         ! 4. Обновление геометрии после плавления
         call iceberg_update_geometry(state, dt, diag)
 

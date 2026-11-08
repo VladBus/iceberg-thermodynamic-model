@@ -705,12 +705,17 @@ contains
         end if
 
         ! Внутри профиля — линейная интерполяция
+        k1 = -1
         do k = 1, prof%nlevels - 1
             if (prof%z(k) .le. draft .and. draft .lt. prof%z(k + 1)) then
                 k1 = k
                 exit
             end if
         end do
+        if (k1 < 1) then
+            val = 0.0
+            return
+        end if
 
         z1 = prof%z(k1)
         z2 = prof%z(k1 + 1)

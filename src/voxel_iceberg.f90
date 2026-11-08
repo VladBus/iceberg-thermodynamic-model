@@ -28,7 +28,8 @@ module voxel_iceberg
     public :: voxel_iceberg_step_profile, voxel_iceberg_get_stefan
     public :: voxel_iceberg_get_frontal_area, voxel_iceberg_get_stability
     public :: voxel_iceberg_get_grid, voxel_iceberg_get_fields
-    public :: voxel_iceberg_get_energy
+    public :: voxel_iceberg_get_energy, voxel_iceberg_get_freeboard
+    public :: voxel_iceberg_get_top_height, voxel_iceberg_get_cumulative_losses
 
     real(8), parameter :: EPS_PHI = 1.0d-12
     real(8), parameter :: DEFAULT_PHI_MIN = 0.01d0
@@ -64,6 +65,8 @@ module voxel_iceberg
         ! производные
         real(8) :: total_mass = 0.0_8
         real(8) :: draft = 0.0_8
+        real(8) :: waterline_height = 0.0_8
+        real(8) :: top_height = 0.0_8
         real(8) :: freeboard = 0.0_8
         real(8) :: waterline_area = 0.0_8
         real(8) :: submerged_area = 0.0_8
@@ -79,6 +82,10 @@ module voxel_iceberg
         real(8) :: flushed_mass = 0.0_8
         real(8) :: flushed_energy = 0.0_8
         real(8) :: clamp_melt_mass = 0.0_8
+        real(8) :: cum_basal_mass = 0.0_8
+        real(8) :: cum_lateral_mass = 0.0_8
+        real(8) :: cum_surface_mass = 0.0_8
+        real(8) :: cum_flush_mass = 0.0_8
         ! Part B diagnostics
         real(8) :: stefan_mean_tb = 0.0_8, stefan_mean_sb = 0.0_8, stefan_mean_urel = 0.0_8
         real(8) :: stefan_deep_tb = 0.0_8, stefan_wl_tb = 0.0_8
@@ -122,6 +129,8 @@ contains
         vox%basal_melt_rate = 0.0_8; vox%lateral_melt_rate = 0.0_8; vox%surface_melt_rate = 0.0_8
         vox%cg_iters = 0; vox%cg_resid = 0.0_8; vox%clip_events = 0
         vox%flushed_mass = 0.0_8; vox%flushed_energy = 0.0_8; vox%clamp_melt_mass = 0.0_8
+        vox%cum_basal_mass = 0.0_8; vox%cum_lateral_mass = 0.0_8
+        vox%cum_surface_mass = 0.0_8; vox%cum_flush_mass = 0.0_8
         call voxel_iceberg_compute_state(vox)
     end subroutine voxel_iceberg_init
 
@@ -129,7 +138,7 @@ contains
     subroutine voxel_iceberg_compute_state(vox)
         type(voxel_iceberg_type), intent(inout) :: vox
         integer :: i, j, k
-        real(8) :: cell_vol, solid_vol, v_sub, zw, cnt_wl, s_area, e_area
+        real(8) :: cell_vol, solid_vol, v_sub, zw, cnt_wl, s_area, e_area, solid_top, bottom_height
 
         cell_vol = vox%dx*vox%dy*vox%dz
         vox%total_mass = 0.0_8; solid_vol = 0.0_8
@@ -144,7 +153,8 @@ contains
             end do
         end do
         if (vox%total_mass <= 0.0_8 .or. solid_vol <= 0.0_8) then
-            vox%draft = 0.0_8; vox%freeboard = 0.0_8
+            vox%draft = 0.0_8; vox%waterline_height = 0.0_8
+            vox%top_height = 0.0_8; vox%freeboard = 0.0_8
             vox%waterline_area = 0.0_8; vox%submerged_area = 0.0_8; vox%exposed_area = 0.0_8
             vox%submerged_mask = .false.; vox%exposed_mask = .false.
             if (allocated(vox%open_mask)) vox%open_mask = .false.
@@ -153,15 +163,31 @@ contains
         end if
         v_sub = vox%total_mass/real(RHO_WATER, 8)
         zw = solid_height_for_submerged_vol(vox, v_sub, cell_vol)
-        vox%draft = min(zw, vox%dz*real(vox%nz, 8))
-        vox%freeboard = max(0.0_8, vox%dz*real(vox%nz, 8) - vox%draft)
+        vox%waterline_height = min(zw, vox%dz*real(vox%nz, 8))
+        ! Actual upper and lower solid surfaces.
+        solid_top = 0.0_8
+        bottom_height = vox%dz*real(vox%nz, 8)
+        do k = 1, vox%nz
+            do j = 1, vox%ny
+                do i = 1, vox%nx
+                    if (vox%phi(i, j, k) <= EPS_PHI) cycle
+                    solid_top = max(solid_top, &
+                                    (real(k - 1, 8) + vox%phi(i, j, k))*vox%dz)
+                    bottom_height = min(bottom_height, real(k - 1, 8)*vox%dz)
+                end do
+            end do
+        end do
+        if (solid_top <= 0.0_8) bottom_height = 0.0_8
+        vox%top_height = solid_top
+        vox%draft = max(0.0_8, vox%waterline_height - bottom_height)
+        vox%freeboard = max(0.0_8, solid_top - vox%waterline_height)
 
         do k = 1, vox%nz
             do j = 1, vox%ny
                 do i = 1, vox%nx
                     if (vox%phi(i, j, k) <= EPS_PHI) then
                         vox%submerged_mask(i, j, k) = .false.; vox%exposed_mask(i, j, k) = .false.
-                    else if ((real(k, 8) - 0.5_8)*vox%dz < vox%draft) then
+                    else if ((real(k, 8) - 0.5_8)*vox%dz < vox%waterline_height) then
                         vox%submerged_mask(i, j, k) = .true.; vox%exposed_mask(i, j, k) = .false.
                     else
                         vox%submerged_mask(i, j, k) = .false.; vox%exposed_mask(i, j, k) = .true.
@@ -173,7 +199,8 @@ contains
 
         cnt_wl = 0.0_8
         do k = 1, vox%nz
-            if ((real(k, 8) - 1.0_8)*vox%dz < vox%draft .and. real(k, 8)*vox%dz > vox%draft) then
+            if ((real(k, 8) - 1.0_8)*vox%dz < vox%waterline_height .and. &
+                real(k, 8)*vox%dz > vox%waterline_height) then
                 do j = 1, vox%ny
                     do i = 1, vox%nx
                         if (vox%phi(i, j, k) > EPS_PHI) cnt_wl = cnt_wl + 1.0_8
@@ -297,16 +324,17 @@ contains
         type(voxel_iceberg_type), intent(in) :: vox
         real(8), intent(in) :: v_sub, cell_vol
         integer :: i, j, k
-        real(8) :: cum, level_vol, nlev
+        real(8) :: cum, level_vol
         zw = 0.0_8; cum = 0.0_8
         do k = 1, vox%nz
-            nlev = 0.0_8
+            ! Use the actual ice volume fraction, not the number of non-empty cells.
+            level_vol = 0.0_8
             do j = 1, vox%ny
                 do i = 1, vox%nx
-                    if (vox%phi(i, j, k) > EPS_PHI) nlev = nlev + 1.0_8
+                    if (vox%phi(i, j, k) > EPS_PHI) &
+                        level_vol = level_vol + vox%phi(i, j, k)*cell_vol
                 end do
             end do
-            level_vol = nlev*cell_vol
             if (cum + level_vol >= v_sub .and. level_vol > 0.0_8) then
                 zw = (real(k, 8) - 1.0_8 + (v_sub - cum)/level_vol)*vox%dz
                 return
@@ -338,7 +366,7 @@ contains
                 do i = 1, vox%nx
                     if (.not. vox%submerged_mask(i, j, k)) cycle
                     zf = (real(k, 8) - 0.5_8)*vox%dz
-                    dface = max(0.0_8, vox%draft - zf)
+                    dface = max(0.0_8, vox%waterline_height - zf)
                     tf = real(ocean_freezing_point(real(ocean_S), real(dface)), 8)
                     do d = 1, 6
                         if (.not. vox%open_face(i, j, k, d)) cycle
@@ -505,6 +533,9 @@ contains
         vox%basal_melt_rate = basal_melt
         vox%lateral_melt_rate = lateral_melt
         vox%surface_melt_rate = surface_melt
+        vox%cum_basal_mass = vox%cum_basal_mass + basal_melt*dt
+        vox%cum_lateral_mass = vox%cum_lateral_mass + lateral_melt*dt
+        vox%cum_surface_mass = vox%cum_surface_mass + surface_melt*dt
         call voxel_iceberg_compute_state(vox)
         if (dbg_melt .and. .not. dbg_total_done) then
             block
@@ -533,6 +564,7 @@ contains
         phit = vox%phi(i, j, k); Tt = vox%T(i, j, k)
         dV = phit*V
         vox%flushed_mass = vox%flushed_mass + dV*rho8
+        vox%cum_flush_mass = vox%cum_flush_mass + dV*rho8
         vox%flushed_energy = vox%flushed_energy + dV*rho8*(c8*(0.0_8 - Tt) + lf8)
         sens = dV*rho8*c8*Tt          ! Tt<=0 → sens<=0 (охлаждение соседей)
         cnt = 0
@@ -621,7 +653,7 @@ contains
                         case (6); zf = real(k - 1, 8)*vox%dz
                         case default; zf = (real(k, 8) - 0.5_8)*vox%dz
                         end select
-                        dface = max(0.0_8, vox%draft - zf)
+                        dface = max(0.0_8, vox%waterline_height - zf)
                         call profile_at(prof, dface, tw, sw, uw, vw)
                         urel = sqrt((uw - v_ice_u)**2 + (vw - v_ice_v)**2)
                         hn = face_h(d, vox%dx, vox%dy, vox%dz)
@@ -752,6 +784,9 @@ contains
         vox%basal_melt_rate = basal_melt
         vox%lateral_melt_rate = lateral_melt
         vox%surface_melt_rate = surface_melt
+        vox%cum_basal_mass = vox%cum_basal_mass + basal_melt*dt
+        vox%cum_lateral_mass = vox%cum_lateral_mass + lateral_melt*dt
+        vox%cum_surface_mass = vox%cum_surface_mass + surface_melt*dt
         call voxel_iceberg_compute_state(vox)
         if (dbg_melt .and. .not. dbg_total_done) then
             block
@@ -891,6 +926,27 @@ contains
         real(8), intent(out) :: draft
         draft = vox%draft
     end subroutine voxel_iceberg_get_draft
+
+    subroutine voxel_iceberg_get_cumulative_losses(vox, basal, lateral, surface, flush)
+        type(voxel_iceberg_type), intent(in) :: vox
+        real(8), intent(out) :: basal, lateral, surface, flush
+        basal = vox%cum_basal_mass
+        lateral = vox%cum_lateral_mass
+        surface = vox%cum_surface_mass
+        flush = vox%cum_flush_mass
+    end subroutine voxel_iceberg_get_cumulative_losses
+
+    subroutine voxel_iceberg_get_freeboard(vox, freeboard)
+        type(voxel_iceberg_type), intent(in) :: vox
+        real(8), intent(out) :: freeboard
+        freeboard = vox%freeboard
+    end subroutine voxel_iceberg_get_freeboard
+
+    subroutine voxel_iceberg_get_top_height(vox, top_height)
+        type(voxel_iceberg_type), intent(in) :: vox
+        real(8), intent(out) :: top_height
+        top_height = vox%top_height
+    end subroutine voxel_iceberg_get_top_height
 
     subroutine voxel_iceberg_get_areas(vox, waterline_area, submerged_area, exposed_area)
         type(voxel_iceberg_type), intent(in) :: vox

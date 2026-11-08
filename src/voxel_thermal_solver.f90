@@ -374,27 +374,32 @@ contains
                     do d = 1, 6
                         ii = i + di(d); jj = j + dj(d); kk = k + dk(d)
                         A = face_area(d, dx, dy, dz); hn = face_h(d, dx, dy, dz)
+                        ! Fortran .and. is not short-circuit: guard the array access
+                        ! explicitly before evaluating phi(ii,jj,kk).
                         if (ii >= 1 .and. ii <= nx .and. jj >= 1 .and. jj <= ny .and. &
-                            kk >= 1 .and. kk <= nz .and. phi(ii, jj, kk) > EPS_PHI) then
-                            G = k_ice*A/hn*min(phi(i, j, k), phi(ii, jj, kk))
-                            diag(i, j, k) = diag(i, j, k) + theta*G
-                            rhs(i, j, k) = rhs(i, j, k) + (1.0_8 - theta)*G*(T(ii, jj, kk) - Told)
-                            off(i, j, k, d) = -theta*G
-                        else
-                            if (present(open_face)) then
-                                if (.not. open_face(i, j, k, d)) cycle
+                            kk >= 1 .and. kk <= nz) then
+                            if (phi(ii, jj, kk) > EPS_PHI) then
+                                G = k_ice*A/hn*min(phi(i, j, k), phi(ii, jj, kk))
+                                diag(i, j, k) = diag(i, j, k) + theta*G
+                                rhs(i, j, k) = rhs(i, j, k) + (1.0_8 - theta)*G*(T(ii, jj, kk) - Told)
+                                off(i, j, k, d) = -theta*G
+                                cycle
                             end if
-                            if (present(tb_face)) then
-                                tf = tb_face(i, j, k, d)
-                            else if (present(tb_override)) then
-                                tf = tb_override(i, j, k)
-                            end if
-                            if (submerged_mask(i, j, k)) then
-                                Gb = 2.0_8*k_ice*A/hn
-                                diag(i, j, k) = diag(i, j, k) + theta*Gb
-                                rhs(i, j, k) = rhs(i, j, k) + Gb*tf - (1.0_8 - theta)*Gb*Told
-                            end if
-                            if (exposed_mask(i, j, k)) then
+                        end if
+                        if (present(open_face)) then
+                            if (.not. open_face(i, j, k, d)) cycle
+                        end if
+                        if (present(tb_face)) then
+                            tf = tb_face(i, j, k, d)
+                        else if (present(tb_override)) then
+                            tf = tb_override(i, j, k)
+                        end if
+                        if (submerged_mask(i, j, k)) then
+                            Gb = 2.0_8*k_ice*A/hn
+                            diag(i, j, k) = diag(i, j, k) + theta*Gb
+                            rhs(i, j, k) = rhs(i, j, k) + Gb*tf - (1.0_8 - theta)*Gb*Told
+                        end if
+                        if (exposed_mask(i, j, k)) then
                                 if (present(autonomous_air)) then
                                     if (autonomous_air) then
                                         block
@@ -423,7 +428,6 @@ contains
                                     rhs(i, j, k) = rhs(i, j, k) + hA*Tair + A*atmos_Q
                                 end if
                             end if
-                        end if
                     end do
                     ! TEST-ONLY Dirichlet faces (half-cell conductance)
                     if (have_a .and. on_face(i, j, k, nx, ny, nz, fa)) then

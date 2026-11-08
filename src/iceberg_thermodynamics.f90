@@ -40,7 +40,8 @@ module iceberg_thermodynamics
                              voxel_iceberg_get_mass, voxel_iceberg_get_draft, &
                              voxel_iceberg_get_areas, voxel_iceberg_get_frontal_area, &
                              voxel_iceberg_get_stability, voxel_iceberg_get_grid, &
-                             voxel_iceberg_get_fields, voxel_iceberg_get_energy
+                             voxel_iceberg_get_fields, voxel_iceberg_get_energy, &
+                             voxel_iceberg_get_freeboard, voxel_iceberg_get_cumulative_losses
     use param, only: nat
     use wave_forcing, only: wave_erosion_enabled, get_wave_forcing, hs_to_sea_state, &
                             bigg_wave_melt, wave_forcing_epoch
@@ -1591,6 +1592,15 @@ contains
         voxel_geometry_draft = real(d, 4)
     end function voxel_geometry_draft
 
+    real function voxel_geometry_freeboard()
+        real(8) :: f
+        voxel_geometry_freeboard = 0.0
+        call voxel_model_configure()
+        if (.not. (vox_enabled .and. vox_ready)) return
+        call voxel_iceberg_get_freeboard(vox_ice, f)
+        voxel_geometry_freeboard = real(f, 4)
+    end function voxel_geometry_freeboard
+
     ! A_sub_proj — проекционная подводная площадь (водное сопротивление);
     ! A_sail — полная открытая площадь (PDF §13.3) для ветра.
     subroutine voxel_geometry_drag_areas(flow_angle, A_sub_proj, A_sail)
@@ -1625,6 +1635,14 @@ contains
         if (.not. (vox_enabled .and. vox_ready)) return
         call voxel_iceberg_get_grid(vox_ice, nx, ny, nz, dx, dy, dz)
     end subroutine voxel_model_get_grid
+
+    subroutine voxel_model_get_cumulative_losses(basal, lateral, surface, flush)
+        real(8), intent(out) :: basal, lateral, surface, flush
+        basal = 0.0_8; lateral = 0.0_8; surface = 0.0_8; flush = 0.0_8
+        call voxel_model_configure()
+        if (.not. (vox_enabled .and. vox_ready)) return
+        call voxel_iceberg_get_cumulative_losses(vox_ice, basal, lateral, surface, flush)
+    end subroutine voxel_model_get_cumulative_losses
 
     subroutine voxel_model_get_energy(sensible, flushed)
         real(8), intent(out) :: sensible, flushed

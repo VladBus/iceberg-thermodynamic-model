@@ -63,8 +63,10 @@ do not change the Stage 11 ocean reference. Reports are in
 
 | Block | Implementation | Method | Default / switch | Verification | Limitations |
 | --- | --- | --- | --- | --- | --- |
-| Voxel heat conduction | `src/voxel_thermal_solver.f90` | Finite-volume conduction on state-scaled voxels; explicit path retained | `VOXEL_THERMAL_SCHEME=explicit` | Stage 12.3/12.4 synthetic tests | No cavity exchange; grid-rotation neglected |
+| Voxel heat conduction | `src/voxel_thermal_solver.f90` | Finite-volume conduction on state-scaled voxels; explicit path retained | `VOXEL_THERMAL_SCHEME=explicit` | Stage 12.3/12.4 synthetic tests | No cavity-resolved circulation; grid-rotation neglected |
 | Crank–Nicolson core | `src/voxel_thermal_solver.f90` | θ-scheme with `θ=ICEBERG_THETA=0.5`; symmetric 7-diagonal system solved by PCG+Jacobi (`ICEBERG_CG_TOL=1e-10`) | Default `cn` | A‑T1…A‑T9; temporal order ~2 (ratio 3.996), energy drift ~1.6e−10 | BC linearisation and melt-cap choices are model assumptions |
+| Face-specific Dirichlet BC | `src/voxel_thermal_solver.f90`, `src/voxel_iceberg.f90` | Per-face `T_B,f`, `A_f`, `h_norm,f` and conductance; no voxel-mean `T_B` | Default CN path | Stage 12.10 one/two-face steady tests | Face-normal geometry approximated |
+| Cavity / exterior connectivity | `src/voxel_iceberg.f90` | Six-neighbour flood fill (`open_mask`, `open_face`); isolated cavities receive no ocean/air flux | Every `compute_state` | Solid cube, closed cavity, open channel | Connected cavities are open boundaries, not resolved flow |
 | Rannacher smoothing | `src/voxel_thermal_solver.f90` | Two backward-Euler steps after any geometry change, then return to CN | Automatic after removal | A‑T8 | Added for stability, not calibrated |
 | Stefan / three-equation boundary | `src/voxel_thermal_solver.f90` | Per-face `F(m)` bisection; `S_B(m)`, `T_B=Tf(S_B,P_f)`; `m≥0`, no accretion | Voxel submerged faces | B‑T1…B‑T8; mass budget closes to 8.96e−16 | K_T/K_S uncalibrated; no accretion; per-face assumptions |
 | Free-convection floor | `src/voxel_thermal_solver.f90` | `gamma_T=max(K_T u_rel, 1e-5)`, `gamma_S=max(K_S u_rel, 1e-6)` | `VOXEL_ENABLED=ON` voxel path | Stage 12.7c 3-case rerun | Large/low-ΔT under-melt remains; full 190 not rerun |

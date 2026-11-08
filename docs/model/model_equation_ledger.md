@@ -6,7 +6,7 @@
 > must not automatically be interpreted as the current Stage 12 model.
 > Section 17 is the current Stage 12 voxel/reanalysis specification.
 
-**Date:** 2026-11-05
+**Date:** 2026-11-08
 **Current repository stage:** **Stage 11 FROZEN** (D-51, tag `stage11-final-frozen`); **Stage 12 active** (GLORYS12 + ERA5 voxel iceberg). Sections 1–16 are the rectangular-prism and Stage 11 ocean specification and remain valid for the legacy/regression path. Section 17 specifies the implemented Stage 12 voxel, reanalysis, and wave formulations; it does not retroactively change the Stage 11 reference. Stage 12.9a acquisition is complete; see `docs/validation/INDEX.md`.
 **Production baseline:** Stage 10.13 (low-flow closure behind `low_flow_closure_enabled`; OFF = Stage 10.12/10.10 behavior unchanged)
 **Units:** SI in the iceberg module unless explicitly noted.
@@ -502,14 +502,22 @@ For active voxels (`φ > 1e-12`) with heat capacity `C_i = φ_i ρ_ice c_ice V`:
 ### 17.2 Submerged-face conduction boundary
 
 ```text
-G_b = 2 k_ice A_f / h_norm
-T_b = Tf(S, P)
+G_b,f = 2 k_ice A_f / h_norm,f
+T_b,f = Tf(S_f, P_f)
 ```
 
-- Meaning: Dirichlet ice–water face temperature and conductance.
-- Units: `G_b` in W/K, `k_ice` in W/(m·K), `A_f` in m², `h_norm` in m, `T_b` in °C.
-- Implementation: `src/voxel_thermal_solver.f90`; `Tf` from EOS-80.
-- Limitations: face-normal geometry is approximated; no cavity exchange.
+- Meaning: Dirichlet ice–water temperature and conductance on **each exposed
+  face** `f`; `T_b,f` is never averaged across faces of one voxel.
+- Units: `G_b,f` in W/K, `k_ice` in W/(m·K), `A_f` in m², `h_norm,f` in m,
+  `T_b,f` in °C.
+- Implementation: `src/voxel_thermal_solver.f90`; `Tf` from EOS-80; the
+  `tb_face(i,j,k,f)` array supplies the CN matrix face by face.
+- Openness: `open_face(i,j,k,f)` excludes faces adjacent to isolated internal
+  cavities. Only empty cells connected to the exterior by a six-neighbour
+  flood fill receive ocean/air exchange.
+- Limitations: face-normal geometry is approximated; a cavity connected to the
+  exterior is treated as an open water/air boundary, but no cavity-resolved
+  spray or circulation model is included.
 
 ### 17.3 Three-equation Stefan interface
 

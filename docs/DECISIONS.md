@@ -13,7 +13,7 @@ Format: `ID | stage/date | status` + short description. Details — via links.
 | D-01–D-16 | Model foundations: grid, units, EOS/freezing point, three-equation interface, basal/lateral melt, internal temperature, switches, sea-ice initialization |
 | D-17–D-33 | Production coupling, ocean-init stabilization, CA/EOS precision, Stage 11 temporal architecture and EOS-80 policy |
 | D-34–D-50 | Stage 11.8 diagnostic ladder, numerical stabilization, forcing fixes, closure, EOS-80 default |
-| D-51–D-63 | Stage 12: reanalysis reader, voxel thermal core, CN/three-equation, geometry/drift, waves, Enderlin23, Barents matrix |
+| D-51–D-64 | Stage 12: reanalysis reader, voxel thermal core, CN/three-equation, geometry/drift, waves, Enderlin23, Barents matrix, face-specific boundaries |
 
 Earlier records are historical decisions; current applicability is governed by
 later decisions and `docs/model/model_physics_status.md`. D-51 onward are the
@@ -334,7 +334,7 @@ active Stage 12 decisions.
 
 > **Status update 2026-11-05:** Stage 11 is CLOSED; Stage 12 was entered and
 > completed through Stage 12.8. This entry gate is historical; current Stage 12
-> decisions are D-52…D-63.
+> decisions are D-52…D-64.
 
 - **Stage:** 11.5H-RC | **Status:** DECIDED (entry gate locked)
 - **Problem:** premature voxel work on an unvalidated temporal/thermodynamic interface risks building on a regime-change artifact.
@@ -894,6 +894,28 @@ remains unchanged until the production-default decision in 11.7F.
   NO-GO for quantitative daily-forcing drift/lifetime claims until daily
   GLORYS, full-year ERA5, WAM, and corrected Coriolis/drift treatment.
 - **Docs:** `docs/wiki/stages/stage12/stage12.8_barents2020_matrix.md`.
+
+## D-64. Face-specific voxel thermal boundaries; exterior-only cavity exchange (Stage 12.10, 2026-11-08)
+
+- **Status:** ACTIVE (numerical/physical-consistency correction; no calibration).
+- **Decision:** the CN matrix uses a separate `T_B,f`, face area, `h_norm,f`,
+  and three-equation melt contribution for every exposed submerged face. A
+  voxel-mean `T_B` is not used. Empty cells connected to the domain exterior
+  are identified by a six-neighbour flood fill; isolated internal cavities do
+  not receive ocean/atmosphere boundary fluxes.
+- **Why:** averaging faces at different depths, salinities, pressures, and
+  relative velocities is inconsistent with the local interface solve. Treating
+  every empty neighbour as exterior incorrectly heats or melts closed voids.
+- **Evidence:** one-face/two-face Dirichlet steady states, solid-cube face
+  count (600), closed-cavity area test, connected-channel test, mass-loss
+  component closure, full `fpm test` exit 0. Short GLORYS and GLORYS+ERA5 runs
+  produce 3D `T`/`phi` snapshots. See
+  `docs/wiki/stages/stage12/stage12.10_voxel_thermodynamics_improvement.md`.
+- **Limits:** connected cavities are open boundaries, not resolved cavity
+  circulation/spray; coefficients remain uncalibrated; no observational
+  validation. `c_ice=2100` versus 2009 J/(kg K) remains a parameter question.
+- **Docs:** `docs/model/model_equation_ledger.md` §17.2;
+  `docs/wiki/stages/stage12/stage12.10_voxel_thermodynamics_improvement.md`.
 
 ## How to add decisions
 

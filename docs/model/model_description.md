@@ -70,9 +70,13 @@ exposed-face air exchange, geometric erosion, and removal at `φ < φ_min`
 determine the body. Voxel mass, Archimedes draft, projected submerged area
 `A_sub_proj`, and exposed sail area `A_sail` drive drift when
 `VOXEL_ENABLED=ON` (Stage 12.5). The default is OFF for bit-identical legacy
-regression; science runs enable the voxel path explicitly. The Stage 12.7.audit
-fixed a fixed-100-m-cube geometry bug; residual medium/large under-melt is
-structural (Stage 12.7.audit, 12.7c).
+regression; science runs enable the voxel path explicitly. The CN boundary
+assembly uses one local interface temperature per exposed face; it does not
+average different face temperatures. A six-neighbour flood fill distinguishes
+exterior-connected empty cells from isolated cavities, so closed voids do not
+receive ocean or atmosphere fluxes. These changes are documented and tested in
+Stage 12.10; residual medium/large under-melt remains structural
+(Stage 12.7.audit, 12.7c).
 
 ## 4. Dynamics
 
@@ -194,6 +198,14 @@ wave erosion, and reanalysis interpolation. Defaults, switches, and limitations
 are inventoried in [`numerical_scheme_inventory.md`](numerical_scheme_inventory.md).
 Test counts and current battery status are maintained in
 [`model_physics_status.md`](model_physics_status.md), not duplicated here.
+
+The CN matrix receives one local `T_B` per exposed submerged face and uses an
+`open_face` mask from a six-neighbour exterior flood fill. Isolated cavities do
+not exchange with the ocean or atmosphere. When `VOXEL_ENABLED=ON`,
+`iceberg_run` can write three compact snapshots (`T`, `phi`, `open_mask`,
+`tb_face`, mass, draft, energy) to `<run>_voxel.nc`; the time-series file also
+records `sensible_energy` and `flushed_energy`. Plotting from saved NetCDF is
+handled by `python/analysis/plot_voxel_results.py`.
 
 ## 10. Verification versus validation
 

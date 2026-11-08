@@ -39,7 +39,8 @@ module iceberg_thermodynamics
                              voxel_iceberg_step_profile, voxel_iceberg_get_melt, &
                              voxel_iceberg_get_mass, voxel_iceberg_get_draft, &
                              voxel_iceberg_get_areas, voxel_iceberg_get_frontal_area, &
-                             voxel_iceberg_get_stability
+                             voxel_iceberg_get_stability, voxel_iceberg_get_grid, &
+                             voxel_iceberg_get_fields, voxel_iceberg_get_energy
     use param, only: nat
     use wave_forcing, only: wave_erosion_enabled, get_wave_forcing, hs_to_sea_state, &
                             bigg_wave_melt, wave_forcing_epoch
@@ -1488,7 +1489,7 @@ contains
         type(iceberg_diagnostics), intent(inout) :: diag
 
         real :: to, so, uo, vo
-        real(8) :: basal, lat, surf, wind, tair
+        real(8) :: basal, lat, surf, wind, tair, draft8
         real(8) :: sw_down, lw_down, t_air_k, q_air, rho_air, p_atm
         real(8) :: area, vel_min
 
@@ -1520,6 +1521,8 @@ contains
             end if
         end if
 
+        call voxel_iceberg_get_draft(vox_ice, draft8)
+        diag%draft = real(draft8, 4)
         to = interp_at_draft(ocean_prof, diag%draft, 'temp')
         so = interp_at_draft(ocean_prof, diag%draft, 'salt')
         uo = interp_at_draft(ocean_prof, diag%draft, 'u')
@@ -1612,6 +1615,32 @@ contains
         call voxel_iceberg_get_stability(vox_ice, gm8, bm8, bg8, iwp, vsub)
         GM = real(gm8, 4); BM = real(bm8, 4); BG = real(bg8, 4)
     end subroutine voxel_geometry_stability
+
+    ! Spatial voxel fields for NetCDF output (allocatable copies; empty if OFF).
+    subroutine voxel_model_get_grid(nx, ny, nz, dx, dy, dz)
+        integer, intent(out) :: nx, ny, nz
+        real(8), intent(out) :: dx, dy, dz
+        nx = 0; ny = 0; nz = 0; dx = 0.0_8; dy = 0.0_8; dz = 0.0_8
+        call voxel_model_configure()
+        if (.not. (vox_enabled .and. vox_ready)) return
+        call voxel_iceberg_get_grid(vox_ice, nx, ny, nz, dx, dy, dz)
+    end subroutine voxel_model_get_grid
+
+    subroutine voxel_model_get_energy(sensible, flushed)
+        real(8), intent(out) :: sensible, flushed
+        sensible = 0.0_8; flushed = 0.0_8
+        call voxel_model_configure()
+        if (.not. (vox_enabled .and. vox_ready)) return
+        call voxel_iceberg_get_energy(vox_ice, sensible, flushed)
+    end subroutine voxel_model_get_energy
+
+    subroutine voxel_model_get_fields(T, phi, open_mask, tb_face)
+        real(8), allocatable, intent(out) :: T(:,:,:), phi(:,:,:), tb_face(:,:,:,:)
+        logical, allocatable, intent(out) :: open_mask(:,:,:)
+        call voxel_model_configure()
+        if (.not. (vox_enabled .and. vox_ready)) return
+        call voxel_iceberg_get_fields(vox_ice, T, phi, open_mask, tb_face)
+    end subroutine voxel_model_get_fields
 
     subroutine env_int(name, val)
         character(len=*), intent(in) :: name

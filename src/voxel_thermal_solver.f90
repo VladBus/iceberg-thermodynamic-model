@@ -194,7 +194,7 @@ contains
                                      ocean_T, ocean_S, ocean_u, ocean_v, &
                                      atmos_T, atmos_Q, atmos_wind, &
                                      submerged_mask, exposed_mask, &
-                                     basal_melt, lateral_melt, surface_melt, draft)
+                                     basal_melt, lateral_melt, surface_melt, draft, open_face)
         real(8), intent(inout) :: T(:,:,:), phi(:,:,:)
         real(8), intent(in) :: dx, dy, dz, dt
         real(8), intent(in) :: ocean_T, ocean_S, ocean_u, ocean_v
@@ -202,6 +202,7 @@ contains
         logical, intent(in) :: submerged_mask(:,:,:), exposed_mask(:,:,:)
         real(8), intent(out) :: basal_melt, lateral_melt, surface_melt
         real(8), intent(in), optional :: draft
+        logical, intent(in), optional :: open_face(:,:,:,:)
 
         integer :: nx, ny, nz, i, j, k, d
         integer :: di(6), dj(6), dk(6)
@@ -241,6 +242,9 @@ contains
                                  (real(RHO_ICE, 8)*real(LATENT_HEAT, 8)))   ! m>=0 (A5)
                     do d = 1, 6
                         if (.not. neighbour_empty(pin, i + di(d), j + dj(d), k + dk(d))) cycle
+                        if (present(open_face)) then
+                            if (.not. open_face(i, j, k, d)) cycle
+                        end if
                         hn = face_h(d, dx, dy, dz)
                         area = face_area(d, dx, dy, dz)
                         if (submerged_mask(i, j, k)) then
@@ -298,7 +302,7 @@ contains
                         Tnew, iters, resid, converged, &
                         dir_face_a, dir_T_a, dir_face_b, dir_T_b, tb_override, &
                         autonomous_air, air_sw_down, air_lw_down, air_t_air, &
-                        air_q_air, air_rho_air, air_p_atm)
+                        air_q_air, air_rho_air, air_p_atm, open_face, tb_face)
         real(8), intent(in) :: T(:,:,:), phi(:,:,:)
         real(8), intent(in) :: dx, dy, dz, dt, k_ice, rho_ice, c_ice, theta
         real(8), intent(in) :: cg_tol
@@ -316,6 +320,8 @@ contains
         logical, intent(in), optional :: autonomous_air
         real(8), intent(in), optional :: air_sw_down, air_lw_down, air_t_air
         real(8), intent(in), optional :: air_q_air, air_rho_air, air_p_atm
+        logical, intent(in), optional :: open_face(:,:,:,:)
+        real(8), intent(in), optional :: tb_face(:,:,:,:)
 
         integer :: nx, ny, nz, i, j, k, d, it, mx
         integer :: di(6), dj(6), dk(6), ii, jj, kk, fa, fb
@@ -365,7 +371,6 @@ contains
                     zf = (real(k, 8) - 0.5_8)*dz
                     dface = max(0.0_8, draft - zf)
                     tf = real(ocean_freezing_point(real(ocean_S), real(dface)), 8)
-                    if (present(tb_override)) tf = tb_override(i, j, k)
                     do d = 1, 6
                         ii = i + di(d); jj = j + dj(d); kk = k + dk(d)
                         A = face_area(d, dx, dy, dz); hn = face_h(d, dx, dy, dz)
@@ -376,6 +381,14 @@ contains
                             rhs(i, j, k) = rhs(i, j, k) + (1.0_8 - theta)*G*(T(ii, jj, kk) - Told)
                             off(i, j, k, d) = -theta*G
                         else
+                            if (present(open_face)) then
+                                if (.not. open_face(i, j, k, d)) cycle
+                            end if
+                            if (present(tb_face)) then
+                                tf = tb_face(i, j, k, d)
+                            else if (present(tb_override)) then
+                                tf = tb_override(i, j, k)
+                            end if
                             if (submerged_mask(i, j, k)) then
                                 Gb = 2.0_8*k_ice*A/hn
                                 diag(i, j, k) = diag(i, j, k) + theta*Gb

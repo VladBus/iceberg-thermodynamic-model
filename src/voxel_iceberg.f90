@@ -27,6 +27,8 @@ module voxel_iceberg
     public :: voxel_iceberg_get_clamp_mass
     public :: voxel_iceberg_step_profile, voxel_iceberg_get_stefan
     public :: voxel_iceberg_get_frontal_area, voxel_iceberg_get_stability
+    public :: voxel_iceberg_get_grid, voxel_iceberg_get_fields
+    public :: voxel_iceberg_get_energy
 
     real(8), parameter :: EPS_PHI = 1.0d-12
     real(8), parameter :: DEFAULT_PHI_MIN = 0.01d0
@@ -40,6 +42,12 @@ module voxel_iceberg
         real(8), allocatable :: phi(:,:,:)
         logical, allocatable :: submerged_mask(:,:,:)
         logical, allocatable :: exposed_mask(:,:,:)
+        ! Empty cells connected to the exterior (6-neighbour flood fill).
+        logical, allocatable :: open_mask(:,:,:)
+        ! Per solid voxel/face: face is adjacent to an exterior empty cell.
+        logical, allocatable :: open_face(:,:,:,:)
+        ! Per solid voxel/face: local three-equation interface temperature.
+        real(8), allocatable :: tb_face(:,:,:,:)
 
         ! конфигурация (env задаётся в iceberg_thermodynamics)
         integer :: scheme = 1          ! 1=cn, 2=explicit (12.3 legacy)
@@ -105,8 +113,11 @@ contains
 
         allocate (vox%T(nx, ny, nz), vox%phi(nx, ny, nz))
         allocate (vox%submerged_mask(nx, ny, nz), vox%exposed_mask(nx, ny, nz))
+        allocate (vox%open_mask(nx, ny, nz), vox%open_face(nx, ny, nz, 6))
+        allocate (vox%tb_face(nx, ny, nz, 6))
         vox%T = T_init
         vox%phi = min(max(phi_init, 0.0_8), 1.0_8)
+        vox%open_mask = .false.; vox%open_face = .false.; vox%tb_face = 0.0_8
         vox%rannacher_left = 0
         vox%basal_melt_rate = 0.0_8; vox%lateral_melt_rate = 0.0_8; vox%surface_melt_rate = 0.0_8
         vox%cg_iters = 0; vox%cg_resid = 0.0_8; vox%clip_events = 0
@@ -136,6 +147,8 @@ contains
             vox%draft = 0.0_8; vox%freeboard = 0.0_8
             vox%waterline_area = 0.0_8; vox%submerged_area = 0.0_8; vox%exposed_area = 0.0_8
             vox%submerged_mask = .false.; vox%exposed_mask = .false.
+            if (allocated(vox%open_mask)) vox%open_mask = .false.
+            if (allocated(vox%open_face)) vox%open_face = .false.
             return
         end if
         v_sub = vox%total_mass/real(RHO_WATER, 8)
@@ -156,6 +169,7 @@ contains
                 end do
             end do
         end do
+        call classify_open_cells(vox)
 
         cnt_wl = 0.0_8
         do k = 1, vox%nz
@@ -187,30 +201,97 @@ contains
         vox%exposed_area = e_area
     end subroutine voxel_iceberg_compute_state
 
+    ! ==========================================================================
+    ! Classify empty cells connected to the exterior (six-neighbour BFS), then
+    ! mark the solid faces that actually exchange with the exterior. Isolated
+    ! internal cavities are not exposed to ocean/atmosphere boundary conditions.
+    ! ==========================================================================
+    subroutine classify_open_cells(vox)
+        type(voxel_iceberg_type), intent(inout) :: vox
+        integer :: i, j, k, d, ii, jj, kk, head, tail, ncell
+        integer, allocatable :: q(:,:)
+        integer :: di(6), dj(6), dk(6)
+        di = (/ 1, -1, 0, 0, 0, 0 /); dj = (/ 0, 0, 1, -1, 0, 0 /); dk = (/ 0, 0, 0, 0, 1, -1 /)
+
+        vox%open_mask = .false.
+        vox%open_face = .false.
+        ncell = vox%nx*vox%ny*vox%nz
+        allocate (q(3, ncell))
+        head = 1; tail = 0
+
+        ! Seed empty cells on the domain boundary.
+        do k = 1, vox%nz
+            do j = 1, vox%ny
+                do i = 1, vox%nx
+                    if (.not. (i == 1 .or. i == vox%nx .or. j == 1 .or. j == vox%ny .or. &
+                               k == 1 .or. k == vox%nz)) cycle
+                    if (vox%phi(i, j, k) > EPS_PHI) cycle
+                    if (vox%open_mask(i, j, k)) cycle
+                    vox%open_mask(i, j, k) = .true.
+                    tail = tail + 1
+                    q(1, tail) = i; q(2, tail) = j; q(3, tail) = k
+                end do
+            end do
+        end do
+
+        ! Flood-fill through empty cells.
+        do while (head <= tail)
+            i = q(1, head); j = q(2, head); k = q(3, head)
+            do d = 1, 6
+                ii = i + di(d); jj = j + dj(d); kk = k + dk(d)
+                if (ii < 1 .or. ii > vox%nx .or. jj < 1 .or. jj > vox%ny .or. &
+                    kk < 1 .or. kk > vox%nz) cycle
+                if (vox%phi(ii, jj, kk) > EPS_PHI) cycle
+                if (vox%open_mask(ii, jj, kk)) cycle
+                vox%open_mask(ii, jj, kk) = .true.
+                tail = tail + 1
+                q(1, tail) = ii; q(2, tail) = jj; q(3, tail) = kk
+            end do
+            head = head + 1
+        end do
+        deallocate (q)
+
+        ! Solid faces adjacent to an exterior empty cell (or domain boundary).
+        do k = 1, vox%nz
+            do j = 1, vox%ny
+                do i = 1, vox%nx
+                    if (vox%phi(i, j, k) <= EPS_PHI) cycle
+                    do d = 1, 6
+                        ii = i + di(d); jj = j + dj(d); kk = k + dk(d)
+                        vox%open_face(i, j, k, d) = open_empty_or_outside(vox, ii, jj, kk)
+                    end do
+                end do
+            end do
+        end do
+    end subroutine classify_open_cells
+
     real(8) function boundary_face_area(vox, i, j, k) result(a)
         type(voxel_iceberg_type), intent(in) :: vox
         integer, intent(in) :: i, j, k
-        integer :: d, di(6), dj(6), dk(6)
+        integer :: d
         real(8) :: fa(6)
-        di = (/ 1, -1, 0, 0, 0, 0 /); dj = (/ 0, 0, 1, -1, 0, 0 /); dk = (/ 0, 0, 0, 0, 1, -1 /)
         fa(1) = vox%dy*vox%dz; fa(2) = vox%dy*vox%dz
         fa(3) = vox%dx*vox%dz; fa(4) = vox%dx*vox%dz
         fa(5) = vox%dx*vox%dy; fa(6) = vox%dx*vox%dy
         a = 0.0_8
         do d = 1, 6
-            if (empty_or_outside(vox, i + di(d), j + dj(d), k + dk(d))) a = a + fa(d)
+            if (vox%open_face(i, j, k, d)) a = a + fa(d)
         end do
     end function boundary_face_area
 
-    pure logical function empty_or_outside(vox, i, j, k)
+    pure logical function open_empty_or_outside(vox, i, j, k)
         type(voxel_iceberg_type), intent(in) :: vox
         integer, intent(in) :: i, j, k
         if (i < 1 .or. j < 1 .or. k < 1 .or. i > vox%nx .or. j > vox%ny .or. k > vox%nz) then
-            empty_or_outside = .true.
+            open_empty_or_outside = .true.
+        else if (vox%phi(i, j, k) > EPS_PHI) then
+            open_empty_or_outside = .false.
+        else if (.not. allocated(vox%open_mask)) then
+            open_empty_or_outside = .false.
         else
-            empty_or_outside = (vox%phi(i, j, k) <= EPS_PHI)
+            open_empty_or_outside = vox%open_mask(i, j, k)
         end if
-    end function empty_or_outside
+    end function open_empty_or_outside
 
     real(8) function solid_height_for_submerged_vol(vox, v_sub, cell_vol) result(zw)
         type(voxel_iceberg_type), intent(in) :: vox
@@ -245,12 +326,10 @@ contains
         type(voxel_iceberg_type), intent(in) :: vox
         real(8), intent(in) :: ocean_T, ocean_S, ocean_u, ocean_v, dt
         real(8), intent(out) :: dmelt(:,:,:), dbasal(:,:,:), dlat(:,:,:)
-        integer :: i, j, k, d, ii, jj, kk
-        integer :: di(6), dj(6), dk(6)
+        integer :: i, j, k, d
         real(8) :: u_rel, l_char, gamma, zf, dface, tf, m, hn, A, mr
         real :: gt_r
 
-        di = (/ 1, -1, 0, 0, 0, 0 /); dj = (/ 0, 0, 1, -1, 0, 0 /); dk = (/ 0, 0, 0, 0, 1, -1 /)
         dmelt = 0.0_8; dbasal = 0.0_8; dlat = 0.0_8
         u_rel = sqrt(ocean_u*ocean_u + ocean_v*ocean_v)
         if (u_rel <= 0.0d0) return
@@ -262,8 +341,7 @@ contains
                     dface = max(0.0_8, vox%draft - zf)
                     tf = real(ocean_freezing_point(real(ocean_S), real(dface)), 8)
                     do d = 1, 6
-                        ii = i + di(d); jj = j + dj(d); kk = k + dk(d)
-                        if (.not. empty_or_outside(vox, ii, jj, kk)) cycle
+                        if (.not. vox%open_face(i, j, k, d)) cycle
                         ! per-face characteristic length (12.3 defect #3)
                         if (d >= 5) then
                             l_char = max(real(vox%nx, 8)*vox%dx, real(vox%ny, 8)*vox%dy)
@@ -335,7 +413,8 @@ contains
                                        ocean_T, ocean_S, ocean_u, ocean_v, &
                                        atmos_T, atmos_Q, atmos_wind, &
                                        vox%submerged_mask, vox%exposed_mask, &
-                                       basal_melt, lateral_melt, surface_melt, vox%draft)
+                                       basal_melt, lateral_melt, surface_melt, vox%draft, &
+                                       open_face=vox%open_face)
             deallocate (Tn, pn)
         else
             ! ---- Crank-Nicolson ----
@@ -350,7 +429,8 @@ contains
                           vox%submerged_mask, vox%exposed_mask, Tn, &
                           vox%cg_iters, vox%cg_resid, cn_conv, &
                           vox%test_dir_face_a, vox%test_dir_T_a, &
-                          vox%test_dir_face_b, vox%test_dir_T_b)
+                          vox%test_dir_face_b, vox%test_dir_T_b, &
+                          open_face=vox%open_face)
             vox%T = Tn
             deallocate (Tn)
 
@@ -499,13 +579,10 @@ contains
         real(8), intent(in), optional :: air_sw_down, air_lw_down, air_t_air
         real(8), intent(in), optional :: air_q_air, air_rho_air, air_p_atm
 
-        integer :: i, j, k, d, ii, jj, kk, removed
-        integer :: di(6), dj(6), dk(6)
+        integer :: i, j, k, d, removed
         real(8), allocatable :: Tn(:,:,:), dmelt(:,:,:), dbasal(:,:,:), dlat(:,:,:)
-        real(8), allocatable :: tb_field(:,:,:), tbsum(:,:,:)
-        integer, allocatable :: tbcount(:,:,:)
         real(8) :: rho8, c8, k8, lf8, theta_eff, capv, tot, scale, dphi, dm, V
-        real(8) :: tw, sw, uw, vw, urel, dface, hn, A, m, tb, sb
+        real(8) :: tw, sw, uw, vw, urel, zf, dface, hn, A, m, tb, sb
         real(8) :: sum_tb, sum_sb, sum_urel, deep_depth, wl_depth
         real(8) :: clamp_mass
         logical :: ok3
@@ -524,44 +601,37 @@ contains
         if (.not. allocated(vox%T)) return
         rho8 = real(RHO_ICE, 8); c8 = real(C_ICE, 8); k8 = real(K_ICE, 8); lf8 = real(LATENT_HEAT, 8)
         V = vox%dx*vox%dy*vox%dz
-        di = (/ 1, -1, 0, 0, 0, 0 /); dj = (/ 0, 0, 1, -1, 0, 0 /); dk = (/ 0, 0, 0, 0, 1, -1 /)
         call voxel_iceberg_compute_state(vox)
 
         allocate (dmelt(vox%nx, vox%ny, vox%nz), dbasal(vox%nx, vox%ny, vox%nz), &
                   dlat(vox%nx, vox%ny, vox%nz))
-        allocate (tb_field(vox%nx, vox%ny, vox%nz), tbsum(vox%nx, vox%ny, vox%nz))
-        allocate (tbcount(vox%nx, vox%ny, vox%nz))
-        dmelt = 0.0_8; dbasal = 0.0_8; dlat = 0.0_8; tbsum = 0.0_8; tbcount = 0
+        dmelt = 0.0_8; dbasal = 0.0_8; dlat = 0.0_8
+        vox%tb_face = 0.0_8
         sum_tb = 0.0_8; sum_sb = 0.0_8; sum_urel = 0.0_8; nface = 0
         deep_depth = -1.0_8; wl_depth = 1.0e30_8
 
-        ! fallback Tf at voxel centre for submerged voxels
         do k = 1, vox%nz
             do j = 1, vox%ny
                 do i = 1, vox%nx
                     if (.not. vox%submerged_mask(i, j, k)) cycle
-                    dface = max(0.0_8, vox%draft - (real(k, 8) - 0.5_8)*vox%dz)
-                    call profile_at(prof, dface, tw, sw, uw, vw)
-                    tb_field(i, j, k) = real(ocean_freezing_point(real(sw), real(dface)), 8)
-                end do
-            end do
-        end do
-
-        do k = 1, vox%nz
-            do j = 1, vox%ny
-                do i = 1, vox%nx
-                    if (.not. vox%submerged_mask(i, j, k)) cycle
-                    dface = max(0.0_8, vox%draft - (real(k, 8) - 0.5_8)*vox%dz)
-                    call profile_at(prof, dface, tw, sw, uw, vw)
-                    urel = sqrt((uw - v_ice_u)**2 + (vw - v_ice_v)**2)
                     do d = 1, 6
-                        ii = i + di(d); jj = j + dj(d); kk = k + dk(d)
-                        if (.not. empty_or_outside(vox, ii, jj, kk)) cycle
+                        if (.not. vox%open_face(i, j, k, d)) cycle
+                        select case (d)
+                        case (5); zf = real(k, 8)*vox%dz
+                        case (6); zf = real(k - 1, 8)*vox%dz
+                        case default; zf = (real(k, 8) - 0.5_8)*vox%dz
+                        end select
+                        dface = max(0.0_8, vox%draft - zf)
+                        call profile_at(prof, dface, tw, sw, uw, vw)
+                        urel = sqrt((uw - v_ice_u)**2 + (vw - v_ice_v)**2)
                         hn = face_h(d, vox%dx, vox%dy, vox%dz)
                         A = face_area(d, vox%dx, vox%dy, vox%dz)
+                        ! Local fallback if the three-equation solve is unavailable.
+                        vox%tb_face(i, j, k, d) = real(ocean_freezing_point(real(sw), real(dface)), 8)
                         call three_equation_melt(tw, sw, urel, dface, hn, &
                                                  vox%T(i, j, k), m, tb, sb, ok3)
                         if (.not. ok3) cycle
+                        vox%tb_face(i, j, k, d) = tb
                         if (dbg_melt .and. .not. dbg_face_done .and. d >= 5 .and. &
                             i == vox%nx/2 .and. j == vox%ny/2) then
                             print '(a,10(1x,es14.6))', 'VOXEL_DEBUG_FACE', tw, sw, urel, dface, &
@@ -577,8 +647,6 @@ contains
                         else
                             dlat(i, j, k) = dlat(i, j, k) + rho8*A*m*dt
                         end if
-                        tbsum(i, j, k) = tbsum(i, j, k) + tb
-                        tbcount(i, j, k) = tbcount(i, j, k) + 1
                         sum_tb = sum_tb + tb; sum_sb = sum_sb + sb; sum_urel = sum_urel + urel
                         nface = nface + 1
                         if (dface > deep_depth) then
@@ -588,13 +656,6 @@ contains
                             wl_depth = dface; vox%stefan_wl_tb = tb
                         end if
                     end do
-                end do
-            end do
-        end do
-        do k = 1, vox%nz
-            do j = 1, vox%ny
-                do i = 1, vox%nx
-                    if (tbcount(i, j, k) > 0) tb_field(i, j, k) = tbsum(i, j, k)/real(tbcount(i, j, k), 8)
                 end do
             end do
         end do
@@ -616,9 +677,11 @@ contains
                       vox%submerged_mask, vox%exposed_mask, Tn, &
                       vox%cg_iters, vox%cg_resid, vox%stefan_conv, &
                       vox%test_dir_face_a, vox%test_dir_T_a, &
-                      vox%test_dir_face_b, vox%test_dir_T_b, tb_field, &
-                      autonomous_air, air_sw_down, air_lw_down, air_t_air, &
-                      air_q_air, air_rho_air, air_p_atm)
+                      vox%test_dir_face_b, vox%test_dir_T_b, &
+                      tb_face=vox%tb_face, open_face=vox%open_face, &
+                      autonomous_air=autonomous_air, air_sw_down=air_sw_down, &
+                      air_lw_down=air_lw_down, air_t_air=air_t_air, &
+                      air_q_air=air_q_air, air_rho_air=air_rho_air, air_p_atm=air_p_atm)
         vox%T = Tn
         deallocate (Tn)
 
@@ -669,7 +732,7 @@ contains
         end do
         basal_melt = basal_melt/dt
         lateral_melt = lateral_melt/dt
-        deallocate (dmelt, dbasal, dlat, tb_field, tbsum, tbcount)
+        deallocate (dmelt, dbasal, dlat)
 
         ! erosion + flush + Rannacher
         removed = 0
@@ -735,7 +798,7 @@ contains
                         else
                             ii = i - 1
                         end if
-                        if (empty_or_outside(vox, ii, j, k)) &
+                        if (open_empty_or_outside(vox, ii, j, k)) &
                             contrib = contrib + ph*vox%dy*vox%dz*ca
                     end if
                     if (sa > 0.0_8) then
@@ -744,7 +807,7 @@ contains
                         else
                             jj = j - 1
                         end if
-                        if (empty_or_outside(vox, i, jj, k)) &
+                        if (open_empty_or_outside(vox, i, jj, k)) &
                             contrib = contrib + ph*vox%dx*vox%dz*sa
                     end if
                     A_perp = A_perp + contrib
@@ -862,5 +925,40 @@ contains
         real(8), intent(out) :: mass
         mass = vox%clamp_melt_mass
     end subroutine voxel_iceberg_get_clamp_mass
+
+    ! Sensible heat content relative to 0 C, plus accumulated flush energy.
+    subroutine voxel_iceberg_get_energy(vox, sensible, flushed)
+        type(voxel_iceberg_type), intent(in) :: vox
+        real(8), intent(out) :: sensible, flushed
+        real(8) :: V
+        sensible = 0.0_8
+        flushed = vox%flushed_energy
+        if (.not. allocated(vox%T)) return
+        V = vox%dx*vox%dy*vox%dz
+        sensible = sum(vox%phi*real(RHO_ICE, 8)*real(C_ICE, 8)*vox%T)*V
+    end subroutine voxel_iceberg_get_energy
+
+    subroutine voxel_iceberg_get_grid(vox, nx, ny, nz, dx, dy, dz)
+        type(voxel_iceberg_type), intent(in) :: vox
+        integer, intent(out) :: nx, ny, nz
+        real(8), intent(out) :: dx, dy, dz
+        nx = vox%nx; ny = vox%ny; nz = vox%nz
+        dx = vox%dx; dy = vox%dy; dz = vox%dz
+    end subroutine voxel_iceberg_get_grid
+
+    ! Copy the current spatial fields for NetCDF output / diagnostics.
+    subroutine voxel_iceberg_get_fields(vox, T, phi, open_mask, tb_face)
+        type(voxel_iceberg_type), intent(in) :: vox
+        real(8), allocatable, intent(out) :: T(:,:,:), phi(:,:,:)
+        logical, allocatable, intent(out) :: open_mask(:,:,:)
+        real(8), allocatable, intent(out) :: tb_face(:,:,:,:)
+        if (.not. allocated(vox%T)) return
+        allocate (T(vox%nx, vox%ny, vox%nz), phi(vox%nx, vox%ny, vox%nz))
+        allocate (open_mask(vox%nx, vox%ny, vox%nz))
+        allocate (tb_face(vox%nx, vox%ny, vox%nz, 6))
+        T = vox%T; phi = vox%phi
+        open_mask = vox%open_mask
+        tb_face = vox%tb_face
+    end subroutine voxel_iceberg_get_fields
 
 end module voxel_iceberg

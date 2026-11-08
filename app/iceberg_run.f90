@@ -22,6 +22,9 @@ program iceberg_run
     use iceberg_forcing, only: ocean_forcing_configure, get_ocean_profile, &
                                get_atmos_forcing, latlon_to_model_coords, &
                                model_coords_to_indices
+    use iceberg_thermodynamics, only: voxel_geometry_active, voxel_geometry_mass, &
+                                      voxel_geometry_draft, voxel_model_get_grid, &
+                                      voxel_model_get_fields, voxel_model_get_energy
     use ocean_provider, only: SRC_REANALYSIS
     use netcdf_input, only: era5_open, era5_is_open
     use wave_forcing, only: wave_forcing_configure, wave_forcing_set_epoch
@@ -42,12 +45,20 @@ program iceberg_run
     real(4) :: xm4, ym4
     real(8), allocatable :: rt(:), rlat(:), rlon(:), rmass(:), rdraft(:), rti(:), rmw(:), rwml(:)
     real(8), allocatable :: rvol(:), rawet(:), rsic(:), rbl(:), rll(:), rsl(:), rvl(:), rwl(:)
+    real(8), allocatable :: renergy(:), rflush(:)
     real(8), allocatable :: traj_t(:), traj_lat(:), traj_lon(:)
-    character(len=512) :: out_nc, daily, static, era5f, wavef, trajf, arg
+    integer, parameter :: MAXSNAP = 3
+    real(8), allocatable :: snap_time(:), snap_mass(:), snap_draft(:)
+    real(8), allocatable :: snap_T(:,:,:,:), snap_phi(:,:,:,:), snap_tb(:,:,:,:,:)
+    logical, allocatable :: snap_open(:,:,:,:)
+    integer :: nsnap, vnx, vny, vnz, last_snap_irec
+    real(8) :: vdx, vdy, vdz
+    character(len=512) :: out_nc, vox_nc, daily, static, era5f, wavef, trajf, arg
     integer :: nrec, irec, ncid, dimt, vt, vla, vlo, vma, vdr, vti, stt
     integer :: nargs, istat, ii, jj, iarg, pos_arg, ntraj, start_date, nsum
     logical :: ok, gok, have_era5, prescribed, warned_nearest
     real(8) :: epoch, lat_use, lon_use, sum_b, sum_l, sum_s, sum_v, sum_w, sum_a, sum_tf, vol0
+    real(8) :: e8, f8
 
     nargs = command_argument_count()
     if (nargs < 8) then
@@ -133,14 +144,17 @@ program iceberg_run
     nrec = max(int(days*86400.0d0/dt) + 1, 1)
     allocate (rt(nrec), rlat(nrec), rlon(nrec), rmass(nrec), rdraft(nrec), rti(nrec), &
               rmw(nrec), rwml(nrec), rvol(nrec), rawet(nrec), rsic(nrec), rbl(nrec), &
-              rll(nrec), rsl(nrec), rvl(nrec), rwl(nrec))
+              rll(nrec), rsl(nrec), rvl(nrec), rwl(nrec), renergy(nrec), rflush(nrec))
     sum_b = 0.0d0; sum_l = 0.0d0; sum_s = 0.0d0; sum_v = 0.0d0; sum_w = 0.0d0
     sum_a = 0.0d0; sum_tf = 0.0d0; nsum = 0; vol0 = st%volume; warned_nearest = .false.
+    nsnap = 0; last_snap_irec = 0; vnx = 0; vny = 0; vnz = 0
+    vdx = 0.0d0; vdy = 0.0d0; vdz = 0.0d0
 
     do irec = 1, nrec
         t = real(irec - 1, 8)*dt
         time_sec = epoch + t
         draft = st%H*real(RHO_ICE, 8)/real(RHO_WATER, 8)
+        if (voxel_geometry_active()) draft = real(voxel_geometry_draft(), 8)
         lat_use = st%latitude; lon_use = st%longitude
         if (prescribed) call traj_at(t, lat_use, lon_use)
 
@@ -201,13 +215,29 @@ program iceberg_run
         nsum = nsum + 1
         rt(irec) = t; rlat(irec) = st%latitude; rlon(irec) = st%longitude
         rmass(irec) = st%mass; rdraft(irec) = st%H*real(RHO_ICE, 8)/real(RHO_WATER, 8)
+        if (voxel_geometry_active()) then
+            rmass(irec) = real(voxel_geometry_mass(), 8)
+            rdraft(irec) = real(voxel_geometry_draft(), 8)
+        end if
         rti(irec) = st%T_ice
         rmw(irec) = real(diag%m_wave, 8); rwml(irec) = real(diag%wave_mass_loss, 8)
-        rvol(irec) = st%volume; rawet(irec) = real(diag%a_wet, 8)
+        if (voxel_geometry_active()) then
+            rvol(irec) = real(voxel_geometry_mass(), 8)/real(RHO_ICE, 8)
+        else
+            rvol(irec) = st%volume
+        end if
+        rawet(irec) = real(diag%a_wet, 8)
         rsic(irec) = real(prof%siconc, 8)
         rbl(irec) = real(diag%basal_mass_loss, 8); rll(irec) = real(diag%lateral_mass_loss, 8)
         rsl(irec) = real(diag%surface_mass_loss, 8); rvl(irec) = real(diag%vapor_mass_loss, 8)
         rwl(irec) = real(diag%wave_mass_loss, 8)
+        renergy(irec) = 0.0d0; rflush(irec) = 0.0d0
+        if (voxel_geometry_active()) then
+            call voxel_model_get_energy(e8, f8)
+            renergy(irec) = e8; rflush(irec) = f8
+        end if
+        if (voxel_geometry_active() .and. &
+            (irec == 1 .or. irec == max(nrec/2, 1))) call save_snapshot(rt(irec), irec)
         if (.not. st%active) then
             nrec = irec
             exit
@@ -218,14 +248,21 @@ program iceberg_run
         print *, 'ERROR: no valid records; no NetCDF written'
         stop 1
     end if
+    if (voxel_geometry_active() .and. nsnap < MAXSNAP .and. &
+        last_snap_irec /= nrec) call save_snapshot(rt(nrec), nrec)
     print '(a,11(1x,es18.10))', 'HINDCAST_SUMMARY', st%volume, vol0, &
         sum_b, sum_l, sum_s, sum_v, sum_w, sum_a/max(nsum, 1), real((nrec - 1)*dt, 8), st%mass, &
         sum_tf/max(nsum, 1)
     call write_nc(trim(out_nc), nrec, rt, rlat, rlon, rmass, rdraft, rti, rmw, rwml, &
-                  rvol, rawet, rsic, rbl, rll, rsl, rvl, rwl)
+                  rvol, rawet, rsic, rbl, rll, rsl, rvl, rwl, renergy, rflush)
+    if (nsnap > 0) then
+        vox_nc = trim(out_nc)//'_voxel.nc'
+        call write_voxel_nc(trim(vox_nc), nsnap)
+        print '(a,i0,a,a)', 'iceberg_run: wrote ', nsnap, ' voxel snapshots to ', trim(vox_nc)
+    end if
     print '(a,i0,a,a)', 'iceberg_run: wrote ', nrec, ' records to ', trim(out_nc)
     print '(a,f10.5,a,f10.5,a,es12.4)', ' final lat/lon=', st%latitude, '/', &
-        st%longitude, ' mass=', st%mass
+        st%longitude, ' mass=', rmass(nrec)
 
 contains
 
@@ -323,13 +360,14 @@ contains
     end subroutine constant_atmos
 
     subroutine write_nc(path, n, tt, la, lo, ma, dr, ti, mw, wml, vol, awet, sic, &
-                        bl, ll, sl, vl, wl)
+                        bl, ll, sl, vl, wl, en, fl)
         character(len=*), intent(in) :: path
         integer, intent(in) :: n
         real(8), intent(in) :: tt(:), la(:), lo(:), ma(:), dr(:), ti(:), mw(:), wml(:)
         real(8), intent(in) :: vol(:), awet(:), sic(:), bl(:), ll(:), sl(:), vl(:), wl(:)
+        real(8), intent(in) :: en(:), fl(:)
         integer :: ncid, dimid, st
-        integer :: v(17)
+        integer :: v(18)
         st = nf90_create(trim(path), nf90_clobber, ncid)
         if (st /= nf90_noerr) then
             print *, 'ERROR: cannot create ', trim(path), ': ', nf90_strerror(st)
@@ -352,6 +390,8 @@ contains
         st = nf90_def_var(ncid, 'mass_loss_surface', nf90_double, (/dimid/), v(14))
         st = nf90_def_var(ncid, 'mass_loss_vapor', nf90_double, (/dimid/), v(15))
         st = nf90_def_var(ncid, 'mass_loss_wave', nf90_double, (/dimid/), v(16))
+        st = nf90_def_var(ncid, 'sensible_energy', nf90_double, (/dimid/), v(17))
+        st = nf90_def_var(ncid, 'flushed_energy', nf90_double, (/dimid/), v(18))
         st = nf90_enddef(ncid)
         st = nf90_put_var(ncid, v(1), tt(1:n))
         st = nf90_put_var(ncid, v(2), la(1:n))
@@ -369,7 +409,95 @@ contains
         st = nf90_put_var(ncid, v(14), sl(1:n))
         st = nf90_put_var(ncid, v(15), vl(1:n))
         st = nf90_put_var(ncid, v(16), wl(1:n))
+        st = nf90_put_var(ncid, v(17), en(1:n))
+        st = nf90_put_var(ncid, v(18), fl(1:n))
         st = nf90_close(ncid)
     end subroutine write_nc
+
+    subroutine save_snapshot(tval, irec)
+        real(8), intent(in) :: tval
+        integer, intent(in) :: irec
+        real(8), allocatable :: T(:, :, :), phi(:, :, :), tb(:, :, :, :)
+        logical, allocatable :: open(:, :, :)
+        if (nsnap >= MAXSNAP .or. last_snap_irec == irec) return
+        call voxel_model_get_grid(vnx, vny, vnz, vdx, vdy, vdz)
+        if (vnx <= 0 .or. vny <= 0 .or. vnz <= 0) return
+        call voxel_model_get_fields(T, phi, open, tb)
+        if (.not. allocated(T)) return
+        if (nsnap == 0) then
+            allocate (snap_time(MAXSNAP), snap_mass(MAXSNAP), snap_draft(MAXSNAP))
+            allocate (snap_T(vnx, vny, vnz, MAXSNAP), snap_phi(vnx, vny, vnz, MAXSNAP))
+            allocate (snap_open(vnx, vny, vnz, MAXSNAP))
+            allocate (snap_tb(vnx, vny, vnz, 6, MAXSNAP))
+        end if
+        nsnap = nsnap + 1
+        snap_time(nsnap) = tval
+        snap_T(:, :, :, nsnap) = T
+        snap_phi(:, :, :, nsnap) = phi
+        snap_open(:, :, :, nsnap) = open
+        snap_tb(:, :, :, :, nsnap) = tb
+        snap_mass(nsnap) = real(voxel_geometry_mass(), 8)
+        snap_draft(nsnap) = real(voxel_geometry_draft(), 8)
+        last_snap_irec = irec
+        deallocate (T, phi, open, tb)
+    end subroutine save_snapshot
+
+    subroutine write_voxel_nc(path, ns)
+        character(len=*), intent(in) :: path
+        integer, intent(in) :: ns
+        integer :: ncid, dimx, dimy, dimz, dimf, dimt
+        integer :: vid(10), st, is
+        integer, allocatable :: mask(:, :, :)
+        integer :: start4(4), count4(4), start5(5), count5(5)
+        real(8) :: xc(vnx), yc(vny), zc(vnz)
+
+        st = nf90_create(trim(path), nf90_clobber, ncid)
+        if (st /= nf90_noerr) then
+            print *, 'WARN: cannot create voxel file ', trim(path), ': ', nf90_strerror(st)
+            return
+        end if
+        st = nf90_def_dim(ncid, 'snapshot', ns, dimt)
+        st = nf90_def_dim(ncid, 'nx', vnx, dimx)
+        st = nf90_def_dim(ncid, 'ny', vny, dimy)
+        st = nf90_def_dim(ncid, 'nz', vnz, dimz)
+        st = nf90_def_dim(ncid, 'face', 6, dimf)
+        st = nf90_def_var(ncid, 'x', nf90_double, (/dimx/), vid(1))
+        st = nf90_def_var(ncid, 'y', nf90_double, (/dimy/), vid(2))
+        st = nf90_def_var(ncid, 'z', nf90_double, (/dimz/), vid(3))
+        st = nf90_def_var(ncid, 'time', nf90_double, (/dimt/), vid(4))
+        st = nf90_def_var(ncid, 'T', nf90_double, (/dimx, dimy, dimz, dimt/), vid(5))
+        st = nf90_def_var(ncid, 'phi', nf90_double, (/dimx, dimy, dimz, dimt/), vid(6))
+        st = nf90_def_var(ncid, 'open_mask', nf90_int, (/dimx, dimy, dimz, dimt/), vid(7))
+        st = nf90_def_var(ncid, 'tb_face', nf90_double, &
+                          (/dimx, dimy, dimz, dimf, dimt/), vid(8))
+        st = nf90_def_var(ncid, 'mass', nf90_double, (/dimt/), vid(9))
+        st = nf90_def_var(ncid, 'draft', nf90_double, (/dimt/), vid(10))
+        st = nf90_enddef(ncid)
+
+        xc = (real([(is, is=1, vnx)], 8) - 0.5_8)*vdx
+        yc = (real([(is, is=1, vny)], 8) - 0.5_8)*vdy
+        zc = (real([(is, is=1, vnz)], 8) - 0.5_8)*vdz
+        st = nf90_put_var(ncid, vid(1), xc)
+        st = nf90_put_var(ncid, vid(2), yc)
+        st = nf90_put_var(ncid, vid(3), zc)
+        st = nf90_put_var(ncid, vid(4), snap_time(1:ns))
+        st = nf90_put_var(ncid, vid(9), snap_mass(1:ns))
+        st = nf90_put_var(ncid, vid(10), snap_draft(1:ns))
+        start4 = (/1, 1, 1, 1/); count4 = (/vnx, vny, vnz, 1/)
+        start5 = (/1, 1, 1, 1, 1/); count5 = (/vnx, vny, vnz, 6, 1/)
+        do is = 1, ns
+            start4(4) = is
+            st = nf90_put_var(ncid, vid(5), snap_T(:, :, :, is), start=start4, count=count4)
+            st = nf90_put_var(ncid, vid(6), snap_phi(:, :, :, is), start=start4, count=count4)
+            allocate (mask(vnx, vny, vnz))
+            mask = merge(1, 0, snap_open(:, :, :, is))
+            st = nf90_put_var(ncid, vid(7), mask, start=start4, count=count4)
+            deallocate (mask)
+            start5(5) = is
+            st = nf90_put_var(ncid, vid(8), snap_tb(:, :, :, :, is), &
+                              start=start5, count=count5)
+        end do
+        st = nf90_close(ncid)
+    end subroutine write_voxel_nc
 
 end program iceberg_run

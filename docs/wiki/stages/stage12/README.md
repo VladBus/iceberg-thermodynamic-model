@@ -2,7 +2,7 @@
 
 Stage 12 is the current scientific stage. This directory stores completed
 stage reports and their evidence; it is not the working directory for unfinished
-tasks. Stage 12.9a acquisition, Stage 12.10 voxel thermodynamics, and the Stage 12.11 final audit are complete;
+tasks. Stage 12.9a acquisition, Stage 12.10 voxel thermodynamics, and the Stage 12.11/12.12 audits are complete;
 the acquisition manifests remain in `docs/validation/` as canonical provenance.
 Stage 12.9b thesis writing is the active workstream.
 
@@ -29,6 +29,7 @@ Stage 12.9b thesis writing is the active workstream.
 | 12.9a | [`stage12.9a_daily_forcing_acquisition.md`](stage12.9a_daily_forcing_acquisition.md) | Completed 24-month ERA5/GLORYS/WAM acquisition with provenance |
 | 12.10 | [`stage12.10_voxel_thermodynamics_improvement.md`](stage12.10_voxel_thermodynamics_improvement.md) | Face-specific thermal BCs, cavity classification, 3D output and short real-data experiments |
 | 12.11 | [`stage12.11_final_audit_2020_2024.md`](stage12.11_final_audit_2020_2024.md) | Final audit, visualization/freeboard corrections, data audit and 2020/2024 readiness |
+| 12.12 | [`stage12.12_resolution_geometry_audit.md`](stage12.12_resolution_geometry_audit.md) | Resolution recovery, geometry correction, voxel/prism audit and fallback transparency |
 
 The 12.8 drift and lifetime results are lower bounds from monthly GLORYS and
 constant-atmosphere fallbacks; they are not daily-forcing validation. No stage
@@ -41,6 +42,7 @@ report currently claims quantitative daily-forcing performance.
 - `figures/barents2020/` — plots from Stage 12.8.
 - `figures/voxel_demo/` — spatial fields and diagnostics from Stage 12.10.
 - `figures/stage12.11/` — control and annual diagnostics for 2020/2024 (Stage 12.11).
+- `figures/stage12.12/` — resolution convergence, 100^3 fields and voxel/prism consistency (Stage 12.12).
 - `STAGE12_PREPARATION.md` and `transition_analysis.md` — archived planning
   records, not active work plans.
 
@@ -57,6 +59,11 @@ Stage 12.9 separates into two workstreams:
 land/no-data forcing fallback warnings; the 2024 run melts out at 268.8 days.
 Neither is a publication-quality full-year comparison. See
 [`stage12.11_final_audit_2020_2024.md`](stage12.11_final_audit_2020_2024.md).
+
+**12.12 audit status:** the 1 m / 100^3 science grid is restored as the target;
+8^3 is a test grid only. The 100^3 30-day test took 480 s and 799 MB RSS, but
+resolution is not fully converged and no annual 100^3 run was performed. See
+[`stage12.12_resolution_geometry_audit.md`](stage12.12_resolution_geometry_audit.md).
 
 Check `docs/validation/INDEX.md` for active work and
 `docs/references/reanalysis_data_plan.md` for the data contract.

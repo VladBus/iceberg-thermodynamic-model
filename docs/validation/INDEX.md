@@ -15,10 +15,12 @@ Stage 12.9 has two distinct workstreams:
 | 12.9b Thesis writing | **GO with fallback labeling**; can use Stage 12.8 exploratory results, but must not claim quantitative daily-forcing validation. | [`stage12.8`](../wiki/stages/stage12/stage12.8_barents2020_matrix.md), [`DECISIONS.md`](../DECISIONS.md) D-63. |
 
 Stage 12.10 (voxel thermal-boundary improvement and short real-data
-experiments) and Stage 12.11 (final audit, visualization/freeboard corrections,
-data readiness, and 2020/2024 experiments) are complete; the reports are in
+experiments) and Stage 12.11 (final audit, visualization/freeboard corrections, data
+readiness, and 2020/2024 experiments) plus Stage 12.12 (resolution recovery and
+geometry audit) are complete; the reports are in
 [`stage12.10`](../wiki/stages/stage12/stage12.10_voxel_thermodynamics_improvement.md)
-and [`stage12.11`](../wiki/stages/stage12/stage12.11_final_audit_2020_2024.md).
+and [`stage12.11`](../wiki/stages/stage12/stage12.11_final_audit_2020_2024.md)
+and [`stage12.12`](../wiki/stages/stage12/stage12.12_resolution_geometry_audit.md).
 
 ### Acquisition manifests
 

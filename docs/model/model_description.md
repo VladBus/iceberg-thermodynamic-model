@@ -31,6 +31,9 @@ explicit fallback labeling. Stage 12.10 improved the voxel boundary/geometry
 diagnostics, and Stage 12.11 audited the 2020/2024 readiness: the 2024 run melts
 out before year end and the 2020 annual run has substantial land-forcing
 fallback warnings, so neither is a publication-quality full-year experiment.
+Stage 12.12 restored the 1 m / 100^3 reference grid as the scientific target;
+8^3 / 12.5 m remains a convergence/test grid only, and resolution convergence
+is not yet fully demonstrated.
 Stage 12 is not an operationally validated forecast system.
 
 ## 2. Grid and coordinates

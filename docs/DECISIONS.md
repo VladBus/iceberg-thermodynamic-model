@@ -13,7 +13,7 @@ Format: `ID | stage/date | status` + short description. Details — via links.
 | D-01–D-16 | Model foundations: grid, units, EOS/freezing point, three-equation interface, basal/lateral melt, internal temperature, switches, sea-ice initialization |
 | D-17–D-33 | Production coupling, ocean-init stabilization, CA/EOS precision, Stage 11 temporal architecture and EOS-80 policy |
 | D-34–D-50 | Stage 11.8 diagnostic ladder, numerical stabilization, forcing fixes, closure, EOS-80 default |
-| D-51–D-65 | Stage 12: reanalysis reader, voxel thermal core, CN/three-equation, geometry/drift, waves, Enderlin23, Barents matrix, face-specific boundaries, freeboard/draft audit |
+| D-51–D-66 | Stage 12: reanalysis reader, voxel thermal core, CN/three-equation, geometry/drift, waves, Enderlin23, Barents matrix, face-specific boundaries, freeboard/draft and resolution audits |
 
 Earlier records are historical decisions; current applicability is governed by
 later decisions and `docs/model/model_physics_status.md`. D-51 onward are the
@@ -334,7 +334,7 @@ active Stage 12 decisions.
 
 > **Status update 2026-11-05:** Stage 11 is CLOSED; Stage 12 was entered and
 > completed through Stage 12.8. This entry gate is historical; current Stage 12
-> decisions are D-52…D-65.
+> decisions are D-52…D-66.
 
 - **Stage:** 11.5H-RC | **Status:** DECIDED (entry gate locked)
 - **Problem:** premature voxel work on an unvalidated temporal/thermodynamic interface risks building on a regime-change artifact.
@@ -934,6 +934,23 @@ remains unchanged until the production-default decision in 11.7F.
   melts; a strongly eroded body can remain over-submerged. This decision does
   not solve that limitation.
 - **Docs:** `docs/wiki/stages/stage12/stage12.11_final_audit_2020_2024.md`.
+
+## D-66. 1 m is the reference voxel target; coarse grids are convergence tests only (Stage 12.12, 2026-11-08)
+
+- **Status:** ACTIVE (resolution/geometry audit; no calibration).
+- **Decision:** the scientific target for a 100 m cube is `100x100x100`
+  voxels at `h=1 m`, following the specification. `8x8x8` at 12.5 m is a
+  test grid only. Runs must satisfy `NX*DX=L`, `NY*DY=W`, `NZ*DZ=H` and write
+  the grid metadata to NetCDF.
+- **Why:** Stage 12.11 used 8^3 for speed and did not expose the mismatch
+  between the configured and actual resolution. The 100^3 tests show a
+  resolution trend in 30-day mass loss (8^3 4.15%, 100^3 3.87%).
+- **Evidence:** 8/20/50/100 5-day and 30-day tests; 100^3 30-day = 480 s and
+  799 MB RSS; strict build/tests pass. Details:
+  `docs/wiki/stages/stage12/stage12.12_resolution_geometry_audit.md`.
+- **Limits:** 1 m annual was not run; resolution is not fully converged;
+  voxel/prism geometry and fallback forcing remain open issues. This decision
+  does not validate melt-out lifetime or annual skill.
 
 ## How to add decisions
 

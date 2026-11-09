@@ -14,7 +14,9 @@ in `KNOWN_ISSUES.md`; the documentation map is `docs/README.md`.
   complete (24/24 months for ERA5, GLORYS12, and WAM; 2026-11-07); do not start
   additional downloads. Stage 12.10 voxel thermal-boundary improvements and 3D
   output are complete (2026-11-08); Stage 12.11 final audit and
-  2020/2024 readiness check are complete, with annual-quality caveats. Stage 12.9b thesis writing is the active
+  2020/2024 readiness check are complete, and Stage 12.12 recovered the 1 m
+  reference grid and audited geometry/voxel-prism consistency, with annual-quality
+  caveats. Stage 12.9b thesis writing is the active
   workstream. See `docs/validation/INDEX.md` and
   `docs/references/reanalysis_data_plan.md`.
 - Check `docs/model/model_physics_status.md`, `docs/DECISIONS.md`, and

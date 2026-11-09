@@ -501,19 +501,25 @@ For active voxels (`φ > 1e-12`) with heat capacity `C_i = φ_i ρ_ice c_ice V`:
 
 ### 17.1a Voxel draft and freeboard
 
-For the remaining solid cells, with `z_b` the lowest solid cell bottom and
-`z_t` the highest partially filled solid cell top:
+For the remaining solid cells, with `h` the voxel edge and `phi` the ice
+**volume fraction**:
 
 ```text
-z_w = level at which cumulative phi*V equals (mass/rho_w)
-D   = z_w - z_b
-F_b = z_t - z_w
+NX*h = L, NY*h = W, NZ*h = H
+z_bot = (k_bot - 1)*h,  k_bot = min{k : V_k > 0}
+z_top = k_top*h,        k_top = max{k : V_k > 0}
+z_wl  = level where cumulative phi*V equals mass/rho_w
+D     = z_wl - z_bot
+F_b   = z_top - z_wl
 ```
 
 - Meaning: `D` is the draft measured from the remaining lower surface;
   `F_b` is the actual geometric freeboard of the remaining body.
-- Implementation: `voxel_iceberg_compute_state`; `waterline_height` is retained
-  separately for the submerged/face-depth calculation.
+- Implementation: `voxel_iceberg_compute_state`; `phi` is not used as a
+  vertical height. `waterline_height` is retained separately for face-depth
+  calculations.
+- Assumption: the specification assumes no vertical cavities in a column; a
+  detected internal empty layer invalidates the cumulative waterline formula.
 - Limitation: vertical coordinates are fixed; the voxel body is not
   repositioned upward as its bottom melts. A body can therefore appear
   over-submerged after strong bottom erosion.

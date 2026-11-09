@@ -42,7 +42,7 @@ module iceberg_thermodynamics
                              voxel_iceberg_get_stability, voxel_iceberg_get_grid, &
                              voxel_iceberg_get_fields, voxel_iceberg_get_energy, &
                              voxel_iceberg_get_freeboard, voxel_iceberg_get_cumulative_losses, &
-                             voxel_iceberg_get_solver
+                             voxel_iceberg_get_solver, voxel_iceberg_set_c_ice
     use param, only: nat
     use wave_forcing, only: wave_erosion_enabled, get_wave_forcing, hs_to_sea_state, &
                             bigg_wave_melt, wave_forcing_epoch
@@ -61,6 +61,7 @@ module iceberg_thermodynamics
     type(voxel_iceberg_type), save :: vox_ice
     integer, save :: vox_nx = 10, vox_ny = 10, vox_nz = 10
     real(8), save :: vox_t_init = -10.0_8, vox_phi_init = 1.0_8, vox_phi_min = 0.01_8
+    real(8), save :: vox_c_ice = real(C_ICE, 8)
     real(8), save :: vox_dx = 10.0_8, vox_dy = 10.0_8, vox_dz = 10.0_8
     logical, save :: vox_dx_explicit = .false., vox_dy_explicit = .false., vox_dz_explicit = .false.
     integer, save :: vox_scheme = 1, vox_cg_maxit = 1000
@@ -1423,9 +1424,11 @@ contains
         cg_maxit = 10*nx*ny*nz
         call env_int('ICEBERG_CG_MAXIT', cg_maxit)
         call env_real('VOXEL_MELT_CAP', melt_cap)
+        call env_real('VOXEL_C_ICE', vox_c_ice)
         vox_nx = nx; vox_ny = ny; vox_nz = nz
         vox_dx = dx; vox_dy = dy; vox_dz = dz
         vox_t_init = t_init; vox_phi_init = phi_init; vox_phi_min = phi_min
+        call voxel_iceberg_set_c_ice(vox_c_ice)
         vox_scheme = scheme; vox_theta = theta; vox_cg_tol = cg_tol
         vox_cg_maxit = cg_maxit; vox_melt_cap = melt_cap
         call get_environment_variable('VOXEL_DEBUG_MELT', ev)
@@ -1680,12 +1683,13 @@ contains
         call voxel_iceberg_get_energy(vox_ice, sensible, flushed)
     end subroutine voxel_model_get_energy
 
-    subroutine voxel_model_get_fields(T, phi, open_mask, tb_face)
+    subroutine voxel_model_get_fields(T, phi, open_mask, tb_face, sb_vox)
         real(8), allocatable, intent(out) :: T(:,:,:), phi(:,:,:), tb_face(:,:,:,:)
         logical, allocatable, intent(out) :: open_mask(:,:,:)
+        real(8), allocatable, intent(out), optional :: sb_vox(:,:,:)
         call voxel_model_configure()
         if (.not. (vox_enabled .and. vox_ready)) return
-        call voxel_iceberg_get_fields(vox_ice, T, phi, open_mask, tb_face)
+        call voxel_iceberg_get_fields(vox_ice, T, phi, open_mask, tb_face, sb_vox)
     end subroutine voxel_model_get_fields
 
     subroutine env_int(name, val)

@@ -195,7 +195,11 @@ contains
         logical, intent(out) :: grounded
 
         real :: draft
-        draft = state%H*RHO_ICE/RHO_WATER
+        if (voxel_geometry_active()) then
+            draft = voxel_geometry_draft()
+        else
+            draft = state%H*RHO_ICE/RHO_WATER
+        end if
 
         if (draft .ge. bathymetry) then
             grounded = .true.
@@ -274,6 +278,9 @@ contains
         if (voxel_geometry_active()) then
             if (voxel_geometry_mass() <= 0.0) then
                 state%active = .false.
+                state%mass = 0.0d0; state%volume = 0.0d0
+                state%L = 0.0d0; state%W = 0.0d0; state%H = 0.0d0
+                diag%mass = 0.0d0; diag%draft = 0.0d0; diag%freeboard = 0.0d0
                 print *, 'ICEBERG: voxel mass reached zero; stopping'
                 return
             end if
@@ -284,6 +291,7 @@ contains
 
         ! 5. Пересчёт геометрии
         call iceberg_compute_geometry(state, diag)
+        call sync_prism_from_voxel(state, diag)
 
         ! 6. Проверка исчезновения
         if (state%H .lt. MIN_THICKNESS .or. state%L .lt. MIN_THICKNESS &
@@ -407,6 +415,7 @@ contains
         call iceberg_thermodynamics_step(state, dt, ocean_prof, atmos, diag)
         call iceberg_update_geometry(state, dt, diag)
         call iceberg_compute_geometry(state, diag)
+        call sync_prism_from_voxel(state, diag)
 
         state%volume = state%L*state%W*state%H
         state%mass = RHO_ICE*state%volume
@@ -507,6 +516,37 @@ contains
             ! Небольшая несогласованность из-за ограничения max(0) и плавающей точки
         end if
     end subroutine iceberg_update_geometry
+
+    ! ==========================================================================
+    ! Keep prism bookkeeping mass/volume consistent with the authoritative voxel
+    ! body. The prism dimensions are a derived equivalent: H follows from the
+    ! voxel mass and the current L/W footprint. Grounding uses voxel draft.
+    ! ==========================================================================
+    subroutine sync_prism_from_voxel(state, diag)
+        type(iceberg_state), intent(inout) :: state
+        type(iceberg_diagnostics), intent(inout) :: diag
+        real(8) :: mass8, volume8, h8, l8, w8
+        if (.not. voxel_geometry_active()) return
+        mass8 = real(voxel_geometry_mass(), 8)
+        if (mass8 <= 0.0_8) then
+            state%mass = 0.0_8; state%volume = 0.0_8
+            state%L = 0.0d0; state%W = 0.0d0; state%H = 0.0d0
+            diag%mass = 0.0; diag%draft = 0.0; diag%freeboard = 0.0
+            return
+        end if
+        volume8 = mass8/real(RHO_ICE, 8)
+        l8 = real(state%L, 8); w8 = real(state%W, 8)
+        if (l8 <= 0.0_8 .or. w8 <= 0.0_8) then
+            l8 = sqrt(max(volume8, 1.0d-30)); w8 = l8
+        end if
+        h8 = volume8/max(l8*w8, 1.0d-30)
+        state%mass = mass8
+        state%volume = volume8
+        state%H = h8
+        diag%mass = real(mass8, 4)
+        diag%draft = real(voxel_geometry_draft(), 4)
+        diag%freeboard = real(voxel_geometry_freeboard(), 4)
+    end subroutine sync_prism_from_voxel
 
     ! ========================================================================
     !   ФИНАЛИЗАЦИЯ (заглушка для будущего использования)

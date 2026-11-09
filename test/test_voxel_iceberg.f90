@@ -228,6 +228,23 @@ program test_voxel_iceberg
         print *, '  OK: partial phi volume controls draft and freeboard'
     end if
 
+    ! --- Check 5b2: vertical re-indexing after bottom erosion ----------------
+    call voxel_iceberg_init(vox, 8, 8, 8, 10.0d0, 10.0d0, 10.0d0, -10.0d0, 1.0d0)
+    do j = 1, 8
+        do i = 1, 8
+            vox%phi(i, j, 1) = 0.0d0
+        end do
+    end do
+    call voxel_iceberg_compute_state(vox)
+    draft0 = vox%draft; fb0 = vox%freeboard
+    call voxel_iceberg_compact_vertical(vox)
+    if (vox%phi(1, 1, 1) <= 0.0d0 .or. abs(vox%draft - draft0) > 1.0d-9 .or. &
+        abs(vox%freeboard - fb0) > 1.0d-9) then
+        print *, '  FAIL: vertical re-indexing changed draft/freeboard'; nerr = nerr + 1
+    else
+        print *, '  OK: vertical re-indexing removes empty bottom layers'
+    end if
+
     ! --- Check 5c: 1 m / 100^3 target resolution ----------------------------
     call voxel_iceberg_init(vox, 100, 100, 100, 1.0d0, 1.0d0, 1.0d0, -10.0d0, 1.0d0)
     call voxel_iceberg_get_mass(vox, m0)

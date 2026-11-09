@@ -55,14 +55,14 @@ program iceberg_run
     real(8), allocatable :: traj_t(:), traj_lat(:), traj_lon(:)
     integer, parameter :: MAXSNAP = 3
     real(8), allocatable :: snap_time(:), snap_mass(:), snap_draft(:)
-    real(8), allocatable :: snap_T(:,:,:,:), snap_phi(:,:,:,:), snap_tb(:,:,:,:,:)
+    real(8), allocatable :: snap_T(:,:,:,:), snap_phi(:,:,:,:), snap_sb(:,:,:,:), snap_tb(:,:,:,:,:)
     logical, allocatable :: snap_open(:,:,:,:)
     integer :: nsnap, vnx, vny, vnz, last_snap_irec
     real(8) :: vdx, vdy, vdz
     character(len=512) :: out_nc, vox_nc, daily, static, era5f, wavef, trajf, arg
     integer :: nrec, irec, ncid, dimt, vt, vla, vlo, vma, vdr, vti, stt, nfb
     integer :: nargs, istat, ii, jj, iarg, pos_arg, ntraj, start_date, nsum, cg, clips, rl
-    logical :: ok, gok, have_era5, prescribed, warned_nearest
+    logical :: ok, gok, have_era5, prescribed, warned_nearest, strict_ocean
     real(8) :: epoch, lat_use, lon_use, sum_b, sum_l, sum_s, sum_v, sum_w, sum_a, sum_tf, vol0
     real(8) :: e8, f8, f_lat, f_lon, f_dist
 
@@ -81,10 +81,13 @@ program iceberg_run
     call get_arg(8, arg); out_nc = trim(arg)
     daily = DEF_DAILY; static = DEF_STATIC; era5f = ''; wavef = ''; trajf = ''
     epoch = EPOCH_2020; start_date = 20200101; pos_arg = 0
+    strict_ocean = .false.
     iarg = 9
     do while (iarg <= nargs)
         call get_arg(iarg, arg)
         select case (trim(arg))
+        case ('--strict-ocean')
+            strict_ocean = .true.
         case ('--prescribed_trajectory')
             iarg = iarg + 1
             if (iarg <= nargs) call get_arg(iarg, trajf)
@@ -186,6 +189,12 @@ program iceberg_run
         call get_ocean_profile(0.0d0, 0.0d0, lat_use, lon_use, draft, &
                                0.0d0, 0.0d0, prof, ok, time_sec)
         if (.not. ok) then
+            if (strict_ocean) then
+                print *, 'STOP: primary ocean profile unavailable; strict-ocean is active at ', &
+                    lat_use, lon_use
+                nrec = irec - 1
+                exit
+            end if
             ! Validation fallback: 1/12-degree GLORYS cells at the ice front
             ! can be land/NaN. Search the nearest wet cell within 0.5 deg.
             call nearest_wet_ocean(lat_use, lon_use, draft, time_sec, prof, ok, &
@@ -260,8 +269,8 @@ program iceberg_run
         rtd(irec) = real(diag%t_draft, 8); rsd(irec) = real(diag%s_draft, 8)
         rpv(irec) = real(st%L, 8)*real(st%W, 8)*real(st%H, 8)
         rpm(irec) = real(RHO_ICE, 8)*rpv(irec)
-        rpd(irec) = real(st%H, 8)*real(RHO_ICE, 8)/real(RHO_WATER, 8)
-        rpf(irec) = max(0.0d0, real(st%H, 8) - rpd(irec))
+        rpd(irec) = real(diag%draft, 8)
+        rpf(irec) = real(diag%freeboard, 8)
         rcg(irec) = 0.0d0; rres(irec) = 0.0d0
         ru(irec) = real(interp_at_draft(prof, real(draft, 4), 'u'), 8)
         rv(irec) = real(interp_at_draft(prof, real(draft, 4), 'v'), 8)
@@ -518,16 +527,17 @@ contains
     subroutine save_snapshot(tval, irec)
         real(8), intent(in) :: tval
         integer, intent(in) :: irec
-        real(8), allocatable :: T(:, :, :), phi(:, :, :), tb(:, :, :, :)
+        real(8), allocatable :: T(:, :, :), phi(:, :, :), tb(:, :, :, :), sb(:, :, :)
         logical, allocatable :: open(:, :, :)
         if (nsnap >= MAXSNAP .or. last_snap_irec == irec) return
         call voxel_model_get_grid(vnx, vny, vnz, vdx, vdy, vdz)
         if (vnx <= 0 .or. vny <= 0 .or. vnz <= 0) return
-        call voxel_model_get_fields(T, phi, open, tb)
+        call voxel_model_get_fields(T, phi, open, tb, sb)
         if (.not. allocated(T)) return
         if (nsnap == 0) then
             allocate (snap_time(MAXSNAP), snap_mass(MAXSNAP), snap_draft(MAXSNAP))
             allocate (snap_T(vnx, vny, vnz, MAXSNAP), snap_phi(vnx, vny, vnz, MAXSNAP))
+            allocate (snap_sb(vnx, vny, vnz, MAXSNAP))
             allocate (snap_open(vnx, vny, vnz, MAXSNAP))
             allocate (snap_tb(vnx, vny, vnz, 6, MAXSNAP))
         end if
@@ -535,19 +545,20 @@ contains
         snap_time(nsnap) = tval
         snap_T(:, :, :, nsnap) = T
         snap_phi(:, :, :, nsnap) = phi
+        snap_sb(:, :, :, nsnap) = sb
         snap_open(:, :, :, nsnap) = open
         snap_tb(:, :, :, :, nsnap) = tb
         snap_mass(nsnap) = real(voxel_geometry_mass(), 8)
         snap_draft(nsnap) = real(voxel_geometry_draft(), 8)
         last_snap_irec = irec
-        deallocate (T, phi, open, tb)
+        deallocate (T, phi, open, tb, sb)
     end subroutine save_snapshot
 
     subroutine write_voxel_nc(path, ns)
         character(len=*), intent(in) :: path
         integer, intent(in) :: ns
         integer :: ncid, dimx, dimy, dimz, dimf, dimt
-        integer :: vid(10), st, is
+        integer :: vid(11), st, is
         integer, allocatable :: mask(:, :, :)
         integer :: start4(4), count4(4), start5(5), count5(5)
         real(8) :: xc(vnx), yc(vny), zc(vnz)
@@ -571,6 +582,8 @@ contains
         st = nf90_def_var(ncid, 'open_mask', nf90_int, (/dimx, dimy, dimz, dimt/), vid(7))
         st = nf90_def_var(ncid, 'tb_face', nf90_double, &
                           (/dimx, dimy, dimz, dimf, dimt/), vid(8))
+        st = nf90_def_var(ncid, 'S_boundary', nf90_double, &
+                          (/dimx, dimy, dimz, dimt/), vid(11))
         st = nf90_def_var(ncid, 'mass', nf90_double, (/dimt/), vid(9))
         st = nf90_def_var(ncid, 'draft', nf90_double, (/dimt/), vid(10))
         st = nf90_put_att(ncid, nf90_global, 'voxel_nx', vnx)
@@ -606,6 +619,8 @@ contains
             start5(5) = is
             st = nf90_put_var(ncid, vid(8), snap_tb(:, :, :, :, is), &
                               start=start5, count=count5)
+            st = nf90_put_var(ncid, vid(11), snap_sb(:, :, :, is), &
+                              start=start4, count=count4)
         end do
         st = nf90_close(ncid)
     end subroutine write_voxel_nc

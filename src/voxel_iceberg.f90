@@ -30,8 +30,10 @@ module voxel_iceberg
     public :: voxel_iceberg_get_grid, voxel_iceberg_get_fields
     public :: voxel_iceberg_get_energy, voxel_iceberg_get_freeboard
     public :: voxel_iceberg_get_top_height, voxel_iceberg_get_cumulative_losses
+    public :: voxel_iceberg_set_c_ice, voxel_iceberg_compact_vertical
 
     real(8), parameter :: EPS_PHI = 1.0d-12
+    real(8), save :: c_ice_override = real(C_ICE, 8)
     real(8), parameter :: DEFAULT_PHI_MIN = 0.01d0
     logical, save :: dbg_melt = .false., dbg_checked = .false., dbg_face_done = .false., dbg_total_done = .false.
 
@@ -49,6 +51,9 @@ module voxel_iceberg
         logical, allocatable :: open_face(:,:,:,:)
         ! Per solid voxel/face: local three-equation interface temperature.
         real(8), allocatable :: tb_face(:,:,:,:)
+        ! Per solid voxel/face and voxel mean: interface salinity.
+        real(8), allocatable :: sb_face(:,:,:,:)
+        real(8), allocatable :: sb_vox(:,:,:)
 
         ! конфигурация (env задаётся в iceberg_thermodynamics)
         integer :: scheme = 1          ! 1=cn, 2=explicit (12.3 legacy)
@@ -95,6 +100,11 @@ module voxel_iceberg
 
 contains
 
+    subroutine voxel_iceberg_set_c_ice(value)
+        real(8), intent(in) :: value
+        if (value > 0.0_8) c_ice_override = value
+    end subroutine voxel_iceberg_set_c_ice
+
     subroutine voxel_iceberg_init(vox, nx, ny, nz, dx, dy, dz, T_init, phi_init, &
                                   phi_min, scheme, theta, cg_tol, cg_maxit, melt_cap, &
                                   test_dir_face_a, test_dir_face_b, test_dir_T_a, test_dir_T_b)
@@ -122,9 +132,11 @@ contains
         allocate (vox%submerged_mask(nx, ny, nz), vox%exposed_mask(nx, ny, nz))
         allocate (vox%open_mask(nx, ny, nz), vox%open_face(nx, ny, nz, 6))
         allocate (vox%tb_face(nx, ny, nz, 6))
+        allocate (vox%sb_face(nx, ny, nz, 6), vox%sb_vox(nx, ny, nz))
         vox%T = T_init
         vox%phi = min(max(phi_init, 0.0_8), 1.0_8)
         vox%open_mask = .false.; vox%open_face = .false.; vox%tb_face = 0.0_8
+        vox%sb_face = 0.0_8; vox%sb_vox = 0.0_8
         vox%rannacher_left = 0
         vox%basal_melt_rate = 0.0_8; vox%lateral_melt_rate = 0.0_8; vox%surface_melt_rate = 0.0_8
         vox%cg_iters = 0; vox%cg_resid = 0.0_8; vox%clip_events = 0
@@ -425,7 +437,7 @@ contains
             end block
         end if
         if (.not. allocated(vox%T)) return
-        rho8 = real(RHO_ICE, 8); c8 = real(C_ICE, 8); k8 = real(K_ICE, 8); lf8 = real(LATENT_HEAT, 8)
+        rho8 = real(RHO_ICE, 8); c8 = c_ice_override; k8 = real(K_ICE, 8); lf8 = real(LATENT_HEAT, 8)
         V = vox%dx*vox%dy*vox%dz
         call voxel_iceberg_compute_state(vox)
 
@@ -529,6 +541,7 @@ contains
         end do
         if (removed > 0) vox%rannacher_left = 2
         if (vox%rannacher_left > 0 .and. removed == 0) vox%rannacher_left = max(0, vox%rannacher_left - 1)
+        call voxel_iceberg_compact_vertical(vox)
 
         ! (7) пересчёт
         vox%basal_melt_rate = basal_melt
@@ -632,7 +645,7 @@ contains
             end block
         end if
         if (.not. allocated(vox%T)) return
-        rho8 = real(RHO_ICE, 8); c8 = real(C_ICE, 8); k8 = real(K_ICE, 8); lf8 = real(LATENT_HEAT, 8)
+        rho8 = real(RHO_ICE, 8); c8 = c_ice_override; k8 = real(K_ICE, 8); lf8 = real(LATENT_HEAT, 8)
         V = vox%dx*vox%dy*vox%dz
         call voxel_iceberg_compute_state(vox)
 
@@ -640,6 +653,8 @@ contains
                   dlat(vox%nx, vox%ny, vox%nz))
         dmelt = 0.0_8; dbasal = 0.0_8; dlat = 0.0_8
         vox%tb_face = 0.0_8
+        vox%sb_face = 0.0_8
+        vox%sb_vox = 0.0_8
         sum_tb = 0.0_8; sum_sb = 0.0_8; sum_urel = 0.0_8; nface = 0
         deep_depth = -1.0_8; wl_depth = 1.0e30_8
 
@@ -661,10 +676,12 @@ contains
                         A = face_area(d, vox%dx, vox%dy, vox%dz)
                         ! Local fallback if the three-equation solve is unavailable.
                         vox%tb_face(i, j, k, d) = real(ocean_freezing_point(real(sw), real(dface)), 8)
+                        vox%sb_face(i, j, k, d) = sw
                         call three_equation_melt(tw, sw, urel, dface, hn, &
                                                  vox%T(i, j, k), m, tb, sb, ok3)
                         if (.not. ok3) cycle
                         vox%tb_face(i, j, k, d) = tb
+                        vox%sb_face(i, j, k, d) = sb
                         if (dbg_melt .and. .not. dbg_face_done .and. d >= 5 .and. &
                             i == vox%nx/2 .and. j == vox%ny/2) then
                             print '(a,10(1x,es14.6))', 'VOXEL_DEBUG_FACE', tw, sw, urel, dface, &
@@ -689,6 +706,24 @@ contains
                             wl_depth = dface; vox%stefan_wl_tb = tb
                         end if
                     end do
+                end do
+            end do
+        end do
+        do k = 1, vox%nz
+            do j = 1, vox%ny
+                do i = 1, vox%nx
+                    if (vox%phi(i, j, k) <= EPS_PHI) cycle
+                    block
+                        real(8) :: ssum
+                        integer :: scnt, dd
+                        ssum = 0.0_8; scnt = 0
+                        do dd = 1, 6
+                            if (vox%open_face(i, j, k, dd) .and. vox%sb_face(i, j, k, dd) > 0.0_8) then
+                                ssum = ssum + vox%sb_face(i, j, k, dd); scnt = scnt + 1
+                            end if
+                        end do
+                        if (scnt > 0) vox%sb_vox(i, j, k) = ssum/real(scnt, 8)
+                    end block
                 end do
             end do
         end do
@@ -781,6 +816,7 @@ contains
         end do
         if (removed > 0) vox%rannacher_left = 2
         if (vox%rannacher_left > 0 .and. removed == 0) vox%rannacher_left = max(0, vox%rannacher_left - 1)
+        call voxel_iceberg_compact_vertical(vox)
 
         vox%basal_melt_rate = basal_melt
         vox%lateral_melt_rate = lateral_melt
@@ -803,6 +839,43 @@ contains
             dbg_total_done = .true.
         end if
     end subroutine voxel_iceberg_step_profile
+
+    ! Re-index the vertical grid when the lowest occupied layer rises. This
+    ! preserves the body-relative draft/freeboard while removing empty bottom
+    ! layers; absolute grid position is not a buoyant trajectory.
+    subroutine voxel_iceberg_compact_vertical(vox)
+        type(voxel_iceberg_type), intent(inout) :: vox
+        integer :: i, j, k, kbot, shift
+        real(8), allocatable :: Ttmp(:,:,:), phitmp(:,:,:)
+        if (.not. allocated(vox%phi)) return
+        kbot = vox%nz + 1
+        do k = 1, vox%nz
+            do j = 1, vox%ny
+                do i = 1, vox%nx
+                    if (vox%phi(i, j, k) > EPS_PHI) then
+                        kbot = min(kbot, k); exit
+                    end if
+                end do
+                if (kbot <= vox%nz) exit
+            end do
+            if (kbot <= vox%nz) exit
+        end do
+        if (kbot <= 1 .or. kbot > vox%nz) return
+        shift = kbot - 1
+        allocate (Ttmp(vox%nx, vox%ny, vox%nz), phitmp(vox%nx, vox%ny, vox%nz))
+        Ttmp = vox%T; phitmp = vox%phi
+        do k = 1, vox%nz - shift
+            vox%T(:, :, k) = Ttmp(:, :, k + shift)
+            vox%phi(:, :, k) = phitmp(:, :, k + shift)
+        end do
+        do k = vox%nz - shift + 1, vox%nz
+            vox%T(:, :, k) = 0.0_8
+            vox%phi(:, :, k) = 0.0_8
+        end do
+        deallocate (Ttmp, phitmp)
+        vox%rannacher_left = max(vox%rannacher_left, 2)
+        call voxel_iceberg_compute_state(vox)
+    end subroutine voxel_iceberg_compact_vertical
 
     ! ==========================================================================
     ! Проекционная фронтальная площадь (PDF §13.2).
@@ -992,7 +1065,7 @@ contains
         flushed = vox%flushed_energy
         if (.not. allocated(vox%T)) return
         V = vox%dx*vox%dy*vox%dz
-        sensible = sum(vox%phi*real(RHO_ICE, 8)*real(C_ICE, 8)*vox%T)*V
+        sensible = sum(vox%phi*real(RHO_ICE, 8)*c_ice_override*vox%T)*V
     end subroutine voxel_iceberg_get_energy
 
     subroutine voxel_iceberg_get_grid(vox, nx, ny, nz, dx, dy, dz)
@@ -1004,11 +1077,12 @@ contains
     end subroutine voxel_iceberg_get_grid
 
     ! Copy the current spatial fields for NetCDF output / diagnostics.
-    subroutine voxel_iceberg_get_fields(vox, T, phi, open_mask, tb_face)
+    subroutine voxel_iceberg_get_fields(vox, T, phi, open_mask, tb_face, sb_vox)
         type(voxel_iceberg_type), intent(in) :: vox
         real(8), allocatable, intent(out) :: T(:,:,:), phi(:,:,:)
         logical, allocatable, intent(out) :: open_mask(:,:,:)
         real(8), allocatable, intent(out) :: tb_face(:,:,:,:)
+        real(8), allocatable, intent(out), optional :: sb_vox(:,:,:)
         if (.not. allocated(vox%T)) return
         allocate (T(vox%nx, vox%ny, vox%nz), phi(vox%nx, vox%ny, vox%nz))
         allocate (open_mask(vox%nx, vox%ny, vox%nz))
@@ -1016,6 +1090,9 @@ contains
         T = vox%T; phi = vox%phi
         open_mask = vox%open_mask
         tb_face = vox%tb_face
+        if (present(sb_vox)) then
+            allocate (sb_vox(vox%nx, vox%ny, vox%nz)); sb_vox = vox%sb_vox
+        end if
     end subroutine voxel_iceberg_get_fields
 
 end module voxel_iceberg

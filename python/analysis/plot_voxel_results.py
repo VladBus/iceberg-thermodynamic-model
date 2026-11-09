@@ -22,13 +22,14 @@ import xarray as xr
 
 
 def _slices(ds: xr.Dataset):
-    """Return T/phi with dimensions (snapshot, nx, ny, nz)."""
+    """Return T/phi/S with dimensions (snapshot, nx, ny, nz)."""
     for name in ("T", "phi"):
         if name not in ds:
             raise KeyError(f"missing {name!r} in {ds.encoding.get('source', 'voxel file')}")
     T = ds["T"].transpose("snapshot", "nx", "ny", "nz")
     phi = ds["phi"].transpose("snapshot", "nx", "ny", "nz")
-    return T, phi
+    S = ds["S_boundary"].transpose("snapshot", "nx", "ny", "nz") if "S_boundary" in ds else None
+    return T, phi, S
 
 
 def _grid(ds: xr.Dataset):
@@ -64,6 +65,14 @@ def _downsample_coord(c, max_dim=32):
     factor = int(np.ceil(len(c) / max_dim))
     m = len(c) // factor
     return c[:m * factor].reshape(m, factor).mean(axis=1)
+
+
+def _cutaway(mask):
+    """Remove one octant for a display cut-away; does not change data."""
+    m = np.array(mask, copy=True)
+    nx, ny, nz = m.shape
+    m[:max(1, nx // 2), :max(1, ny // 2), :max(1, nz // 2)] = False
+    return m
 
 
 def _voxel_axes(ax, mask, colors=None, title="", x=None, y=None, z=None, edges=True):
@@ -104,7 +113,7 @@ def plot_shape(ds, T, phi, outdir: Path):
     zd = _downsample_coord(z, phi_ds.shape[2])
     fig = plt.figure(figsize=(7, 6))
     ax = fig.add_subplot(111, projection="3d")
-    _voxel_axes(ax, mask, title="Final iceberg shape (phi > 0.01)", x=xd, y=yd, z=zd,
+    _voxel_axes(ax, _cutaway(mask), title="Final iceberg shape (phi > 0.01; cut-away)", x=xd, y=yd, z=zd,
                edges=(raw_phi.shape[0] <= 32))
     if not mask.any():
         ax.set_title("MELT-OUT: zero active mass")
@@ -157,7 +166,7 @@ def plot_temperature(ds, T, phi, outdir: Path):
     for ax, snap, label in zip(axes, snaps, labels):
         mask = phi.isel(snapshot=snap, nz=T.sizes["nz"] // 2) > 0.01
         field = np.where(mask.values, T.isel(snapshot=snap, nz=T.sizes["nz"] // 2).values, np.nan)
-        im = ax.pcolormesh(x, y, field, shading="auto", cmap="viridis", norm=norm)
+        im = ax.pcolormesh(x, y, field, shading="auto", cmap="YlOrRd", norm=norm)
         ax.set_title(f"T horizontal slice k={T.sizes['nz']//2} ({label})")
         ax.set_xlabel("x [m]")
         ax.set_ylabel("y [m]")
@@ -171,7 +180,7 @@ def plot_temperature(ds, T, phi, outdir: Path):
     for ax, snap, label in zip(axes, snaps, labels):
         mask = phi.isel(snapshot=snap, ny=T.sizes["ny"] // 2) > 0.01
         field = np.where(mask.values, T.isel(snapshot=snap, ny=T.sizes["ny"] // 2).values, np.nan)
-        im = ax.pcolormesh(x, z, field, shading="auto", cmap="viridis", norm=norm)
+        im = ax.pcolormesh(x, z, field, shading="auto", cmap="YlOrRd", norm=norm)
         ax.set_title(f"T vertical slice j={T.sizes['ny']//2} ({label})")
         ax.set_xlabel("x [m]")
         ax.set_ylabel("z [m]")
@@ -186,16 +195,16 @@ def plot_temperature(ds, T, phi, outdir: Path):
     Tds = _downsample(raw_T); phids = _downsample(raw_phi)
     final_mask = phids > 0.01
     final_T = np.where(final_mask, Tds, np.nan)
-    colors = plt.cm.viridis(norm(final_T))
+    colors = plt.cm.YlOrRd(norm(final_T))
     xd = _downsample_coord(x, Tds.shape[0]); yd = _downsample_coord(y, Tds.shape[1]); zd = _downsample_coord(z, Tds.shape[2])
     fig = plt.figure(figsize=(7, 6))
     ax = fig.add_subplot(111, projection="3d")
-    _voxel_axes(ax, final_mask, colors=colors, title="Final T field", x=xd, y=yd, z=zd,
+    _voxel_axes(ax, _cutaway(final_mask), colors=colors, title="Final T field (cut-away)", x=xd, y=yd, z=zd,
                edges=(raw_T.shape[0] <= 32))
     if not final_mask.any():
         ax.set_title("MELT-OUT: no active voxels")
         ax.text2D(0.5, 0.5, "MELT-OUT\nno active voxels", ha="center", va="center")
-    sm = ScalarMappable(norm=norm, cmap="viridis")
+    sm = ScalarMappable(norm=norm, cmap="YlOrRd")
     fig.colorbar(sm, ax=ax, shrink=0.7, label="T [°C]", format="%.2f")
     fig.tight_layout()
     fig.savefig(outdir / "temperature_3d_final.png", dpi=180)
@@ -210,7 +219,7 @@ def plot_phi(ds, phi, outdir: Path):
     for ax, snap, label in zip(axes, snaps, labels):
         field = np.where(phi.isel(snapshot=snap, nz=phi.sizes["nz"] // 2).values > 0.01,
                          phi.isel(snapshot=snap, nz=phi.sizes["nz"] // 2).values, np.nan)
-        im = ax.pcolormesh(x, y, field, shading="auto", cmap="magma", vmin=0, vmax=1)
+        im = ax.pcolormesh(x, y, field, shading="auto", cmap="Blues", vmin=0, vmax=1)
         ax.set_title(f"phi horizontal slice k={phi.sizes['nz']//2} ({label})")
         ax.set_xlabel("x [m]")
         ax.set_ylabel("y [m]")
@@ -223,20 +232,65 @@ def plot_phi(ds, phi, outdir: Path):
     raw_phi = np.asarray(phi.isel(snapshot=-1).values, dtype=float)
     final_phi = _downsample(raw_phi)
     mask = final_phi > 0.01
-    colors = plt.cm.magma(Normalize(0.0, 1.0)(final_phi))
+    colors = plt.cm.Blues(Normalize(0.0, 1.0)(final_phi))
     xd = _downsample_coord(x, final_phi.shape[0]); yd = _downsample_coord(y, final_phi.shape[1]); zd = _downsample_coord(z, final_phi.shape[2])
     fig = plt.figure(figsize=(7, 6))
     ax = fig.add_subplot(111, projection="3d")
-    _voxel_axes(ax, mask, colors=colors, title="Final phi field (partial melt visible)", x=xd, y=yd, z=zd,
+    _voxel_axes(ax, _cutaway(mask), colors=colors, title="Final phi field (partial melt; cut-away)", x=xd, y=yd, z=zd,
                edges=(raw_phi.shape[0] <= 32))
     if not mask.any():
         ax.set_title("MELT-OUT: zero active mass")
         ax.text2D(0.5, 0.5, "MELT-OUT\nzero active mass", ha="center", va="center")
-    sm = ScalarMappable(norm=Normalize(0.0, 1.0), cmap="magma")
+    sm = ScalarMappable(norm=Normalize(0.0, 1.0), cmap="Blues")
     fig.colorbar(sm, ax=ax, shrink=0.7, label="phi", format="%.2f")
     fig.tight_layout()
     fig.savefig(outdir / "phi_3d_final.png", dpi=180)
     plt.close(fig)
+
+
+def plot_salinity(ds, S, phi, outdir: Path):
+    x, y, z = _grid(ds)
+    valid = S.where(phi > 0.01)
+    vals = np.asarray(valid.values, dtype=float)
+    finite = vals[np.isfinite(vals)]
+    if finite.size == 0:
+        return
+    vmin, vmax = float(np.min(finite)), float(np.max(finite))
+    norm = Normalize(vmin=vmin, vmax=vmax)
+    snaps = (0, S.sizes["snapshot"] // 2, S.sizes["snapshot"] - 1)
+    labels = ("initial", "middle", "final")
+    fig, axes = plt.subplots(1, 3, figsize=(15, 4.5))
+    for ax, snap, label in zip(axes, snaps, labels):
+        mask = phi.isel(snapshot=snap, nz=S.sizes["nz"] // 2) > 0.01
+        field = np.where(mask.values, S.isel(snapshot=snap, nz=S.sizes["nz"] // 2).values, np.nan)
+        im = ax.pcolormesh(x, y, field, shading="auto", cmap="Greens", norm=norm)
+        ax.set_title(f"boundary S horizontal k={S.sizes['nz']//2} ({label})")
+        ax.set_xlabel("x [m]"); ax.set_ylabel("y [m]"); ax.set_aspect("equal")
+        fig.colorbar(im, ax=ax, label="S (mass fraction)", format="%.4f")
+    fig.tight_layout(); fig.savefig(outdir / "salinity_horizontal.png", dpi=180); plt.close(fig)
+
+    fig, axes = plt.subplots(1, 3, figsize=(15, 4.5))
+    for ax, snap, label in zip(axes, snaps, labels):
+        mask = phi.isel(snapshot=snap, ny=S.sizes["ny"] // 2) > 0.01
+        field = np.where(mask.values, S.isel(snapshot=snap, ny=S.sizes["ny"] // 2).values, np.nan)
+        im = ax.pcolormesh(x, z, field, shading="auto", cmap="Greens", norm=norm)
+        ax.set_title(f"boundary S vertical j={S.sizes['ny']//2} ({label})")
+        ax.set_xlabel("x [m]"); ax.set_ylabel("z [m]"); ax.set_aspect("equal")
+        fig.colorbar(im, ax=ax, label="S (mass fraction)", format="%.4f")
+    fig.tight_layout(); fig.savefig(outdir / "salinity_vertical.png", dpi=180); plt.close(fig)
+
+    raw = np.asarray(S.isel(snapshot=-1).values, dtype=float)
+    rawphi = np.asarray(phi.isel(snapshot=-1).values, dtype=float)
+    Sds = _downsample(raw); pds = _downsample(rawphi)
+    mask = pds > 0.01
+    colors = plt.cm.Greens(norm(Sds))
+    xd = _downsample_coord(x, Sds.shape[0]); yd = _downsample_coord(y, Sds.shape[1]); zd = _downsample_coord(z, Sds.shape[2])
+    fig = plt.figure(figsize=(7, 6)); ax = fig.add_subplot(111, projection="3d")
+    _voxel_axes(ax, _cutaway(mask), colors=colors, title="Final boundary S (cut-away)", x=xd, y=yd, z=zd,
+               edges=(raw.shape[0] <= 32))
+    sm = ScalarMappable(norm=norm, cmap="Greens")
+    fig.colorbar(sm, ax=ax, shrink=0.7, label="S (mass fraction)", format="%.4f")
+    fig.tight_layout(); fig.savefig(outdir / "salinity_3d_final.png", dpi=180); plt.close(fig)
 
 
 def plot_time_series(run: xr.Dataset, vox: xr.Dataset, outdir: Path):
@@ -339,10 +393,14 @@ def main() -> int:
     run = xr.open_dataset(args.run_nc)
     vox = xr.open_dataset(args.voxel_nc)
     try:
-        T, phi = _slices(vox)
+        T, phi, S = _slices(vox)
         plot_shape(vox, T, phi, outdir)
         plot_temperature(vox, T, phi, outdir)
         plot_phi(vox, phi, outdir)
+        if S is not None:
+            plot_salinity(vox, S, phi, outdir)
+        else:
+            print("WARNING: S_boundary not present; salinity plots skipped")
         plot_time_series(run, vox, outdir)
     finally:
         run.close()

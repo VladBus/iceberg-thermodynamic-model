@@ -63,7 +63,7 @@ def main() -> int:
     args = parser.parse_args()
     root = Path(args.root); outdir = Path(args.outdir); outdir.mkdir(parents=True, exist_ok=True)
     rows = []
-    for n in (8, 20, 50, 100):
+    for n in (8, 20, 50, 70, 100):
         for suffix, span in (("", "5d"), ("30", "30d")):
             m = _metrics(root, n, suffix)
             if m is None:

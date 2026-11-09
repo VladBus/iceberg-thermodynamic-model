@@ -221,11 +221,25 @@ program test_voxel_iceberg
         end do
     end do
     call voxel_iceberg_compute_state(vox)
-    if (abs(vox%top_height - 75.0d0) > 1.0d-9 .or. vox%draft >= draft0 .or. &
+    if (abs(vox%top_height - 80.0d0) > 1.0d-9 .or. vox%draft >= draft0 .or. &
         abs(vox%freeboard - max(0.0d0, vox%top_height - vox%draft)) > 1.0d-9) then
         print *, '  FAIL: partial top layer draft/freeboard'; nerr = nerr + 1
     else
         print *, '  OK: partial phi volume controls draft and freeboard'
+    end if
+
+    ! --- Check 5c: 1 m / 100^3 target resolution ----------------------------
+    call voxel_iceberg_init(vox, 100, 100, 100, 1.0d0, 1.0d0, 1.0d0, -10.0d0, 1.0d0)
+    call voxel_iceberg_get_mass(vox, m0)
+    exp_mass = real(RHO_ICE, 8)*1.0d0**3*100.0d0**3
+    if (abs(vox%dx*100.0d0 - 100.0d0) > 1.0d-12 .or. &
+        abs(m0 - exp_mass) > 1.0d-8*exp_mass .or. &
+        abs(vox%top_height - 100.0d0) > 1.0d-12 .or. &
+        vox%draft <= 0.0d0 .or. vox%freeboard <= 0.0d0) then
+        print '(a,3es14.6)', '  FAIL: 100^3/1 m geometry', m0, vox%top_height, vox%draft
+        nerr = nerr + 1
+    else
+        print *, '  OK: 100^3 at 1 m preserves L=100 m and physical draft/freeboard'
     end if
 
     ! --- Check 6 (A-T9): key physics under BOTH schemes ---------------------

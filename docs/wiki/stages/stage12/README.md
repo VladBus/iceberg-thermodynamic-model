@@ -2,7 +2,7 @@
 
 Stage 12 is the current scientific stage. This directory stores completed
 stage reports and their evidence; it is not the working directory for unfinished
-tasks. Stage 12.9a acquisition, Stage 12.10 voxel thermodynamics, and the Stage 12.11/12.12 audits are complete;
+tasks. Stage 12.9a acquisition, Stage 12.10 voxel thermodynamics, and the Stage 12.11/12.12/12.13 audits are complete;
 the acquisition manifests remain in `docs/validation/` as canonical provenance.
 Stage 12.9b thesis writing is the active workstream.
 
@@ -30,6 +30,7 @@ Stage 12.9b thesis writing is the active workstream.
 | 12.10 | [`stage12.10_voxel_thermodynamics_improvement.md`](stage12.10_voxel_thermodynamics_improvement.md) | Face-specific thermal BCs, cavity classification, 3D output and short real-data experiments |
 | 12.11 | [`stage12.11_final_audit_2020_2024.md`](stage12.11_final_audit_2020_2024.md) | Final audit, visualization/freeboard corrections, data audit and 2020/2024 readiness |
 | 12.12 | [`stage12.12_resolution_geometry_audit.md`](stage12.12_resolution_geometry_audit.md) | Resolution recovery, geometry correction, voxel/prism audit and fallback transparency |
+| 12.13 | [`stage12.13_voxel_prism_convergence_annual_readiness.md`](stage12.13_voxel_prism_convergence_annual_readiness.md) | Voxel-authoritative prism sync, vertical compaction, convergence/sensitivity audit, palettes/S plots and no annual promotion |
 
 The 12.8 drift and lifetime results are lower bounds from monthly GLORYS and
 constant-atmosphere fallbacks; they are not daily-forcing validation. No stage
@@ -43,6 +44,7 @@ report currently claims quantitative daily-forcing performance.
 - `figures/voxel_demo/` — spatial fields and diagnostics from Stage 12.10.
 - `figures/stage12.11/` — control and annual diagnostics for 2020/2024 (Stage 12.11).
 - `figures/stage12.12/` — resolution convergence, 100^3 fields and voxel/prism consistency (Stage 12.12).
+- `figures/stage12.13/` — updated palettes, salinity/cut-away, face profiles, convergence and prism-sync diagnostics (Stage 12.13).
 - `STAGE12_PREPARATION.md` and `transition_analysis.md` — archived planning
   records, not active work plans.
 
@@ -64,6 +66,13 @@ Neither is a publication-quality full-year comparison. See
 8^3 is a test grid only. The 100^3 30-day test took 480 s and 799 MB RSS, but
 resolution is not fully converged and no annual 100^3 run was performed. See
 [`stage12.12_resolution_geometry_audit.md`](stage12.12_resolution_geometry_audit.md).
+
+**12.13 audit status:** voxel/prism mass and draft/freeboard are synchronized; the
+100^3 30-day run took about 495 s and 782 MB RSS. The 70^3 30-day mass loss
+differs from 100^3 by 1.04%, so no lower resolution meets <1%. The 2020/2024
+annual runs were **not** promoted; the 2020 fallback-free candidate is
+`78N, 30E` in short tests, but no annual run was made. See
+[`stage12.13_voxel_prism_convergence_annual_readiness.md`](stage12.13_voxel_prism_convergence_annual_readiness.md).
 
 Check `docs/validation/INDEX.md` for active work and
 `docs/references/reanalysis_data_plan.md` for the data contract.

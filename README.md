@@ -35,7 +35,7 @@ under atmospheric, oceanic, bathymetric, and sea-ice forcing.
 
 ## 📑 Project status
 
-- **Current stage:** **Stage 11 FROZEN** as a research artifact; **Stage 12 active**, completed through Stage 12.8 validation, Stage 12.9a acquisition, Stage 12.10 voxel-boundary improvements, the Stage 12.11 final audit, and the Stage 12.12 resolution/geometry audit (voxel iceberg on GLORYS12 + ERA5, offline/one-way). Stage 12.9b thesis writing is GO with fallback labeling.
+- **Current stage:** **Stage 11 FROZEN** as a research artifact; **Stage 12 active**, completed through Stage 12.8 validation, Stage 12.9a acquisition, Stage 12.10 voxel-boundary improvements, the Stage 12.11 final audit, the Stage 12.12 resolution/geometry audit, and the Stage 12.13 voxel/prism convergence audit (voxel iceberg on GLORYS12 + ERA5, offline/one-way). Stage 12.9b thesis writing is GO with fallback labeling.
 - **Validation boundary:** Stage 12.8 used monthly-mean GLORYS and a constant atmosphere; its drift and lifetime are lower bounds, not daily-forcing validation. The Stage 11 ocean is not production-validated.
 - **Physics default:** EOS-80 (`EOS_MODE` unset); `EOS_MODE=LEGACY` is the historical fallback. See [`docs/model/model_physics_status.md`](docs/model/model_physics_status.md).
 - **Start here:** [`docs/README.md`](docs/README.md); active work: [`docs/validation/INDEX.md`](docs/validation/INDEX.md).

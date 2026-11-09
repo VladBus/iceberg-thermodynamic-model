@@ -952,6 +952,52 @@ remains unchanged until the production-default decision in 11.7F.
   voxel/prism geometry and fallback forcing remain open issues. This decision
   does not validate melt-out lifetime or annual skill.
 
+## D-67. Voxel mass/draft/freeboard are authoritative; prism state is synchronized and vertical layers compact (Stage 12.13, 2026-11-09)
+
+- **Status:** ACTIVE (state-consistency correction; no calibration).
+- **Decision:** after every voxel melt/erosion update, copy voxel mass, volume,
+  draft, and freeboard into the prism state and derive `H=V/(L*W)` from the
+  current prism footprint. L/W remain the lateral-melt prism state, not a
+  voxel envelope. Grounding and boundary forcing use the voxel draft/remaining
+  solid surface. If voxel mass is
+  zero, zero the prism state before dynamics. Remove empty bottom voxel layers
+  and reindex `T`, `phi`, and geometry arrays while preserving body-relative
+  draft/freeboard.
+- **Why:** the Stage 12.12 audit found median prism/voxel draft differences of
+  12–15% and maxima above 80%; prism mass could remain nonzero after voxel
+  melt-out. Two independent geometry states are not acceptable for grounding,
+  drag, or annual diagnostics.
+- **Evidence:** post-sync mass relative difference `~1e-16` (median 0) for 50^3,
+  100^3, 2020, and 2024; draft/freeboard match at output; zero-mass guard stops
+  cleanly; `test_voxel_iceberg` compaction/freeboard tests pass. See
+  `docs/wiki/stages/stage12/stage12.13_voxel_prism_convergence_annual_readiness.md`.
+- **Limits:** equality is partly enforced bookkeeping, not independent geometric
+  validation. Compaction is index correction, not a buoyant rigid-body solve;
+  a strongly eroded body may remain over-submerged.
+- **Docs:** `docs/wiki/stages/stage12/stage12.13_voxel_prism_convergence_annual_readiness.md`,
+  `KNOWN_ISSUES.md` Q-20/Q-22.
+
+## D-68. 100^3 reference grid; no annual 2020/2024 promotion until convergence and provenance gates pass (Stage 12.13, 2026-11-09)
+
+- **Status:** ACTIVE (validation gate; no annual result promoted).
+- **Decision:** retain `100x100x100` at `1 m` as the reference grid. Do not
+  promote annual 2020/2024 results from Stage 12.13. A future annual reference
+  run must use 100^3, a fallback-free start point such as `78N, 30E` or an
+  explicitly documented fallback ledger, and a completed energy-budget audit.
+  The 8^3 diagnostic bookkeeping reruns in this stage are not annual references.
+- **Why:** the 70^3 30-day mass loss differs from 100^3 by 1.04%; no tested
+  lower resolution meets <1%. The original 2020 point has 1,577 fallback events
+  and stops at 365.0 days of a requested 366-day leap-year experiment; 2024
+  melts out at 268.8 days. A 100^3 year costs about 1.6 h and 0.8 GB RSS.
+- **Evidence:** 8/20/50/70/100 5- and 30-day tests; 100^3 30-day 495 s/782 MB;
+  30-day strict candidate tests at `78N, 30E` exit 0 with no fallback. See
+  `docs/wiki/stages/stage12/stage12.13_voxel_prism_convergence_annual_readiness.md`.
+- **Limits:** 100^3 is the target reference, not a demonstrated converged
+  solution. No 100^3 annual run or observational validation was performed;
+  only 8^3 diagnostic reruns exist.
+- **Docs:** `docs/wiki/stages/stage12/stage12.13_voxel_prism_convergence_annual_readiness.md`,
+  `KNOWN_ISSUES.md` Q-19/Q-21/Q-23.
+
 ## How to add decisions
 
 A new decision is appended with an ID, stage, status, and links to reports.

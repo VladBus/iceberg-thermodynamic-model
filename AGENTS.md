@@ -16,8 +16,10 @@ in `KNOWN_ISSUES.md`; the documentation map is `docs/README.md`.
   output are complete (2026-11-08); Stage 12.11 final audit and
   2020/2024 readiness check are complete, and Stage 12.12 recovered the 1 m
   reference grid and audited geometry/voxel-prism consistency, with annual-quality
-  caveats. Stage 12.9b thesis writing is the active
-  workstream. See `docs/validation/INDEX.md` and
+  caveats. Stage 12.13 synchronized voxel/prism mass and draft/freeboard, added vertical
+  layer compaction, tested 70^3 convergence, and confirmed that no lower
+  resolution meets <1%; annual 2020/2024 runs remain not promoted. Stage 12.9b
+  thesis writing is the active workstream. See `docs/validation/INDEX.md` and
   `docs/references/reanalysis_data_plan.md`.
 - Check `docs/model/model_physics_status.md`, `docs/DECISIONS.md`, and
   `KNOWN_ISSUES.md` before making claims about physics, switches, or open issues.

@@ -520,9 +520,9 @@ F_b   = z_top - z_wl
   calculations.
 - Assumption: the specification assumes no vertical cavities in a column; a
   detected internal empty layer invalidates the cumulative waterline formula.
-- Limitation: vertical coordinates are fixed; the voxel body is not
-  repositioned upward as its bottom melts. A body can therefore appear
-  over-submerged after strong bottom erosion.
+- Limitation: from Stage 12.13, empty bottom layers are removed by index
+  compaction, but this is not a buoyant rigid-body solve. A strongly eroded
+  body can still appear over-submerged; see §17.8.
 
 ### 17.2 Submerged-face conduction boundary
 
@@ -624,3 +624,24 @@ dlon = u·dt/(R cosφ)
   `src/iceberg.f90`, `src/iceberg_run.f90`.
 - Limitations: coarse coastal currents; no two-way coupling; first-order
   position update; grid rotation neglected in relative flow.
+
+### 17.8 Voxel-authoritative state, prism synchronization, and vertical compaction
+
+```text
+M_p = M_v,  V_p = V_v,  H_p = V_p/(L_p W_p)
+D_p = D_v,  F_p = F_v
+k' = k - k_shift  (empty bottom layers removed)
+```
+
+- Meaning: the voxel body is authoritative for mass, volume, draft, and
+  freeboard; the prism is a synchronized diagnostic/state surrogate for legacy
+  dynamics. `L_p/W_p` remain the prism lateral-melt footprint; prism `H_p` is
+  derived. Empty bottom layers are removed by reindexing `T`, `phi`, and
+  geometry arrays while preserving body-relative draft/freeboard.
+- Implementation: `sync_prism_from_voxel` and
+  `voxel_iceberg_compact_vertical` in `src/iceberg.f90`/`src/voxel_iceberg.f90`.
+  A zero-voxel-mass guard zeroes the prism before dynamics.
+- Limitation: equality is enforced bookkeeping, not independent geometric
+  validation. Compaction does not re-float the body to hydrostatic equilibrium.
+  Boundary salinity is output as `S_boundary` for diagnostic plots; it is not a
+  prognostic salt equation.

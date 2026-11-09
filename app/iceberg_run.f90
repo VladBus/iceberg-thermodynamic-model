@@ -24,7 +24,7 @@ program iceberg_run
                                model_coords_to_indices, interp_at_draft
     use iceberg_thermodynamics, only: voxel_geometry_active, voxel_geometry_mass, &
                                       voxel_geometry_draft, voxel_geometry_freeboard, voxel_model_get_grid, &
-                                      voxel_model_get_cumulative_losses, &
+                                      voxel_model_get_cumulative_losses, voxel_model_get_solver, &
                                       voxel_model_get_fields, voxel_model_get_energy
     use ocean_provider, only: SRC_REANALYSIS
     use netcdf_input, only: era5_open, era5_is_open
@@ -49,6 +49,9 @@ program iceberg_run
     real(8), allocatable :: renergy(:), rflush(:), rfreeboard(:)
     real(8), allocatable :: rvb(:), rvlat(:), rvs(:), rvf(:)
     real(8), allocatable :: rtd(:), rsd(:), ru(:), rv(:), rat(:), rau(:), rav(:)
+    real(8), allocatable :: rpm(:), rpv(:), rpd(:), rpf(:), rcg(:), rres(:)
+    real(8), allocatable :: fbt(:), fblat(:), fblon(:), fsel_lat(:), fsel_lon(:)
+    real(8), allocatable :: fbr(:), fbd(:), fbtm(:), fbs(:), fbu(:), fbv(:)
     real(8), allocatable :: traj_t(:), traj_lat(:), traj_lon(:)
     integer, parameter :: MAXSNAP = 3
     real(8), allocatable :: snap_time(:), snap_mass(:), snap_draft(:)
@@ -57,11 +60,11 @@ program iceberg_run
     integer :: nsnap, vnx, vny, vnz, last_snap_irec
     real(8) :: vdx, vdy, vdz
     character(len=512) :: out_nc, vox_nc, daily, static, era5f, wavef, trajf, arg
-    integer :: nrec, irec, ncid, dimt, vt, vla, vlo, vma, vdr, vti, stt
-    integer :: nargs, istat, ii, jj, iarg, pos_arg, ntraj, start_date, nsum
+    integer :: nrec, irec, ncid, dimt, vt, vla, vlo, vma, vdr, vti, stt, nfb
+    integer :: nargs, istat, ii, jj, iarg, pos_arg, ntraj, start_date, nsum, cg, clips, rl
     logical :: ok, gok, have_era5, prescribed, warned_nearest
     real(8) :: epoch, lat_use, lon_use, sum_b, sum_l, sum_s, sum_v, sum_w, sum_a, sum_tf, vol0
-    real(8) :: e8, f8
+    real(8) :: e8, f8, f_lat, f_lon, f_dist
 
     nargs = command_argument_count()
     if (nargs < 8) then
@@ -149,7 +152,10 @@ program iceberg_run
               rmw(nrec), rwml(nrec), rvol(nrec), rawet(nrec), rsic(nrec), rbl(nrec), &
               rll(nrec), rsl(nrec), rvl(nrec), rwl(nrec), renergy(nrec), rflush(nrec), rfreeboard(nrec), &
               rvb(nrec), rvlat(nrec), rvs(nrec), rvf(nrec), rtd(nrec), rsd(nrec), ru(nrec), rv(nrec), &
-              rat(nrec), rau(nrec), rav(nrec))
+              rat(nrec), rau(nrec), rav(nrec), rpm(nrec), rpv(nrec), rpd(nrec), rpf(nrec), rcg(nrec), rres(nrec))
+    allocate (fbt(nrec), fblat(nrec), fblon(nrec), fsel_lat(nrec), fsel_lon(nrec), &
+              fbr(nrec), fbd(nrec), fbtm(nrec), fbs(nrec), fbu(nrec), fbv(nrec))
+    nfb = 0
     sum_b = 0.0d0; sum_l = 0.0d0; sum_s = 0.0d0; sum_v = 0.0d0; sum_w = 0.0d0
     sum_a = 0.0d0; sum_tf = 0.0d0; nsum = 0; vol0 = st%volume; warned_nearest = .false.
     nsnap = 0; last_snap_irec = 0; vnx = 0; vny = 0; vnz = 0
@@ -182,11 +188,22 @@ program iceberg_run
         if (.not. ok) then
             ! Validation fallback: 1/12-degree GLORYS cells at the ice front
             ! can be land/NaN. Search the nearest wet cell within 0.5 deg.
-            call nearest_wet_ocean(lat_use, lon_use, draft, time_sec, prof, ok)
-            if (ok .and. .not. warned_nearest) then
-                print *, 'WARN: nearest wet GLORYS cell used for validation at ', &
-                    lat_use, lon_use
-                warned_nearest = .true.
+            call nearest_wet_ocean(lat_use, lon_use, draft, time_sec, prof, ok, &
+                                    f_lat, f_lon, f_dist)
+            if (ok) then
+                nfb = nfb + 1
+                fbt(nfb) = time_sec; fblat(nfb) = lat_use; fblon(nfb) = lon_use
+                fsel_lat(nfb) = f_lat; fsel_lon(nfb) = f_lon
+                fbr(nfb) = f_dist; fbd(nfb) = draft
+                fbtm(nfb) = real(interp_at_draft(prof, real(draft, 4), 'temp'), 8)
+                fbs(nfb) = real(interp_at_draft(prof, real(draft, 4), 'salt'), 8)
+                fbu(nfb) = real(interp_at_draft(prof, real(draft, 4), 'u'), 8)
+                fbv(nfb) = real(interp_at_draft(prof, real(draft, 4), 'v'), 8)
+                if (.not. warned_nearest) then
+                    print *, 'WARN: nearest wet GLORYS cell used for validation at ', &
+                        lat_use, lon_use
+                    warned_nearest = .true.
+                end if
             end if
         end if
         if (.not. ok) then
@@ -241,6 +258,11 @@ program iceberg_run
         renergy(irec) = 0.0d0; rflush(irec) = 0.0d0
         rvb(irec) = 0.0d0; rvlat(irec) = 0.0d0; rvs(irec) = 0.0d0; rvf(irec) = 0.0d0
         rtd(irec) = real(diag%t_draft, 8); rsd(irec) = real(diag%s_draft, 8)
+        rpv(irec) = real(st%L, 8)*real(st%W, 8)*real(st%H, 8)
+        rpm(irec) = real(RHO_ICE, 8)*rpv(irec)
+        rpd(irec) = real(st%H, 8)*real(RHO_ICE, 8)/real(RHO_WATER, 8)
+        rpf(irec) = max(0.0d0, real(st%H, 8) - rpd(irec))
+        rcg(irec) = 0.0d0; rres(irec) = 0.0d0
         ru(irec) = real(interp_at_draft(prof, real(draft, 4), 'u'), 8)
         rv(irec) = real(interp_at_draft(prof, real(draft, 4), 'v'), 8)
         rat(irec) = real(atmos%t2m, 8); rau(irec) = real(atmos%u10, 8); rav(irec) = real(atmos%v10, 8)
@@ -248,6 +270,8 @@ program iceberg_run
             call voxel_model_get_energy(e8, f8)
             renergy(irec) = e8; rflush(irec) = f8
             call voxel_model_get_cumulative_losses(rvb(irec), rvlat(irec), rvs(irec), rvf(irec))
+            call voxel_model_get_solver(cg, rres(irec), clips, rl)
+            rcg(irec) = real(cg, 8)
         end if
         if (voxel_geometry_active() .and. &
             (irec == 1 .or. irec == max(nrec/2, 1))) call save_snapshot(rt(irec), irec)
@@ -268,11 +292,16 @@ program iceberg_run
         sum_tf/max(nsum, 1)
     call write_nc(trim(out_nc), nrec, rt, rlat, rlon, rmass, rdraft, rti, rmw, rwml, &
                   rvol, rawet, rsic, rbl, rll, rsl, rvl, rwl, renergy, rflush, rfreeboard, &
-                  rvb, rvlat, rvs, rvf, rtd, rsd, ru, rv, rat, rau, rav)
+                  rvb, rvlat, rvs, rvf, rtd, rsd, ru, rv, rat, rau, rav, rpm, rpv, rpd, rpf, rcg, rres)
     if (nsnap > 0) then
         vox_nc = trim(out_nc)//'_voxel.nc'
         call write_voxel_nc(trim(vox_nc), nsnap)
         print '(a,i0,a,a)', 'iceberg_run: wrote ', nsnap, ' voxel snapshots to ', trim(vox_nc)
+    end if
+    if (nfb > 0) then
+        call write_fallback_csv(trim(out_nc)//'_fallback.csv', nfb)
+        print '(a,i0,a,a)', 'iceberg_run: wrote ', nfb, ' fallback events to ', &
+            trim(out_nc)//'_fallback.csv'
     end if
     print '(a,i0,a,a)', 'iceberg_run: wrote ', nrec, ' records to ', trim(out_nc)
     print '(a,f10.5,a,f10.5,a,es12.4)', ' final lat/lon=', st%latitude, '/', &
@@ -281,15 +310,17 @@ program iceberg_run
 contains
 
 
-    subroutine nearest_wet_ocean(lat0, lon0, draft_in, t_in, prof, found)
+    subroutine nearest_wet_ocean(lat0, lon0, draft_in, t_in, prof, found, &
+                                  found_lat, found_lon, found_dist)
         real(8), intent(in) :: lat0, lon0, draft_in, t_in
         type(ocean_profile), intent(out) :: prof
         logical, intent(out) :: found
+        real(8), intent(out), optional :: found_lat, found_lon, found_dist
         integer :: ring, k
         real(8), parameter :: STEP = 1.0d0/12.0d0, PI = 3.141592653589793d0
-        real(8) :: ang, dlat, dlon, la, lo
+        real(8) :: ang, dlat, dlon, la, lo, dist
         logical :: okt
-        found = .false.
+        found = .false.; found_lat = lat0; found_lon = lon0; found_dist = 0.0d0
         do ring = 1, 6
             do k = 0, 7
                 ang = 2.0d0*PI*real(k, 8)/8.0d0
@@ -298,7 +329,11 @@ contains
                 la = lat0 + dlat; lo = lon0 + dlon
                 call get_ocean_profile(0.0d0, 0.0d0, la, lo, draft_in, 0.0d0, 0.0d0, prof, okt, t_in)
                 if (okt) then
-                    found = .true.; return
+                    found = .true.
+                    found_lat = la; found_lon = lo
+                    found_dist = sqrt((la - lat0)**2 + &
+                         ((lo - lon0)*cos(lat0*PI/180.0d0))**2)
+                    return
                 end if
             end do
         end do
@@ -373,16 +408,31 @@ contains
         a%tcc = 0.5; a%msl = 101325.0; a%snowfall = 0.0
     end subroutine constant_atmos
 
+    subroutine write_fallback_csv(path, n)
+        character(len=*), intent(in) :: path
+        integer, intent(in) :: n
+        integer :: u, i
+        open (newunit=u, file=trim(path), status="replace", action="write")
+        write (u, '(a)') 'time_s,iceberg_lat,iceberg_lon,selected_lat,selected_lon,distance_deg,draft_m,T_draft_C,S_draft,u_draft_m_s,v_draft_m_s,reason'
+        do i = 1, n
+            write (u, '(es20.12,",",es20.12,",",es20.12,",",es20.12,",",es20.12,",",es20.12,",",es20.12,",",es20.12,",",es20.12,",",es20.12,",",es20.12,",",a)') &
+                fbt(i), fblat(i), fblon(i), fsel_lat(i), fsel_lon(i), fbr(i), fbd(i), &
+                fbtm(i), fbs(i), fbu(i), fbv(i), 'primary profile unavailable; nearest wet cell used'
+        end do
+        close (u)
+    end subroutine write_fallback_csv
+
     subroutine write_nc(path, n, tt, la, lo, ma, dr, ti, mw, wml, vol, awet, sic, &
-                        bl, ll, sl, vl, wl, en, fl, fr, vb, vv, vs, vf, td, sd, uu, vv2, at, au, av)
+                        bl, ll, sl, vl, wl, en, fl, fr, vb, vv, vs, vf, td, sd, uu, vv2, at, au, av, pm, pv, pd, pf, cgv, resv)
         character(len=*), intent(in) :: path
         integer, intent(in) :: n
         real(8), intent(in) :: tt(:), la(:), lo(:), ma(:), dr(:), ti(:), mw(:), wml(:)
         real(8), intent(in) :: vol(:), awet(:), sic(:), bl(:), ll(:), sl(:), vl(:), wl(:)
         real(8), intent(in) :: en(:), fl(:), fr(:), vb(:), vv(:), vs(:), vf(:)
         real(8), intent(in) :: td(:), sd(:), uu(:), vv2(:), at(:), au(:), av(:)
+        real(8), intent(in) :: pm(:), pv(:), pd(:), pf(:), cgv(:), resv(:)
         integer :: ncid, dimid, st
-        integer :: v(30)
+        integer :: v(36)
         st = nf90_create(trim(path), nf90_clobber, ncid)
         if (st /= nf90_noerr) then
             print *, 'ERROR: cannot create ', trim(path), ': ', nf90_strerror(st)
@@ -419,6 +469,12 @@ contains
         st = nf90_def_var(ncid, 'air_T', nf90_double, (/dimid/), v(28))
         st = nf90_def_var(ncid, 'air_u10', nf90_double, (/dimid/), v(29))
         st = nf90_def_var(ncid, 'air_v10', nf90_double, (/dimid/), v(30))
+        st = nf90_def_var(ncid, 'prism_mass', nf90_double, (/dimid/), v(31))
+        st = nf90_def_var(ncid, 'prism_volume', nf90_double, (/dimid/), v(32))
+        st = nf90_def_var(ncid, 'prism_draft', nf90_double, (/dimid/), v(33))
+        st = nf90_def_var(ncid, 'prism_freeboard', nf90_double, (/dimid/), v(34))
+        st = nf90_def_var(ncid, 'cg_iters', nf90_double, (/dimid/), v(35))
+        st = nf90_def_var(ncid, 'cg_resid', nf90_double, (/dimid/), v(36))
         st = nf90_enddef(ncid)
         st = nf90_put_var(ncid, v(1), tt(1:n))
         st = nf90_put_var(ncid, v(2), la(1:n))
@@ -450,6 +506,12 @@ contains
         st = nf90_put_var(ncid, v(28), at(1:n))
         st = nf90_put_var(ncid, v(29), au(1:n))
         st = nf90_put_var(ncid, v(30), av(1:n))
+        st = nf90_put_var(ncid, v(31), pm(1:n))
+        st = nf90_put_var(ncid, v(32), pv(1:n))
+        st = nf90_put_var(ncid, v(33), pd(1:n))
+        st = nf90_put_var(ncid, v(34), pf(1:n))
+        st = nf90_put_var(ncid, v(35), cgv(1:n))
+        st = nf90_put_var(ncid, v(36), resv(1:n))
         st = nf90_close(ncid)
     end subroutine write_nc
 
@@ -511,6 +573,15 @@ contains
                           (/dimx, dimy, dimz, dimf, dimt/), vid(8))
         st = nf90_def_var(ncid, 'mass', nf90_double, (/dimt/), vid(9))
         st = nf90_def_var(ncid, 'draft', nf90_double, (/dimt/), vid(10))
+        st = nf90_put_att(ncid, nf90_global, 'voxel_nx', vnx)
+        st = nf90_put_att(ncid, nf90_global, 'voxel_ny', vny)
+        st = nf90_put_att(ncid, nf90_global, 'voxel_nz', vnz)
+        st = nf90_put_att(ncid, nf90_global, 'voxel_dx_m', vdx)
+        st = nf90_put_att(ncid, nf90_global, 'voxel_dy_m', vdy)
+        st = nf90_put_att(ncid, nf90_global, 'voxel_dz_m', vdz)
+        st = nf90_put_att(ncid, nf90_global, 'body_L_m', real(vnx, 8)*vdx)
+        st = nf90_put_att(ncid, nf90_global, 'body_W_m', real(vny, 8)*vdy)
+        st = nf90_put_att(ncid, nf90_global, 'body_H_m', real(vnz, 8)*vdz)
         st = nf90_enddef(ncid)
 
         xc = (real([(is, is=1, vnx)], 8) - 0.5_8)*vdx

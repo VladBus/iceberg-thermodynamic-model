@@ -41,7 +41,8 @@ module iceberg_thermodynamics
                              voxel_iceberg_get_areas, voxel_iceberg_get_frontal_area, &
                              voxel_iceberg_get_stability, voxel_iceberg_get_grid, &
                              voxel_iceberg_get_fields, voxel_iceberg_get_energy, &
-                             voxel_iceberg_get_freeboard, voxel_iceberg_get_cumulative_losses
+                             voxel_iceberg_get_freeboard, voxel_iceberg_get_cumulative_losses, &
+                             voxel_iceberg_get_solver
     use param, only: nat
     use wave_forcing, only: wave_erosion_enabled, get_wave_forcing, hs_to_sea_state, &
                             bigg_wave_melt, wave_forcing_epoch
@@ -60,6 +61,8 @@ module iceberg_thermodynamics
     type(voxel_iceberg_type), save :: vox_ice
     integer, save :: vox_nx = 10, vox_ny = 10, vox_nz = 10
     real(8), save :: vox_t_init = -10.0_8, vox_phi_init = 1.0_8, vox_phi_min = 0.01_8
+    real(8), save :: vox_dx = 10.0_8, vox_dy = 10.0_8, vox_dz = 10.0_8
+    logical, save :: vox_dx_explicit = .false., vox_dy_explicit = .false., vox_dz_explicit = .false.
     integer, save :: vox_scheme = 1, vox_cg_maxit = 1000
     real(8), save :: vox_theta = 0.5_8, vox_cg_tol = 1.0e-10_8, vox_melt_cap = 0.20_8
     logical, save :: vox_dbg = .false., vox_dbg_once = .false.
@@ -1408,6 +1411,9 @@ contains
         scheme = 1; theta = 0.5d0; cg_tol = 1.0d-10; melt_cap = 0.20d0
         call env_int('VOXEL_NX', nx); call env_int('VOXEL_NY', ny); call env_int('VOXEL_NZ', nz)
         call env_real('VOXEL_DX', dx); call env_real('VOXEL_DY', dy); call env_real('VOXEL_DZ', dz)
+        call get_environment_variable('VOXEL_DX', ev); vox_dx_explicit = len_trim(ev) > 0
+        call get_environment_variable('VOXEL_DY', ev); vox_dy_explicit = len_trim(ev) > 0
+        call get_environment_variable('VOXEL_DZ', ev); vox_dz_explicit = len_trim(ev) > 0
         call env_real('VOXEL_T_INIT', t_init); call env_real('VOXEL_PHI_INIT', phi_init)
         call env_real('VOXEL_PHI_MIN', phi_min)
         call get_environment_variable('VOXEL_THERMAL_SCHEME', sch)
@@ -1418,6 +1424,7 @@ contains
         call env_int('ICEBERG_CG_MAXIT', cg_maxit)
         call env_real('VOXEL_MELT_CAP', melt_cap)
         vox_nx = nx; vox_ny = ny; vox_nz = nz
+        vox_dx = dx; vox_dy = dy; vox_dz = dz
         vox_t_init = t_init; vox_phi_init = phi_init; vox_phi_min = phi_min
         vox_scheme = scheme; vox_theta = theta; vox_cg_tol = cg_tol
         vox_cg_maxit = cg_maxit; vox_melt_cap = melt_cap
@@ -1499,6 +1506,14 @@ contains
         if (.not. allocated(ocean_prof%temp)) return
         if (.not. vox_ready) then
             if (state%L <= 0.0_8 .or. state%W <= 0.0_8 .or. state%H <= 0.0_8) return
+            if ((vox_dx_explicit .and. abs(vox_dx*vox_nx - real(state%L, 8)) > 1.0e-6_8) .or. &
+                (vox_dy_explicit .and. abs(vox_dy*vox_ny - real(state%W, 8)) > 1.0e-6_8) .or. &
+                (vox_dz_explicit .and. abs(vox_dz*vox_nz - real(state%H, 8)) > 1.0e-6_8)) then
+                print '(a,6es14.6)', 'VOXEL_GRID_MISMATCH requested/actual=', &
+                    vox_dx, vox_dy, vox_dz, real(state%L, 8)/vox_nx, &
+                    real(state%W, 8)/vox_ny, real(state%H, 8)/vox_nz
+                error stop 2
+            end if
             call voxel_iceberg_init(vox_ice, vox_nx, vox_ny, vox_nz, &
                                     real(state%L, 8)/real(vox_nx, 8), &
                                     real(state%W, 8)/real(vox_ny, 8), &
@@ -1506,6 +1521,10 @@ contains
                                     vox_t_init, vox_phi_init, vox_phi_min, &
                                     vox_scheme, vox_theta, vox_cg_tol, vox_cg_maxit, vox_melt_cap)
             vox_ready = .true.
+            print '(a,3i4,a,3f8.3,a,3f8.3)', ' VOXEL grid actual:', vox_nx, vox_ny, vox_nz, &
+                ' dx=', vox_ice%dx, vox_ice%dy, vox_ice%dz, ' LWH=', &
+                real(vox_nx, 8)*vox_ice%dx, real(vox_ny, 8)*vox_ice%dy, &
+                real(vox_nz, 8)*vox_ice%dz
             if (vox_dbg .and. .not. vox_dbg_once) then
                 block
                     real(8) :: av_state, av_vox
@@ -1635,6 +1654,15 @@ contains
         if (.not. (vox_enabled .and. vox_ready)) return
         call voxel_iceberg_get_grid(vox_ice, nx, ny, nz, dx, dy, dz)
     end subroutine voxel_model_get_grid
+
+    subroutine voxel_model_get_solver(iters, resid, clips, rannacher)
+        integer, intent(out) :: iters, clips, rannacher
+        real(8), intent(out) :: resid
+        iters = 0; clips = 0; rannacher = 0; resid = 0.0_8
+        call voxel_model_configure()
+        if (.not. (vox_enabled .and. vox_ready)) return
+        call voxel_iceberg_get_solver(vox_ice, iters, resid, clips, rannacher)
+    end subroutine voxel_model_get_solver
 
     subroutine voxel_model_get_cumulative_losses(basal, lateral, surface, flush)
         real(8), intent(out) :: basal, lateral, surface, flush

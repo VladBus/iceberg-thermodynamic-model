@@ -171,8 +171,9 @@ contains
             do j = 1, vox%ny
                 do i = 1, vox%nx
                     if (vox%phi(i, j, k) <= EPS_PHI) cycle
-                    solid_top = max(solid_top, &
-                                    (real(k - 1, 8) + vox%phi(i, j, k))*vox%dz)
+                    ! phi is an ice volume fraction, not a vertical height;
+                    ! the cell top remains k*dz while any ice remains in it.
+                    solid_top = max(solid_top, real(k, 8)*vox%dz)
                     bottom_height = min(bottom_height, real(k - 1, 8)*vox%dz)
                 end do
             end do

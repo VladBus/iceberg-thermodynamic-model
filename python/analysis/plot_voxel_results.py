@@ -39,8 +39,36 @@ def _grid(ds: xr.Dataset):
     )
 
 
-def _voxel_axes(ax, mask, colors=None, title="", x=None, y=None, z=None):
-    ax.voxels(mask, facecolors=colors, edgecolor="k", linewidth=0.2)
+def _downsample(a, max_dim=32):
+    """Block-mean a 3D array for display; keeps partial phi fractions."""
+    a = np.asarray(a, dtype=float)
+    if max(a.shape) <= max_dim:
+        return a
+    factor = int(np.ceil(max(a.shape) / max_dim))
+    for axis in range(3):
+        n = a.shape[axis]
+        m = n // factor
+        if m == 0:
+            return a
+        cut = a.take(range(m * factor), axis=axis)
+        shape = list(cut.shape)
+        shape[axis:axis + 1] = [m, factor]
+        a = np.nanmean(cut.reshape(shape), axis=axis + 1)
+    return a
+
+
+def _downsample_coord(c, max_dim=32):
+    c = np.asarray(c, dtype=float)
+    if len(c) <= max_dim:
+        return c
+    factor = int(np.ceil(len(c) / max_dim))
+    m = len(c) // factor
+    return c[:m * factor].reshape(m, factor).mean(axis=1)
+
+
+def _voxel_axes(ax, mask, colors=None, title="", x=None, y=None, z=None, edges=True):
+    ax.voxels(mask, facecolors=colors, edgecolor=("k" if edges else None),
+              linewidth=(0.2 if edges else 0.0))
     ax.set_xlabel("x [m]")
     ax.set_ylabel("y [m]")
     ax.set_zlabel("z [m]")
@@ -68,10 +96,19 @@ def _voxel_axes(ax, mask, colors=None, title="", x=None, y=None, z=None):
 
 def plot_shape(ds, T, phi, outdir: Path):
     x, y, z = _grid(ds)
-    mask = np.asarray(phi.isel(snapshot=-1).values > 0.01)
+    raw_phi = np.asarray(phi.isel(snapshot=-1).values)
+    phi_ds = _downsample(raw_phi)
+    mask = phi_ds > 0.01
+    xd = _downsample_coord(x, phi_ds.shape[0])
+    yd = _downsample_coord(y, phi_ds.shape[1])
+    zd = _downsample_coord(z, phi_ds.shape[2])
     fig = plt.figure(figsize=(7, 6))
     ax = fig.add_subplot(111, projection="3d")
-    _voxel_axes(ax, mask, title="Final iceberg shape (phi > 0.01)", x=x, y=y, z=z)
+    _voxel_axes(ax, mask, title="Final iceberg shape (phi > 0.01)", x=xd, y=yd, z=zd,
+               edges=(raw_phi.shape[0] <= 32))
+    if not mask.any():
+        ax.set_title("MELT-OUT: zero active mass")
+        ax.text2D(0.5, 0.5, "MELT-OUT\nzero active mass", ha="center", va="center")
     fig.tight_layout()
     fig.savefig(outdir / "voxel_shape_final.png", dpi=180)
     plt.close(fig)
@@ -92,11 +129,18 @@ def _check_temperature_slices(T: xr.DataArray) -> None:
     ic, jc, kc = nx // 2, ny // 2, nz // 2
     for snap in range(T.sizes["snapshot"]):
         snapshot_T = T.isel(snapshot=snap)
-        horiz = float(snapshot_T.isel(nx=ic, ny=jc, nz=kc))
-        vert = float(snapshot_T.isel(nx=ic, ny=jc, nz=kc))
-        if not np.isclose(horiz, vert, atol=1e-6, rtol=0.0):
+        horiz = snapshot_T.isel(nz=kc)   # (nx, ny)
+        vert = snapshot_T.isel(ny=jc)    # (nx, nz)
+        if horiz.dims != ("nx", "ny") or vert.dims != ("nx", "nz"):
+            raise ValueError(f"unexpected slice dimensions: {horiz.dims}, {vert.dims}")
+        h_value = float(horiz.isel(nx=ic, ny=jc))
+        v_value = float(vert.isel(nx=ic, nz=kc))
+        original = float(snapshot_T.isel(nx=ic, ny=jc, nz=kc))
+        if not (np.isclose(h_value, v_value, atol=1e-6, rtol=0.0) and
+                np.isclose(h_value, original, atol=1e-6, rtol=0.0)):
             raise ValueError(
-                f"temperature slice mismatch at snapshot {snap}: {horiz} vs {vert}"
+                f"temperature slice mismatch at snapshot {snap}: "
+                f"horizontal={h_value}, vertical={v_value}, original={original}"
             )
     print("temperature slice consistency: PASS")
 
@@ -137,12 +181,20 @@ def plot_temperature(ds, T, phi, outdir: Path):
     fig.savefig(outdir / "temperature_vertical.png", dpi=180)
     plt.close(fig)
 
-    final_mask = (phi.isel(snapshot=-1) > 0.01).values
-    final_T = np.where(final_mask, T.isel(snapshot=-1).values, np.nan)
+    raw_T = np.asarray(T.isel(snapshot=-1).values)
+    raw_phi = np.asarray(phi.isel(snapshot=-1).values)
+    Tds = _downsample(raw_T); phids = _downsample(raw_phi)
+    final_mask = phids > 0.01
+    final_T = np.where(final_mask, Tds, np.nan)
     colors = plt.cm.viridis(norm(final_T))
+    xd = _downsample_coord(x, Tds.shape[0]); yd = _downsample_coord(y, Tds.shape[1]); zd = _downsample_coord(z, Tds.shape[2])
     fig = plt.figure(figsize=(7, 6))
     ax = fig.add_subplot(111, projection="3d")
-    _voxel_axes(ax, final_mask, colors=colors, title="Final T field", x=x, y=y, z=z)
+    _voxel_axes(ax, final_mask, colors=colors, title="Final T field", x=xd, y=yd, z=zd,
+               edges=(raw_T.shape[0] <= 32))
+    if not final_mask.any():
+        ax.set_title("MELT-OUT: no active voxels")
+        ax.text2D(0.5, 0.5, "MELT-OUT\nno active voxels", ha="center", va="center")
     sm = ScalarMappable(norm=norm, cmap="viridis")
     fig.colorbar(sm, ax=ax, shrink=0.7, label="T [°C]", format="%.2f")
     fig.tight_layout()
@@ -168,12 +220,18 @@ def plot_phi(ds, phi, outdir: Path):
     fig.savefig(outdir / "phi_horizontal.png", dpi=180)
     plt.close(fig)
 
-    final_phi = np.asarray(phi.isel(snapshot=-1).values, dtype=float)
+    raw_phi = np.asarray(phi.isel(snapshot=-1).values, dtype=float)
+    final_phi = _downsample(raw_phi)
     mask = final_phi > 0.01
     colors = plt.cm.magma(Normalize(0.0, 1.0)(final_phi))
+    xd = _downsample_coord(x, final_phi.shape[0]); yd = _downsample_coord(y, final_phi.shape[1]); zd = _downsample_coord(z, final_phi.shape[2])
     fig = plt.figure(figsize=(7, 6))
     ax = fig.add_subplot(111, projection="3d")
-    _voxel_axes(ax, mask, colors=colors, title="Final phi field (partial melt visible)", x=x, y=y, z=z)
+    _voxel_axes(ax, mask, colors=colors, title="Final phi field (partial melt visible)", x=xd, y=yd, z=zd,
+               edges=(raw_phi.shape[0] <= 32))
+    if not mask.any():
+        ax.set_title("MELT-OUT: zero active mass")
+        ax.text2D(0.5, 0.5, "MELT-OUT\nzero active mass", ha="center", va="center")
     sm = ScalarMappable(norm=Normalize(0.0, 1.0), cmap="magma")
     fig.colorbar(sm, ax=ax, shrink=0.7, label="phi", format="%.2f")
     fig.tight_layout()

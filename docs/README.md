@@ -23,7 +23,7 @@ README.md (project overview)
 
 | Need | Authoritative document |
 | --- | --- |
-| Current active work (12.9b thesis; 12.9a acquisition and 12.10–12.13 model work complete) | [`validation/INDEX.md`](validation/INDEX.md) |
+| Current active work (12.9b thesis; 12.9a acquisition and 12.10–12.14 model work complete) | [`validation/INDEX.md`](validation/INDEX.md) |
 | Current physics, switches, and limitations | [`model/model_physics_status.md`](model/model_physics_status.md) |
 | Equations, units, and sign conventions | [`model/model_equation_ledger.md`](model/model_equation_ledger.md) |
 | Model narrative | [`model/model_description.md`](model/model_description.md) |

@@ -18,8 +18,10 @@ in `KNOWN_ISSUES.md`; the documentation map is `docs/README.md`.
   reference grid and audited geometry/voxel-prism consistency, with annual-quality
   caveats. Stage 12.13 synchronized voxel/prism mass and draft/freeboard, added vertical
   layer compaction, tested 70^3 convergence, and confirmed that no lower
-  resolution meets <1%; annual 2020/2024 runs remain not promoted. Stage 12.9b
-  thesis writing is the active workstream. See `docs/validation/INDEX.md` and
+  resolution meets <1%. Stage 12.14 blocked the Enderlin rerun on missing
+  Antarctic site forcing, obtained p=0.711 (100^3 error 3.75%), and ran strict
+  100^3 2020/2024 experiments to 365.0 d of requested 366 d. Stage 12.9b thesis
+  writing is the active workstream. See `docs/validation/INDEX.md` and
   `docs/references/reanalysis_data_plan.md`.
 - Check `docs/model/model_physics_status.md`, `docs/DECISIONS.md`, and
   `KNOWN_ISSUES.md` before making claims about physics, switches, or open issues.

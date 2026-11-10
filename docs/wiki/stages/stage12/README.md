@@ -2,7 +2,7 @@
 
 Stage 12 is the current scientific stage. This directory stores completed
 stage reports and their evidence; it is not the working directory for unfinished
-tasks. Stage 12.9a acquisition, Stage 12.10 voxel thermodynamics, and the Stage 12.11/12.12/12.13 audits are complete;
+tasks. Stage 12.9a acquisition, Stage 12.10 voxel thermodynamics, the Stage 12.11/12.12/12.13 audits, and the Stage 12.14 100^3 audit are complete;
 the acquisition manifests remain in `docs/validation/` as canonical provenance.
 Stage 12.9b thesis writing is the active workstream.
 
@@ -31,6 +31,7 @@ Stage 12.9b thesis writing is the active workstream.
 | 12.11 | [`stage12.11_final_audit_2020_2024.md`](stage12.11_final_audit_2020_2024.md) | Final audit, visualization/freeboard corrections, data audit and 2020/2024 readiness |
 | 12.12 | [`stage12.12_resolution_geometry_audit.md`](stage12.12_resolution_geometry_audit.md) | Resolution recovery, geometry correction, voxel/prism audit and fallback transparency |
 | 12.13 | [`stage12.13_voxel_prism_convergence_annual_readiness.md`](stage12.13_voxel_prism_convergence_annual_readiness.md) | Voxel-authoritative prism sync, vertical compaction, convergence/sensitivity audit, palettes/S plots and no annual promotion |
+| 12.14 | [`stage12.14_hindcast_convergence_annual_100cube.md`](stage12.14_hindcast_convergence_annual_100cube.md) | Enderlin blocked by missing site data; Richardson p=0.711; 100^3 2020/2024 strict-ocean 365-day runs; footprint/energy diagnostics |
 
 The 12.8 drift and lifetime results are lower bounds from monthly GLORYS and
 constant-atmosphere fallbacks; they are not daily-forcing validation. No stage
@@ -45,6 +46,7 @@ report currently claims quantitative daily-forcing performance.
 - `figures/stage12.11/` — control and annual diagnostics for 2020/2024 (Stage 12.11).
 - `figures/stage12.12/` — resolution convergence, 100^3 fields and voxel/prism consistency (Stage 12.12).
 - `figures/stage12.13/` — updated palettes, salinity/cut-away, face profiles, convergence and prism-sync diagnostics (Stage 12.13).
+- `figures/stage12.14/` — 100^3 annual fields, convergence, face profiles and footprint diagnostics (Stage 12.14).
 - `STAGE12_PREPARATION.md` and `transition_analysis.md` — archived planning
   records, not active work plans.
 
@@ -73,6 +75,8 @@ differs from 100^3 by 1.04%, so no lower resolution meets <1%. The 2020/2024
 annual runs were **not** promoted; the 2020 fallback-free candidate is
 `78N, 30E` in short tests, but no annual run was made. See
 [`stage12.13_voxel_prism_convergence_annual_readiness.md`](stage12.13_voxel_prism_convergence_annual_readiness.md).
+
+**12.14 audit status:** Enderlin rerun is blocked by absent Antarctic site forcing; 30-day order is `p=0.711` with a `3.75%` 100^3 error; 100^3 2020/2024 strict-ocean runs reached 365.0 d of requested 366 d with no fallback. See [`stage12.14_hindcast_convergence_annual_100cube.md`](stage12.14_hindcast_convergence_annual_100cube.md).
 
 Check `docs/validation/INDEX.md` for active work and
 `docs/references/reanalysis_data_plan.md` for the data contract.

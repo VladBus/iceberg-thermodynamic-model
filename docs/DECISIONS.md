@@ -998,6 +998,38 @@ remains unchanged until the production-default decision in 11.7F.
 - **Docs:** `docs/wiki/stages/stage12/stage12.13_voxel_prism_convergence_annual_readiness.md`,
   `KNOWN_ISSUES.md` Q-19/Q-21/Q-23.
 
+## D-69. Strict-ocean and grounding stops for annual experiments (Stage 12.14, 2026-11-10)
+
+- **Status:** ACTIVE (operational/scientific gate).
+- **Decision:** annual experiments use `--strict-ocean`; if the primary GLORYS
+  ocean point is land/missing, the run stops and writes no fallback. For free
+  drift, `--stop-on-grounding` stops at the first grounded record with an
+  explicit reason. The old 8^3 tails that continued on a 7 m bank are marked
+  `DIAGNOSTIC 8^3 — NOT A RESULT` and are not free-drift results.
+- **Why:** the 2020 8^3 run grounded at `76.83685N, 16.86081E` (7 m
+  bathymetry, 43.7 m draft); speed became zero at day 301 while mass continued
+  to fall. Continuing an annual drift after grounding is not a free-drifting
+  trajectory. Nearest-cell substitution also changes forcing provenance.
+- **Evidence:** 2020 100^3 and 2024 100^3 strict runs stop at 365.0 d with no
+  fallback CSV; `--stop-on-grounding` stops the 8^3 run at day 300.25 with
+  `draft=43.68118 m`. See `docs/wiki/stages/stage12/stage12.14_hindcast_convergence_annual_100cube.md`.
+- **Limits:** the 100^3 runs are 365.0 d of requested 366 d; strict mode may
+  stop before a full calendar year. No extrapolation beyond the stop is made.
+
+## D-70. 100^3 annual results are strict 365-day diagnostics, not fully converged references (Stage 12.14, 2026-11-10)
+
+- **Status:** ACTIVE (validation gate).
+- **Decision:** retain the 100^3 2020/2024 runs as strict-ocean diagnostics.
+  Do not label them fully converged or complete 366-day references.
+- **Why:** both stop at 365.0 d because the final ocean point is unavailable;
+  30-day generalized Richardson gives `p=0.711` and a `3.75%` 100^3 error versus
+  the extrapolated mass-loss limit `0.0373275`. The prism/voxel footprint
+  difference reaches 37.8% in the 2020 annual endpoint.
+- **Evidence:** `data/validation/stage12.14/convergence/convergence.json`,
+  annual `run.nc` files and `footprint.csv`; see the Stage 12.14 report.
+- **Limits:** no 366-day result, no observational validation, and no calibrated
+  lifetime claim.
+
 ## How to add decisions
 
 A new decision is appended with an ID, stage, status, and links to reports.

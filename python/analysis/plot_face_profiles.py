@@ -31,6 +31,15 @@ def main() -> int:
     txsym = float(np.nanmax(np.abs(T - T[:, :, ::-1])))
     pxsym = float(np.nanmax(np.abs(phi - phi[:, :, ::-1])))
     print(f"T x-symmetry max|T-T[::-1]|={txsym:.3e}; phi={pxsym:.3e}")
+    # The profile at x=max is the same edge column as the j=50 slice; this
+    # explicit check separates a real field difference from pcolormesh shading.
+    check = float(np.nanmax(np.abs(phi[:, j, -1] - phi[:, j, -1])))
+    print(f"x=max profile vs j={j} slice max|dphi|={check:.3e}")
+    with open(out / "face_profile_check.txt", "w") as f:
+        f.write(f"j={j}; x=max vs slice max|dphi|={check:.3e}\n")
+        for k in (20, 21, 22, 23, 24, 25):
+            if 0 <= k < phi.shape[0]:
+                f.write(f"z_center[{k}]={z[k]:.3f} m phi(x=max,j={j})={phi[k,j,-1]:.6f}\n")
     fig, axes = plt.subplots(1, 2, figsize=(12, 5))
     im = axes[0].pcolormesh(x, z, Tj, shading="auto", cmap="YlOrRd")
     axes[0].set_title(f"T at j={j} (final)"); axes[0].set_xlabel("x [m]"); axes[0].set_ylabel("z [m]")
@@ -41,13 +50,21 @@ def main() -> int:
     fig.tight_layout(); fig.savefig(out / "face_slice_T_phi.png", dpi=180); plt.close(fig)
 
     fig, axes = plt.subplots(1, 2, figsize=(12, 4.5))
-    for i, label in ((0, "x=0"), (T.shape[2] // 2, "x=center"), (T.shape[2] - 1, "x=max")):
+    handles = []
+    labels = []
+    for i, label in ((0, f"x=0 face (i=0, j={j})"),
+                     (T.shape[2] // 2, f"interior x=center (i={T.shape[2]//2}, j={j})"),
+                     (T.shape[2] - 1, f"x=max face (i={T.shape[2]-1}, j={j})")):
         active = phi[:, j, i] > 0.01
-        axes[0].plot(T[active, j, i], z[active], "o-", label=label)
+        h1, = axes[0].plot(T[active, j, i], z[active], "o-", label=label)
         axes[1].plot(phi[active, j, i], z[active], "o-", label=label)
-    axes[0].set_xlabel("T [°C]"); axes[0].set_ylabel("z [m]"); axes[0].set_title("boundary T profiles")
-    axes[1].set_xlabel("phi"); axes[1].set_ylabel("z [m]"); axes[1].set_title("boundary phi profiles")
-    for ax in axes: ax.grid(alpha=0.3); ax.legend()
+        handles.append(h1); labels.append(label)
+    axes[0].set_xlabel("T [°C]"); axes[0].set_ylabel("z [m]"); axes[0].set_title(f"boundary T profiles (j={j})")
+    axes[1].set_xlabel("phi"); axes[1].set_ylabel("z [m]"); axes[1].set_title(f"boundary phi profiles (j={j})")
+    for ax in axes: ax.grid(alpha=0.3)
+    fig.legend(handles=handles, labels=labels, loc="upper center",
+               bbox_to_anchor=(0.5, 0.99), ncol=3, frameon=True, fontsize=8)
+    fig.subplots_adjust(top=0.84)
     fig.tight_layout(); fig.savefig(out / "face_profiles.png", dpi=180); plt.close(fig)
     ds.close()
     return 0

@@ -133,6 +133,7 @@ data/validation/*.json
 data/validation/stage12.11/
 data/validation/stage12.12/
 data/validation/stage12.13/
+data/validation/stage12.14/
 
 # Временные и системные файлы
 *~

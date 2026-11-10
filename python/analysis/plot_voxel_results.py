@@ -75,9 +75,9 @@ def _cutaway(mask):
     return m
 
 
-def _voxel_axes(ax, mask, colors=None, title="", x=None, y=None, z=None, edges=True):
+def _voxel_axes(ax, mask, colors=None, title="", x=None, y=None, z=None, edges=True, shade=True):
     ax.voxels(mask, facecolors=colors, edgecolor=("k" if edges else None),
-              linewidth=(0.2 if edges else 0.0))
+              linewidth=(0.2 if edges else 0.0), shade=shade)
     ax.set_xlabel("x [m]")
     ax.set_ylabel("y [m]")
     ax.set_zlabel("z [m]")
@@ -199,8 +199,8 @@ def plot_temperature(ds, T, phi, outdir: Path):
     xd = _downsample_coord(x, Tds.shape[0]); yd = _downsample_coord(y, Tds.shape[1]); zd = _downsample_coord(z, Tds.shape[2])
     fig = plt.figure(figsize=(7, 6))
     ax = fig.add_subplot(111, projection="3d")
-    _voxel_axes(ax, _cutaway(final_mask), colors=colors, title="Final T field (cut-away)", x=xd, y=yd, z=zd,
-               edges=(raw_T.shape[0] <= 32))
+    _voxel_axes(ax, _cutaway(final_mask), colors=colors, title="Final T field (cut-away; shade=False)", x=xd, y=yd, z=zd,
+               edges=(raw_T.shape[0] <= 32), shade=False)
     if not final_mask.any():
         ax.set_title("MELT-OUT: no active voxels")
         ax.text2D(0.5, 0.5, "MELT-OUT\nno active voxels", ha="center", va="center")
@@ -264,9 +264,9 @@ def plot_salinity(ds, S, phi, outdir: Path):
         mask = phi.isel(snapshot=snap, nz=S.sizes["nz"] // 2) > 0.01
         field = np.where(mask.values, S.isel(snapshot=snap, nz=S.sizes["nz"] // 2).values, np.nan)
         im = ax.pcolormesh(x, y, field, shading="auto", cmap="Greens", norm=norm)
-        ax.set_title(f"boundary S horizontal k={S.sizes['nz']//2} ({label})")
+        ax.set_title(f"interface S_B horizontal k={S.sizes['nz']//2} ({label})")
         ax.set_xlabel("x [m]"); ax.set_ylabel("y [m]"); ax.set_aspect("equal")
-        fig.colorbar(im, ax=ax, label="S (mass fraction)", format="%.4f")
+        fig.colorbar(im, ax=ax, label="interface salinity S_B (mass fraction)", format="%.4f")
     fig.tight_layout(); fig.savefig(outdir / "salinity_horizontal.png", dpi=180); plt.close(fig)
 
     fig, axes = plt.subplots(1, 3, figsize=(15, 4.5))
@@ -274,9 +274,9 @@ def plot_salinity(ds, S, phi, outdir: Path):
         mask = phi.isel(snapshot=snap, ny=S.sizes["ny"] // 2) > 0.01
         field = np.where(mask.values, S.isel(snapshot=snap, ny=S.sizes["ny"] // 2).values, np.nan)
         im = ax.pcolormesh(x, z, field, shading="auto", cmap="Greens", norm=norm)
-        ax.set_title(f"boundary S vertical j={S.sizes['ny']//2} ({label})")
+        ax.set_title(f"interface S_B vertical j={S.sizes['ny']//2} ({label})")
         ax.set_xlabel("x [m]"); ax.set_ylabel("z [m]"); ax.set_aspect("equal")
-        fig.colorbar(im, ax=ax, label="S (mass fraction)", format="%.4f")
+        fig.colorbar(im, ax=ax, label="interface salinity S_B (mass fraction)", format="%.4f")
     fig.tight_layout(); fig.savefig(outdir / "salinity_vertical.png", dpi=180); plt.close(fig)
 
     raw = np.asarray(S.isel(snapshot=-1).values, dtype=float)
@@ -286,10 +286,10 @@ def plot_salinity(ds, S, phi, outdir: Path):
     colors = plt.cm.Greens(norm(Sds))
     xd = _downsample_coord(x, Sds.shape[0]); yd = _downsample_coord(y, Sds.shape[1]); zd = _downsample_coord(z, Sds.shape[2])
     fig = plt.figure(figsize=(7, 6)); ax = fig.add_subplot(111, projection="3d")
-    _voxel_axes(ax, _cutaway(mask), colors=colors, title="Final boundary S (cut-away)", x=xd, y=yd, z=zd,
+    _voxel_axes(ax, _cutaway(mask), colors=colors, title="Final interface salinity S_B (cut-away; ice without salt)", x=xd, y=yd, z=zd,
                edges=(raw.shape[0] <= 32))
     sm = ScalarMappable(norm=norm, cmap="Greens")
-    fig.colorbar(sm, ax=ax, shrink=0.7, label="S (mass fraction)", format="%.4f")
+    fig.colorbar(sm, ax=ax, shrink=0.7, label="interface salinity S_B (mass fraction)", format="%.4f")
     fig.tight_layout(); fig.savefig(outdir / "salinity_3d_final.png", dpi=180); plt.close(fig)
 
 

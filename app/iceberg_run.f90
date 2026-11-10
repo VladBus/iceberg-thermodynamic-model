@@ -63,6 +63,7 @@ program iceberg_run
     integer :: nrec, irec, ncid, dimt, vt, vla, vlo, vma, vdr, vti, stt, nfb
     integer :: nargs, istat, ii, jj, iarg, pos_arg, ntraj, start_date, nsum, cg, clips, rl
     logical :: ok, gok, have_era5, prescribed, warned_nearest, strict_ocean
+    logical :: stop_on_grounding
     real(8) :: epoch, lat_use, lon_use, sum_b, sum_l, sum_s, sum_v, sum_w, sum_a, sum_tf, vol0
     real(8) :: e8, f8, f_lat, f_lon, f_dist
 
@@ -81,13 +82,15 @@ program iceberg_run
     call get_arg(8, arg); out_nc = trim(arg)
     daily = DEF_DAILY; static = DEF_STATIC; era5f = ''; wavef = ''; trajf = ''
     epoch = EPOCH_2020; start_date = 20200101; pos_arg = 0
-    strict_ocean = .false.
+    strict_ocean = .false.; stop_on_grounding = .false.
     iarg = 9
     do while (iarg <= nargs)
         call get_arg(iarg, arg)
         select case (trim(arg))
         case ('--strict-ocean')
             strict_ocean = .true.
+        case ('--stop-on-grounding')
+            stop_on_grounding = .true.
         case ('--prescribed_trajectory')
             iarg = iarg + 1
             if (iarg <= nargs) call get_arg(iarg, trajf)
@@ -286,6 +289,12 @@ program iceberg_run
             (irec == 1 .or. irec == max(nrec/2, 1))) call save_snapshot(rt(irec), irec)
         if (.not. st%active) then
             nrec = irec
+            exit
+        end if
+        if (diag%grounded .and. stop_on_grounding .and. .not. prescribed) then
+            nrec = irec
+            print '(a,f10.5,a,f10.5,a,f10.5,a)', 'STOP: iceberg grounded at lat/lon ', &
+                st%latitude, '/', st%longitude, '; draft=', diag%draft, ' m'
             exit
         end if
     end do

@@ -1,0 +1,7 @@
+j=50; x=max vs slice max|dphi|=0.000e+00
+z_center[20]=20.500 m phi(x=max,j=50)=0.000000
+z_center[21]=21.500 m phi(x=max,j=50)=0.000000
+z_center[22]=22.500 m phi(x=max,j=50)=0.000000
+z_center[23]=23.500 m phi(x=max,j=50)=0.031554
+z_center[24]=24.500 m phi(x=max,j=50)=0.095291
+z_center[25]=25.500 m phi(x=max,j=50)=0.131914

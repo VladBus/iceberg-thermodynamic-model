@@ -2,7 +2,7 @@
 
 Stage 12 is the current scientific stage. This directory stores completed
 stage reports and their evidence; it is not the working directory for unfinished
-tasks. Stage 12.9a acquisition, Stage 12.10 voxel thermodynamics, the Stage 12.11/12.12/12.13 audits, and the Stage 12.14 100^3 audit are complete;
+tasks. Stage 12.9a acquisition, Stage 12.10 voxel thermodynamics, the Stage 12.11/12.12/12.13 audits, the Stage 12.14 100^3 audit, and the Stage 12.15 current-code Enderlin/drift-map rerun are complete;
 the acquisition manifests remain in `docs/validation/` as canonical provenance.
 Stage 12.9b thesis writing is the active workstream.
 
@@ -32,6 +32,7 @@ Stage 12.9b thesis writing is the active workstream.
 | 12.12 | [`stage12.12_resolution_geometry_audit.md`](stage12.12_resolution_geometry_audit.md) | Resolution recovery, geometry correction, voxel/prism audit and fallback transparency |
 | 12.13 | [`stage12.13_voxel_prism_convergence_annual_readiness.md`](stage12.13_voxel_prism_convergence_annual_readiness.md) | Voxel-authoritative prism sync, vertical compaction, convergence/sensitivity audit, palettes/S plots and no annual promotion |
 | 12.14 | [`stage12.14_hindcast_convergence_annual_100cube.md`](stage12.14_hindcast_convergence_annual_100cube.md) | Enderlin blocked by missing site data; Richardson p=0.711; 100^3 2020/2024 strict-ocean 365-day runs; footprint/energy diagnostics |
+| 12.15 | [`stage12.15_enderlin_current_and_drift_maps.md`](stage12.15_enderlin_current_and_drift_maps.md) | Current-code Enderlin 190/190 (median ratio 0.540, Spearman 0.156); 2020/2024 drift maps; force-diagnostic CSV |
 
 The 12.8 drift and lifetime results are lower bounds from monthly GLORYS and
 constant-atmosphere fallbacks; they are not daily-forcing validation. No stage
@@ -47,6 +48,7 @@ report currently claims quantitative daily-forcing performance.
 - `figures/stage12.12/` — resolution convergence, 100^3 fields and voxel/prism consistency (Stage 12.12).
 - `figures/stage12.13/` — updated palettes, salinity/cut-away, face profiles, convergence and prism-sync diagnostics (Stage 12.13).
 - `figures/stage12.14/` — 100^3 annual fields, convergence, face profiles and footprint diagnostics (Stage 12.14).
+- `figures/stage12.15/` — current-code Enderlin scatter/metrics and 2020/2024 drift/melt maps (Stage 12.15).
 - `STAGE12_PREPARATION.md` and `transition_analysis.md` — archived planning
   records, not active work plans.
 
@@ -77,6 +79,15 @@ annual runs were **not** promoted; the 2020 fallback-free candidate is
 [`stage12.13_voxel_prism_convergence_annual_readiness.md`](stage12.13_voxel_prism_convergence_annual_readiness.md).
 
 **12.14 audit status:** Enderlin rerun is blocked by absent Antarctic site forcing; 30-day order is `p=0.711` with a `3.75%` 100^3 error; 100^3 2020/2024 strict-ocean runs reached 365.0 d of requested 366 d with no fallback. See [`stage12.14_hindcast_convergence_annual_100cube.md`](stage12.14_hindcast_convergence_annual_100cube.md).
+
+**12.15 status:** with the site forcing present, the Enderlin23 hindcast
+completed 190/190 on the current code: median ratio 0.540, mean 1.081,
+Spearman 0.156, MAE 0.0287 m/day, bias −0.0219 m/day; median ratios by size
+are 1.248 (≤100 m), 0.832 (100–300 m), 0.407 (>300 m). The 8^3 test grid was
+used, so this is not a resolution-converged result. The 2020/2024 100^3
+trajectories are 192.0/168.2 km with mean speeds 0.00607/0.00532 m/s, the
+documented Coriolis-limited drift regime. See
+[`stage12.15_enderlin_current_and_drift_maps.md`](stage12.15_enderlin_current_and_drift_maps.md).
 
 Check `docs/validation/INDEX.md` for active work and
 `docs/references/reanalysis_data_plan.md` for the data contract.

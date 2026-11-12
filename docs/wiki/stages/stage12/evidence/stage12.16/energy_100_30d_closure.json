@@ -1,0 +1,19 @@
+{
+  "records": 721,
+  "days": 30.0,
+  "sensible_initial_J": -19113579900000.0,
+  "sensible_final_J": -17872431682000.0,
+  "latent_total_J": 6309359527245.0,
+  "boundary_submerged_J": 1279980208500.0,
+  "boundary_air_J": -193573798640.0,
+  "boundary_test_J": 0.0,
+  "flushed_energy_J": 37470714361.0,
+  "residual_final_J": 41873822530.0,
+  "residual_final_pct_latent": 0.66367786379,
+  "residual_max_abs_pct_latent": 1.6933205007,
+  "residual_median_abs_pct_latent": 0.22673929277,
+  "q_sub_minus_latent_total_J": -5029379318781.247,
+  "q_air_total_J": -193573798640.0,
+  "flushed_energy_minus_L_flush_J": 332698745.3199997,
+  "sensible_change_J": 1241148218000.0
+}

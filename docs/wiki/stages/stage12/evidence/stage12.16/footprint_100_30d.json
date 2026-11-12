@@ -1,0 +1,16 @@
+{
+  "mass_kg": 890954944.0,
+  "prism_draft_m": 87.76119232177734,
+  "voxel_draft_m": 87.76119232177734,
+  "prism_side_x_m2": 8727.544957049653,
+  "prism_side_y_m2": 8727.544957049653,
+  "voxel_layer_x_pos_m2": 7128.418997066048,
+  "voxel_layer_x_neg_m2": 7128.418997066048,
+  "voxel_layer_y_pos_m2": 7128.418997066048,
+  "voxel_layer_y_neg_m2": 7128.418997066048,
+  "drag_side_x_diff_pct": -18.322746750126043,
+  "drag_side_y_diff_pct": -18.322746750126043,
+  "prism_waterline_m2": 9889.60986327711,
+  "voxel_waterline_m2": 10000.0,
+  "waterline_diff_pct": 1.1162233722970154
+}

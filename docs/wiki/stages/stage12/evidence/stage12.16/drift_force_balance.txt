@@ -1,0 +1,390 @@
+[  0%]  test_voxel_thermal_solver.f90
+[  0%]  test_voxel_thermal_solver.f90  done.
+[  0%] iceberg_test_moving_trajectory
+[  1%] iceberg_test_moving_trajectory  done.
+[  1%]      test_tide_propagation.f90
+[  1%]      test_tide_propagation.f90  done.
+[  1%] iceberg_test_10p12_thermal_evo
+[  2%] iceberg_test_10p12_thermal_evo  done.
+[  2%] iceberg_test_bilinear_axis_reg
+[  2%] iceberg_test_bilinear_axis_reg  done.
+[  2%] iceberg_test_water_drag_contro
+[  3%] iceberg_test_water_drag_contro  done.
+[  3%]          test_voxel_stefan.f90
+[  3%]          test_voxel_stefan.f90  done.
+[  3%] iceberg_test_water_drag_method
+[  4%] iceberg_test_water_drag_method  done.
+[  4%]        test_density_repair.f90
+[  4%]        test_density_repair.f90  done.
+[  4%]   iceberg_test_10p17_90day.f90
+[  5%]   iceberg_test_10p17_90day.f90  done.
+[  5%]        test_ocean_provider.f90
+[  6%]        test_ocean_provider.f90  done.
+[  6%]          test_wave_erosion.f90
+[  6%]          test_wave_erosion.f90  done.
+[  6%] iceberg_test_moving_forcing.f9
+[  7%] iceberg_test_moving_forcing.f9  done.
+[  7%]    test_monotone_advection.f90
+[  7%]    test_monotone_advection.f90  done.
+[  7%]                  conv_test.f90
+[  8%]                  conv_test.f90  done.
+[  8%] iceberg_test_10_mass_conservat
+[  8%] iceberg_test_10_mass_conservat  done.
+[  8%]              snowfall_test.f90
+[  9%]              snowfall_test.f90  done.
+[  9%] iceberg_test_moving_coriolis.f
+[  9%] iceberg_test_moving_coriolis.f  done.
+[  9%]       test_sponge_boundary.f90
+[ 10%]       test_sponge_boundary.f90  done.
+[ 10%] iceberg_test_10p10_three_equat
+[ 10%] iceberg_test_10p10_three_equat  done.
+[ 10%]      drift_scaling_current.f90
+[ 11%]      drift_scaling_current.f90  done.
+[ 11%]         cold_ice_snow_test.f90
+[ 12%]         cold_ice_snow_test.f90  done.
+[ 12%] iceberg_test_artificial_forcin
+[ 12%] iceberg_test_artificial_forcin  done.
+[ 12%]         drift_scaling_wind.f90
+[ 13%]         drift_scaling_wind.f90  done.
+[ 13%]    test_homogeneous_column.f90
+[ 13%]    test_homogeneous_column.f90  done.
+[ 13%] iceberg_test_coriolis_converge
+[ 14%] iceberg_test_coriolis_converge  done.
+[ 14%] iceberg_test_coriolis_sign.f90
+[ 14%] iceberg_test_coriolis_sign.f90  done.
+[ 14%]     test_voxel_integration.f90
+[ 15%]     test_voxel_integration.f90  done.
+[ 15%]                  grid_dump.f90
+[ 15%]                  grid_dump.f90  done.
+[ 15%]     stage115c4_freeze_test.f90
+[ 16%]     stage115c4_freeze_test.f90  done.
+[ 16%] iceberg_test_9_coriolis_only.f
+[ 17%] iceberg_test_9_coriolis_only.f  done.
+[ 17%]               eos_dispatch.f90
+[ 17%]               eos_dispatch.f90  done.
+[ 17%]    test_iceberg_prescribed.f90
+[ 18%]    test_iceberg_prescribed.f90  done.
+[ 18%] iceberg_test_surface_energy_ba
+[ 18%] iceberg_test_surface_energy_ba  done.
+[ 18%] iceberg_test_coord_mapping.f90
+[ 19%] iceberg_test_coord_mapping.f90  done.
+[ 19%] iceberg_test_drift_force_balan
+[ 19%] iceberg_test_drift_force_balan  done.
+[ 19%]         test_obc_radiation.f90
+[ 20%]         test_obc_radiation.f90  done.
+[ 20%]    test_ca_compressibility.f90
+[ 20%]    test_ca_compressibility.f90  done.
+[ 20%] iceberg_test_forcing_interp_se
+[ 21%] iceberg_test_forcing_interp_se  done.
+[ 21%]   test_era5_interp_harness.f90
+[ 21%]   test_era5_interp_harness.f90  done.
+[ 21%] test_weak_inversion_conservati
+[ 22%] test_weak_inversion_conservati  done.
+[ 22%] test_iceberg_forcing_reanalysi
+[ 23%] test_iceberg_forcing_reanalysi  done.
+[ 23%]            test_obc_sponge.f90
+[ 23%]            test_obc_sponge.f90  done.
+[ 23%] iceberg_test_7_vertical_temp_g
+[ 24%] iceberg_test_7_vertical_temp_g  done.
+[ 24%]           test_obc_flather.f90
+[ 24%]           test_obc_flather.f90  done.
+[ 24%]              test_voxel_cn.f90
+[ 25%]              test_voxel_cn.f90  done.
+[ 25%] iceberg_test_coord_roundtrip.f
+[ 25%] iceberg_test_coord_roundtrip.f  done.
+[ 25%]    iceberg_test_en4_interp.f90
+[ 26%]    iceberg_test_en4_interp.f90  done.
+[ 26%] iceberg_test_10p13_low_flow.f9
+[ 26%] iceberg_test_10p13_low_flow.f9  done.
+[ 26%]   iceberg_test_era5_interp.f90
+[ 27%]   iceberg_test_era5_interp.f90  done.
+[ 27%]                   eos_test.f90
+[ 28%]                   eos_test.f90  done.
+[ 28%]         test_voxel_iceberg.f90
+[ 28%]         test_voxel_iceberg.f90  done.
+[ 28%] iceberg_test_11_30day_offline.
+[ 29%] iceberg_test_11_30day_offline.  done.
+[ 29%]     test_reanalysis_reader.f90
+[ 29%]     test_reanalysis_reader.f90  done.
+[ 29%]               eos80_verify.f90
+[ 30%]               eos80_verify.f90  done.
+[ 30%]  iceberg_test_ibcao_interp.f90
+[ 30%]  iceberg_test_ibcao_interp.f90  done.
+[ 30%] iceberg_test_solar_radiation_g
+[ 31%] iceberg_test_solar_radiation_g  done.
+[ 31%]    test_advection_boundary.f90
+[ 31%]    test_advection_boundary.f90  done.
+[ 31%]           test_iceberg_run.f90
+[ 32%]           test_iceberg_run.f90  done.
+[ 32%] iceberg_test_surface_latent_re
+[ 32%] iceberg_test_surface_latent_re  done.
+[ 32%] iceberg_test_10p7_basal_melt_v
+[ 33%] iceberg_test_10p7_basal_melt_v  done.
+[ 33%]  iceberg_test_force_budget.f90
+[ 34%]  iceberg_test_force_budget.f90  done.
+[ 34%] iceberg_test_discrete_momentum
+[ 34%] iceberg_test_discrete_momentum  done.
+[ 34%]            ocean_init_test.f90
+[ 35%]            ocean_init_test.f90  done.
+[ 35%]        test_weak_inversion.f90
+[ 35%]        test_weak_inversion.f90  done.
+[ 35%] iceberg_test_2_zero_gradient.f
+[ 36%] iceberg_test_2_zero_gradient.f  done.
+[ 36%]  iceberg_test_5_warm_ocean.f90
+[ 36%]  iceberg_test_5_warm_ocean.f90  done.
+[ 36%] iceberg_test_wind_drift_sensit
+[ 37%] iceberg_test_wind_drift_sensit  done.
+[ 37%]  iceberg_test_6_cold_ocean.f90
+[ 37%]  iceberg_test_6_cold_ocean.f90  done.
+[ 37%] iceberg_test_position_forcing.
+[ 38%] iceberg_test_position_forcing.  done.
+[ 38%]            eos80_reference.f90
+[ 39%]            eos80_reference.f90  done.
+[ 39%]      iceberg_test_boundary.f90
+[ 39%]      iceberg_test_boundary.f90  done.
+[ 39%] iceberg_test_10p11_natural_con
+[ 40%] iceberg_test_10p11_natural_con  done.
+[ 40%] iceberg_test_surface_melt_audi
+[ 40%] iceberg_test_surface_melt_audi  done.
+[ 40%]          thermo_input_test.f90
+[ 41%]          thermo_input_test.f90  done.
+[ 41%] iceberg_test_1_hydrostatic.f90
+[ 41%] iceberg_test_1_hydrostatic.f90  done.
+[ 41%] iceberg_test_3_uniform_current
+[ 42%] iceberg_test_3_uniform_current  done.
+[ 42%]         eos_precision_test.f90
+[ 42%]         eos_precision_test.f90  done.
+[ 42%]                      check.f90
+[ 43%]                      check.f90  done.
+[ 43%] iceberg_test_drift_dynamics.f9
+[ 43%] iceberg_test_drift_dynamics.f9  done.
+[ 43%]           test_voxel_drift.f90
+[ 44%]           test_voxel_drift.f90  done.
+[ 44%]  drift_scaling_wind_no_cor.f90
+[ 45%]  drift_scaling_wind_no_cor.f90  done.
+[ 45%] iceberg_test_surface_energy_al
+[ 45%] iceberg_test_surface_energy_al  done.
+[ 45%] iceberg_test_10p6_ocean_heat_t
+[ 46%] iceberg_test_10p6_ocean_heat_t  done.
+[ 46%]    param_sensitivity_30day.f90
+[ 46%]    param_sensitivity_30day.f90  done.
+[ 46%] iceberg_test_8_wind_forcing.f9
+[ 47%] iceberg_test_8_wind_forcing.f9  done.
+[ 47%]         era5_coverage_test.f90
+[ 47%]         era5_coverage_test.f90  done.
+[ 47%] iceberg_test_4_vertical_shear.
+[ 48%] iceberg_test_4_vertical_shear.  done.
+[ 48%]     test_voxel_air_balance.f90
+[ 48%]     test_voxel_air_balance.f90  done.
+[ 48%] iceberg_test_10p17_melt_budget
+[ 49%] iceberg_test_10p17_melt_budget  done.
+[ 49%]              ice_init_test.f90
+[ 50%]              ice_init_test.f90  done.
+[ 50%]      test_voxel_thermal_solver
+[ 50%]      test_voxel_thermal_solver  done.
+[ 50%] iceberg_test_moving_trajectory
+[ 51%] iceberg_test_moving_trajectory  done.
+[ 51%]          test_tide_propagation
+[ 51%]          test_tide_propagation  done.
+[ 51%] iceberg_test_10p12_thermal_evo
+[ 52%] iceberg_test_10p12_thermal_evo  done.
+[ 52%] iceberg_test_bilinear_axis_reg
+[ 52%] iceberg_test_bilinear_axis_reg  done.
+[ 52%] iceberg_test_water_drag_contro
+[ 53%] iceberg_test_water_drag_contro  done.
+[ 53%]              test_voxel_stefan
+[ 53%]              test_voxel_stefan  done.
+[ 53%] iceberg_test_water_drag_method
+[ 54%] iceberg_test_water_drag_method  done.
+[ 54%]            test_density_repair
+[ 54%]            test_density_repair  done.
+[ 54%]       iceberg_test_10p17_90day
+[ 55%]       iceberg_test_10p17_90day  done.
+[ 55%]            test_ocean_provider
+[ 56%]            test_ocean_provider  done.
+[ 56%]              test_wave_erosion
+[ 56%]              test_wave_erosion  done.
+[ 56%]    iceberg_test_moving_forcing
+[ 57%]    iceberg_test_moving_forcing  done.
+[ 57%]        test_monotone_advection
+[ 57%]        test_monotone_advection  done.
+[ 57%]                      conv_test
+[ 58%]                      conv_test  done.
+[ 58%] iceberg_test_10_mass_conservat
+[ 58%] iceberg_test_10_mass_conservat  done.
+[ 58%]                  snowfall_test
+[ 59%]                  snowfall_test  done.
+[ 59%]   iceberg_test_moving_coriolis
+[ 59%]   iceberg_test_moving_coriolis  done.
+[ 59%]           test_sponge_boundary
+[ 60%]           test_sponge_boundary  done.
+[ 60%] iceberg_test_10p10_three_equat
+[ 60%] iceberg_test_10p10_three_equat  done.
+[ 60%]          drift_scaling_current
+[ 61%]          drift_scaling_current  done.
+[ 61%]             cold_ice_snow_test
+[ 62%]             cold_ice_snow_test  done.
+[ 62%] iceberg_test_artificial_forcin
+[ 62%] iceberg_test_artificial_forcin  done.
+[ 62%]             drift_scaling_wind
+[ 63%]             drift_scaling_wind  done.
+[ 63%]        test_homogeneous_column
+[ 63%]        test_homogeneous_column  done.
+[ 63%] iceberg_test_coriolis_converge
+[ 64%] iceberg_test_coriolis_converge  done.
+[ 64%]     iceberg_test_coriolis_sign
+[ 64%]     iceberg_test_coriolis_sign  done.
+[ 64%]         test_voxel_integration
+[ 65%]         test_voxel_integration  done.
+[ 65%]                      grid_dump
+[ 65%]                      grid_dump  done.
+[ 65%]         stage115c4_freeze_test
+[ 66%]         stage115c4_freeze_test  done.
+[ 66%]   iceberg_test_9_coriolis_only
+[ 67%]   iceberg_test_9_coriolis_only  done.
+[ 67%]                   eos_dispatch
+[ 67%]                   eos_dispatch  done.
+[ 67%]        test_iceberg_prescribed
+[ 68%]        test_iceberg_prescribed  done.
+[ 68%] iceberg_test_surface_energy_ba
+[ 68%] iceberg_test_surface_energy_ba  done.
+[ 68%]     iceberg_test_coord_mapping
+[ 69%]     iceberg_test_coord_mapping  done.
+[ 69%] iceberg_test_drift_force_balan
+[ 69%] iceberg_test_drift_force_balan  done.
+[ 69%]             test_obc_radiation
+[ 70%]             test_obc_radiation  done.
+[ 70%]        test_ca_compressibility
+[ 70%]        test_ca_compressibility  done.
+[ 70%] iceberg_test_forcing_interp_se
+[ 71%] iceberg_test_forcing_interp_se  done.
+[ 71%]       test_era5_interp_harness
+[ 71%]       test_era5_interp_harness  done.
+[ 71%] test_weak_inversion_conservati
+[ 72%] test_weak_inversion_conservati  done.
+[ 72%] test_iceberg_forcing_reanalysi
+[ 73%] test_iceberg_forcing_reanalysi  done.
+[ 73%]                test_obc_sponge
+[ 73%]                test_obc_sponge  done.
+[ 73%] iceberg_test_7_vertical_temp_g
+[ 74%] iceberg_test_7_vertical_temp_g  done.
+[ 74%]               test_obc_flather
+[ 74%]               test_obc_flather  done.
+[ 74%]                  test_voxel_cn
+[ 75%]                  test_voxel_cn  done.
+[ 75%]   iceberg_test_coord_roundtrip
+[ 75%]   iceberg_test_coord_roundtrip  done.
+[ 75%]        iceberg_test_en4_interp
+[ 76%]        iceberg_test_en4_interp  done.
+[ 76%]    iceberg_test_10p13_low_flow
+[ 76%]    iceberg_test_10p13_low_flow  done.
+[ 76%]       iceberg_test_era5_interp
+[ 77%]       iceberg_test_era5_interp  done.
+[ 77%]                       eos_test
+[ 78%]                       eos_test  done.
+[ 78%]             test_voxel_iceberg
+[ 78%]             test_voxel_iceberg  done.
+[ 78%]  iceberg_test_11_30day_offline
+[ 79%]  iceberg_test_11_30day_offline  done.
+[ 79%]         test_reanalysis_reader
+[ 79%]         test_reanalysis_reader  done.
+[ 79%]                   eos80_verify
+[ 80%]                   eos80_verify  done.
+[ 80%]      iceberg_test_ibcao_interp
+[ 80%]      iceberg_test_ibcao_interp  done.
+[ 80%] iceberg_test_solar_radiation_g
+[ 81%] iceberg_test_solar_radiation_g  done.
+[ 81%]        test_advection_boundary
+[ 81%]        test_advection_boundary  done.
+[ 81%]               test_iceberg_run
+[ 82%]               test_iceberg_run  done.
+[ 82%] iceberg_test_surface_latent_re
+[ 82%] iceberg_test_surface_latent_re  done.
+[ 82%] iceberg_test_10p7_basal_melt_v
+[ 83%] iceberg_test_10p7_basal_melt_v  done.
+[ 83%]      iceberg_test_force_budget
+[ 84%]      iceberg_test_force_budget  done.
+[ 84%] iceberg_test_discrete_momentum
+[ 84%] iceberg_test_discrete_momentum  done.
+[ 84%]                ocean_init_test
+[ 85%]                ocean_init_test  done.
+[ 85%]            test_weak_inversion
+[ 85%]            test_weak_inversion  done.
+[ 85%]   iceberg_test_2_zero_gradient
+[ 86%]   iceberg_test_2_zero_gradient  done.
+[ 86%]      iceberg_test_5_warm_ocean
+[ 86%]      iceberg_test_5_warm_ocean  done.
+[ 86%] iceberg_test_wind_drift_sensit
+[ 87%] iceberg_test_wind_drift_sensit  done.
+[ 87%]      iceberg_test_6_cold_ocean
+[ 87%]      iceberg_test_6_cold_ocean  done.
+[ 87%]  iceberg_test_position_forcing
+[ 88%]  iceberg_test_position_forcing  done.
+[ 88%]                eos80_reference
+[ 89%]                eos80_reference  done.
+[ 89%]          iceberg_test_boundary
+[ 89%]          iceberg_test_boundary  done.
+[ 89%] iceberg_test_10p11_natural_con
+[ 90%] iceberg_test_10p11_natural_con  done.
+[ 90%] iceberg_test_surface_melt_audi
+[ 90%] iceberg_test_surface_melt_audi  done.
+[ 90%]              thermo_input_test
+[ 91%]              thermo_input_test  done.
+[ 91%]     iceberg_test_1_hydrostatic
+[ 91%]     iceberg_test_1_hydrostatic  done.
+[ 91%] iceberg_test_3_uniform_current
+[ 92%] iceberg_test_3_uniform_current  done.
+[ 92%]             eos_precision_test
+[ 92%]             eos_precision_test  done.
+[ 92%]                          check
+[ 93%]                          check  done.
+[ 93%]    iceberg_test_drift_dynamics
+[ 93%]    iceberg_test_drift_dynamics  done.
+[ 93%]               test_voxel_drift
+[ 94%]               test_voxel_drift  done.
+[ 94%]      drift_scaling_wind_no_cor
+[ 95%]      drift_scaling_wind_no_cor  done.
+[ 95%] iceberg_test_surface_energy_al
+[ 95%] iceberg_test_surface_energy_al  done.
+[ 95%] iceberg_test_10p6_ocean_heat_t
+[ 96%] iceberg_test_10p6_ocean_heat_t  done.
+[ 96%]        param_sensitivity_30day
+[ 96%]        param_sensitivity_30day  done.
+[ 96%]    iceberg_test_8_wind_forcing
+[ 97%]    iceberg_test_8_wind_forcing  done.
+[ 97%]             era5_coverage_test
+[ 97%]             era5_coverage_test  done.
+[ 97%]  iceberg_test_4_vertical_shear
+[ 98%]  iceberg_test_4_vertical_shear  done.
+[ 98%]         test_voxel_air_balance
+[ 98%]         test_voxel_air_balance  done.
+[ 98%] iceberg_test_10p17_melt_budget
+[ 99%] iceberg_test_10p17_melt_budget  done.
+[ 99%]                  ice_init_test
+[100%]                  ice_init_test  done.
+[100%] Project compiled successfully.
+ ==================================================
+   ANALYTIC DRIFT FORCE BALANCE (12.16 item 1a)
+ ==================================================
+ mass [kg] = 910000000.00   f [1/s] =   1.4181E-04
+ draft [m] =     88.521   freeboard [m] =     11.479   A_sail [m2] =     14591.44
+ A_side (Method A, per direction) [m2] =      8852.14
+ 
+ ICEBERG INIT: pos=(   0.00000000     ,   0.00000000     ) LWH=(   100.000000     ,   100.000000     ,   100.000000     ) lat/lon=(   76.5000000     ,   30.0000000     ) vel=(   0.0000000000000000      ,   0.0000000000000000      )
+ wind    7.0 m/s: model   0.003927  continuous   0.004412  discrete   0.003929  u/wind  0.000561
+  OK: model matches discrete Coriolis-limited equilibrium
+  OK: wind is balanced by Coriolis; water drag is negligible
+ ICEBERG INIT: pos=(   0.00000000     ,   0.00000000     ) LWH=(   100.000000     ,   100.000000     ,   100.000000     ) lat/lon=(   76.5000000     ,   30.0000000     ) vel=(   0.0000000000000000      ,   0.0000000000000000      )
+ wind   15.0 m/s: model   0.018013  continuous   0.020257  discrete   0.018042  u/wind  0.001201
+  OK: model matches discrete Coriolis-limited equilibrium
+  OK: wind is balanced by Coriolis; water drag is negligible
+ ICEBERG INIT: pos=(   0.00000000     ,   0.00000000     ) LWH=(   100.000000     ,   100.000000     ,   100.000000     ) lat/lon=(   76.5000000     ,   30.0000000     ) vel=(   0.0000000000000000      ,   0.0000000000000000      )
+ current 0.1 m/s (Coriolis): model   0.000624  discrete   0.000628  u/U  0.006245
+  OK: current response is Coriolis-limited, matching analytic
+ ICEBERG INIT: pos=(   0.00000000     ,   0.00000000     ) LWH=(   100.000000     ,   100.000000     ,   100.000000     ) lat/lon=(   0.00000000     ,   30.0000000     ) vel=(   0.0000000000000000      ,   0.0000000000000000      )
+ current 0.1 m/s (no Coriolis, 60 d): model   0.083692  u/U  0.836917
+  OK: without Coriolis the iceberg approaches the current
+ 
+TOTAL CHECKS: 6 ERRORS: 0
+ SUCCESS: drift force balance test PASSED
+STOP 0

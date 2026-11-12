@@ -16,7 +16,7 @@ their curated evidence. Current work does not belong here until its stage closes
 | 9 | [`stages/stage09/`](stages/stage09/) | Lagrangian iceberg model reconstruction and verification |
 | 10 | [`stages/stage10/`](stages/stage10/) | Iceberg thermodynamics modernization, audits, and observational studies |
 | 11 | [`stages/stage11/`](stages/stage11/) | Frozen Stage 11 reports, freeze record, evidence, and figures |
-| 12 | [`stages/stage12/`](stages/stage12/) | Stage 12 reports and evidence through 12.8, plus 12.9a acquisition and 12.10/12.11/12.12/12.13/12.14/12.15 model work |
+| 12 | [`stages/stage12/`](stages/stage12/) | Stage 12 reports and evidence through 12.8, plus 12.9a acquisition and 12.10/12.11/12.12/12.13/12.14/12.15/12.16 model work |
 
 Every stage folder has a `README.md` with its report index and scope.
 
@@ -32,7 +32,7 @@ unresolved. The authoritative record is
 
 Completed reports and evidence through Stage 12.8, plus the Stage 12.9a
 acquisition report, the Stage 12.10 voxel-thermodynamics improvement report, and
-the Stage 12.11 final-audit report, Stage 12.12 resolution/geometry audit, Stage 12.13 voxel/prism convergence audit, the Stage 12.14 100^3 annual/convergence audit, and the Stage 12.15 current-code Enderlin/drift-map report,
+the Stage 12.11 final-audit report, Stage 12.12 resolution/geometry audit, Stage 12.13 voxel/prism convergence audit, the Stage 12.14 100^3 annual/convergence audit, and the Stage 12.15 current-code Enderlin/drift-map report and the Stage 12.16 drift/ensemble/layer-drag/energy audit,
 are archived in [`stages/stage12/`](stages/stage12/). **12.9a daily-forcing
 acquisition is COMPLETE (2026-11-07)** with 24/24 months for ERA5, GLORYS12, and
 WAM; no further downloads are needed. **12.9b thesis writing** is the active

@@ -1030,6 +1030,67 @@ remains unchanged until the production-default decision in 11.7F.
 - **Limits:** no 366-day result, no observational validation, and no calibrated
   lifetime claim.
 
+## D-71. No drift-force bug: retain the Coriolis-limited formulation; document it as a limitation (Stage 12.16, 2026-11-12)
+
+- **Status:** ACTIVE (diagnostic/validation scope; no parameter change).
+- **Decision:** the 0.006 m/s annual drift is not a missing-wind, sea-ice, or
+  unit defect. Keep the existing wind/water/Coriolis formulation and document
+  the low drift ratio as a Coriolis-limited equilibrium of a massive 100 m
+  cube. Do not calibrate `CD_AIR`/`CD_WATER` without a separate approved stage.
+- **Why:** a 100 m cube has `M f = 1.29e5 kg/s`; wind force is ~0.4–0.9 kN and
+  is balanced by Coriolis, while water drag is only a few N. The analytical
+  test matches `F_wind/(M f sqrt(1+(f dt)^2))` within 0.1–0.5% for 7 and
+  15 m/s. The 2024 ensemble has mean speeds 0.003–0.026 m/s with wind ≈
+  Coriolis ≫ water drag. Sea ice (`siconc` up to 0.995) has no drag gate.
+- **Evidence:** `test/iceberg_test_drift_force_balance.f90` (6/6 PASS);
+  `run.nc_forces.csv` for the 12-start ensemble; Stage 10.16 experiments A–K.
+- **Limits:** literature-like 1–2% wind factors require a different drag/mass
+  regime or wind-driven ocean currents, neither of which is in this offline
+  model. No observational track validation.
+- **Docs:** `docs/wiki/stages/stage12/stage12.16_drift_diagnostics_ensemble_energy.md`,
+  `KNOWN_ISSUES.md` T-07, `docs/wiki/stages/stage10/stage10.16_drift_dynamics_t07_investigation.md`.
+
+## D-72. Voxel water drag uses per-layer projected areas from phi; prism Method A is fallback only (Stage 12.16, 2026-11-12)
+
+- **Status:** ACTIVE (model physics change; no calibration).
+- **Decision:** when the voxel model is active, `compute_water_force` integrates
+  drag over submerged voxel layers using `+x/−x/+y/−y` projected face areas
+  from `phi` and ocean velocity interpolated to each layer centre. The prism
+  Method A side-area branch remains only for the non-voxel regression path.
+- **Why:** the previous voxel branch used a single projected area for the whole
+  body, and the prism Method A branch used vertical `L/W` side areas. Both
+  hide the depth-dependent silhouette of an eroded body.
+- **Evidence:** `voxel_iceberg_get_layer_areas`; `test_voxel_drift` T3b/T3c
+  (cube 0.59%, eroded half-width 1.85%); 50^3 and 100^3 30-day footprint
+  diagnostics (prism side area 15.2%/18.3% above the layer integral; waterline
+  footprint 2.16%/1.12%).
+- **Limits:** the cube meets the <1% target; the eroded body does not, because
+  the prism assumes vertical sides. The layer areas use the same exterior-face
+  convention as the existing voxel drag (cavity faces are not separately
+  excluded).
+- **Docs:** `docs/wiki/stages/stage12/stage12.16_drift_diagnostics_ensemble_energy.md`,
+  `KNOWN_ISSUES.md` Q-25.
+
+## D-73. Energy ledger includes the melted-mass sensible enthalpy; closure is diagnostic (Stage 12.16, 2026-11-12)
+
+- **Status:** ACTIVE (diagnostic; state evolution unchanged).
+- **Decision:** accumulate boundary heat by face type (submerged
+  Dirichlet/Stefan, air Robin, test) and add a cumulative melted-mass sensible
+  enthalpy term to the audit. Report closure against latent heat.
+- **Why:** with `Q_sub` defined as the conductive flux into the ice, the latent
+  heat of submerged melt is supplied externally at the interface; the
+  remaining residual is the sensible enthalpy of melt mass removed at the
+  local cell temperature, which the state update does not subtract.
+- **Evidence:** 50^3/30 d final residual 0.067% of latent (max 1.14%);
+  100^3/30 d 0.664% (max 1.69%). Without the melt-sensible term the 50^3
+  residual is 3.70%, equivalent to an unaccounted sensible heat at about 5.9 C.
+- **Limits:** the ledger closes the diagnostic, not the state energy equation.
+  A future physics change must subtract the melt sensible enthalpy from the
+  state and re-run the closure tests; do not claim state-level energy
+  conservation.
+- **Docs:** `docs/wiki/stages/stage12/stage12.16_drift_diagnostics_ensemble_energy.md`,
+  `KNOWN_ISSUES.md` Q-24.
+
 ## How to add decisions
 
 A new decision is appended with an ID, stage, status, and links to reports.

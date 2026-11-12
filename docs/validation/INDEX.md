@@ -19,14 +19,16 @@ experiments), Stage 12.11 (final audit, visualization/freeboard corrections, dat
 readiness, and 2020/2024 experiments), Stage 12.12 (resolution recovery and
 geometry audit) and Stage 12.13 (voxel/prism sync, convergence and annual
 readiness), Stage 12.14 (100^3 annual, convergence, tail and footprint audit),
-and Stage 12.15 (current-code Enderlin rerun and 2020/2024 drift maps) are
-complete; the reports are in
+and Stage 12.15 (current-code Enderlin rerun and 2020/2024 drift maps) and
+Stage 12.16 (drift audit, ensemble, layer drag, energy ledger) are complete;
+the reports are in
 [`stage12.10`](../wiki/stages/stage12/stage12.10_voxel_thermodynamics_improvement.md)
 and [`stage12.11`](../wiki/stages/stage12/stage12.11_final_audit_2020_2024.md)
 and [`stage12.12`](../wiki/stages/stage12/stage12.12_resolution_geometry_audit.md)
 and [`stage12.13`](../wiki/stages/stage12/stage12.13_voxel_prism_convergence_annual_readiness.md)
 and [`stage12.14`](../wiki/stages/stage12/stage12.14_hindcast_convergence_annual_100cube.md)
-and [`stage12.15`](../wiki/stages/stage12/stage12.15_enderlin_current_and_drift_maps.md).
+and [`stage12.15`](../wiki/stages/stage12/stage12.15_enderlin_current_and_drift_maps.md)
+and [`stage12.16`](../wiki/stages/stage12/stage12.16_drift_diagnostics_ensemble_energy.md).
 
 ### Acquisition manifests
 

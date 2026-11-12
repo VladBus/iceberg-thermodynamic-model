@@ -50,6 +50,8 @@ program iceberg_run
     real(8), allocatable :: rvb(:), rvlat(:), rvs(:), rvf(:)
     real(8), allocatable :: rtd(:), rsd(:), ru(:), rv(:), rat(:), rau(:), rav(:)
     real(8), allocatable :: rpm(:), rpv(:), rpd(:), rpf(:), rcg(:), rres(:)
+    real(8), allocatable :: rfw_x(:), rfw_y(:), rfo_x(:), rfo_y(:), rfc_x(:), rfc_y(:)
+    real(8), allocatable :: rfp_x(:), rfp_y(:), rfk_x(:), rfk_y(:), riu(:), riv(:)
     real(8), allocatable :: fbt(:), fblat(:), fblon(:), fsel_lat(:), fsel_lon(:)
     real(8), allocatable :: fbr(:), fbd(:), fbtm(:), fbs(:), fbu(:), fbv(:)
     real(8), allocatable :: traj_t(:), traj_lat(:), traj_lon(:)
@@ -159,6 +161,8 @@ program iceberg_run
               rll(nrec), rsl(nrec), rvl(nrec), rwl(nrec), renergy(nrec), rflush(nrec), rfreeboard(nrec), &
               rvb(nrec), rvlat(nrec), rvs(nrec), rvf(nrec), rtd(nrec), rsd(nrec), ru(nrec), rv(nrec), &
               rat(nrec), rau(nrec), rav(nrec), rpm(nrec), rpv(nrec), rpd(nrec), rpf(nrec), rcg(nrec), rres(nrec))
+    allocate (rfw_x(nrec), rfw_y(nrec), rfo_x(nrec), rfo_y(nrec), rfc_x(nrec), rfc_y(nrec), &
+              rfp_x(nrec), rfp_y(nrec), rfk_x(nrec), rfk_y(nrec), riu(nrec), riv(nrec))
     allocate (fbt(nrec), fblat(nrec), fblon(nrec), fsel_lat(nrec), fsel_lon(nrec), &
               fbr(nrec), fbd(nrec), fbtm(nrec), fbs(nrec), fbu(nrec), fbv(nrec))
     nfb = 0
@@ -277,6 +281,12 @@ program iceberg_run
         rcg(irec) = 0.0d0; rres(irec) = 0.0d0
         ru(irec) = real(interp_at_draft(prof, real(draft, 4), 'u'), 8)
         rv(irec) = real(interp_at_draft(prof, real(draft, 4), 'v'), 8)
+        rfw_x(irec) = real(diag%f_wind_x, 8); rfw_y(irec) = real(diag%f_wind_y, 8)
+        rfo_x(irec) = real(diag%f_water_x, 8); rfo_y(irec) = real(diag%f_water_y, 8)
+        rfc_x(irec) = real(diag%f_cor_x, 8); rfc_y(irec) = real(diag%f_cor_y, 8)
+        rfp_x(irec) = real(diag%f_pressure_x, 8); rfp_y(irec) = real(diag%f_pressure_y, 8)
+        rfk_x(irec) = real(diag%f_fk_x, 8); rfk_y(irec) = real(diag%f_fk_y, 8)
+        riu(irec) = st%u; riv(irec) = st%v
         rat(irec) = real(atmos%t2m, 8); rau(irec) = real(atmos%u10, 8); rav(irec) = real(atmos%v10, 8)
         if (voxel_geometry_active()) then
             call voxel_model_get_energy(e8, f8)
@@ -311,6 +321,7 @@ program iceberg_run
     call write_nc(trim(out_nc), nrec, rt, rlat, rlon, rmass, rdraft, rti, rmw, rwml, &
                   rvol, rawet, rsic, rbl, rll, rsl, rvl, rwl, renergy, rflush, rfreeboard, &
                   rvb, rvlat, rvs, rvf, rtd, rsd, ru, rv, rat, rau, rav, rpm, rpv, rpd, rpf, rcg, rres)
+    call write_forces_csv(trim(out_nc)//'_forces.csv', nrec)
     if (nsnap > 0) then
         vox_nc = trim(out_nc)//'_voxel.nc'
         call write_voxel_nc(trim(vox_nc), nsnap)
@@ -439,6 +450,24 @@ contains
         end do
         close (u)
     end subroutine write_fallback_csv
+
+    subroutine write_forces_csv(path, n)
+        character(len=*), intent(in) :: path
+        integer, intent(in) :: n
+        integer :: u, i
+        open (newunit=u, file=trim(path), status='replace', action='write')
+        write (u, '(a)') 'time_s,lat,lon,u_ice_m_s,v_ice_m_s,ocean_u_m_s,ocean_v_m_s,' // &
+            'wind_u_m_s,wind_v_m_s,f_wind_x_N,f_wind_y_N,f_water_x_N,f_water_y_N,' // &
+            'f_cor_x_N,f_cor_y_N,f_pressure_x_N,f_pressure_y_N,f_fk_x_N,f_fk_y_N'
+        do i = 1, n
+            write (u, '(19(es18.10,a))') rt(i), ',', rlat(i), ',', rlon(i), ',', riu(i), ',', riv(i), ',', &
+                ru(i), ',', rv(i), ',', rau(i), ',', rav(i), ',', rfw_x(i), ',', rfw_y(i), ',', &
+                rfo_x(i), ',', rfo_y(i), ',', rfc_x(i), ',', rfc_y(i), ',', rfp_x(i), ',', rfp_y(i), ',', &
+                rfk_x(i), ',', rfk_y(i)
+        end do
+        close (u)
+        print '(a,i0,a,a)', 'iceberg_run: wrote force diagnostics ', n, ' records to ', trim(path)
+    end subroutine write_forces_csv
 
     subroutine write_nc(path, n, tt, la, lo, ma, dr, ti, mw, wml, vol, awet, sic, &
                         bl, ll, sl, vl, wl, en, fl, fr, vb, vv, vs, vf, td, sd, uu, vv2, at, au, av, pm, pv, pd, pf, cgv, resv)

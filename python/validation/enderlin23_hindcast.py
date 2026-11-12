@@ -159,11 +159,12 @@ def main() -> int:
             rec[f"modeled_melt_rate_{model}"] = rate
             rec[f"ratio_{model}"] = rate / rec["observed_melt_rate"] if rec["observed_melt_rate"] > 0 else np.nan
             rec[f"mean_delta_t_{model}"] = s["mean_delta_t"]
-            if model == "bulk":
-                rec["mass_loss_basal_bulk"] = s["basal"]
-                rec["mass_loss_lateral_bulk"] = s["lateral"]
-                rec["mass_loss_surface_bulk"] = s["surface"]
-                rec["mass_loss_wave_bulk"] = s["wave"]
+            rec[f"mass_loss_basal_{model}"] = s["basal"]
+            rec[f"mass_loss_lateral_{model}"] = s["lateral"]
+            rec[f"mass_loss_surface_{model}"] = s["surface"]
+            rec[f"mass_loss_wave_{model}"] = s["wave"]
+            rec[f"mean_a_wet_{model}"] = s["mean_a_wet"]
+            rec[f"seconds_{model}"] = s["seconds"]
         rows.append(rec)
 
     out_csv = a.output_dir / "enderlin23_hindcast_results.csv"

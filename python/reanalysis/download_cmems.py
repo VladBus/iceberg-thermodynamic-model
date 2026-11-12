@@ -60,6 +60,8 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--date-end", default="")
     p.add_argument("--suffix", default="")
     p.add_argument("--overwrite", action="store_true")
+    p.add_argument("--resume", action="store_true",
+                   help="append missing dates to an existing daily file")
     return p.parse_args()
 
 
@@ -186,64 +188,82 @@ def main() -> int:
         daily = a.out_dir / f"glorys12_{site}{a.suffix}_daily.nc"
         static = a.out_dir / f"glorys12_{site}{a.suffix}_static.nc"
         if daily.exists() and not a.overwrite:
-            print(f"  exists, skip: {daily}", flush=True)
-            continue
-
-        root = nc.Dataset(daily, "w", format="NETCDF4")
-        root.set_auto_maskandscale(False)
-        root.createDimension("time", None)
-        root.createDimension("depth", len(dep_i))
-        root.createDimension("latitude", len(lat_i))
-        root.createDimension("longitude", len(lon_i))
-        tv = root.createVariable("time", "f8", ("time",))
-        tv.units = "hours since 1950-01-01"; tv.calendar = "gregorian"
-        dv = root.createVariable("depth", "f4", ("depth",)); dv.units = "m"; dv.positive = "down"
-        dv[:] = dep[dep_i].astype("f4")
-        lav = root.createVariable("latitude", "f4", ("latitude",)); lav.units = "degrees_north"
-        lav[:] = lat[lat_i].astype("f4")
-        lov = root.createVariable("longitude", "f4", ("longitude",)); lov.units = "degrees_east"
-        lov[:] = lon[lon_i].astype("f4")
-        for v in VARS:
-            out = root.createVariable(v, "i2", ("time", "depth", "latitude", "longitude"),
-                                      zlib=True, complevel=4, fill_value=FILL,
-                                      chunksizes=(1, len(dep_i), len(lat_i), len(lon_i)))
-            out.set_auto_maskandscale(False)
-            out.scale_factor = float(np.asarray(attrs[v].get("scale_factor", 1.0)).item())
-            out.add_offset = float(np.asarray(attrs[v].get("add_offset", 0.0)).item())
+            if not a.resume:
+                print(f"  exists, skip: {daily}", flush=True)
+                continue
+            root = nc.Dataset(daily, "a")
+            root.set_auto_maskandscale(False)
+            n0 = len(root.dimensions["time"])
+            existing = set(
+                (pd.Timestamp("1950-01-01") + pd.to_timedelta(root["time"][:], unit="h")).date
+            )
+            keys = [(d, k) for d, k in keys if d not in existing]
+            print(f"  resume {daily}: {n0} existing, {len(keys)} missing", flush=True)
+            if not keys:
+                root.close()
+                root = None
+        else:
+            root = nc.Dataset(daily, "w", format="NETCDF4")
+            root.set_auto_maskandscale(False)
+            root.createDimension("time", None)
+            root.createDimension("depth", len(dep_i))
+            root.createDimension("latitude", len(lat_i))
+            root.createDimension("longitude", len(lon_i))
+            tv = root.createVariable("time", "f8", ("time",))
+            tv.units = "hours since 1950-01-01"; tv.calendar = "gregorian"
+            dv = root.createVariable("depth", "f4", ("depth",)); dv.units = "m"; dv.positive = "down"
+            dv[:] = dep[dep_i].astype("f4")
+            lav = root.createVariable("latitude", "f4", ("latitude",)); lav.units = "degrees_north"
+            lav[:] = lat[lat_i].astype("f4")
+            lov = root.createVariable("longitude", "f4", ("longitude",)); lov.units = "degrees_east"
+            lov[:] = lon[lon_i].astype("f4")
+            for v in VARS:
+                out = root.createVariable(v, "i2", ("time", "depth", "latitude", "longitude"),
+                                          zlib=True, complevel=4, fill_value=FILL,
+                                          chunksizes=(1, len(dep_i), len(lat_i), len(lon_i)))
+                out.set_auto_maskandscale(False)
+                out.scale_factor = float(np.asarray(attrs[v].get("scale_factor", 1.0)).item())
+                out.add_offset = float(np.asarray(attrs[v].get("add_offset", 0.0)).item())
+            n0 = 0
+            tv = root.variables["time"] if hasattr(root, "variables") else tv
 
         t_start = time.time()
-        for n, (d, key) in enumerate(keys):
-            hours = (pd.Timestamp(d) - pd.Timestamp("1950-01-01")) / pd.Timedelta(hours=1)
-            tv[n] = float(hours)
-            read_ok = False
-            for attempt in range(5):
-                fobj = f = None
-                try:
-                    fobj, f = open_remote(key)
-                    for v in VARS:
-                        arr = f[v][0, int(dep_i[0]):int(dep_i[-1]) + 1,
-                                   int(lat_i[0]):int(lat_i[-1]) + 1,
-                                   int(lon_i[0]):int(lon_i[-1]) + 1]
-                        root.variables[v][n, :, :, :] = arr
-                        del arr
-                    read_ok = True
-                    break
-                except Exception as e:
-                    print(f"    WARN read retry {attempt + 1}/5: {type(e).__name__}", flush=True)
-                    time.sleep(3.0 * (attempt + 1))
-                finally:
-                    if f is not None:
-                        f.close()
-                    if fobj is not None:
-                        fobj.close()
-            if not read_ok:
-                root.close()
-                raise RuntimeError(f"failed to read {d} after retries")
-            if (n + 1) % 10 == 0 or n == len(keys) - 1:
-                root.sync()
-                print(f"    {n + 1}/{len(keys)} days, {time.time() - t_start:.0f}s", flush=True)
-        root.close()
-        print(f"  wrote {daily} ({daily.stat().st_size/1e6:.1f} MB)", flush=True)
+        if root is not None:
+            n0 = len(root.dimensions["time"])
+            tv = root.variables["time"]
+            for m, (d, key) in enumerate(keys):
+                n = n0 + m
+                hours = (pd.Timestamp(d) - pd.Timestamp("1950-01-01")) / pd.Timedelta(hours=1)
+                tv[n] = float(hours)
+                read_ok = False
+                for attempt in range(5):
+                    fobj = f = None
+                    try:
+                        fobj, f = open_remote(key)
+                        for v in VARS:
+                            arr = f[v][0, int(dep_i[0]):int(dep_i[-1]) + 1,
+                                       int(lat_i[0]):int(lat_i[-1]) + 1,
+                                       int(lon_i[0]):int(lon_i[-1]) + 1]
+                            root.variables[v][n, :, :, :] = arr
+                            del arr
+                        read_ok = True
+                        break
+                    except Exception as e:
+                        print(f"    WARN read retry {attempt + 1}/5: {type(e).__name__}", flush=True)
+                        time.sleep(3.0 * (attempt + 1))
+                    finally:
+                        if f is not None:
+                            f.close()
+                        if fobj is not None:
+                            fobj.close()
+                if not read_ok:
+                    root.close()
+                    raise RuntimeError(f"failed to read {d} after retries")
+                if (m + 1) % 10 == 0 or m == len(keys) - 1:
+                    root.sync()
+                    print(f"    {m + 1}/{len(keys)} days, {time.time() - t_start:.0f}s", flush=True)
+            root.close()
+            print(f"  wrote {daily} ({daily.stat().st_size/1e6:.1f} MB)", flush=True)
 
         # Static mask (synthetic bathy, as the reader only uses mask/deptho).
         sroot = nc.Dataset(static, "w", format="NETCDF4")

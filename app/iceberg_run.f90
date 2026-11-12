@@ -25,7 +25,8 @@ program iceberg_run
     use iceberg_thermodynamics, only: voxel_geometry_active, voxel_geometry_mass, &
                                       voxel_geometry_draft, voxel_geometry_freeboard, voxel_model_get_grid, &
                                       voxel_model_get_cumulative_losses, voxel_model_get_solver, &
-                                      voxel_model_get_fields, voxel_model_get_energy
+                                      voxel_model_get_fields, voxel_model_get_energy, &
+                                      voxel_model_get_boundary_energy, voxel_model_get_melt_sensible_energy
     use ocean_provider, only: SRC_REANALYSIS
     use netcdf_input, only: era5_open, era5_is_open
     use wave_forcing, only: wave_forcing_configure, wave_forcing_set_epoch
@@ -52,6 +53,8 @@ program iceberg_run
     real(8), allocatable :: rpm(:), rpv(:), rpd(:), rpf(:), rcg(:), rres(:)
     real(8), allocatable :: rfw_x(:), rfw_y(:), rfo_x(:), rfo_y(:), rfc_x(:), rfc_y(:)
     real(8), allocatable :: rfp_x(:), rfp_y(:), rfk_x(:), rfk_y(:), riu(:), riv(:)
+    real(8), allocatable :: rbsub(:), rbair(:), rbtest(:), rmeltsens(:)
+    integer, allocatable :: rgrnd(:)
     real(8), allocatable :: fbt(:), fblat(:), fblon(:), fsel_lat(:), fsel_lon(:)
     real(8), allocatable :: fbr(:), fbd(:), fbtm(:), fbs(:), fbu(:), fbv(:)
     real(8), allocatable :: traj_t(:), traj_lat(:), traj_lon(:)
@@ -162,7 +165,8 @@ program iceberg_run
               rvb(nrec), rvlat(nrec), rvs(nrec), rvf(nrec), rtd(nrec), rsd(nrec), ru(nrec), rv(nrec), &
               rat(nrec), rau(nrec), rav(nrec), rpm(nrec), rpv(nrec), rpd(nrec), rpf(nrec), rcg(nrec), rres(nrec))
     allocate (rfw_x(nrec), rfw_y(nrec), rfo_x(nrec), rfo_y(nrec), rfc_x(nrec), rfc_y(nrec), &
-              rfp_x(nrec), rfp_y(nrec), rfk_x(nrec), rfk_y(nrec), riu(nrec), riv(nrec))
+              rfp_x(nrec), rfp_y(nrec), rfk_x(nrec), rfk_y(nrec), riu(nrec), riv(nrec), rgrnd(nrec))
+    allocate (rbsub(nrec), rbair(nrec), rbtest(nrec), rmeltsens(nrec))
     allocate (fbt(nrec), fblat(nrec), fblon(nrec), fsel_lat(nrec), fsel_lon(nrec), &
               fbr(nrec), fbd(nrec), fbtm(nrec), fbs(nrec), fbu(nrec), fbv(nrec))
     nfb = 0
@@ -272,6 +276,7 @@ program iceberg_run
         rsl(irec) = real(diag%surface_mass_loss, 8); rvl(irec) = real(diag%vapor_mass_loss, 8)
         rwl(irec) = real(diag%wave_mass_loss, 8)
         renergy(irec) = 0.0d0; rflush(irec) = 0.0d0
+        rbsub(irec) = 0.0d0; rbair(irec) = 0.0d0; rbtest(irec) = 0.0d0; rmeltsens(irec) = 0.0d0
         rvb(irec) = 0.0d0; rvlat(irec) = 0.0d0; rvs(irec) = 0.0d0; rvf(irec) = 0.0d0
         rtd(irec) = real(diag%t_draft, 8); rsd(irec) = real(diag%s_draft, 8)
         rpv(irec) = real(st%L, 8)*real(st%W, 8)*real(st%H, 8)
@@ -287,10 +292,13 @@ program iceberg_run
         rfp_x(irec) = real(diag%f_pressure_x, 8); rfp_y(irec) = real(diag%f_pressure_y, 8)
         rfk_x(irec) = real(diag%f_fk_x, 8); rfk_y(irec) = real(diag%f_fk_y, 8)
         riu(irec) = st%u; riv(irec) = st%v
+        rgrnd(irec) = merge(1, 0, diag%grounded)
         rat(irec) = real(atmos%t2m, 8); rau(irec) = real(atmos%u10, 8); rav(irec) = real(atmos%v10, 8)
         if (voxel_geometry_active()) then
             call voxel_model_get_energy(e8, f8)
             renergy(irec) = e8; rflush(irec) = f8
+            call voxel_model_get_boundary_energy(rbsub(irec), rbair(irec), rbtest(irec))
+            call voxel_model_get_melt_sensible_energy(rmeltsens(irec))
             call voxel_model_get_cumulative_losses(rvb(irec), rvlat(irec), rvs(irec), rvf(irec))
             call voxel_model_get_solver(cg, rres(irec), clips, rl)
             rcg(irec) = real(cg, 8)
@@ -322,6 +330,7 @@ program iceberg_run
                   rvol, rawet, rsic, rbl, rll, rsl, rvl, rwl, renergy, rflush, rfreeboard, &
                   rvb, rvlat, rvs, rvf, rtd, rsd, ru, rv, rat, rau, rav, rpm, rpv, rpd, rpf, rcg, rres)
     call write_forces_csv(trim(out_nc)//'_forces.csv', nrec)
+    call write_energy_csv(trim(out_nc)//'_energy.csv', nrec)
     if (nsnap > 0) then
         vox_nc = trim(out_nc)//'_voxel.nc'
         call write_voxel_nc(trim(vox_nc), nsnap)
@@ -454,20 +463,71 @@ contains
     subroutine write_forces_csv(path, n)
         character(len=*), intent(in) :: path
         integer, intent(in) :: n
-        integer :: u, i
+        integer :: u, i, k
+        real(8) :: row(30)
         open (newunit=u, file=trim(path), status='replace', action='write')
         write (u, '(a)') 'time_s,lat,lon,u_ice_m_s,v_ice_m_s,ocean_u_m_s,ocean_v_m_s,' // &
-            'wind_u_m_s,wind_v_m_s,f_wind_x_N,f_wind_y_N,f_water_x_N,f_water_y_N,' // &
-            'f_cor_x_N,f_cor_y_N,f_pressure_x_N,f_pressure_y_N,f_fk_x_N,f_fk_y_N'
+            'wind_u_m_s,wind_v_m_s,u_rel_wind_m_s,v_rel_wind_m_s,u_rel_water_m_s,v_rel_water_m_s,' // &
+            'rel_wind_speed_m_s,rel_water_speed_m_s,mass_kg,grounded,' // &
+            'f_wind_x_N,f_wind_y_N,f_water_x_N,f_water_y_N,' // &
+            'f_cor_x_N,f_cor_y_N,f_pressure_x_N,f_pressure_y_N,f_fk_x_N,f_fk_y_N,' // &
+            'siconc,f_ice_x_N,f_ice_y_N'
         do i = 1, n
-            write (u, '(19(es18.10,a))') rt(i), ',', rlat(i), ',', rlon(i), ',', riu(i), ',', riv(i), ',', &
-                ru(i), ',', rv(i), ',', rau(i), ',', rav(i), ',', rfw_x(i), ',', rfw_y(i), ',', &
-                rfo_x(i), ',', rfo_y(i), ',', rfc_x(i), ',', rfc_y(i), ',', rfp_x(i), ',', rfp_y(i), ',', &
-                rfk_x(i), ',', rfk_y(i)
+            row(1) = rt(i); row(2) = rlat(i); row(3) = rlon(i)
+            row(4) = riu(i); row(5) = riv(i)
+            row(6) = ru(i); row(7) = rv(i)
+            row(8) = rau(i); row(9) = rav(i)
+            row(10) = rau(i) - riu(i); row(11) = rav(i) - riv(i)
+            row(12) = ru(i) - riu(i); row(13) = rv(i) - riv(i)
+            row(14) = sqrt(row(10)**2 + row(11)**2)
+            row(15) = sqrt(row(12)**2 + row(13)**2)
+            row(16) = rmass(i); row(17) = real(rgrnd(i), 8)
+            row(18) = rfw_x(i); row(19) = rfw_y(i)
+            row(20) = rfo_x(i); row(21) = rfo_y(i)
+            row(22) = rfc_x(i); row(23) = rfc_y(i)
+            row(24) = rfp_x(i); row(25) = rfp_y(i)
+            row(26) = rfk_x(i); row(27) = rfk_y(i)
+            row(28) = rsic(i)
+            row(29) = 0.0_8; row(30) = 0.0_8
+            write (u, '(*(es18.10,:,","))') (row(k), k=1, size(row))
         end do
         close (u)
         print '(a,i0,a,a)', 'iceberg_run: wrote force diagnostics ', n, ' records to ', trim(path)
     end subroutine write_forces_csv
+
+    subroutine write_energy_csv(path, n)
+        character(len=*), intent(in) :: path
+        integer, intent(in) :: n
+        integer :: u, i
+        real(8) :: emelt, latent, residual, emelt0, latent0, b0
+        open (newunit=u, file=trim(path), status='replace', action='write')
+        write (u, '(a)') 'time_s,sensible_energy_J,flushed_energy_J,' // &
+            'boundary_submerged_J,boundary_air_J,boundary_test_J,' // &
+            'cum_melt_mass_kg,cum_flush_mass_kg,latent_melt_J,melt_sensible_J,' // &
+            'residual_J,residual_pct_latent,implied_melt_temperature_C'
+        emelt0 = rvb(1) + rvlat(1) + rvs(1)
+        latent0 = real(LATENT_HEAT, 8)*emelt0
+        b0 = rbsub(1) + rbair(1) + rbtest(1)
+        do i = 1, n
+            emelt = rvb(i) + rvlat(i) + rvs(i)
+            latent = real(LATENT_HEAT, 8)*emelt
+            ! The submerged ledger is the conductive flux into the ice; the
+            ! latent heat of submerged melt is supplied externally at the
+            ! interface, so the total flux equation is
+            !   dE_sens + L*dm_melt + dE_flush = dQ_sub + dQ_air + L*dm_melt.
+            ! After cancellation the residual measures the unaccounted sensible
+            ! enthalpy of the melted mass (and numerical closure error).
+            residual = (renergy(i) - renergy(1)) + (rflush(i) - rflush(1)) + &
+                       (rmeltsens(i) - rmeltsens(1)) - &
+                       ((rbsub(i) + rbair(i) + rbtest(i)) - b0)
+            write (u, '(13(es18.10,:,","))') rt(i), renergy(i), rflush(i), &
+                rbsub(i), rbair(i), rbtest(i), emelt, rvf(i), latent, rmeltsens(i), &
+                residual, 100.0d0*residual/max(abs(latent - latent0), 1.0d-30), &
+                residual/max(real(C_ICE, 8)*(emelt - emelt0), 1.0d-30)
+        end do
+        close (u)
+        print '(a,i0,a,a)', 'iceberg_run: wrote energy diagnostics ', n, ' records to ', trim(path)
+    end subroutine write_energy_csv
 
     subroutine write_nc(path, n, tt, la, lo, ma, dr, ti, mw, wml, vol, awet, sic, &
                         bl, ll, sl, vl, wl, en, fl, fr, vb, vv, vs, vf, td, sd, uu, vv2, at, au, av, pm, pv, pd, pf, cgv, resv)

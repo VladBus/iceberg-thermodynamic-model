@@ -302,7 +302,7 @@ contains
                         Tnew, iters, resid, converged, &
                         dir_face_a, dir_T_a, dir_face_b, dir_T_b, tb_override, &
                         autonomous_air, air_sw_down, air_lw_down, air_t_air, &
-                        air_q_air, air_rho_air, air_p_atm, open_face, tb_face)
+                        air_q_air, air_rho_air, air_p_atm, open_face, tb_face, boundary_energy)
         real(8), intent(in) :: T(:,:,:), phi(:,:,:)
         real(8), intent(in) :: dx, dy, dz, dt, k_ice, rho_ice, c_ice, theta
         real(8), intent(in) :: cg_tol
@@ -322,6 +322,7 @@ contains
         real(8), intent(in), optional :: air_q_air, air_rho_air, air_p_atm
         logical, intent(in), optional :: open_face(:,:,:,:)
         real(8), intent(in), optional :: tb_face(:,:,:,:)
+        real(8), intent(out), optional :: boundary_energy(3)
 
         integer :: nx, ny, nz, i, j, k, d, it, mx
         integer :: di(6), dj(6), dk(6), ii, jj, kk, fa, fb
@@ -336,6 +337,7 @@ contains
         V = dx*dy*dz
         di = (/ 1, -1, 0, 0, 0, 0 /); dj = (/ 0, 0, 1, -1, 0, 0 /); dk = (/ 0, 0, 0, 0, 1, -1 /)
 
+        if (present(boundary_energy)) boundary_energy = 0.0_8
         have_a = present(dir_face_a) .and. present(dir_T_a)
         have_b = present(dir_face_b) .and. present(dir_T_b)
         fa = 0; fb = 0; tda = 0.0_8; tdb = 0.0_8
@@ -457,11 +459,15 @@ contains
         mx = max(cg_maxit, 10)
         iters = 0; resid = 1.0_8; converged = .false.
         if (bnorm <= 1.0d-300) then
-            Tnew = x; resid = 0.0_8; converged = .true.; deallocate (diag, rhs, off, x, r, z, p, ap); return
+            Tnew = x; resid = 0.0_8; converged = .true.
+            if (present(boundary_energy)) call add_boundary_energy(boundary_energy)
+            deallocate (diag, rhs, off, x, r, z, p, ap); return
         end if
         resid = sqrt(sum(r*r))/bnorm
         if (resid < cg_tol) then
-            Tnew = x; converged = .true.; deallocate (diag, rhs, off, x, r, z, p, ap); return
+            Tnew = x; converged = .true.
+            if (present(boundary_energy)) call add_boundary_energy(boundary_energy)
+            deallocate (diag, rhs, off, x, r, z, p, ap); return
         end if
         do it = 1, mx
             iters = it
@@ -484,7 +490,91 @@ contains
             rz = rz2
         end do
         Tnew = x
+        if (present(boundary_energy)) call add_boundary_energy(boundary_energy)
         deallocate (diag, rhs, off, x, r, z, p, ap)
+
+    contains
+
+        ! Stage 12.16: integrate the boundary heat flux over the step by face
+        ! type using the old and new temperatures and the same CN weighting:
+        !   E = dt * (theta*q_new + (1-theta)*q_old).
+        ! Categories: 1 = submerged Dirichlet/Stefan, 2 = exposed air Robin,
+        ! 3 = test-only Dirichlet.  Positive q is heat into the ice.
+        subroutine add_boundary_energy(e)
+            real(8), intent(inout) :: e(3)
+            integer :: i, j, k, d, ii, jj, kk
+            real(8) :: A, hn, zf, dface, tf, Told, Tnewv, Gb, qo, qn
+            real(8) :: chi, qsw, qlw, qsh, qlh, dlw, dsh, dlh, qsat, q0, dqdt
+
+            do k = 1, nz
+                do j = 1, ny
+                    do i = 1, nx
+                        if (phi(i, j, k) <= EPS_PHI) cycle
+                        Told = T(i, j, k); Tnewv = Tnew(i, j, k)
+                        zf = (real(k, 8) - 0.5_8)*dz
+                        dface = max(0.0_8, draft - zf)
+                        tf = real(ocean_freezing_point(real(ocean_S), real(dface)), 8)
+                        do d = 1, 6
+                            ii = i + di(d); jj = j + dj(d); kk = k + dk(d)
+                            if (ii >= 1 .and. ii <= nx .and. jj >= 1 .and. jj <= ny .and. &
+                                kk >= 1 .and. kk <= nz) then
+                                if (phi(ii, jj, kk) > EPS_PHI) cycle
+                            end if
+                            if (present(open_face)) then
+                                if (.not. open_face(i, j, k, d)) cycle
+                            end if
+                            A = face_area(d, dx, dy, dz); hn = face_h(d, dx, dy, dz)
+                            if (present(tb_face)) then
+                                tf = tb_face(i, j, k, d)
+                            else if (present(tb_override)) then
+                                tf = tb_override(i, j, k)
+                            end if
+                            if (submerged_mask(i, j, k)) then
+                                Gb = 2.0_8*k_ice*A/hn
+                                qo = Gb*(tf - Told); qn = Gb*(tf - Tnewv)
+                                e(1) = e(1) + dt*(theta*qn + (1.0_8 - theta)*qo)
+                            end if
+                            if (exposed_mask(i, j, k)) then
+                                if (present(autonomous_air)) then
+                                    if (autonomous_air) then
+                                        chi = 1.0_8
+                                        if (d < 5) chi = 0.5_8
+                                        call voxel_air_flux_components( &
+                                            Told, air_t_air, wind, air_sw_down, &
+                                            air_lw_down, air_q_air, air_rho_air, &
+                                            air_p_atm, chi, qsw, qlw, qsh, qlh, &
+                                            dlw, dsh, dlh, qsat)
+                                        q0 = qsw + qlw + qsh + qlh
+                                        dqdt = dlw + dsh + dlh
+                                        qo = A*q0
+                                        qn = A*(q0 + dqdt*(Tnewv - Told))
+                                    else
+                                        qo = A*(hs*(Tair - Told) + atmos_Q)
+                                        qn = A*(hs*(Tair - Tnewv) + atmos_Q)
+                                    end if
+                                else
+                                    qo = A*(hs*(Tair - Told) + atmos_Q)
+                                    qn = A*(hs*(Tair - Tnewv) + atmos_Q)
+                                end if
+                                e(2) = e(2) + dt*(theta*qn + (1.0_8 - theta)*qo)
+                            end if
+                        end do
+                        if (have_a .and. on_face(i, j, k, nx, ny, nz, fa)) then
+                            hn = face_h(fa, dx, dy, dz); A = face_area(fa, dx, dy, dz)
+                            Gb = 2.0_8*k_ice*A/hn
+                            qo = Gb*(tda - Told); qn = Gb*(tda - Tnewv)
+                            e(3) = e(3) + dt*(theta*qn + (1.0_8 - theta)*qo)
+                        end if
+                        if (have_b .and. on_face(i, j, k, nx, ny, nz, fb)) then
+                            hn = face_h(fb, dx, dy, dz); A = face_area(fb, dx, dy, dz)
+                            Gb = 2.0_8*k_ice*A/hn
+                            qo = Gb*(tdb - Told); qn = Gb*(tdb - Tnewv)
+                            e(3) = e(3) + dt*(theta*qn + (1.0_8 - theta)*qo)
+                        end if
+                    end do
+                end do
+            end do
+        end subroutine add_boundary_energy
     end subroutine solve_cn
 
     subroutine matvec_cn(v, diag, off, nx, ny, nz, av)

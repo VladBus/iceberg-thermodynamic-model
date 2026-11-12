@@ -39,9 +39,11 @@ module iceberg_thermodynamics
                              voxel_iceberg_step_profile, voxel_iceberg_get_melt, &
                              voxel_iceberg_get_mass, voxel_iceberg_get_draft, &
                              voxel_iceberg_get_areas, voxel_iceberg_get_frontal_area, &
+                             voxel_iceberg_get_layer_areas, &
                              voxel_iceberg_get_stability, voxel_iceberg_get_grid, &
                              voxel_iceberg_get_fields, voxel_iceberg_get_energy, &
                              voxel_iceberg_get_freeboard, voxel_iceberg_get_cumulative_losses, &
+                             voxel_iceberg_get_boundary_energy, voxel_iceberg_get_melt_sensible_energy, &
                              voxel_iceberg_get_solver, voxel_iceberg_set_c_ice
     use param, only: nat
     use wave_forcing, only: wave_erosion_enabled, get_wave_forcing, hs_to_sea_state, &
@@ -1638,6 +1640,19 @@ contains
         A_sail = real(ea, 4)
     end subroutine voxel_geometry_drag_areas
 
+    ! Stage 12.16: per-layer x/y projected drag areas for the voxel body.
+    subroutine voxel_geometry_layer_areas(nz, z_center, ax_pos, ax_neg, ay_pos, ay_neg)
+        integer, intent(out) :: nz
+        real(8), allocatable, intent(out) :: z_center(:), ax_pos(:), ax_neg(:), ay_pos(:), ay_neg(:)
+        nz = 0
+        call voxel_model_configure()
+        if (.not. (vox_enabled .and. vox_ready)) then
+            allocate (z_center(0), ax_pos(0), ax_neg(0), ay_pos(0), ay_neg(0))
+            return
+        end if
+        call voxel_iceberg_get_layer_areas(vox_ice, nz, z_center, ax_pos, ax_neg, ay_pos, ay_neg)
+    end subroutine voxel_geometry_layer_areas
+
     subroutine voxel_geometry_stability(GM, BM, BG)
         real, intent(out) :: GM, BM, BG
         real(8) :: gm8, bm8, bg8, iwp, vsub
@@ -1682,6 +1697,22 @@ contains
         if (.not. (vox_enabled .and. vox_ready)) return
         call voxel_iceberg_get_energy(vox_ice, sensible, flushed)
     end subroutine voxel_model_get_energy
+
+    subroutine voxel_model_get_boundary_energy(sub, air, test)
+        real(8), intent(out) :: sub, air, test
+        sub = 0.0_8; air = 0.0_8; test = 0.0_8
+        call voxel_model_configure()
+        if (.not. (vox_enabled .and. vox_ready)) return
+        call voxel_iceberg_get_boundary_energy(vox_ice, sub, air, test)
+    end subroutine voxel_model_get_boundary_energy
+
+    subroutine voxel_model_get_melt_sensible_energy(value)
+        real(8), intent(out) :: value
+        value = 0.0_8
+        call voxel_model_configure()
+        if (.not. (vox_enabled .and. vox_ready)) return
+        call voxel_iceberg_get_melt_sensible_energy(vox_ice, value)
+    end subroutine voxel_model_get_melt_sensible_energy
 
     subroutine voxel_model_get_fields(T, phi, open_mask, tb_face, sb_vox)
         real(8), allocatable, intent(out) :: T(:,:,:), phi(:,:,:), tb_face(:,:,:,:)

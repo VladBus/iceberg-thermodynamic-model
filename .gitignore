@@ -135,7 +135,15 @@ data/validation/stage12.12/
 data/validation/stage12.13/
 data/validation/stage12.14/
 data/validation/stage12.15/
+data/validation/stage12.16/
 data/validation/trajectories/
+
+# Large generated validation artifacts (never commit; reproducible run outputs)
+data/validation/**/run.nc
+data/validation/**/run.nc_forces.csv
+data/validation/**/run.nc_energy.csv
+data/validation/**/run.nc_voxel.nc
+data/validation/**/*_voxel.nc
 
 # Временные и системные файлы
 *~

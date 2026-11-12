@@ -39,7 +39,8 @@ module iceberg_dynamics
     use iceberg_forcing, only: depth_integrated_currents
     use iceberg_geometry, only: compute_full_geometry
     use iceberg_thermodynamics, only: voxel_geometry_active, voxel_geometry_mass, &
-                                      voxel_geometry_draft, voxel_geometry_drag_areas
+                                      voxel_geometry_draft, voxel_geometry_drag_areas, &
+                                      voxel_geometry_layer_areas
     use wave_forcing, only: stokes_drift_enabled, get_wave_forcing, wave_forcing_epoch
     implicit none
 
@@ -210,6 +211,9 @@ contains
         real :: du, dv, speed_rel
         real :: side_area_x, side_area_y
         real :: a_sub, a_sail_dummy
+        integer :: nz, kz
+        real(8), allocatable :: z_v(:), axp(:), axn(:), ayp(:), ayn(:)
+        real(8) :: uz, vz, du8, dv8, speed8, ax8, ay8, fx8, fy8
 
         if (voxel_geometry_active()) then
             draft = voxel_geometry_draft()
@@ -230,7 +234,28 @@ contains
         call add_stokes_drift(state, u_avg, v_avg, u_prof, v_prof)
 
         if (voxel_geometry_active()) then
-            ! Stage 12.5: projected submerged area perpendicular to flow
+            ! Stage 12.16: layer-resolved projected areas from phi.  The force
+            ! is integrated over submerged voxel layers using the ocean velocity
+            ! interpolated to each layer centre; for a full cube this reproduces
+            ! the prism Method A side areas within one cell.
+            call voxel_geometry_layer_areas(nz, z_v, axp, axn, ayp, ayn)
+            if (nz > 0) then
+                fx8 = 0.0_8; fy8 = 0.0_8
+                do kz = 1, nz
+                    if (axp(kz) + axn(kz) + ayp(kz) + ayn(kz) <= 0.0_8) cycle
+                    call interp_current_z(z_v(kz), z_layers, u_prof, v_prof, n_layers, uz, vz)
+                    du8 = uz - real(state%u, 8)
+                    dv8 = vz - real(state%v, 8)
+                    speed8 = sqrt(du8**2 + dv8**2)
+                    ax8 = merge(axp(kz), axn(kz), du8 >= 0.0_8)
+                    ay8 = merge(ayp(kz), ayn(kz), dv8 >= 0.0_8)
+                    fx8 = fx8 + 0.5_8*real(RHO_WATER, 8)*real(CD_WATER, 8)*ax8*speed8*du8
+                    fy8 = fy8 + 0.5_8*real(RHO_WATER, 8)*real(CD_WATER, 8)*ay8*speed8*dv8
+                end do
+                fx = real(fx8, 4); fy = real(fy8, 4)
+                return
+            end if
+            ! Fallback for an empty layer set: retain the single projected area.
             du = u_avg - state%u
             dv = v_avg - state%v
             speed_rel = sqrt(du**2 + dv**2)
@@ -272,6 +297,41 @@ contains
             fy = fy + 0.5*RHO_WATER*CD_WATER*side_area_y*speed_rel*dv
         end do
     end subroutine compute_water_force
+
+    ! ========================================================================
+    !   Stage 12.16: linear interpolation of u/v from the ocean profile to a
+    !   voxel layer centre. Values outside the profile are clamped to the nearest
+    !   valid level (the profile itself is built down to the iceberg draft).
+    ! ========================================================================
+    subroutine interp_current_z(z, z_layers, u_prof, v_prof, n, uz, vz)
+        real(8), intent(in) :: z
+        real, intent(in) :: z_layers(:), u_prof(:), v_prof(:)
+        integer, intent(in) :: n
+        real(8), intent(out) :: uz, vz
+        integer :: kk
+        real(8) :: z0, z1, w
+
+        uz = 0.0_8; vz = 0.0_8
+        if (n < 1) return
+        if (z <= real(z_layers(1), 8)) then
+            uz = real(u_prof(1), 8); vz = real(v_prof(1), 8)
+            return
+        end if
+        if (z >= real(z_layers(n), 8)) then
+            uz = real(u_prof(n), 8); vz = real(v_prof(n), 8)
+            return
+        end if
+        do kk = 1, n - 1
+            z0 = real(z_layers(kk), 8); z1 = real(z_layers(kk + 1), 8)
+            if (z >= z0 .and. z <= z1 .and. z1 > z0) then
+                w = (z - z0)/(z1 - z0)
+                uz = (1.0_8 - w)*real(u_prof(kk), 8) + w*real(u_prof(kk + 1), 8)
+                vz = (1.0_8 - w)*real(v_prof(kk), 8) + w*real(v_prof(kk + 1), 8)
+                return
+            end if
+        end do
+        uz = real(u_prof(n), 8); vz = real(v_prof(n), 8)
+    end subroutine interp_current_z
 
     ! ========================================================================
     !   Method B — ГЛУБИННО-УСРЕДНЁННОЕ ТЕЧЕНИЕ (для TEST_4 сравнения)

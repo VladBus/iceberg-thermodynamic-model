@@ -27,8 +27,10 @@ module voxel_iceberg
     public :: voxel_iceberg_get_clamp_mass
     public :: voxel_iceberg_step_profile, voxel_iceberg_get_stefan
     public :: voxel_iceberg_get_frontal_area, voxel_iceberg_get_stability
+    public :: voxel_iceberg_get_layer_areas
     public :: voxel_iceberg_get_grid, voxel_iceberg_get_fields
     public :: voxel_iceberg_get_energy, voxel_iceberg_get_freeboard
+    public :: voxel_iceberg_get_boundary_energy, voxel_iceberg_get_melt_sensible_energy
     public :: voxel_iceberg_get_top_height, voxel_iceberg_get_cumulative_losses
     public :: voxel_iceberg_set_c_ice, voxel_iceberg_compact_vertical
 
@@ -86,6 +88,10 @@ module voxel_iceberg
         integer :: clip_events = 0
         real(8) :: flushed_mass = 0.0_8
         real(8) :: flushed_energy = 0.0_8
+        real(8) :: cum_boundary_sub_energy = 0.0_8
+        real(8) :: cum_boundary_air_energy = 0.0_8
+        real(8) :: cum_boundary_test_energy = 0.0_8
+        real(8) :: cum_melt_sensible_energy = 0.0_8
         real(8) :: clamp_melt_mass = 0.0_8
         real(8) :: cum_basal_mass = 0.0_8
         real(8) :: cum_lateral_mass = 0.0_8
@@ -141,6 +147,9 @@ contains
         vox%basal_melt_rate = 0.0_8; vox%lateral_melt_rate = 0.0_8; vox%surface_melt_rate = 0.0_8
         vox%cg_iters = 0; vox%cg_resid = 0.0_8; vox%clip_events = 0
         vox%flushed_mass = 0.0_8; vox%flushed_energy = 0.0_8; vox%clamp_melt_mass = 0.0_8
+        vox%cum_boundary_sub_energy = 0.0_8; vox%cum_boundary_air_energy = 0.0_8
+        vox%cum_boundary_test_energy = 0.0_8
+        vox%cum_melt_sensible_energy = 0.0_8
         vox%cum_basal_mass = 0.0_8; vox%cum_lateral_mass = 0.0_8
         vox%cum_surface_mass = 0.0_8; vox%cum_flush_mass = 0.0_8
         call voxel_iceberg_compute_state(vox)
@@ -424,6 +433,7 @@ contains
         real(8), allocatable :: Tn(:,:,:), pn(:,:,:), dmelt(:,:,:), dbasal(:,:,:), dlat(:,:,:)
         real(8) :: rho8, c8, k8, lf8, theta_eff, capv, tot, scale, dphi, dm, V
         real(8) :: clamp_mass
+        real(8) :: be(3)
         logical :: cn_conv
 
         basal_melt = 0.0_8; lateral_melt = 0.0_8; surface_melt = 0.0_8
@@ -471,9 +481,12 @@ contains
                           vox%cg_iters, vox%cg_resid, cn_conv, &
                           vox%test_dir_face_a, vox%test_dir_T_a, &
                           vox%test_dir_face_b, vox%test_dir_T_b, &
-                          open_face=vox%open_face)
+                          open_face=vox%open_face, boundary_energy=be)
             vox%T = Tn
             deallocate (Tn)
+            vox%cum_boundary_sub_energy = vox%cum_boundary_sub_energy + be(1)
+            vox%cum_boundary_air_energy = vox%cum_boundary_air_energy + be(2)
+            vox%cum_boundary_test_energy = vox%cum_boundary_test_energy + be(3)
 
             ! (4) ОДИН энтальпийный clamp
             clamp_mass = 0.0_8
@@ -518,6 +531,8 @@ contains
                         end if
                         basal_melt = basal_melt + dbasal(i, j, k)
                         lateral_melt = lateral_melt + dlat(i, j, k)
+                        vox%cum_melt_sensible_energy = vox%cum_melt_sensible_energy + &
+                            c8*vox%T(i, j, k)*dmelt(i, j, k)*rho8*V
                         vox%phi(i, j, k) = max(0.0_8, vox%phi(i, j, k) - dmelt(i, j, k))
                     end do
                 end do
@@ -631,6 +646,7 @@ contains
         real(8) :: tw, sw, uw, vw, urel, zf, dface, hn, A, m, tb, sb
         real(8) :: sum_tb, sum_sb, sum_urel, deep_depth, wl_depth
         real(8) :: clamp_mass
+        real(8) :: be(3)
         logical :: ok3
         integer :: nface
 
@@ -749,9 +765,13 @@ contains
                       tb_face=vox%tb_face, open_face=vox%open_face, &
                       autonomous_air=autonomous_air, air_sw_down=air_sw_down, &
                       air_lw_down=air_lw_down, air_t_air=air_t_air, &
-                      air_q_air=air_q_air, air_rho_air=air_rho_air, air_p_atm=air_p_atm)
+                      air_q_air=air_q_air, air_rho_air=air_rho_air, air_p_atm=air_p_atm, &
+                      boundary_energy=be)
         vox%T = Tn
         deallocate (Tn)
+        vox%cum_boundary_sub_energy = vox%cum_boundary_sub_energy + be(1)
+        vox%cum_boundary_air_energy = vox%cum_boundary_air_energy + be(2)
+        vox%cum_boundary_test_energy = vox%cum_boundary_test_energy + be(3)
 
         ! clamp (energy-consistent phi factor)
         clamp_mass = 0.0_8
@@ -794,6 +814,8 @@ contains
                     end if
                     basal_melt = basal_melt + dbasal(i, j, k)
                     lateral_melt = lateral_melt + dlat(i, j, k)
+                    vox%cum_melt_sensible_energy = vox%cum_melt_sensible_energy + &
+                        c8*vox%T(i, j, k)*dmelt(i, j, k)*rho8*V
                     vox%phi(i, j, k) = max(0.0_8, vox%phi(i, j, k) - dmelt(i, j, k))
                 end do
             end do
@@ -927,6 +949,52 @@ contains
     end subroutine voxel_iceberg_get_frontal_area
 
     ! ==========================================================================
+    ! Stage 12.16: per-layer projected drag areas from phi.
+    ! For every submerged layer k, sum the open +x/-x/+y/-y faces:
+    !   ax_pos(k) = sum phi*dy*dz over faces whose i+1 neighbour is open/outside
+    !   ax_neg(k) = ... i-1 ...
+    !   ay_pos(k) = sum phi*dx*dz over faces whose j+1 neighbour is open/outside
+    !   ay_neg(k) = ... j-1 ...
+    ! For a full cube ax_pos = ax_neg = W*dz and ay_pos = ay_neg = L*dz, so the
+    ! layer sum reproduces the prism Method A side areas within one cell.
+    ! ==========================================================================
+    subroutine voxel_iceberg_get_layer_areas(vox, nz, z_center, ax_pos, ax_neg, ay_pos, ay_neg)
+        type(voxel_iceberg_type), intent(in) :: vox
+        integer, intent(out) :: nz
+        real(8), allocatable, intent(out) :: z_center(:), ax_pos(:), ax_neg(:), ay_pos(:), ay_neg(:)
+        integer :: i, j, k
+        real(8) :: ph, fx, fy
+
+        nz = max(vox%nz, 0)
+        allocate (z_center(nz), ax_pos(nz), ax_neg(nz), ay_pos(nz), ay_neg(nz))
+        z_center = 0.0_8; ax_pos = 0.0_8; ax_neg = 0.0_8; ay_pos = 0.0_8; ay_neg = 0.0_8
+        if (.not. allocated(vox%phi)) then
+            nz = 0
+            return
+        end if
+        if (.not. allocated(vox%submerged_mask)) then
+            nz = 0
+            return
+        end if
+
+        do k = 1, nz
+            z_center(k) = (real(k, 8) - 0.5_8)*vox%dz
+            do j = 1, vox%ny
+                do i = 1, vox%nx
+                    ph = vox%phi(i, j, k)
+                    if (ph <= EPS_PHI .or. .not. vox%submerged_mask(i, j, k)) cycle
+                    fx = ph*vox%dy*vox%dz
+                    fy = ph*vox%dx*vox%dz
+                    if (open_empty_or_outside(vox, i + 1, j, k)) ax_pos(k) = ax_pos(k) + fx
+                    if (open_empty_or_outside(vox, i - 1, j, k)) ax_neg(k) = ax_neg(k) + fx
+                    if (open_empty_or_outside(vox, i, j + 1, k)) ay_pos(k) = ay_pos(k) + fy
+                    if (open_empty_or_outside(vox, i, j - 1, k)) ay_neg(k) = ay_neg(k) + fy
+                end do
+            end do
+        end do
+    end subroutine voxel_iceberg_get_layer_areas
+
+    ! ==========================================================================
     ! Метацентрическая устойчивость (PDF §13.4) — оценочно, без динамики
     ! опрокидывания. I_wp = L_eff*W_eff^3/12 (поперечная ось), V_sub=mass/rho_w,
     ! BM=I_wp/V_sub, BG=z_g-z_b, GM=BM-BG. GM<0 → риск опрокидывания
@@ -1057,6 +1125,20 @@ contains
     end subroutine voxel_iceberg_get_clamp_mass
 
     ! Sensible heat content relative to 0 C, plus accumulated flush energy.
+    subroutine voxel_iceberg_get_boundary_energy(vox, sub, air, test)
+        type(voxel_iceberg_type), intent(in) :: vox
+        real(8), intent(out) :: sub, air, test
+        sub = vox%cum_boundary_sub_energy
+        air = vox%cum_boundary_air_energy
+        test = vox%cum_boundary_test_energy
+    end subroutine voxel_iceberg_get_boundary_energy
+
+    subroutine voxel_iceberg_get_melt_sensible_energy(vox, value)
+        type(voxel_iceberg_type), intent(in) :: vox
+        real(8), intent(out) :: value
+        value = vox%cum_melt_sensible_energy
+    end subroutine voxel_iceberg_get_melt_sensible_energy
+
     subroutine voxel_iceberg_get_energy(vox, sensible, flushed)
         type(voxel_iceberg_type), intent(in) :: vox
         real(8), intent(out) :: sensible, flushed

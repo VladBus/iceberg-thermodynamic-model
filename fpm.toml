@@ -29,6 +29,10 @@ main = "iceberg_test_1_hydrostatic.f90"
 source-dir = "test"
 main = "iceberg_test_2_zero_gradient.f90"
 
+[test.iceberg_drift_force_balance]
+source-dir = "test"
+main = "iceberg_test_drift_force_balance.f90"
+
 #[test.iceberg_uniform_current]
 #source-dir = "test"
 #main = "iceberg_test_3_uniform_current.f90"

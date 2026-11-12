@@ -10,6 +10,7 @@ program test_voxel_drift
                              voxel_iceberg_step_profile, voxel_iceberg_get_mass, &
                              voxel_iceberg_get_draft, voxel_iceberg_get_areas, &
                              voxel_iceberg_get_frontal_area, voxel_iceberg_get_stability, &
+                             voxel_iceberg_get_layer_areas, &
                              voxel_iceberg_compute_state
     use iceberg_thermodynamics, only: voxel_geometry_active, voxel_geometry_mass, &
                                       voxel_geometry_draft, voxel_geometry_drag_areas, &
@@ -29,6 +30,8 @@ program test_voxel_drift
     call test_frontal_cubic()
     call test_frontal_diagonal()
     call test_frontal_melted()
+    call test_layer_areas_cubic()
+    call test_layer_areas_eroded()
     call test_integration_geometry()
     call test_stability()
     call test_drift_interface()
@@ -100,6 +103,54 @@ contains
             print *, '  OK: A_perp decreases with removed voxels (halved)'
         end if
     end subroutine test_frontal_melted
+
+    ! --- Test 3b: per-layer projected areas, full cube ---------------------
+    subroutine test_layer_areas_cubic()
+        type(voxel_iceberg_type) :: vox
+        real(8), allocatable :: zc(:), axp(:), axn(:), ayp(:), ayn(:)
+        integer :: nz
+        real(8) :: ref_x, ref_y, err_x, err_y
+        call voxel_iceberg_init(vox, 50, 50, 50, 2.0d0, 2.0d0, 2.0d0, -10.0d0, 1.0d0)
+        call voxel_iceberg_get_layer_areas(vox, nz, zc, axp, axn, ayp, ayn)
+        ref_x = vox%ny*vox%dy*vox%draft
+        ref_y = vox%nx*vox%dx*vox%draft
+        err_x = abs(sum(axp) - ref_x)/ref_x
+        err_y = abs(sum(ayp) - ref_y)/ref_y
+        print '(a,f12.2,a,f12.2,a,f8.4)', ' T3b sum ax=', sum(axp), ' ref_x=', ref_x, ' relerr=', err_x
+        print '(a,f12.2,a,f12.2,a,f8.4)', '     sum ay=', sum(ayp), ' ref_y=', ref_y, ' relerr=', err_y
+        if (err_x > 0.01d0 .or. err_y > 0.01d0) then
+            print *, '  FAIL: layer x/y areas differ from prism Method A by >1%'; nerr = nerr + 1
+        else
+            print *, '  OK: layer x/y areas reproduce prism Method A within 1%'
+        end if
+    end subroutine test_layer_areas_cubic
+
+    ! --- Test 3c: per-layer projected areas, eroded half-width -------------
+    subroutine test_layer_areas_eroded()
+        type(voxel_iceberg_type) :: vox
+        real(8), allocatable :: zc(:), axp(:), axn(:), ayp(:), ayn(:)
+        integer :: nz, j
+        real(8) :: ref_x, err_x, layer20
+        call voxel_iceberg_init(vox, 50, 50, 50, 2.0d0, 2.0d0, 2.0d0, -10.0d0, 1.0d0)
+        do j = 26, 50
+            vox%phi(:, j, :) = 0.0d0
+        end do
+        vox%phi(:, 1:25, 20) = 0.5d0
+        call voxel_iceberg_compute_state(vox)
+        call voxel_iceberg_get_layer_areas(vox, nz, zc, axp, axn, ayp, ayn)
+        ref_x = 0.5d0*vox%ny*vox%dy*vox%draft
+        err_x = abs(sum(axp) - ref_x)/ref_x
+        layer20 = 0.5d0*0.5d0*vox%ny*vox%dy*vox%dz
+        print '(a,f12.2,a,f12.2,a,f8.4)', ' T3c eroded sum ax=', sum(axp), ' ref_x=', ref_x, ' relerr=', err_x
+        print '(a,f10.2,a,f10.2)', '     layer20 ax=', axp(20), ' expected=', layer20
+        if (err_x > 0.02d0) then
+            print *, '  FAIL: eroded layer area differs from half-width reference by >2%'; nerr = nerr + 1
+        else if (abs(axp(20) - layer20) > 0.02d0*max(layer20, 1.0d0)) then
+            print *, '  FAIL: phi weighting in eroded layer is wrong'; nerr = nerr + 1
+        else
+            print *, '  OK: eroded layer areas follow phi and the remaining silhouette'
+        end if
+    end subroutine test_layer_areas_eroded
 
     ! --- Test 4: integration with profile forcing --------------------------
     subroutine test_integration_geometry()

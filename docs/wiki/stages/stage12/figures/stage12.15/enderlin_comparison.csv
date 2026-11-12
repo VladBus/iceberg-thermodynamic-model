@@ -1,0 +1,4 @@
+dataset,n,median_ratio,mean_ratio,spearman,mae_m_per_day,rmse_m_per_day,bias_m_per_day,median_modeled
+12.7a voxel (fixed 100 m cube bug),190,0.0593,0.132,0.1527,0.04135,0.05175,-0.04133,0.00227
+12.7c 3-case free-convection audit,3,0.655,,,,,,
+12.15 current 190 voxel,190,0.5397379327448277,1.081072311913844,0.156493327559737,0.0286897969259091,0.0398848390744452,-0.0219345159196991,0.0209819850610767

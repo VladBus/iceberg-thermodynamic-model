@@ -71,9 +71,13 @@ program iceberg_run
     integer :: nrec, irec, ncid, dimt, vt, vla, vlo, vma, vdr, vti, stt, nfb
     integer :: nargs, istat, ii, jj, iarg, pos_arg, ntraj, start_date, nsum, cg, clips, rl
     logical :: ok, gok, have_era5, prescribed, warned_nearest, strict_ocean
-    logical :: stop_on_grounding
+    logical :: stop_on_grounding, grounded_in_place
     real(8) :: epoch, lat_use, lon_use, sum_b, sum_l, sum_s, sum_v, sum_w, sum_a, sum_tf, vol0
     real(8) :: e8, f8, f_lat, f_lon, f_dist
+    integer :: ngr
+    real(8), allocatable :: grt(:), grlat(:), grlon(:), grflat(:), grflon(:), grdist(:), grdraft(:), grbathy(:)
+    real(8) :: force_lat, force_lon, force_dist, bathy_use
+    logical :: was_grounded, force_in_place
 
     nargs = command_argument_count()
     if (nargs < 8) then
@@ -90,7 +94,7 @@ program iceberg_run
     call get_arg(8, arg); out_nc = trim(arg)
     daily = DEF_DAILY; static = DEF_STATIC; era5f = ''; wavef = ''; trajf = ''
     epoch = EPOCH_2020; start_date = 20200101; pos_arg = 0
-    strict_ocean = .false.; stop_on_grounding = .false.
+    strict_ocean = .false.; stop_on_grounding = .false.; grounded_in_place = .false.
     snapshot_days = 0
     iarg = 9
     do while (iarg <= nargs)
@@ -100,6 +104,8 @@ program iceberg_run
             strict_ocean = .true.
         case ('--stop-on-grounding')
             stop_on_grounding = .true.
+        case ('--grounded-in-place')
+            grounded_in_place = .true.
         case ('--voxel-snapshot-days')
             iarg = iarg + 1
             if (iarg <= nargs) then; call get_arg(iarg, arg); read (arg, *) snapshot_days; end if
@@ -176,7 +182,9 @@ program iceberg_run
     allocate (rbsub(nrec), rbair(nrec), rbtest(nrec), rmeltsens(nrec))
     allocate (fbt(nrec), fblat(nrec), fblon(nrec), fsel_lat(nrec), fsel_lon(nrec), &
               fbr(nrec), fbd(nrec), fbtm(nrec), fbs(nrec), fbu(nrec), fbv(nrec))
-    nfb = 0
+    allocate (grt(nrec), grlat(nrec), grlon(nrec), grflat(nrec), grflon(nrec), &
+              grdist(nrec), grdraft(nrec), grbathy(nrec))
+    nfb = 0; ngr = 0
     sum_b = 0.0d0; sum_l = 0.0d0; sum_s = 0.0d0; sum_v = 0.0d0; sum_w = 0.0d0
     sum_a = 0.0d0; sum_tf = 0.0d0; nsum = 0; vol0 = st%volume; warned_nearest = .false.
     nsnap = 0; last_snap_irec = 0; vnx = 0; vny = 0; vnz = 0
@@ -206,10 +214,18 @@ program iceberg_run
             end if
         end if
 
+        was_grounded = diag%grounded
+        force_in_place = .false.
+        force_lat = lat_use; force_lon = lon_use; force_dist = 0.0d0
         call get_ocean_profile(0.0d0, 0.0d0, lat_use, lon_use, draft, &
                                0.0d0, 0.0d0, prof, ok, time_sec)
         if (.not. ok) then
-            if (strict_ocean) then
+            if (irec >= nrec) then
+                print *, 'END OF FORCING: requested period complete at ', lat_use, lon_use
+                nrec = irec - 1
+                exit
+            end if
+            if (strict_ocean .and. .not. grounded_in_place) then
                 print *, 'STOP: primary ocean profile unavailable; strict-ocean is active at ', &
                     lat_use, lon_use
                 nrec = irec - 1
@@ -220,6 +236,8 @@ program iceberg_run
             call nearest_wet_ocean(lat_use, lon_use, draft, time_sec, prof, ok, &
                                     f_lat, f_lon, f_dist)
             if (ok) then
+                force_lat = f_lat; force_lon = f_lon; force_dist = f_dist
+                force_in_place = .true.
                 nfb = nfb + 1
                 fbt(nfb) = time_sec; fblat(nfb) = lat_use; fblon(nfb) = lon_use
                 fsel_lat(nfb) = f_lat; fsel_lon(nfb) = f_lon
@@ -254,7 +272,18 @@ program iceberg_run
         if (prescribed) then
             call iceberg_step_prescribed(st, real(dt, 4), prof, atmos, lat_use, lon_use, diag)
         else
-            call iceberg_step(st, real(dt, 4), prof, atmos, real(depth, 4), diag=diag)
+            bathy_use = depth
+            if (force_in_place) bathy_use = min(depth, max(draft - 1.0d0, 0.0d0))
+            call iceberg_step(st, real(dt, 4), prof, atmos, real(bathy_use, 4), diag=diag)
+        end if
+        if (grounded_in_place .and. diag%grounded .and. .not. was_grounded) then
+            ngr = ngr + 1
+            grt(ngr) = t; grlat(ngr) = st%latitude; grlon(ngr) = st%longitude
+            grflat(ngr) = force_lat; grflon(ngr) = force_lon; grdist(ngr) = force_dist
+            grdraft(ngr) = real(diag%draft, 8); grbathy(ngr) = depth
+            print '(a,es12.4,a,f10.5,a,f10.5,a,f10.5,a,f10.5)', &
+                'GROUNDED_IN_PLACE: t=', t, ' lat/lon=', st%latitude, '/', st%longitude, &
+                ' forcing=', force_lat, '/', force_lon
         end if
         sum_b = sum_b + real(diag%basal_mass_loss, 8)
         sum_l = sum_l + real(diag%lateral_mass_loss, 8)
@@ -325,7 +354,7 @@ program iceberg_run
             nrec = irec
             exit
         end if
-        if (diag%grounded .and. stop_on_grounding .and. .not. prescribed) then
+        if (diag%grounded .and. stop_on_grounding .and. .not. prescribed .and. .not. grounded_in_place) then
             nrec = irec
             print '(a,f10.5,a,f10.5,a,f10.5,a)', 'STOP: iceberg grounded at lat/lon ', &
                 st%latitude, '/', st%longitude, '; draft=', diag%draft, ' m'
@@ -348,13 +377,18 @@ program iceberg_run
         sum_tf/max(nsum, 1)
     call write_nc(trim(out_nc), nrec, rt, rlat, rlon, rmass, rdraft, rti, rmw, rwml, &
                   rvol, rawet, rsic, rbl, rll, rsl, rvl, rwl, renergy, rflush, rfreeboard, &
-                  rvb, rvlat, rvs, rvf, rtd, rsd, ru, rv, rat, rau, rav, rpm, rpv, rpd, rpf, rcg, rres)
+                  rvb, rvlat, rvs, rvf, rtd, rsd, ru, rv, rat, rau, rav, rpm, rpv, rpd, rpf, rcg, rres, rgrnd)
     call write_forces_csv(trim(out_nc)//'_forces.csv', nrec)
     call write_energy_csv(trim(out_nc)//'_energy.csv', nrec)
     if (nsnap > 0) then
         vox_nc = trim(out_nc)//'_voxel.nc'
         call write_voxel_nc(trim(vox_nc), nsnap)
         print '(a,i0,a,a)', 'iceberg_run: wrote ', nsnap, ' voxel snapshots to ', trim(vox_nc)
+    end if
+    if (ngr > 0) then
+        call write_grounded_csv(trim(out_nc)//'_grounded.csv', ngr)
+        print '(a,i0,a,a)', 'iceberg_run: wrote ', ngr, ' grounded-in-place events to ', &
+            trim(out_nc)//'_grounded.csv'
     end if
     if (nfb > 0) then
         call write_fallback_csv(trim(out_nc)//'_fallback.csv', nfb)
@@ -466,6 +500,20 @@ contains
         a%tcc = 0.5; a%msl = 101325.0; a%snowfall = 0.0
     end subroutine constant_atmos
 
+    subroutine write_grounded_csv(path, n)
+        character(len=*), intent(in) :: path
+        integer, intent(in) :: n
+        integer :: u, i
+        open (newunit=u, file=trim(path), status='replace', action='write')
+        write (u, '(a)') 'time_s,iceberg_lat,iceberg_lon,forcing_lat,forcing_lon,' // &
+            'distance_deg,draft_m,bathymetry_m'
+        do i = 1, n
+            write (u, '(8(es18.10,:,","))') grt(i), grlat(i), grlon(i), grflat(i), &
+                grflon(i), grdist(i), grdraft(i), grbathy(i)
+        end do
+        close (u)
+    end subroutine write_grounded_csv
+
     subroutine write_fallback_csv(path, n)
         character(len=*), intent(in) :: path
         integer, intent(in) :: n
@@ -550,7 +598,7 @@ contains
     end subroutine write_energy_csv
 
     subroutine write_nc(path, n, tt, la, lo, ma, dr, ti, mw, wml, vol, awet, sic, &
-                        bl, ll, sl, vl, wl, en, fl, fr, vb, vv, vs, vf, td, sd, uu, vv2, at, au, av, pm, pv, pd, pf, cgv, resv)
+                        bl, ll, sl, vl, wl, en, fl, fr, vb, vv, vs, vf, td, sd, uu, vv2, at, au, av, pm, pv, pd, pf, cgv, resv, grnd)
         character(len=*), intent(in) :: path
         integer, intent(in) :: n
         real(8), intent(in) :: tt(:), la(:), lo(:), ma(:), dr(:), ti(:), mw(:), wml(:)
@@ -558,8 +606,9 @@ contains
         real(8), intent(in) :: en(:), fl(:), fr(:), vb(:), vv(:), vs(:), vf(:)
         real(8), intent(in) :: td(:), sd(:), uu(:), vv2(:), at(:), au(:), av(:)
         real(8), intent(in) :: pm(:), pv(:), pd(:), pf(:), cgv(:), resv(:)
+        integer, intent(in) :: grnd(:)
         integer :: ncid, dimid, st
-        integer :: v(36)
+        integer :: v(37)
         st = nf90_create(trim(path), nf90_clobber, ncid)
         if (st /= nf90_noerr) then
             print *, 'ERROR: cannot create ', trim(path), ': ', nf90_strerror(st)
@@ -602,6 +651,7 @@ contains
         st = nf90_def_var(ncid, 'prism_freeboard', nf90_double, (/dimid/), v(34))
         st = nf90_def_var(ncid, 'cg_iters', nf90_double, (/dimid/), v(35))
         st = nf90_def_var(ncid, 'cg_resid', nf90_double, (/dimid/), v(36))
+        st = nf90_def_var(ncid, 'grounded', nf90_int, (/dimid/), v(37))
         st = nf90_enddef(ncid)
         st = nf90_put_var(ncid, v(1), tt(1:n))
         st = nf90_put_var(ncid, v(2), la(1:n))
@@ -639,6 +689,7 @@ contains
         st = nf90_put_var(ncid, v(34), pf(1:n))
         st = nf90_put_var(ncid, v(35), cgv(1:n))
         st = nf90_put_var(ncid, v(36), resv(1:n))
+        st = nf90_put_var(ncid, v(37), grnd(1:n))
         st = nf90_close(ncid)
     end subroutine write_nc
 
@@ -651,7 +702,7 @@ contains
         real(4), allocatable :: T4(:,:,:), phi4(:,:,:), sb4(:,:,:)
         character(len=512) :: path
         character(len=8) :: day_str
-        integer :: ncid, xdim, ydim, zdim, tdim, xt, yt, zt, tt, vt, i, st
+        integer :: ncid, xdim, ydim, zdim, tdim, xt, yt, zt, tt, vt, mt, i, st
         integer :: nx, ny, nz
         real(8) :: dx, dy, dz
 
@@ -682,6 +733,8 @@ contains
         st = nf90_def_var(ncid, 'S_B', nf90_float, (/xdim, ydim, zdim/), vt)
         st = nf90_put_att(ncid, vt, 'units', 'kg/kg')
         st = nf90_put_att(ncid, vt, 'long_name', 'interface salinity')
+        st = nf90_def_var(ncid, 'mass', nf90_double, (/tdim/), mt)
+        st = nf90_put_att(ncid, mt, 'units', 'kg')
         st = nf90_enddef(ncid)
         allocate (xc(nx), yc(ny), zc(nz))
         do i = 1, nx; xc(i) = (real(i, 8) - 0.5_8)*dx; end do
@@ -691,6 +744,7 @@ contains
         st = nf90_put_var(ncid, yt, yc)
         st = nf90_put_var(ncid, zt, zc)
         st = nf90_put_var(ncid, tt, (/tval/))
+        st = nf90_put_var(ncid, mt, (/real(voxel_geometry_mass(), 8)/))
         allocate (T4(nx, ny, nz), phi4(nx, ny, nz), sb4(nx, ny, nz))
         T4 = real(T, 4); phi4 = real(phi, 4); sb4 = real(sb, 4)
         st = nf90_inq_varid(ncid, 'T', vt); st = nf90_put_var(ncid, vt, T4)

@@ -29,7 +29,8 @@ and [`stage12.13`](../wiki/stages/stage12/stage12.13_voxel_prism_convergence_ann
 and [`stage12.14`](../wiki/stages/stage12/stage12.14_hindcast_convergence_annual_100cube.md)
 and [`stage12.15`](../wiki/stages/stage12/stage12.15_enderlin_current_and_drift_maps.md)
 and [`stage12.16`](../wiki/stages/stage12/stage12.16_drift_diagnostics_ensemble_energy.md)
-and [`stage12.17`](../wiki/stages/stage12/stage12.17_final_runs_and_figures.md).
+and [`stage12.17`](../wiki/stages/stage12/stage12.17_final_runs_and_figures.md)
+and [`stage12.18`](../wiki/stages/stage12/stage12.18_final_runs_and_figures.md).
 
 ### Acquisition manifests
 

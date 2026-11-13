@@ -2,7 +2,7 @@
 
 Stage 12 is the current scientific stage. This directory stores completed
 stage reports and their evidence; it is not the working directory for unfinished
-tasks. Stage 12.9a acquisition, Stage 12.10 voxel thermodynamics, the Stage 12.11/12.12/12.13 audits, the Stage 12.14 100^3 audit, the Stage 12.15 current-code Enderlin/drift-map rerun, the Stage 12.16 drift/ensemble/layer-drag/energy audit, and the Stage 12.17 drag correction/final-run audit are complete;
+tasks. Stage 12.9a acquisition, Stage 12.10 voxel thermodynamics, the Stage 12.11/12.12/12.13 audits, the Stage 12.14 100^3 audit, the Stage 12.15 current-code Enderlin/drift-map rerun, the Stage 12.16 drift/ensemble/layer-drag/energy audit, the Stage 12.17 drag correction/final-run audit, and the Stage 12.18 50 m grounded-in-place final-run audit are complete;
 the acquisition manifests remain in `docs/validation/` as canonical provenance.
 Stage 12.9b thesis writing is the active workstream.
 
@@ -35,6 +35,7 @@ Stage 12.9b thesis writing is the active workstream.
 | 12.15 | [`stage12.15_enderlin_current_and_drift_maps.md`](stage12.15_enderlin_current_and_drift_maps.md) | Current-code Enderlin 190/190 (median ratio 0.540, Spearman 0.156); 2020/2024 drift maps; force-diagnostic CSV |
 | 12.16 | [`stage12.16_drift_diagnostics_ensemble_energy.md`](stage12.16_drift_diagnostics_ensemble_energy.md) | Drift-force audit (superseded drift conclusion), Enderlin baselines, 12-start 2024 ensemble, layer-resolved drag, energy ledger |
 | 12.17 | [`stage12.17_final_runs_and_figures.md`](stage12.17_final_runs_and_figures.md) | Literature form/skin drag, stable semi-implicit drag, final 100^3 2020/2024 runs and thesis figures |
+| 12.18 | [`stage12.18_final_runs_and_figures.md`](stage12.18_final_runs_and_figures.md) | 12-run 50 m final matrix, grounded-in-place mode, corrected 3D/GIF/map figures |
 
 The 12.8 drift and lifetime results are lower bounds from monthly GLORYS and
 constant-atmosphere fallbacks; they are not daily-forcing validation. No stage
@@ -45,6 +46,7 @@ report currently claims quantitative daily-forcing performance.
 - `evidence/` — Stage 12.7 and 12.8 manifests, result tables, and summaries.
 - `evidence/stage12.16/` — drift test log, Enderlin baseline/correlation/site tables, ensemble CSV/JSON, and energy/footprint closure JSONs (Stage 12.16).
 - `evidence/stage12.17/` — drag test log, Ca/Cw sensitivity, 30-day site screening, run estimate and final-run summary (Stage 12.17).
+- `evidence/stage12.18/` — 12-run summary, site manifest, grounded-event example, drift test and run estimate (Stage 12.18).
 - `figures/enderlin23/` — plots from Stage 12.7a.
 - `figures/barents2020/` — plots from Stage 12.8.
 - `figures/voxel_demo/` — spatial fields and diagnostics from Stage 12.10.
@@ -55,6 +57,7 @@ report currently claims quantitative daily-forcing performance.
 - `figures/stage12.15/` — current-code Enderlin scatter/metrics and 2020/2024 drift/melt maps (Stage 12.15).
 - `figures/stage12.16/` — Enderlin ratio drivers and 2024 12-start ensemble maps (Stage 12.16; drift conclusion superseded).
 - `figures/stage12.17/` — final-run tracks, time series, 3D snapshots/GIFs and summary maps (Stage 12.17).
+- `figures/stage12.18/` — 12-run 50 m tracks, time series, corrected 3D snapshots/GIFs and 2020/2024 summary map (Stage 12.18).
 - `STAGE12_PREPARATION.md` and `transition_analysis.md` — archived planning
   records, not active work plans.
 
@@ -85,6 +88,14 @@ annual runs were **not** promoted; the 2020 fallback-free candidate is
 [`stage12.13_voxel_prism_convergence_annual_readiness.md`](stage12.13_voxel_prism_convergence_annual_readiness.md).
 
 **12.14 audit status:** Enderlin rerun is blocked by absent Antarctic site forcing; 30-day order is `p=0.711` with a `3.75%` 100^3 error; 100^3 2020/2024 strict-ocean runs reached 365.0 d of requested 366 d with no fallback. See [`stage12.14_hindcast_convergence_annual_100cube.md`](stage12.14_hindcast_convergence_annual_100cube.md).
+
+**12.18 status:** twelve 50 m cube runs (50^3 / 1 m, 2 starts per
+source × 2020/2024) use `--grounded-in-place`; 6 melt out and 6 reach the end
+of forcing. Lifetimes/t99 are 224–366 d / 221–280 d where reached; mass loss
+84.6–99.9%. The 3D figures now use metre axes, whole-cube/cut-away rows,
+T surface+slices, S_B shell, shared colorbars, and GIFs with date/mass; the
+summary map is 2020/2024 × mass loss/t99. See
+[`stage12.18_final_runs_and_figures.md`](stage12.18_final_runs_and_figures.md).
 
 **12.17 status:** dynamic drag is split into literature form drag (`Ca=1.3`,
 `Cw=0.9`) and skin drag (`2.2e-3`, `5.5e-3`); a semi-implicit linearized

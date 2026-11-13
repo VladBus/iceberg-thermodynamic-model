@@ -1,7 +1,7 @@
 # Stage 12.17 — Form/skin drag correction and final 100^3 runs
 
 **Date:** 2026-11-13  
-**Status:** ACTIVE (drag correction complete; final runs and figures in progress).  
+**Status:** COMPLETED (drag correction, final runs, and figures archived; Stage 12.18 supersedes the run/figure details).
 **Scope:** replace the skin-scale dynamic drag coefficients with literature form
 and skin drag; stabilize the drag integration at `dt=3600 s`; run six final
 100^3 cases (three source regions × 2020/2024); produce thesis figures. No

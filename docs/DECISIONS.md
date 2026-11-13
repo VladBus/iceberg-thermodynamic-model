@@ -1118,6 +1118,27 @@ remains unchanged until the production-default decision in 11.7F.
 - **Limits:** no full-year free-drift reference at all three sources; no observational track validation. The maps and time series show available duration, not a complete year.
 - **Docs:** `docs/wiki/stages/stage12/stage12.17_final_runs_and_figures.md`, `KNOWN_ISSUES.md` Q-27.
 
+## D-77. Grounded-in-place mode and 50 m final matrix (Stage 12.18, 2026-11-13)
+
+- **Status:** ACTIVE (opt-in operational mode; default unchanged).
+- **Decision:** add `--grounded-in-place`: when the primary forcing point is
+  unavailable (or the body is grounded), keep the body at its position, continue
+  melting, and use the nearest valid GLORYS cell within 0.5°. Log the first
+  grounding and the forcing cell to `run.nc_grounded.csv`; add a `grounded`
+  variable to `run.nc`. Default remains stop-on-grounding/strict-ocean.
+- **Why:** the corrected form drag drives the 100 m cube onto banks or out of
+  the valid ocean in days; the 12.17 runs were not lifetime references. A 50 m
+  cube with grounded-in-place melting gives complete lifetimes/mass-loss maps
+  from the three source regions.
+- **Evidence:** 12/12 50 m runs (50^3, 1 m, 2 starts/source × 2020/2024):
+  6 melt-outs, 6 end-of-forcing; mass loss 84.6–99.9%, t50 45–237 d, t99
+  221–280 d where reached. See `stage12.18_final_runs_and_figures.md`.
+- **Limits:** grounded-in-place is a model assumption, not resolved contact
+  physics; the forcing cell can be up to 0.5° away; the 50 m body is not the
+  100^3 reference; no observational track validation.
+- **Docs:** `docs/wiki/stages/stage12/stage12.18_final_runs_and_figures.md`,
+  `KNOWN_ISSUES.md` Q-28.
+
 ## How to add decisions
 
 A new decision is appended with an ID, stage, status, and links to reports.

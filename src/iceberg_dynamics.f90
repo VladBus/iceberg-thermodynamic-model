@@ -39,10 +39,16 @@ module iceberg_dynamics
     use iceberg_forcing, only: depth_integrated_currents
     use iceberg_geometry, only: compute_full_geometry
     use iceberg_thermodynamics, only: voxel_geometry_active, voxel_geometry_mass, &
-                                      voxel_geometry_draft, voxel_geometry_drag_areas, &
-                                      voxel_geometry_layer_areas
+                                      voxel_geometry_draft, voxel_geometry_layer_areas, &
+                                      voxel_geometry_drag_geometry
     use wave_forcing, only: stokes_drift_enabled, get_wave_forcing, wave_forcing_epoch
     implicit none
+
+    real, save :: cd_air_form_dyn = CD_AIR_FORM
+    real, save :: cd_water_form_dyn = CD_WATER_FORM
+    real, save :: cd_air_skin_dyn = CD_AIR_SKIN
+    real, save :: cd_water_skin_dyn = CD_WATER_SKIN
+    logical, save :: cd_dyn_checked = .false.
 
 contains
 
@@ -87,9 +93,12 @@ contains
         real :: f_water_x, f_water_y
         real :: f_cor_x, f_cor_y
         real :: f_pres_x, f_pres_y
-        real :: A_mat
         real :: u_old, v_old
-        real :: fx_noncor, fy_noncor
+        real :: u_water, v_water, rel_a, rel_w, k_air, k_water, k_drag
+        real :: d_imp, g_imp, rhs_u, rhs_v, det_imp
+        real, allocatable :: u_prof_d(:), v_prof_d(:), z_layers_d(:)
+        integer :: n_layers_d
+        real :: u_avg_d, v_avg_d, draft
 
         if (voxel_geometry_active()) then
             mass = voxel_geometry_mass()          ! Stage 12.5: voxel geometry drives drift
@@ -108,7 +117,7 @@ contains
         diag%f_water_x = f_water_x
         diag%f_water_y = f_water_y
 
-        ! 3. Сила Кориолиса: F = M * f * (-v, u)
+        ! 3. Сила Кориолиса: F = M * f * (-v, u), reported at the old state.
         f_cor_x = mass*f_coriolis*state%v
         f_cor_y = -mass*f_coriolis*state%u
         diag%f_cor_x = f_cor_x
@@ -124,22 +133,50 @@ contains
         diag%f_fk_x = fk_x
         diag%f_fk_y = fk_y
 
-        ! 6. Полунеявная схема для Кориолиса
-        ! Разделяем силы на Кориолис и не-Кориолис
-        fx_noncor = f_wind_x + f_water_x + f_pres_x + fk_x
-        fy_noncor = f_wind_y + f_water_y + f_pres_y + fk_y
-
+        ! 6. Semi-implicit linearized drag + Coriolis (Stage 12.17).
+        ! With the literature form drag, explicit drag at dt=3600 s is unstable.
+        ! Linearize each quadratic drag force about the old relative velocity:
+        !   F_drag ~ K*(u_fluid - u),  K = |F_old|/|u_rel_old|.
+        ! The 2x2 system below is unconditionally stable for K>=0 and reduces
+        ! exactly to the Stage 9 semi-implicit Coriolis update when K=0.
         u_old = state%u
         v_old = state%v
+        u_water = u_old
+        v_water = v_old
+        if (voxel_geometry_active()) then
+            draft = voxel_geometry_draft()
+        else
+            draft = state%H*RHO_ICE/RHO_WATER
+        end if
+        call depth_integrated_currents(ocean_prof, draft, u_avg_d, v_avg_d, &
+                                       u_prof_d, v_prof_d, z_layers_d, n_layers_d)
+        if (n_layers_d > 0) then
+            u_water = u_avg_d
+            v_water = v_avg_d
+        end if
+        rel_a = sqrt((atmos%u10 - u_old)**2 + (atmos%v10 - v_old)**2)
+        rel_w = sqrt((u_water - u_old)**2 + (v_water - v_old)**2)
+        k_air = 0.0
+        k_water = 0.0
+        if (rel_a > 1.0e-6) k_air = sqrt(f_wind_x**2 + f_wind_y**2)/rel_a
+        if (rel_w > 1.0e-6) k_water = sqrt(f_water_x**2 + f_water_y**2)/rel_w
+        k_drag = k_air + k_water
+        d_imp = 1.0 + dt*k_drag/mass
+        g_imp = dt*f_coriolis
+        rhs_u = u_old + dt*(k_air*atmos%u10 + k_water*u_water + f_pres_x + fk_x)/mass
+        rhs_v = v_old + dt*(k_air*atmos%v10 + k_water*v_water + f_pres_y + fk_y)/mass
+        det_imp = d_imp*d_imp + g_imp*g_imp
+        state%u = (d_imp*rhs_u + g_imp*rhs_v)/det_imp
+        state%v = (d_imp*rhs_v - g_imp*rhs_u)/det_imp
 
-        ! A = 1 + (f*dt)²
-        A_mat = 1.0 + (dt*f_coriolis)**2
-
-        ! Полунеявное решение:
-        ! u_new = (u_old + dt*Fx_noncor/M + f*dt*v_old) / A
-        ! v_new = (v_old + dt*Fy_noncor/M - f*dt*u_old) / A
-        state%u = (u_old + dt*fx_noncor/mass + dt*f_coriolis*v_old)/A_mat
-        state%v = (v_old + dt*fy_noncor/mass - dt*f_coriolis*u_old)/A_mat
+        ! Report the linearized drag and Coriolis forces at the new state so
+        ! that the force budget closes against M*du/dt for the implicit step.
+        diag%f_wind_x = k_air*(atmos%u10 - state%u)
+        diag%f_wind_y = k_air*(atmos%v10 - state%v)
+        diag%f_water_x = k_water*(u_water - state%u)
+        diag%f_water_y = k_water*(v_water - state%v)
+        diag%f_cor_x = mass*f_coriolis*state%v
+        diag%f_cor_y = -mass*f_coriolis*state%u
     end subroutine iceberg_dynamics_step
 
     ! ========================================================================
@@ -161,23 +198,33 @@ contains
         real, intent(out) :: fx, fy
 
         real :: u_rel, v_rel, speed_rel
-        real :: a_sail, a_sub_dummy
-        real :: draft, freeboard
+        real :: a_form, a_top, a_sub_dummy, a_bottom_dummy
+        real :: draft, freeboard, cs, sn
+        real(8) :: asub8, asail8, atop8, abot8
 
+        call init_drag_coefficients()
         u_rel = atmos%u10 - state%u
         v_rel = atmos%v10 - state%v
         speed_rel = sqrt(u_rel**2 + v_rel**2)
+        if (speed_rel > 1.0e-12) then
+            cs = u_rel/speed_rel; sn = v_rel/speed_rel
+        else
+            cs = 0.0; sn = 0.0
+        end if
+
         if (voxel_geometry_active()) then
-            ! Stage 12.5: sail area = total exposed voxel surface (PDF 13.3)
-            call voxel_geometry_drag_areas(atan2(v_rel, u_rel), a_sub_dummy, a_sail)
+            call voxel_geometry_drag_geometry(atan2(v_rel, u_rel), asub8, asail8, atop8, abot8)
+            a_form = real(asail8, 4)
+            a_top = real(atop8, 4)
         else
             draft = state%H*RHO_ICE/RHO_WATER
             freeboard = state%H - draft
-            a_sail = state%L*state%W + 2.0*(state%L + state%W)*freeboard
+            a_form = (abs(cs)*state%W + abs(sn)*state%L)*freeboard
+            a_top = state%L*state%W
         end if
 
-        fx = 0.5*RHO_AIR*CD_AIR*a_sail*speed_rel*u_rel
-        fy = 0.5*RHO_AIR*CD_AIR*a_sail*speed_rel*v_rel
+        fx = 0.5*RHO_AIR*(cd_air_form_dyn*a_form + cd_air_skin_dyn*a_top)*speed_rel*u_rel
+        fy = 0.5*RHO_AIR*(cd_air_form_dyn*a_form + cd_air_skin_dyn*a_top)*speed_rel*v_rel
     end subroutine compute_wind_force
 
     ! ========================================================================
@@ -197,10 +244,11 @@ contains
     !   ocean_prof - профиль океана
     !   fx, fy     - силы [Н] (выход)
     ! ========================================================================
-    subroutine compute_water_force(state, ocean_prof, fx, fy)
+    subroutine compute_water_force(state, ocean_prof, fx, fy, u_water_out, v_water_out)
         type(iceberg_state), intent(in) :: state
         type(ocean_profile), intent(in) :: ocean_prof
         real, intent(out) :: fx, fy
+        real, intent(out), optional :: u_water_out, v_water_out
 
         real :: draft
         real, allocatable :: u_prof(:), v_prof(:), z_layers(:)
@@ -210,11 +258,13 @@ contains
         real :: dz_layer, z_top, z_bot
         real :: du, dv, speed_rel
         real :: side_area_x, side_area_y
-        real :: a_sub, a_sail_dummy
+        real :: a_sub, a_bottom, a_sail_dummy, a_top_dummy
         integer :: nz, kz
         real(8), allocatable :: z_v(:), axp(:), axn(:), ayp(:), ayn(:)
         real(8) :: uz, vz, du8, dv8, speed8, ax8, ay8, fx8, fy8
+        real(8) :: asub8, asail8, atop8, abot8, dua8, dva8, speeda8
 
+        call init_drag_coefficients()
         if (voxel_geometry_active()) then
             draft = voxel_geometry_draft()
         else
@@ -227,17 +277,22 @@ contains
         if (n_layers .eq. 0) then
             fx = 0.0
             fy = 0.0
+            if (present(u_water_out)) u_water_out = 0.0
+            if (present(v_water_out)) v_water_out = 0.0
             return
         end if
 
-        ! Stage 12.6b: Stokes drift (default OFF; добавляется к течению).
         call add_stokes_drift(state, u_avg, v_avg, u_prof, v_prof)
+        if (present(u_water_out)) u_water_out = u_avg
+        if (present(v_water_out)) v_water_out = v_avg
 
         if (voxel_geometry_active()) then
-            ! Stage 12.16: layer-resolved projected areas from phi.  The force
-            ! is integrated over submerged voxel layers using the ocean velocity
-            ! interpolated to each layer centre; for a full cube this reproduces
-            ! the prism Method A side areas within one cell.
+            ! Stage 12.17: form drag on layer-resolved vertical projections,
+            ! plus skin drag on the horizontal bottom area.
+            dua8 = real(u_avg - state%u, 8)
+            dva8 = real(v_avg - state%v, 8)
+            speeda8 = sqrt(dua8**2 + dva8**2)
+            call voxel_geometry_drag_geometry(real(atan2(dva8, dua8), 4), asub8, asail8, atop8, abot8)
             call voxel_geometry_layer_areas(nz, z_v, axp, axn, ayp, ayn)
             if (nz > 0) then
                 fx8 = 0.0_8; fy8 = 0.0_8
@@ -249,19 +304,29 @@ contains
                     speed8 = sqrt(du8**2 + dv8**2)
                     ax8 = merge(axp(kz), axn(kz), du8 >= 0.0_8)
                     ay8 = merge(ayp(kz), ayn(kz), dv8 >= 0.0_8)
-                    fx8 = fx8 + 0.5_8*real(RHO_WATER, 8)*real(CD_WATER, 8)*ax8*speed8*du8
-                    fy8 = fy8 + 0.5_8*real(RHO_WATER, 8)*real(CD_WATER, 8)*ay8*speed8*dv8
+                    fx8 = fx8 + 0.5_8*real(RHO_WATER, 8)*real(cd_water_form_dyn, 8)* &
+                        ax8*speed8*du8
+                    fy8 = fy8 + 0.5_8*real(RHO_WATER, 8)*real(cd_water_form_dyn, 8)* &
+                        ay8*speed8*dv8
                 end do
+                if (abot8 > 0.0_8) then
+                    fx8 = fx8 + 0.5_8*real(RHO_WATER, 8)*real(cd_water_skin_dyn, 8)* &
+                        abot8*speeda8*dua8
+                    fy8 = fy8 + 0.5_8*real(RHO_WATER, 8)*real(cd_water_skin_dyn, 8)* &
+                        abot8*speeda8*dva8
+                end if
                 fx = real(fx8, 4); fy = real(fy8, 4)
                 return
             end if
-            ! Fallback for an empty layer set: retain the single projected area.
+            ! Fallback for an empty layer set.
             du = u_avg - state%u
             dv = v_avg - state%v
             speed_rel = sqrt(du**2 + dv**2)
-            call voxel_geometry_drag_areas(atan2(dv, du), a_sub, a_sail_dummy)
-            fx = 0.5*RHO_WATER*CD_WATER*a_sub*speed_rel*du
-            fy = 0.5*RHO_WATER*CD_WATER*a_sub*speed_rel*dv
+            a_sub = real(asub8, 4); a_bottom = real(abot8, 4)
+            fx = 0.5*RHO_WATER*(cd_water_form_dyn*a_sub + cd_water_skin_dyn*a_bottom)* &
+                speed_rel*du
+            fy = 0.5*RHO_WATER*(cd_water_form_dyn*a_sub + cd_water_skin_dyn*a_bottom)* &
+                speed_rel*dv
             return
         end if
 
@@ -269,7 +334,6 @@ contains
         fy = 0.0
 
         do k = 1, n_layers
-            ! Определить границы слоя k
             if (k .eq. 1) then
                 z_top = 0.0
             else
@@ -284,7 +348,6 @@ contains
             dz_layer = z_bot - z_top
             if (dz_layer .le. 0.0) cycle
 
-            ! Площадь боковой грани для слоя: W*Δz (по X), L*Δz (по Y)
             side_area_x = state%W*dz_layer
             side_area_y = state%L*dz_layer
 
@@ -292,10 +355,17 @@ contains
             dv = v_prof(k) - state%v
             speed_rel = sqrt(du**2 + dv**2)
 
-            ! Квадратичное трение: ½ ρ C_d A |V_rel| V_rel
-            fx = fx + 0.5*RHO_WATER*CD_WATER*side_area_x*speed_rel*du
-            fy = fy + 0.5*RHO_WATER*CD_WATER*side_area_y*speed_rel*dv
+            fx = fx + 0.5*RHO_WATER*cd_water_form_dyn*side_area_x*speed_rel*du
+            fy = fy + 0.5*RHO_WATER*cd_water_form_dyn*side_area_y*speed_rel*dv
         end do
+
+        ! Skin drag on the horizontal bottom surface.
+        du = u_avg - state%u
+        dv = v_avg - state%v
+        speed_rel = sqrt(du**2 + dv**2)
+        a_bottom = state%L*state%W
+        fx = fx + 0.5*RHO_WATER*cd_water_skin_dyn*a_bottom*speed_rel*du
+        fy = fy + 0.5*RHO_WATER*cd_water_skin_dyn*a_bottom*speed_rel*dv
     end subroutine compute_water_force
 
     ! ========================================================================
@@ -334,6 +404,33 @@ contains
     end subroutine interp_current_z
 
     ! ========================================================================
+    !   Stage 12.17: dynamic drag coefficients. Defaults are literature
+    !   constants; environment overrides are provided only for the documented
+    !   +/-30% sensitivity experiments.
+    ! ========================================================================
+    subroutine init_drag_coefficients()
+        if (cd_dyn_checked) return
+        call read_env_real('ICEBERG_CD_AIR_FORM', cd_air_form_dyn)
+        call read_env_real('ICEBERG_CD_WATER_FORM', cd_water_form_dyn)
+        call read_env_real('ICEBERG_CD_AIR_SKIN', cd_air_skin_dyn)
+        call read_env_real('ICEBERG_CD_WATER_SKIN', cd_water_skin_dyn)
+        cd_dyn_checked = .true.
+    end subroutine init_drag_coefficients
+
+    subroutine read_env_real(name, value)
+        character(len=*), intent(in) :: name
+        real, intent(inout) :: value
+        character(len=64) :: text
+        integer :: ios, n
+        text = ''
+        call get_environment_variable(name, text, length=n)
+        if (n > 0) then
+            read (text, *, iostat=ios) value
+            if (ios /= 0) value = value
+        end if
+    end subroutine read_env_real
+
+    ! ========================================================================
     !   Method B — ГЛУБИННО-УСРЕДНЁННОЕ ТЕЧЕНИЕ (для TEST_4 сравнения)
     ! ========================================================================
     ! F_water = ½ ρ_w C_Dw A_wet |U_avg - u| (U_avg - u)
@@ -356,7 +453,8 @@ contains
         integer :: n_layers
         real :: u_avg, v_avg
         real :: a_wet, du, dv, speed_rel
-        real :: a_sub, a_sail_dummy
+        real :: a_sub, a_sail_dummy, a_bottom, a_top_dummy
+        real(8) :: asub8, asail8, atop8, abot8
 
         if (voxel_geometry_active()) then
             draft = voxel_geometry_draft()
@@ -378,20 +476,25 @@ contains
         dv = v_avg - state%v
         speed_rel = sqrt(du**2 + dv**2)
         if (voxel_geometry_active()) then
-            call voxel_geometry_drag_areas(atan2(dv, du), a_sub, a_sail_dummy)
-            fx = 0.5*RHO_WATER*CD_WATER*a_sub*speed_rel*du
-            fy = 0.5*RHO_WATER*CD_WATER*a_sub*speed_rel*dv
+            call voxel_geometry_drag_geometry(atan2(dv, du), asub8, asail8, atop8, abot8)
+            fx = 0.5*RHO_WATER*(cd_water_form_dyn*real(asub8, 4) + &
+                 cd_water_skin_dyn*real(abot8, 4))*speed_rel*du
+            fy = 0.5*RHO_WATER*(cd_water_form_dyn*real(asub8, 4) + &
+                 cd_water_skin_dyn*real(abot8, 4))*speed_rel*dv
             return
         end if
 
-        a_wet = state%L*state%W + 2.0*(state%L + state%W)*draft
+        a_wet = 2.0*(state%L + state%W)*draft
 
         du = u_avg - state%u
         dv = v_avg - state%v
         speed_rel = sqrt(du**2 + dv**2)
 
-        fx = 0.5*RHO_WATER*CD_WATER*a_wet*speed_rel*du
-        fy = 0.5*RHO_WATER*CD_WATER*a_wet*speed_rel*dv
+        fx = 0.5*RHO_WATER*cd_water_form_dyn*a_wet*speed_rel*du
+        fy = 0.5*RHO_WATER*cd_water_form_dyn*a_wet*speed_rel*dv
+        a_bottom = state%L*state%W
+        fx = fx + 0.5*RHO_WATER*cd_water_skin_dyn*a_bottom*speed_rel*du
+        fy = fy + 0.5*RHO_WATER*cd_water_skin_dyn*a_bottom*speed_rel*dv
     end subroutine compute_water_force_method_b
 
     ! ========================================================================

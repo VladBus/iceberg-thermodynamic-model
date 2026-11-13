@@ -39,11 +39,12 @@ module iceberg_thermodynamics
                              voxel_iceberg_step_profile, voxel_iceberg_get_melt, &
                              voxel_iceberg_get_mass, voxel_iceberg_get_draft, &
                              voxel_iceberg_get_areas, voxel_iceberg_get_frontal_area, &
-                             voxel_iceberg_get_layer_areas, &
+                             voxel_iceberg_get_layer_areas, voxel_iceberg_get_drag_geometry, &
                              voxel_iceberg_get_stability, voxel_iceberg_get_grid, &
                              voxel_iceberg_get_fields, voxel_iceberg_get_energy, &
                              voxel_iceberg_get_freeboard, voxel_iceberg_get_cumulative_losses, &
                              voxel_iceberg_get_boundary_energy, voxel_iceberg_get_melt_sensible_energy, &
+                             voxel_iceberg_get_thermal_fields, &
                              voxel_iceberg_get_solver, voxel_iceberg_set_c_ice
     use param, only: nat
     use wave_forcing, only: wave_erosion_enabled, get_wave_forcing, hs_to_sea_state, &
@@ -1653,6 +1654,17 @@ contains
         call voxel_iceberg_get_layer_areas(vox_ice, nz, z_center, ax_pos, ax_neg, ay_pos, ay_neg)
     end subroutine voxel_geometry_layer_areas
 
+    ! Stage 12.17: split vertical form-drag areas and horizontal skin areas.
+    subroutine voxel_geometry_drag_geometry(flow_angle, A_sub_vert, A_sail_vert, A_top, A_bottom)
+        real, intent(in) :: flow_angle
+        real(8), intent(out) :: A_sub_vert, A_sail_vert, A_top, A_bottom
+        A_sub_vert = 0.0_8; A_sail_vert = 0.0_8; A_top = 0.0_8; A_bottom = 0.0_8
+        call voxel_model_configure()
+        if (.not. (vox_enabled .and. vox_ready)) return
+        call voxel_iceberg_get_drag_geometry(vox_ice, real(flow_angle, 8), &
+                                             A_sub_vert, A_sail_vert, A_top, A_bottom)
+    end subroutine voxel_geometry_drag_geometry
+
     subroutine voxel_geometry_stability(GM, BM, BG)
         real, intent(out) :: GM, BM, BG
         real(8) :: gm8, bm8, bg8, iwp, vsub
@@ -1713,6 +1725,13 @@ contains
         if (.not. (vox_enabled .and. vox_ready)) return
         call voxel_iceberg_get_melt_sensible_energy(vox_ice, value)
     end subroutine voxel_model_get_melt_sensible_energy
+
+    subroutine voxel_model_get_thermal_fields(T, phi, sb)
+        real(8), allocatable, intent(out) :: T(:,:,:), phi(:,:,:), sb(:,:,:)
+        call voxel_model_configure()
+        if (.not. (vox_enabled .and. vox_ready)) return
+        call voxel_iceberg_get_thermal_fields(vox_ice, T, phi, sb)
+    end subroutine voxel_model_get_thermal_fields
 
     subroutine voxel_model_get_fields(T, phi, open_mask, tb_face, sb_vox)
         real(8), allocatable, intent(out) :: T(:,:,:), phi(:,:,:), tb_face(:,:,:,:)

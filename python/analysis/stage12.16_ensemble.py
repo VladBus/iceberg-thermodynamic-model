@@ -46,7 +46,7 @@ def daily_series(ds):
         )
         dt_day = 86400.0
         rec["melt_rate_m_day"] = (
-            rec["mass_loss_total"] / (RHO_ICE * rec["a_wet"] * dt_day)
+            rec["mass_loss_total"] / (RHO_ICE * rec["a_wet"])
             if rec["a_wet"] > 0 else np.nan
         )
         rows.append(rec)

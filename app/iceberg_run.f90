@@ -26,6 +26,7 @@ program iceberg_run
                                       voxel_geometry_draft, voxel_geometry_freeboard, voxel_model_get_grid, &
                                       voxel_model_get_cumulative_losses, voxel_model_get_solver, &
                                       voxel_model_get_fields, voxel_model_get_energy, &
+                                      voxel_model_get_thermal_fields, &
                                       voxel_model_get_boundary_energy, voxel_model_get_melt_sensible_energy
     use ocean_provider, only: SRC_REANALYSIS
     use netcdf_input, only: era5_open, era5_is_open
@@ -63,6 +64,8 @@ program iceberg_run
     real(8), allocatable :: snap_T(:,:,:,:), snap_phi(:,:,:,:), snap_sb(:,:,:,:), snap_tb(:,:,:,:,:)
     logical, allocatable :: snap_open(:,:,:,:)
     integer :: nsnap, vnx, vny, vnz, last_snap_irec
+    integer :: snapshot_days, last_snap_day, day_now
+    logical :: periodic_snapshots
     real(8) :: vdx, vdy, vdz
     character(len=512) :: out_nc, vox_nc, daily, static, era5f, wavef, trajf, arg
     integer :: nrec, irec, ncid, dimt, vt, vla, vlo, vma, vdr, vti, stt, nfb
@@ -88,6 +91,7 @@ program iceberg_run
     daily = DEF_DAILY; static = DEF_STATIC; era5f = ''; wavef = ''; trajf = ''
     epoch = EPOCH_2020; start_date = 20200101; pos_arg = 0
     strict_ocean = .false.; stop_on_grounding = .false.
+    snapshot_days = 0
     iarg = 9
     do while (iarg <= nargs)
         call get_arg(iarg, arg)
@@ -96,6 +100,9 @@ program iceberg_run
             strict_ocean = .true.
         case ('--stop-on-grounding')
             stop_on_grounding = .true.
+        case ('--voxel-snapshot-days')
+            iarg = iarg + 1
+            if (iarg <= nargs) then; call get_arg(iarg, arg); read (arg, *) snapshot_days; end if
         case ('--prescribed_trajectory')
             iarg = iarg + 1
             if (iarg <= nargs) call get_arg(iarg, trajf)
@@ -173,6 +180,8 @@ program iceberg_run
     sum_b = 0.0d0; sum_l = 0.0d0; sum_s = 0.0d0; sum_v = 0.0d0; sum_w = 0.0d0
     sum_a = 0.0d0; sum_tf = 0.0d0; nsum = 0; vol0 = st%volume; warned_nearest = .false.
     nsnap = 0; last_snap_irec = 0; vnx = 0; vny = 0; vnz = 0
+    periodic_snapshots = (snapshot_days > 0)
+    last_snap_day = -1
     vdx = 0.0d0; vdy = 0.0d0; vdz = 0.0d0
 
     do irec = 1, nrec
@@ -303,8 +312,15 @@ program iceberg_run
             call voxel_model_get_solver(cg, rres(irec), clips, rl)
             rcg(irec) = real(cg, 8)
         end if
-        if (voxel_geometry_active() .and. &
+        if (voxel_geometry_active() .and. .not. periodic_snapshots .and. &
             (irec == 1 .or. irec == max(nrec/2, 1))) call save_snapshot(rt(irec), irec)
+        if (voxel_geometry_active() .and. periodic_snapshots) then
+            day_now = int(rt(irec)/86400.0d0)
+            if (mod(day_now, snapshot_days) == 0 .and. day_now /= last_snap_day) then
+                call write_voxel_snapshot_f32(trim(out_nc), day_now, rt(irec))
+                last_snap_day = day_now
+            end if
+        end if
         if (.not. st%active) then
             nrec = irec
             exit
@@ -321,8 +337,12 @@ program iceberg_run
         print *, 'ERROR: no valid records; no NetCDF written'
         stop 1
     end if
-    if (voxel_geometry_active() .and. nsnap < MAXSNAP .and. &
-        last_snap_irec /= nrec) call save_snapshot(rt(nrec), nrec)
+    if (voxel_geometry_active() .and. .not. periodic_snapshots .and. &
+        nsnap < MAXSNAP .and. last_snap_irec /= nrec) call save_snapshot(rt(nrec), nrec)
+    if (voxel_geometry_active() .and. periodic_snapshots .and. nrec >= 1) then
+        day_now = int(rt(nrec)/86400.0d0)
+        if (day_now /= last_snap_day) call write_voxel_snapshot_f32(trim(out_nc), day_now, rt(nrec))
+    end if
     print '(a,11(1x,es18.10))', 'HINDCAST_SUMMARY', rvol(nrec), vol0, &
         sum_b, sum_l, sum_s, sum_v, sum_w, sum_a/max(nsum, 1), real((nrec - 1)*dt, 8), rmass(nrec), &
         sum_tf/max(nsum, 1)
@@ -621,6 +641,65 @@ contains
         st = nf90_put_var(ncid, v(36), resv(1:n))
         st = nf90_close(ncid)
     end subroutine write_nc
+
+    subroutine write_voxel_snapshot_f32(path_base, day, tval)
+        character(len=*), intent(in) :: path_base
+        integer, intent(in) :: day
+        real(8), intent(in) :: tval
+        real(8), allocatable :: T(:,:,:), phi(:,:,:), sb(:,:,:)
+        real(8), allocatable :: xc(:), yc(:), zc(:)
+        real(4), allocatable :: T4(:,:,:), phi4(:,:,:), sb4(:,:,:)
+        character(len=512) :: path
+        character(len=8) :: day_str
+        integer :: ncid, xdim, ydim, zdim, tdim, xt, yt, zt, tt, vt, i, st
+        integer :: nx, ny, nz
+        real(8) :: dx, dy, dz
+
+        call voxel_model_get_grid(nx, ny, nz, dx, dy, dz)
+        if (nx <= 0 .or. ny <= 0 .or. nz <= 0) return
+        call voxel_model_get_thermal_fields(T, phi, sb)
+        if (.not. allocated(T)) return
+        write (day_str, '(i3.3)') day
+        path = trim(path_base)//'_snap_'//trim(day_str)//'.nc'
+        st = nf90_create(trim(path), nf90_clobber, ncid)
+        if (st /= nf90_noerr) then
+            print *, 'WARN: cannot create snapshot ', trim(path), ': ', nf90_strerror(st)
+            return
+        end if
+        st = nf90_def_dim(ncid, 'x', nx, xdim)
+        st = nf90_def_dim(ncid, 'y', ny, ydim)
+        st = nf90_def_dim(ncid, 'z', nz, zdim)
+        st = nf90_def_dim(ncid, 'time', 1, tdim)
+        st = nf90_def_var(ncid, 'x', nf90_double, (/xdim/), xt)
+        st = nf90_def_var(ncid, 'y', nf90_double, (/ydim/), yt)
+        st = nf90_def_var(ncid, 'z', nf90_double, (/zdim/), zt)
+        st = nf90_def_var(ncid, 'time', nf90_double, (/tdim/), tt)
+        st = nf90_def_var(ncid, 'T', nf90_float, (/xdim, ydim, zdim/), vt)
+        st = nf90_put_att(ncid, vt, 'units', 'degC')
+        st = nf90_put_att(ncid, vt, 'long_name', 'ice temperature')
+        st = nf90_def_var(ncid, 'phi', nf90_float, (/xdim, ydim, zdim/), vt)
+        st = nf90_put_att(ncid, vt, 'long_name', 'ice volume fraction')
+        st = nf90_def_var(ncid, 'S_B', nf90_float, (/xdim, ydim, zdim/), vt)
+        st = nf90_put_att(ncid, vt, 'units', 'kg/kg')
+        st = nf90_put_att(ncid, vt, 'long_name', 'interface salinity')
+        st = nf90_enddef(ncid)
+        allocate (xc(nx), yc(ny), zc(nz))
+        do i = 1, nx; xc(i) = (real(i, 8) - 0.5_8)*dx; end do
+        do i = 1, ny; yc(i) = (real(i, 8) - 0.5_8)*dy; end do
+        do i = 1, nz; zc(i) = (real(i, 8) - 0.5_8)*dz; end do
+        st = nf90_put_var(ncid, xt, xc)
+        st = nf90_put_var(ncid, yt, yc)
+        st = nf90_put_var(ncid, zt, zc)
+        st = nf90_put_var(ncid, tt, (/tval/))
+        allocate (T4(nx, ny, nz), phi4(nx, ny, nz), sb4(nx, ny, nz))
+        T4 = real(T, 4); phi4 = real(phi, 4); sb4 = real(sb, 4)
+        st = nf90_inq_varid(ncid, 'T', vt); st = nf90_put_var(ncid, vt, T4)
+        st = nf90_inq_varid(ncid, 'phi', vt); st = nf90_put_var(ncid, vt, phi4)
+        st = nf90_inq_varid(ncid, 'S_B', vt); st = nf90_put_var(ncid, vt, sb4)
+        st = nf90_close(ncid)
+        deallocate (T, phi, sb, xc, yc, zc, T4, phi4, sb4)
+        print '(a,i0,a,a)', 'iceberg_run: wrote float32 snapshot day ', day, ' to ', trim(path)
+    end subroutine write_voxel_snapshot_f32
 
     subroutine save_snapshot(tval, irec)
         real(8), intent(in) :: tval

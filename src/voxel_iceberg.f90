@@ -27,10 +27,11 @@ module voxel_iceberg
     public :: voxel_iceberg_get_clamp_mass
     public :: voxel_iceberg_step_profile, voxel_iceberg_get_stefan
     public :: voxel_iceberg_get_frontal_area, voxel_iceberg_get_stability
-    public :: voxel_iceberg_get_layer_areas
+    public :: voxel_iceberg_get_layer_areas, voxel_iceberg_get_drag_geometry
     public :: voxel_iceberg_get_grid, voxel_iceberg_get_fields
     public :: voxel_iceberg_get_energy, voxel_iceberg_get_freeboard
     public :: voxel_iceberg_get_boundary_energy, voxel_iceberg_get_melt_sensible_energy
+    public :: voxel_iceberg_get_thermal_fields
     public :: voxel_iceberg_get_top_height, voxel_iceberg_get_cumulative_losses
     public :: voxel_iceberg_set_c_ice, voxel_iceberg_compact_vertical
 
@@ -949,6 +950,65 @@ contains
     end subroutine voxel_iceberg_get_frontal_area
 
     ! ==========================================================================
+    ! Stage 12.17: split drag geometry for form and skin drag.
+    !   A_sub_vert  — submerged vertical silhouette normal to flow_angle
+    !   A_sail_vert — exposed vertical silhouette normal to flow_angle
+    !   A_top       — exposed horizontal top area (phi-weighted)
+    !   A_bottom    — submerged horizontal bottom area (phi-weighted)
+    ! Form drag uses the vertical areas; skin drag uses top/bottom only.
+    ! ==========================================================================
+    subroutine voxel_iceberg_get_drag_geometry(vox, flow_angle, A_sub_vert, A_sail_vert, &
+                                               A_top, A_bottom)
+        type(voxel_iceberg_type), intent(in) :: vox
+        real(8), intent(in) :: flow_angle
+        real(8), intent(out) :: A_sub_vert, A_sail_vert, A_top, A_bottom
+        integer :: i, j, k, ii, jj
+        real(8) :: ca, sa, cs, sn, contrib, ph
+
+        A_sub_vert = 0.0_8; A_sail_vert = 0.0_8; A_top = 0.0_8; A_bottom = 0.0_8
+        if (.not. allocated(vox%phi)) return
+        if (.not. allocated(vox%submerged_mask)) return
+        cs = cos(flow_angle); sn = sin(flow_angle)
+        ca = abs(cs); sa = abs(sn)
+        do k = 1, vox%nz
+            do j = 1, vox%ny
+                do i = 1, vox%nx
+                    ph = vox%phi(i, j, k)
+                    if (ph <= EPS_PHI) cycle
+                    contrib = 0.0_8
+                    if (ca > 0.0_8) then
+                        if (cs >= 0.0_8) then
+                            ii = i + 1
+                        else
+                            ii = i - 1
+                        end if
+                        if (open_empty_or_outside(vox, ii, j, k)) &
+                            contrib = contrib + ph*vox%dy*vox%dz*ca
+                    end if
+                    if (sa > 0.0_8) then
+                        if (sn >= 0.0_8) then
+                            jj = j + 1
+                        else
+                            jj = j - 1
+                        end if
+                        if (open_empty_or_outside(vox, i, jj, k)) &
+                            contrib = contrib + ph*vox%dx*vox%dz*sa
+                    end if
+                    if (vox%submerged_mask(i, j, k)) then
+                        A_sub_vert = A_sub_vert + contrib
+                        if (open_empty_or_outside(vox, i, j, k - 1)) &
+                            A_bottom = A_bottom + ph*vox%dx*vox%dy
+                    else if (vox%exposed_mask(i, j, k)) then
+                        A_sail_vert = A_sail_vert + contrib
+                        if (open_empty_or_outside(vox, i, j, k + 1)) &
+                            A_top = A_top + ph*vox%dx*vox%dy
+                    end if
+                end do
+            end do
+        end do
+    end subroutine voxel_iceberg_get_drag_geometry
+
+    ! ==========================================================================
     ! Stage 12.16: per-layer projected drag areas from phi.
     ! For every submerged layer k, sum the open +x/-x/+y/-y faces:
     !   ax_pos(k) = sum phi*dy*dz over faces whose i+1 neighbour is open/outside
@@ -1138,6 +1198,15 @@ contains
         real(8), intent(out) :: value
         value = vox%cum_melt_sensible_energy
     end subroutine voxel_iceberg_get_melt_sensible_energy
+
+    subroutine voxel_iceberg_get_thermal_fields(vox, T, phi, sb)
+        type(voxel_iceberg_type), intent(in) :: vox
+        real(8), allocatable, intent(out) :: T(:,:,:), phi(:,:,:), sb(:,:,:)
+        if (.not. allocated(vox%T)) return
+        allocate (T(vox%nx, vox%ny, vox%nz), phi(vox%nx, vox%ny, vox%nz))
+        allocate (sb(vox%nx, vox%ny, vox%nz))
+        T = vox%T; phi = vox%phi; sb = vox%sb_vox
+    end subroutine voxel_iceberg_get_thermal_fields
 
     subroutine voxel_iceberg_get_energy(vox, sensible, flushed)
         type(voxel_iceberg_type), intent(in) :: vox

@@ -64,10 +64,20 @@ module iceberg_types
     real, parameter :: EOS_FP_A2 = 2.154996e-4    ! Член S^2 [°C/PSU^2]
     real, parameter :: EOS_FP_BP = -7.53e-4       ! Коэффициент давления [°C/дбар]
 
-    ! Коэффициенты лобового сопротивления (drag coefficients) [безразм.]
-    ! Stage 9.1 §18-19, Bigg et al. 1997, Martin & Adcroft 2010
-    real, parameter :: CD_AIR = 1.3e-3      ! Коэффициент аэродинамического сопротивления (воздух-лёд)
-    real, parameter :: CD_WATER = 2.0e-3      ! Коэффициент гидродинамического сопротивления (вода-лёд)
+    ! Коэффициенты сопротивления [безразм.]
+    ! CD_AIR/CD_WATER retained for bulk heat/momentum transfer and the low-flow
+    ! u_star closure (Stage 10.6/10.13); they are NOT the iceberg form drag.
+    ! Dynamic drag is split into form drag on vertical projections and skin
+    ! drag on horizontal surfaces:
+    !   form: Bigg et al. (1997) as used by Mugford & Dowdeswell (2010):
+    !         Ca = 1.3, Cw = 0.9 for vertical iceberg walls.
+    !   skin: Keghouche et al. (2009): cda = 2.2e-3, cdw = 5.5e-3.
+    real, parameter :: CD_AIR = 1.3e-3      ! legacy air thermal/skin transfer
+    real, parameter :: CD_WATER = 2.0e-3    ! legacy water thermal/skin transfer
+    real, parameter :: CD_AIR_FORM = 1.3    ! air form drag on vertical sail
+    real, parameter :: CD_WATER_FORM = 0.9  ! water form drag on vertical keel
+    real, parameter :: CD_AIR_SKIN = 2.2e-3 ! air skin drag on horizontal top
+    real, parameter :: CD_WATER_SKIN = 5.5e-3 ! water skin drag on horizontal bottom
 
     ! ========================================================================
     !   ОКЕАНИЧЕСКАЯ СТОРОНА ТЕПЛООБМЕНА (Stage 10.6)
@@ -511,7 +521,7 @@ module iceberg_types
     !   PUBLIC СИМВОЛЫ
     ! ========================================================================
     public :: RHO_ICE, RHO_WATER, RHO_AIR, LATENT_HEAT, CP_WATER, GRAVITY
-    public :: CD_AIR, CD_WATER
+    public :: CD_AIR, CD_WATER, CD_AIR_FORM, CD_WATER_FORM, CD_AIR_SKIN, CD_WATER_SKIN
     public :: C_BASAL, C_LATERAL
     public :: ALBEDO_ICE, EMISSIVITY, STEFAN_BOLTZ
     public :: T_ICE_INIT, T_ICE_MIN, T_ICE_MAX, MIN_THICKNESS

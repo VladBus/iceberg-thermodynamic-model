@@ -102,8 +102,8 @@ program iceberg_test_drift_dynamics
     write (*, '(A,F10.6,A,F10.6)') "  B1 (Coriolis on)  final speed: ", speed_eq, &
         "  ratio: ", ratio
     n_checks = n_checks + 1
-    ! Ожидание: Coriolis-limited u ~ F_wind/(M*f) ~ 0.01-0.03 м/с (0.1-0.3%)
-    if (speed_eq .gt. 1.0e-3 .and. speed_eq .lt. 0.05) then
+    ! Ожидание: form/skin drag + Coriolis, u/wind ~1.5% (0.10-0.20 m/s)
+    if (speed_eq .gt. 0.05 .and. speed_eq .lt. 0.30) then
         print *, "OK   B1. Coriolis-limited wind drift"
     else
         print *, "ERROR B1. speed out of expected Coriolis-limited range"
@@ -124,8 +124,8 @@ program iceberg_test_drift_dynamics
     write (*, '(A,F10.6,A,F10.6)') "  B2 (no Coriolis)  final speed: ", speed_eq, &
         "  ratio: ", ratio
     n_checks = n_checks + 1
-    ! Ожидание: drag-limited u/V ~ sqrt(rho_a*C_a*A_sail/(rho_w*C_w*A_side)) ~ 0.03-0.04
-    if (ratio .gt. 0.02 .and. ratio .lt. 0.06) then
+    ! Ожидание: drag-limited u/V ~1.5% with form + skin drag
+    if (ratio .gt. 0.010 .and. ratio .lt. 0.025) then
         print *, "OK   B2. drag-limited wind drift"
     else
         print *, "ERROR B2. ratio out of expected drag-limited range"
@@ -154,8 +154,8 @@ program iceberg_test_drift_dynamics
     write (*, '(A,F10.6,A,F10.6)') "  C1 (Coriolis on)  final speed: ", speed_eq, &
         "  ratio: ", ratio
     n_checks = n_checks + 1
-    ! Ожидание: Coriolis-limited u ~ F_water/(M*f) — малое (0.1-2% течения)
-    if (speed_eq .gt. 1.0e-5 .and. speed_eq .lt. 0.01) then
+    ! Ожидание: 100 m cube follows 80-90% of the current with Coriolis
+    if (speed_eq .gt. 0.08 .and. speed_eq .lt. 0.10) then
         print *, "OK   C1. Coriolis-limited current response"
     else
         print *, "ERROR C1. speed out of expected range"
@@ -422,15 +422,15 @@ program iceberg_test_drift_dynamics
         print *, "ERROR K3. water force not braking: ", diag%f_water_x
         n_errors = n_errors + 1
     end if
-    ! Единицы: ускорение должно быть ~ F/M ~ 1161/9.1e8 ~ 1.3e-6 м/с^2
+    ! Единицы: form-drag acceleration ~ 9e4/9.1e8 ~ 1e-4 м/с^2
     call make_ocean(ocean_prof, 0.0, 0.0)
     call make_atmos(atmos, 10.0, 0.0)
     call iceberg_init(state, 0.0, 0.0, 100.0, 100.0, 100.0, 0.0, 0.0, 0.0, 0.0)
     call iceberg_step(state, dt, ocean_prof, atmos, 500.0, &
                       0.0, 0.0, (/0.0, 0.0/), diag)
     n_checks = n_checks + 1
-    if (abs(diag%f_wind_x)/(RHO_ICE*100.0**3) .gt. 1.0e-7 .and. &
-        abs(diag%f_wind_x)/(RHO_ICE*100.0**3) .lt. 1.0e-5) then
+    if (abs(diag%f_wind_x)/(RHO_ICE*100.0**3) .gt. 1.0e-5 .and. &
+        abs(diag%f_wind_x)/(RHO_ICE*100.0**3) .lt. 1.0e-3) then
         print *, "OK   K4. acceleration scale plausible (~F/M ~ 1e-6 m/s^2)"
     else
         print *, "ERROR K4. acceleration scale: ", diag%f_wind_x/(RHO_ICE*100.0**3)

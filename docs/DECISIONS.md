@@ -1032,7 +1032,7 @@ remains unchanged until the production-default decision in 11.7F.
 
 ## D-71. No drift-force bug: retain the Coriolis-limited formulation; document it as a limitation (Stage 12.16, 2026-11-12)
 
-- **Status:** ACTIVE (diagnostic/validation scope; no parameter change).
+- **Status:** SUPERSEDED by D-74/D-75 (Stage 12.17): the 12.16 conclusion used skin-scale coefficients as form drag; the corrected form drag is in D-74.
 - **Decision:** the 0.006 m/s annual drift is not a missing-wind, sea-ice, or
   unit defect. Keep the existing wind/water/Coriolis formulation and document
   the low drift ratio as a Coriolis-limited equilibrium of a massive 100 m
@@ -1090,6 +1090,33 @@ remains unchanged until the production-default decision in 11.7F.
   conservation.
 - **Docs:** `docs/wiki/stages/stage12/stage12.16_drift_diagnostics_ensemble_energy.md`,
   `KNOWN_ISSUES.md` Q-24.
+
+## D-74. Split literature form drag and skin drag; do not apply form drag to the top surface (Stage 12.17, 2026-11-13)
+
+- **Status:** ACTIVE (approved drag correction; replaces the Stage 9.1 coefficients).
+- **Decision:** dynamic drag uses form drag on vertical projections and skin drag on horizontal surfaces. Air: `Ca_form=1.3`, `Ca_skin=2.2e-3`; water: `Cw_form=0.9`, `Cw_skin=5.5e-3`. Form drag is not applied to the horizontal top `L*W`. The legacy `CD_AIR=1.3e-3` and `CD_WATER=2.0e-3` remain only for bulk thermal transfer and the low-flow `u_star` closure.
+- **Why:** the Stage 9.1 constants were skin-friction magnitudes used as form drag. Bigg et al. (1997) use `Ca=1.3`, `Cw=0.9` for vertical iceberg walls; Keghouche et al. (2009) use skin coefficients `cda=2.2e-3`, `cdw=5.5e-3`. The old values suppressed drift by ~1000x in force.
+- **Evidence:** `test/iceberg_test_drift_force_balance.f90` (9/9 PASS): 100 m cube reaches 1.45%/1.47% of 7/15 m/s wind and 85.5% of 0.1 m/s current (exact 85.6%); 50 m cube reaches 92.4% of the current. A 50^3/30 d run at 79.5N 45E drifts 407 km (0.157 m/s) versus the old ~0.006 m/s regime. Sensitivity: `Ca ±30%` changes path by -17%/+15%; `Cw ±30%` by +18%/-13%.
+- **Limits:** form coefficients are geometry-independent literature values; no observational track calibration. Sea-ice drag is still absent. The coefficients are compile-time defaults with sensitivity-only environment overrides.
+- **Docs:** `docs/wiki/stages/stage12/stage12.17_final_runs_and_figures.md`, `docs/model/model_equation_ledger.md` §17.5, `KNOWN_ISSUES.md` T-07.
+
+## D-75. Semi-implicit linearized drag with Coriolis for dt=3600 s stability (Stage 12.17, 2026-11-13)
+
+- **Status:** ACTIVE (numerical stabilization; no change to the drag law at steady state).
+- **Decision:** integrate the quadratic form/skin drag with a linearized implicit coefficient `K=|F_old|/|u_rel_old|` in a 2x2 system with semi-implicit Coriolis. The reported force diagnostics are the linearized forces at the new state, so the momentum budget closes exactly for the implicit step. When `K=0`, the update reduces to the previous semi-implicit Coriolis scheme.
+- **Why:** with literature form drag the explicit drag at `dt=3600 s` is unstable (wind 15 m/s produced NaN); the relaxation time is ~1 h, so an implicit drag is required.
+- **Evidence:** `iceberg_test_drift_force_balance` stable at 7/15 m/s; 100^3 final runs at `dt=3600` proceed without blow-up; the force budget closes to machine precision for the linearized step.
+- **Limits:** first-order linearization; transient drag differs slightly from the quadratic law. It is not a full iterative nonlinear solve.
+- **Docs:** `docs/wiki/stages/stage12/stage12.17_final_runs_and_figures.md`, `docs/model/model_equation_ledger.md` §17.5.
+
+## D-76. Final 100^3 2020/2024 runs are grounding/strict-ocean-limited trajectories (Stage 12.17, 2026-11-13)
+
+- **Status:** ACTIVE (result interpretation).
+- **Decision:** use the six 100^3 final runs from the three source-region approach points (`NZ 78N 55E`, `SV 76.5N 22.75E`, `FJL 80.5N 45E`) as the thesis results, but label every run that stops before 365 d by its stop reason. Do not extrapolate grounded/strict-ocean stops to a full year.
+- **Why:** with the corrected form drag, the 100 m cube drifts 172–2771 km and reaches shallow banks or leaves valid GLORYS ocean after 11–327 d. NZ: 161/50 d; Svalbard: 11/56 d; FJL: 327/118 d; mass loss 9.7–100%. FJL 2020 melts out at 327 d.
+- **Evidence:** `data/validation/stage12.17/final/`, `final_summary.csv`; figures in `docs/wiki/stages/stage12/figures/stage12.17/`.
+- **Limits:** no full-year free-drift reference at all three sources; no observational track validation. The maps and time series show available duration, not a complete year.
+- **Docs:** `docs/wiki/stages/stage12/stage12.17_final_runs_and_figures.md`, `KNOWN_ISSUES.md` Q-27.
 
 ## How to add decisions
 

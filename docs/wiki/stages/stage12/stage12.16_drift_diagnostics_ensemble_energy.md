@@ -6,6 +6,8 @@
 12-start 2024 ensemble at 50^3 with two 70^3 repeats; per-layer voxel drag
 areas; boundary-energy ledger. No calibration and no physics change beyond the
 explicit layer-resolved drag/energy instrumentation.
+> **Drift conclusion superseded by Stage 12.17:** the 12.16 low-drift explanation used skin-scale coefficients as form drag; the corrected form/skin drag and final maps are in `stage12.17_final_runs_and_figures.md`.
+
 ## 1. Executive summary
 
 | Item | Result |

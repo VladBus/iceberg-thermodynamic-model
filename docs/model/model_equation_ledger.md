@@ -582,17 +582,25 @@ F(m) = ρ_w c_w γ_T (T_w − T_B) − ρ_ice L_f m
 ### 17.5 Voxel geometry and drag
 
 ```text
-F_water = 0.5 ρ_w C_Dw A_sub_proj |u_rel| u_rel
-F_wind  = 0.5 ρ_a C_Da A_sail     |v_rel| v_rel
+F_wind  = 0.5 ρ_a [C_a,form A_sail,vert + C_a,skin A_top] |v_rel| v_rel
+F_water = Σ_k 0.5 ρ_w C_w,form A_vert,k |u_rel,k| u_rel,k
+        + 0.5 ρ_w C_w,skin A_bottom |u_rel,avg| u_rel,avg
 ```
 
-- Meaning: water and wind drag using voxel-derived projected submerged area and
-  exposed sail area.
+- Meaning: form drag acts on the vertical sail/keel projections; skin drag acts
+  on horizontal top/bottom surfaces. Form drag is not applied to `L*W`.
+- Coefficients: `C_a,form=1.3`, `C_w,form=0.9` (Bigg et al. 1997, as used by
+  Mugford & Dowdeswell 2010); `C_a,skin=2.2e-3`, `C_w,skin=5.5e-3`
+  (Keghouche et al. 2009). The legacy `CD_AIR=1.3e-3` and `CD_WATER=2.0e-3` are
+  retained for thermal transfer and the low-flow `u_star` closure, not for
+  iceberg form drag.
 - Units: forces N, areas m², velocities m/s.
-- Implementation: `src/voxel_iceberg.f90` (`A_sub_proj`, `A_sail`, `GM`) and
-  `src/iceberg_dynamics.f90` (gated use).
-- Limitations: uniform flow direction; `A_sail` is total exposed surface, not a
-  projected sail; no capsize/roll; concave silhouettes approximated.
+- Implementation: `src/voxel_iceberg.f90` (`voxel_iceberg_get_drag_geometry`,
+  `voxel_iceberg_get_layer_areas`) and `src/iceberg_dynamics.f90` (form/skin
+  split, semi-implicit linearized drag + Coriolis).
+- Limitations: uniform flow direction per layer set; no capsize/roll; concave
+  silhouettes approximated; no sea-ice drag; drag is linearized about the old
+  relative velocity for stability at `dt=3600 s`.
 
 ### 17.6 Wave erosion (Bigg/NEMO)
 

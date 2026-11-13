@@ -1,0 +1,11 @@
+screen,source,year,tag,days,mass_loss_pct,stop
+30d screen v1,FJL,2020,FJL_2020,23.5,12.6,grounded
+30d screen v1,FJL,2024,FJL_2024,30.0,12.5,complete
+30d screen v1,NZ,2020,NZ_2020,30.0,17.5,complete
+30d screen v1,NZ,2024,NZ_2024,30.0,25.4,complete
+30d screen v1,SV,2020,SV_2020,10.5,10.0,grounded
+30d screen v1,SV,2024,SV_2024,30.0,61.5,complete
+30d screen v2,FJL,2020,FJL_2020,30.0,18.4,complete
+30d screen v2,FJL,2024,FJL_2024,30.0,19.2,complete
+30d screen v2,SV,2020,SV_2020,8.2,14.4,grounded
+30d screen v2,SV,2024,SV_2024,22.1,45.4,grounded

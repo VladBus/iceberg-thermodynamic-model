@@ -1,0 +1,6 @@
+Stage 12.17 final 100^3 runs (6 runs)
+grid: 100x100x100, dx=1 m, dt=3600 s, 366 days requested
+wall estimate: 1.6-1.8 h per run, 10-11 h total (sequential)
+snapshots: every 10 days, T/phi/S_B float32, ~12 MB each, ~37 per run
+snapshot volume: ~444 MB per run, ~2.7 GB total
+time-series/CSV per run: <10 MB; total <60 MB

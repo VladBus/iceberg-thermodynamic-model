@@ -1,0 +1,32 @@
+[  0%] iceberg_test_drift_force_balan
+[ 50%] iceberg_test_drift_force_balan  done.
+[ 50%] iceberg_test_drift_force_balan
+[100%] iceberg_test_drift_force_balan  done.
+[100%] Project compiled successfully.
+STOP 0
+ ==================================================
+   DRIFT FORCE BALANCE WITH FORM + SKIN DRAG (12.17)
+ ==================================================
+ mass [kg] = 910000000.00   f [1/s] =   1.4181E-04
+ ICEBERG INIT: pos=(   0.00000000     ,   0.00000000     ) LWH=(   100.000000     ,   100.000000     ,   100.000000     ) lat/lon=(   76.5000000     ,   30.0000000     ) vel=(   0.0000000000000000      ,   0.0000000000000000      )
+ wind    7.0 m/s: model   0.101414  analytic   0.102678  u/wind  0.014488
+  OK: model matches the form/skin drag + Coriolis root
+  OK: wind drift is 1-3% of wind
+  OK: wind, water and Coriolis forces balance at steady state
+ ICEBERG INIT: pos=(   0.00000000     ,   0.00000000     ) LWH=(   100.000000     ,   100.000000     ,   100.000000     ) lat/lon=(   76.5000000     ,   30.0000000     ) vel=(   0.0000000000000000      ,   0.0000000000000000      )
+ wind   15.0 m/s: model   0.220812  analytic   0.223880  u/wind  0.014721
+  OK: model matches the form/skin drag + Coriolis root
+  OK: wind drift is 1-3% of wind
+  OK: wind, water and Coriolis forces balance at steady state
+ ICEBERG INIT: pos=(   0.00000000     ,   0.00000000     ) LWH=(   100.000000     ,   100.000000     ,   100.000000     ) lat/lon=(   76.5000000     ,   30.0000000     ) vel=(   0.0000000000000000      ,   0.0000000000000000      )
+ current 0.1 m/s, 100 m: model   0.085531  exact   0.085568  u/U  0.855313
+  OK: 100 m current response matches the exact Coriolis-limited solution
+ ICEBERG INIT: pos=(   0.00000000     ,   0.00000000     ) LWH=(   50.0000000     ,   50.0000000     ,   50.0000000     ) lat/lon=(   76.5000000     ,   30.0000000     ) vel=(   0.0000000000000000      ,   0.0000000000000000      )
+ current 0.1 m/s, 50 m: model   0.092421  exact   0.092481  u/U  0.924206
+  OK: 50 m cube reaches >=90% of the current
+ ICEBERG INIT: pos=(   0.00000000     ,   0.00000000     ) LWH=(   100.000000     ,   100.000000     ,   100.000000     ) lat/lon=(   0.00000000     ,   30.0000000     ) vel=(   0.0000000000000000      ,   0.0000000000000000      )
+ current 0.1 m/s, no Coriolis, 60 d: model   0.098522  u/U  0.985222
+  OK: without Coriolis the iceberg approaches the current
+ 
+TOTAL CHECKS: 9 ERRORS: 0
+ SUCCESS: drift force balance test PASSED

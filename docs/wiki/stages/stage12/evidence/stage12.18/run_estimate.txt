@@ -1,0 +1,4 @@
+Stage 12.18: 12 runs, 50 m cube, 50^3 dx=1, 366 days requested
+measured 5-day wall 13.35 s -> ~14 min per run; total ~2.8 h
+snapshots every 10 days: 50^3 x 3 fields x float32 ~1.5 MB each, ~37/run
+snapshot volume ~55 MB/run, ~660 MB total; no data in git

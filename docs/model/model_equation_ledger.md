@@ -653,3 +653,28 @@ k' = k - k_shift  (empty bottom layers removed)
   validation. Compaction does not re-float the body to hydrostatic equilibrium.
   Boundary salinity is output as `S_boundary` for diagnostic plots; it is not a
   prognostic salt equation.
+
+### 17.9 Calved components and energy bookkeeping
+
+```text
+S = {voxels : phi > phi_min}
+L_k = six-face connected component k of S
+main = argmax_k |L_k|
+calved = S \ main
+D, F_b, hydrostatics: computed from main only
+residual = Q_boundary - Q_melt_sensible
+           - [sensible(calved) + sensible(flushed) + L_f*m_surface]
+```
+
+- Meaning: the largest connected solid component is the floating main body;
+  disconnected pieces are removed and logged as calved. The total calved
+  enthalpy (`calved_energy_J`) is retained as an output reservoir but is not a
+  boundary heat sink in the residual.
+- Units: energy J, mass kg, `L_f` J/kg; `phi` is volume fraction.
+- Implementation: `voxel_iceberg_remove_calved`,
+  `voxel_iceberg_get_calved`, `voxel_iceberg_get_calved_events`; residual in
+  `app/iceberg_run.f90`.
+- Limitations: six-face connectivity is grid- and interval-dependent; thin
+  bridges are unresolved. The residual is a diagnostic ledger, not a
+  state-level conservation law; melt sensible enthalpy is still removed by the
+  state update. See Stage 12.19.

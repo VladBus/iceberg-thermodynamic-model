@@ -1139,6 +1139,70 @@ remains unchanged until the production-default decision in 11.7F.
 - **Docs:** `docs/wiki/stages/stage12/stage12.18_final_runs_and_figures.md`,
   `KNOWN_ISSUES.md` Q-28.
 
+## D-78. Calved components are disconnected solid components; the largest one is the main body (Stage 12.19, 2026-11-14)
+
+- **Status:** ACTIVE (model geometry; no calibration).
+- **Decision:** at each connectivity check, label the solid set `phi > phi_min`
+  with six-face connectivity and retain the largest connected component as the
+  main body. All other solid components are removed and recorded as calved
+  mass, sensible/total energy, size and cell count. Draft, freeboard and
+  hydrostatics are computed from the retained main body only.
+- **Why:** the old waterline included detached plate/overhang voxels and put the
+  main body at the wrong draft. For FJL2 2020 day 270 the old draft/freeboard
+  was 41.07/0.93 m; after removal it is 25.35/10.65 m. The mass curves of 12.18
+  and 12.19 are identical until the first calving at 229.25 d, then diverge by
+  the calved mass plus the changed main-body melt geometry.
+- **Evidence:** `test_voxel_calved`; two calved events (3.75 and 0.54 Mt);
+  components 1/1 at 270/365 d; max draft jump 0.015 m on 239–243 d; mass
+  residual `-1.29e-8 m0`.
+- **Limits:** six-face connectivity is grid- and interval-dependent; thin
+  bridges between checks are unresolved. `VOXEL_CONNECTIVITY_HOURS=1` is the
+  default; 100³ references used 6 h. This is not a fracture/capsize model.
+- **Docs:** `docs/wiki/stages/stage12/stage12.19_calved_geometry_reference_runs.md`,
+  `KNOWN_ISSUES.md` Q-30.
+
+## D-79. Energy residual uses sensible-only calved/flush enthalpy plus surface latent heat (Stage 12.19, 2026-11-14)
+
+- **Status:** ACTIVE (diagnostic ledger).
+- **Decision:** the residual uses `sensible(calved) + sensible(flushed) +
+  L_f*m_surface` as the removed-ice terms. Total `calved_energy_J`
+  (sensible + latent) remains an output reservoir but is not a boundary heat
+  sink. Artificially using total calved enthalpy is forbidden for closure
+  claims.
+- **Why:** the pre-existing 12.18 365-day residual was already -3.88%; the
+  first 12.19 ledger flipped to +1.33% because latent heat of unmelted calved
+  ice was subtracted and surface latent heat was omitted. The corrected FJL2
+  2020 result is +0.0195% final (N=1 h), +0.0166% (N=6 h), max +0.514%.
+- **Evidence:** `run.nc_energy.csv` 19-column ledger; `stage12.19_check.py`;
+  `energy_residual_calving.png`.
+- **Limits:** diagnostic closure only; the state update still removes melt
+  sensible enthalpy without subtracting it, so do not claim state-level energy
+  conservation. See D-73 and Q-24.
+- **Docs:** `docs/wiki/stages/stage12/stage12.19_calved_geometry_reference_runs.md`,
+  `docs/model/model_equation_ledger.md` §17.9.
+
+## D-80. Stage 4 100³ references use documented replacement starts after 60-day screening (Stage 12.19, 2026-11-14)
+
+- **Status:** ACTIVE (reference-run definition).
+- **Decision:** run six 2020 100³ free-drift references with
+  `--strict-ocean --stop-on-grounding`, no grounded-in-place. Require no
+  grounding during the first 60 d. The original 12.18 six 2020 points were
+  screened; only NZ1 passed. The final set is FJL_A (80.5N 45E), NZ_A
+  (75.5N 57E), NZ_B (78N 55E), D2 (76N 40E), D4 (77N 40E) and D5 (75N 45E).
+- **Why:** the 100 m cube has a ~90 m draft; five original starts left valid
+  ocean or grounded within 15 d. The final starts are the nearest verified
+  free-drift alternatives and all pass the first-60-day check.
+- **Evidence:** `evidence/stage12.19/stage4_selection.csv`,
+  `stage4_screen.csv`, `stage4_summary.csv`. Four runs melt out; NZ_A stops at
+  78.7 d (strict ocean) and NZ_B grounds at 161 d. FJL_A reaches t99 at
+  285.9 d; D2/D4 reach t99 at 94.9/101.3 d.
+- **Limits:** this is not the original six source/year set; it is a
+  free-drift-capable replacement set. No observational track validation and no
+  full-year guarantee for the early stops. 100³ is still not converged
+  (`p=0.711`, 3.75% error).
+- **Docs:** `docs/wiki/stages/stage12/stage12.19_calved_geometry_reference_runs.md`,
+  `KNOWN_ISSUES.md` Q-29.
+
 ## How to add decisions
 
 A new decision is appended with an ID, stage, status, and links to reports.

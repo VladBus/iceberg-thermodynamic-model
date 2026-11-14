@@ -1,0 +1,12 @@
+case,lat,lon,screen,first60_pass,note
+FJL1,80.9167,52.0,STRICT_OCEAN,False,stopped at 1.46 d
+FJL2,81.0,55.0,STRICT_OCEAN,False,stopped at 14.75 d
+NZ1,75.5,57.0,OK,True,60 d complete
+NZ2,76.5,58.0,GROUNDED,False,shortly after start
+SV1,76.5,20.5,GROUNDED,False,7.75 d
+SV2,77.58,19.0,GROUNDED,False,5.8 d
+FJL_A,80.5,45.0,ACCEPTED_12.17,True,12.17 326 d reference
+NZ_B,78.0,55.0,ACCEPTED_12.17,True,12.17 161 d reference
+D2,76.0,40.0,OK,True,60 d complete
+D4,77.0,40.0,OK,True,60 d complete
+D5,75.0,45.0,OK,True,60 d complete

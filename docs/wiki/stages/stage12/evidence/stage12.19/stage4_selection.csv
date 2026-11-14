@@ -1,0 +1,7 @@
+case,source,lat0,lon0,replaces,reason
+FJL_A,FJL,80.5,45.0,FJL1/FJL2,"originals FJL1/FJL2 failed 60-d strict-ocean screening; nearest verified 100 m free-drift start"
+NZ_A,NZ,75.5,57.0,NZ1,"original NZ1 passed 60-d screening; retained"
+NZ_B,NZ,78.0,55.0,NZ2,"original NZ2 grounded; verified 100 m start, passes 60 d and 161 d"
+D2,SV-east,76.0,40.0,SV1,"original SV1 grounded at 7.75 d; nearest verified deep-water replacement"
+D4,SV-north,77.0,40.0,SV2,"original SV2 grounded at 5.8 d; nearest verified deep-water replacement"
+D5,Barents,75.0,45.0,-,"additional reference start; verified 60-d free drift"

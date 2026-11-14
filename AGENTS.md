@@ -20,9 +20,14 @@ in `KNOWN_ISSUES.md`; the documentation map is `docs/README.md`.
   layer compaction, tested 70^3 convergence, and confirmed that no lower
   resolution meets <1%. Stage 12.14 blocked the Enderlin rerun on missing
   Antarctic site forcing, obtained p=0.711 (100^3 error 3.75%), and ran strict
-  100^3 2020/2024 experiments to 365.0 d of requested 366 d. Stage 12.9b thesis
-  writing is the active workstream. See `docs/validation/INDEX.md` and
-  `docs/references/reanalysis_data_plan.md`.
+  100^3 2020/2024 experiments to 365.0 d of requested 366 d. Stage 12.15–12.18
+  added the current-code Enderlin/drift audit, layer drag and energy diagnostics,
+  the form/skin drag correction, and the 12-run 50 m grounded-in-place matrix.
+  Stage 12.19 adds connected-component calving with main-body hydrostatics,
+  sensible-only calved/flush energy closure, the Stage 2 figure set, offline
+  drift/melt diagnostics, and six 100^3 2020 references with documented start
+  replacements. Stage 12.9b thesis writing is the active workstream. See
+  `docs/validation/INDEX.md` and `docs/references/reanalysis_data_plan.md`.
 - Check `docs/model/model_physics_status.md`, `docs/DECISIONS.md`, and
   `KNOWN_ISSUES.md` before making claims about physics, switches, or open issues.
 

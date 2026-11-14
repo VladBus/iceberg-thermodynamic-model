@@ -2,7 +2,7 @@
 
 Stage 12 is the current scientific stage. This directory stores completed
 stage reports and their evidence; it is not the working directory for unfinished
-tasks. Stage 12.9a acquisition, Stage 12.10 voxel thermodynamics, the Stage 12.11/12.12/12.13 audits, the Stage 12.14 100^3 audit, the Stage 12.15 current-code Enderlin/drift-map rerun, the Stage 12.16 drift/ensemble/layer-drag/energy audit, the Stage 12.17 drag correction/final-run audit, and the Stage 12.18 50 m grounded-in-place final-run audit are complete;
+tasks. Stage 12.9a acquisition, Stage 12.10 voxel thermodynamics, the Stage 12.11/12.12/12.13 audits, the Stage 12.14 100^3 audit, the Stage 12.15 current-code Enderlin/drift-map rerun, the Stage 12.16 drift/ensemble/layer-drag/energy audit, the Stage 12.17 drag correction/final-run audit, the Stage 12.18 50 m grounded-in-place final-run audit, and the Stage 12.19 calved-geometry/energy/reference-run audit are complete;
 the acquisition manifests remain in `docs/validation/` as canonical provenance.
 Stage 12.9b thesis writing is the active workstream.
 
@@ -36,6 +36,7 @@ Stage 12.9b thesis writing is the active workstream.
 | 12.16 | [`stage12.16_drift_diagnostics_ensemble_energy.md`](stage12.16_drift_diagnostics_ensemble_energy.md) | Drift-force audit (superseded drift conclusion), Enderlin baselines, 12-start 2024 ensemble, layer-resolved drag, energy ledger |
 | 12.17 | [`stage12.17_final_runs_and_figures.md`](stage12.17_final_runs_and_figures.md) | Literature form/skin drag, stable semi-implicit drag, final 100^3 2020/2024 runs and thesis figures |
 | 12.18 | [`stage12.18_final_runs_and_figures.md`](stage12.18_final_runs_and_figures.md) | 12-run 50 m final matrix, grounded-in-place mode, corrected 3D/GIF/map figures |
+| 12.19 | [`stage12.19_calved_geometry_reference_runs.md`](stage12.19_calved_geometry_reference_runs.md) | Connected-component calving, main-body hydrostatics/energy closure, Stage 2 figures, offline drift/melt maps, six 100³ 2020 references |
 
 The 12.8 drift and lifetime results are lower bounds from monthly GLORYS and
 constant-atmosphere fallbacks; they are not daily-forcing validation. No stage
@@ -47,6 +48,7 @@ report currently claims quantitative daily-forcing performance.
 - `evidence/stage12.16/` — drift test log, Enderlin baseline/correlation/site tables, ensemble CSV/JSON, and energy/footprint closure JSONs (Stage 12.16).
 - `evidence/stage12.17/` — drag test log, Ca/Cw sensitivity, 30-day site screening, run estimate and final-run summary (Stage 12.17).
 - `evidence/stage12.18/` — 12-run summary, site manifest, grounded-event example, drift test and run estimate (Stage 12.18).
+- `evidence/stage12.19/` — Stage 2 fixed-case checks, Stage 3 diagnostics, Stage 4 selection/screening and six-run summary (Stage 12.19).
 - `figures/enderlin23/` — plots from Stage 12.7a.
 - `figures/barents2020/` — plots from Stage 12.8.
 - `figures/voxel_demo/` — spatial fields and diagnostics from Stage 12.10.
@@ -58,6 +60,7 @@ report currently claims quantitative daily-forcing performance.
 - `figures/stage12.16/` — Enderlin ratio drivers and 2024 12-start ensemble maps (Stage 12.16; drift conclusion superseded).
 - `figures/stage12.17/` — final-run tracks, time series, 3D snapshots/GIFs and summary maps (Stage 12.17).
 - `figures/stage12.18/` — 12-run 50 m tracks, time series, corrected 3D snapshots/GIFs and 2020/2024 summary map (Stage 12.18).
+- `figures/stage12.19/` — Stage 2 3×5 matrix/profiles/GIFs, Stage 3 drift/melt maps, Stage 4 100³ summary (Stage 12.19).
 - `STAGE12_PREPARATION.md` and `transition_analysis.md` — archived planning
   records, not active work plans.
 
@@ -88,6 +91,8 @@ annual runs were **not** promoted; the 2020 fallback-free candidate is
 [`stage12.13_voxel_prism_convergence_annual_readiness.md`](stage12.13_voxel_prism_convergence_annual_readiness.md).
 
 **12.14 audit status:** Enderlin rerun is blocked by absent Antarctic site forcing; 30-day order is `p=0.711` with a `3.75%` 100^3 error; 100^3 2020/2024 strict-ocean runs reached 365.0 d of requested 366 d with no fallback. See [`stage12.14_hindcast_convergence_annual_100cube.md`](stage12.14_hindcast_convergence_annual_100cube.md).
+
+**12.19 status:** six-face calved-component removal uses the largest connected body for draft/freeboard and hydrostatics; the 50³ control closes mass to −1.29e-8 m0 and the corrected energy ledger to +0.0195% (final; max 0.514%). Stage 2 figures use three 50³ cases; Stage 3 drift and stationary melt are explicitly **offline diagnostics**, not no-thermodynamics model runs. Stage 4 has six 100³ 2020 free-drift references after 60-day screening; five original starts failed, so the replacements are recorded in `evidence/stage12.19/stage4_selection.csv`. Only NZ_A stops at 78.7 d (strict ocean) and NZ_B grounds at 161 d; the other four melt out. See [`stage12.19_calved_geometry_reference_runs.md`](stage12.19_calved_geometry_reference_runs.md).
 
 **12.18 status:** twelve 50 m cube runs (50^3 / 1 m, 2 starts per
 source × 2020/2024) use `--grounded-in-place`; 6 melt out and 6 reach the end

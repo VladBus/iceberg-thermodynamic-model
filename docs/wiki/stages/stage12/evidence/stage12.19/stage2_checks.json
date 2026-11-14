@@ -1,0 +1,26 @@
+{
+  "FJL1_2020": {
+    "components_day_270": 1,
+    "components_day_365": 1,
+    "mass_balance_residual_rel": -2.284103094094097e-09,
+    "calved_mass_kg": 1808177.9919095214,
+    "calved_events": 1,
+    "energy_residual_final_pct_latent": 0.050449910445
+  },
+  "FJL2_2020": {
+    "components_day_270": 1,
+    "components_day_365": 1,
+    "mass_balance_residual_rel": -1.2873348436405232e-08,
+    "calved_mass_kg": 4286392.648952472,
+    "calved_events": 2,
+    "energy_residual_final_pct_latent": 0.016588823727
+  },
+  "FJL2_2024": {
+    "components_day_270": 1,
+    "components_day_365": 1,
+    "mass_balance_residual_rel": 1.4849432222135774e-09,
+    "calved_mass_kg": 0.0,
+    "calved_events": 0,
+    "energy_residual_final_pct_latent": -0.052011419491
+  }
+}

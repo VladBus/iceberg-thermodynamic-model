@@ -44,8 +44,10 @@ module iceberg_thermodynamics
                              voxel_iceberg_get_fields, voxel_iceberg_get_energy, &
                              voxel_iceberg_get_freeboard, voxel_iceberg_get_cumulative_losses, &
                              voxel_iceberg_get_boundary_energy, voxel_iceberg_get_melt_sensible_energy, &
-                             voxel_iceberg_get_thermal_fields, &
-                             voxel_iceberg_get_solver, voxel_iceberg_set_c_ice
+                             voxel_iceberg_get_thermal_fields, voxel_iceberg_get_calved, &
+                             voxel_iceberg_get_calved_events, &
+                             voxel_iceberg_get_solver, voxel_iceberg_set_c_ice, &
+                             voxel_iceberg_set_connectivity_hours
     use param, only: nat
     use wave_forcing, only: wave_erosion_enabled, get_wave_forcing, hs_to_sea_state, &
                             bigg_wave_melt, wave_forcing_epoch
@@ -1397,6 +1399,7 @@ contains
         character(len=64) :: ev, sch
         integer :: nx, ny, nz, scheme, cg_maxit
         real(8) :: dx, dy, dz, t_init, phi_init, phi_min, theta, cg_tol, melt_cap
+        real(8) :: connectivity_hours
 
         if (vox_checked) return
         vox_checked = .true.
@@ -1428,6 +1431,9 @@ contains
         call env_int('ICEBERG_CG_MAXIT', cg_maxit)
         call env_real('VOXEL_MELT_CAP', melt_cap)
         call env_real('VOXEL_C_ICE', vox_c_ice)
+        connectivity_hours = 1.0d0
+        call env_real('VOXEL_CONNECTIVITY_HOURS', connectivity_hours)
+        call voxel_iceberg_set_connectivity_hours(connectivity_hours)
         vox_nx = nx; vox_ny = ny; vox_nz = nz
         vox_dx = dx; vox_dy = dy; vox_dz = dz
         vox_t_init = t_init; vox_phi_init = phi_init; vox_phi_min = phi_min
@@ -1701,6 +1707,28 @@ contains
         if (.not. (vox_enabled .and. vox_ready)) return
         call voxel_iceberg_get_cumulative_losses(vox_ice, basal, lateral, surface, flush)
     end subroutine voxel_model_get_cumulative_losses
+
+    subroutine voxel_model_get_calved(mass, energy, n_events)
+        real(8), intent(out) :: mass, energy
+        integer, intent(out) :: n_events
+        mass = 0.0_8; energy = 0.0_8; n_events = 0
+        call voxel_model_configure()
+        if (.not. (vox_enabled .and. vox_ready)) return
+        call voxel_iceberg_get_calved(vox_ice, mass, energy, n_events)
+    end subroutine voxel_model_get_calved
+
+    subroutine voxel_model_get_calved_events(n, time, mass, energy, size, cells)
+        integer, intent(out) :: n
+        real(8), allocatable, intent(out) :: time(:), mass(:), energy(:), size(:,:)
+        integer, allocatable, intent(out) :: cells(:)
+        n = 0
+        call voxel_model_configure()
+        if (.not. (vox_enabled .and. vox_ready)) then
+            allocate (time(0), mass(0), energy(0), size(3, 0), cells(0))
+            return
+        end if
+        call voxel_iceberg_get_calved_events(vox_ice, n, time, mass, energy, size, cells)
+    end subroutine voxel_model_get_calved_events
 
     subroutine voxel_model_get_energy(sensible, flushed)
         real(8), intent(out) :: sensible, flushed

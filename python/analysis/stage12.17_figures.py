@@ -70,6 +70,9 @@ def daily_frame(ds):
             "v_w": float(np.nanmean(ds.ocean_v_draft.values[k])),
             "wind": float(np.nanmean(np.hypot(ds.air_u10.values[k], ds.air_v10.values[k]))),
             "grounded": int(ds.grounded.values[k[-1]]) if "grounded" in ds else 0,
+            "flush_mass": float(ds.voxel_mass_loss_flush.values[k[-1]]) if "voxel_mass_loss_flush" in ds else 0.0,
+            "calved_mass": float(ds.calved_mass.values[k[-1]]) if "calved_mass" in ds else 0.0,
+            "calved_energy": float(ds.calved_energy.values[k[-1]]) if "calved_energy" in ds else 0.0,
         }
         for v in ("mass_loss_basal", "mass_loss_lateral", "mass_loss_surface", "mass_loss_vapor"):
             rec[v] = float(np.nansum(ds[v].values[k])) if v in ds else 0.0
@@ -134,7 +137,9 @@ def plot_series(rows, out, name):
     ax[0, 1].set_ylabel("m"); ax[0, 1].legend(); ax[0, 1].set_title("Geometry")
     for v, lab in (("mass_loss_basal", "basal"), ("mass_loss_lateral", "lateral"), ("mass_loss_surface", "surface")):
         ax[1, 0].plot(t, np.cumsum([r[v] for r in rows]) / m0 * 100, label=lab)
-    ax[1, 0].set_ylabel("% of initial mass"); ax[1, 0].legend(); ax[1, 0].set_title("Melt components")
+    ax[1, 0].plot(t, [r["flush_mass"] / m0 * 100 for r in rows], label="flush")
+    ax[1, 0].plot(t, [r["calved_mass"] / m0 * 100 for r in rows], label="calved")
+    ax[1, 0].set_ylabel("% of initial mass"); ax[1, 0].legend(); ax[1, 0].set_title("Mass-loss components")
     ax[1, 1].plot(t, [r["T_w"] for r in rows], label="T water")
     ax[1, 1].plot(t, [r["S_w"] * 1000 for r in rows], label="S water [g/kg]")
     ax[1, 1].set_ylabel("T [C] / S [g/kg]"); ax[1, 1].legend(); ax[1, 1].set_title("Water at draft")
@@ -146,6 +151,26 @@ def plot_series(rows, out, name):
     for a in ax.ravel():
         a.grid(alpha=.25); a.set_xlabel("day")
     fig.suptitle(name); fig.tight_layout(); fig.savefig(out, dpi=220); plt.close(fig)
+
+
+
+def plot_balance(rows, out, name):
+    t = np.array([r["day"] for r in rows], float)
+    m0 = rows[0]["mass"]
+    total = np.array([m0 - r["mass"] for r in rows])
+    melt = np.cumsum([r["mass_loss_basal"] + r["mass_loss_lateral"] + r["mass_loss_surface"] for r in rows])
+    flush = np.array([r["flush_mass"] for r in rows])
+    calved = np.array([r["calved_mass"] for r in rows])
+    resid = total - (melt + flush + calved)
+    fig, ax = plt.subplots(figsize=(8, 4.8))
+    ax.plot(t, melt / m0 * 100, label="basal+lateral+surface")
+    ax.plot(t, flush / m0 * 100, label="flush")
+    ax.plot(t, calved / m0 * 100, label="calved")
+    ax.plot(t, total / m0 * 100, "k--", label="total loss")
+    ax.plot(t, resid / m0 * 100, "r-", lw=.8, label="residual")
+    ax.set_xlabel("day"); ax.set_ylabel("% of initial mass"); ax.grid(alpha=.25)
+    ax.set_title(f"{name}: mass balance"); ax.legend(fontsize=8)
+    fig.tight_layout(); fig.savefig(out, dpi=220); plt.close(fig)
 
 
 def snapshot_files(run_dir):
@@ -261,7 +286,7 @@ def make_gif(run_dir, static, out_prefix, name, target=24):
     start = datetime(year, 1, 1)
     with xr.open_dataset(run_dir / "run.nc") as ds:
         run_mass = {int(round(float(t) / 86400.0)): float(m) for t, m in zip(ds.time.values, ds.mass.values)}
-    m0 = run_mass.get(0, next(iter(run_mass.values())))
+        m0 = float(ds.mass.values[0])
     frames_phi, frames_T = [], []
     for f in files:
         ph, Td, Sd, x, y, z, mass, tval = load_snapshot(f, target=target)
@@ -336,6 +361,7 @@ def main():
     plot_track(rows, a.static, a.out_dir / "track_melt.png", "melt_rate_m_day",
                f"{name} melt rate", r"melt rate [m day$^{-1}$]", "YlOrRd", log=True)
     plot_series(rows, a.out_dir / "time_series.png", name)
+    plot_balance(rows, a.out_dir / "mass_balance.png", name)
     plot_snapshots(a.run_dir, a.out_dir / "snapshots_3d.png", name)
     make_gif(a.run_dir, a.static, a.out_dir / "evolution", name)
     plot_track_gif(rows, a.static, a.out_dir / "track.gif", name)

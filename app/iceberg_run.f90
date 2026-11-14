@@ -27,7 +27,8 @@ program iceberg_run
                                       voxel_model_get_cumulative_losses, voxel_model_get_solver, &
                                       voxel_model_get_fields, voxel_model_get_energy, &
                                       voxel_model_get_thermal_fields, &
-                                      voxel_model_get_boundary_energy, voxel_model_get_melt_sensible_energy
+                                      voxel_model_get_boundary_energy, voxel_model_get_melt_sensible_energy, &
+                                      voxel_model_get_calved, voxel_model_get_calved_events
     use ocean_provider, only: SRC_REANALYSIS
     use netcdf_input, only: era5_open, era5_is_open
     use wave_forcing, only: wave_forcing_configure, wave_forcing_set_epoch
@@ -55,6 +56,9 @@ program iceberg_run
     real(8), allocatable :: rfw_x(:), rfw_y(:), rfo_x(:), rfo_y(:), rfc_x(:), rfc_y(:)
     real(8), allocatable :: rfp_x(:), rfp_y(:), rfk_x(:), rfk_y(:), riu(:), riv(:)
     real(8), allocatable :: rbsub(:), rbair(:), rbtest(:), rmeltsens(:)
+    real(8), allocatable :: rcalved_mass(:), rcalved_energy(:), rcalved_events(:)
+    real(8), allocatable :: ev_time(:), ev_mass(:), ev_energy(:), ev_size(:,:)
+    integer, allocatable :: ev_cells(:)
     integer, allocatable :: rgrnd(:)
     real(8), allocatable :: fbt(:), fblat(:), fblon(:), fsel_lat(:), fsel_lon(:)
     real(8), allocatable :: fbr(:), fbd(:), fbtm(:), fbs(:), fbu(:), fbv(:)
@@ -74,7 +78,7 @@ program iceberg_run
     logical :: stop_on_grounding, grounded_in_place
     real(8) :: epoch, lat_use, lon_use, sum_b, sum_l, sum_s, sum_v, sum_w, sum_a, sum_tf, vol0
     real(8) :: e8, f8, f_lat, f_lon, f_dist
-    integer :: ngr
+    integer :: ngr, ncalved
     real(8), allocatable :: grt(:), grlat(:), grlon(:), grflat(:), grflon(:), grdist(:), grdraft(:), grbathy(:)
     real(8) :: force_lat, force_lon, force_dist, bathy_use
     logical :: was_grounded, force_in_place
@@ -180,6 +184,7 @@ program iceberg_run
     allocate (rfw_x(nrec), rfw_y(nrec), rfo_x(nrec), rfo_y(nrec), rfc_x(nrec), rfc_y(nrec), &
               rfp_x(nrec), rfp_y(nrec), rfk_x(nrec), rfk_y(nrec), riu(nrec), riv(nrec), rgrnd(nrec))
     allocate (rbsub(nrec), rbair(nrec), rbtest(nrec), rmeltsens(nrec))
+    allocate (rcalved_mass(nrec), rcalved_energy(nrec), rcalved_events(nrec))
     allocate (fbt(nrec), fblat(nrec), fblon(nrec), fsel_lat(nrec), fsel_lon(nrec), &
               fbr(nrec), fbd(nrec), fbtm(nrec), fbs(nrec), fbu(nrec), fbv(nrec))
     allocate (grt(nrec), grlat(nrec), grlon(nrec), grflat(nrec), grflon(nrec), &
@@ -315,6 +320,7 @@ program iceberg_run
         rwl(irec) = real(diag%wave_mass_loss, 8)
         renergy(irec) = 0.0d0; rflush(irec) = 0.0d0
         rbsub(irec) = 0.0d0; rbair(irec) = 0.0d0; rbtest(irec) = 0.0d0; rmeltsens(irec) = 0.0d0
+        rcalved_mass(irec) = 0.0d0; rcalved_energy(irec) = 0.0d0; rcalved_events(irec) = 0.0d0
         rvb(irec) = 0.0d0; rvlat(irec) = 0.0d0; rvs(irec) = 0.0d0; rvf(irec) = 0.0d0
         rtd(irec) = real(diag%t_draft, 8); rsd(irec) = real(diag%s_draft, 8)
         rpv(irec) = real(st%L, 8)*real(st%W, 8)*real(st%H, 8)
@@ -337,6 +343,8 @@ program iceberg_run
             renergy(irec) = e8; rflush(irec) = f8
             call voxel_model_get_boundary_energy(rbsub(irec), rbair(irec), rbtest(irec))
             call voxel_model_get_melt_sensible_energy(rmeltsens(irec))
+            call voxel_model_get_calved(rcalved_mass(irec), rcalved_energy(irec), ncalved)
+            rcalved_events(irec) = real(ncalved, 8)
             call voxel_model_get_cumulative_losses(rvb(irec), rvlat(irec), rvs(irec), rvf(irec))
             call voxel_model_get_solver(cg, rres(irec), clips, rl)
             rcg(irec) = real(cg, 8)
@@ -377,13 +385,20 @@ program iceberg_run
         sum_tf/max(nsum, 1)
     call write_nc(trim(out_nc), nrec, rt, rlat, rlon, rmass, rdraft, rti, rmw, rwml, &
                   rvol, rawet, rsic, rbl, rll, rsl, rvl, rwl, renergy, rflush, rfreeboard, &
-                  rvb, rvlat, rvs, rvf, rtd, rsd, ru, rv, rat, rau, rav, rpm, rpv, rpd, rpf, rcg, rres, rgrnd)
+                  rvb, rvlat, rvs, rvf, rtd, rsd, ru, rv, rat, rau, rav, rpm, rpv, rpd, rpf, rcg, rres, rgrnd, &
+                  rcalved_mass, rcalved_energy, rcalved_events)
     call write_forces_csv(trim(out_nc)//'_forces.csv', nrec)
     call write_energy_csv(trim(out_nc)//'_energy.csv', nrec)
     if (nsnap > 0) then
         vox_nc = trim(out_nc)//'_voxel.nc'
         call write_voxel_nc(trim(vox_nc), nsnap)
         print '(a,i0,a,a)', 'iceberg_run: wrote ', nsnap, ' voxel snapshots to ', trim(vox_nc)
+    end if
+    call voxel_model_get_calved_events(ncalved, ev_time, ev_mass, ev_energy, ev_size, ev_cells)
+    if (ncalved > 0) then
+        call write_calved_csv(trim(out_nc)//'_calved.csv', ncalved, ev_time, ev_mass, ev_energy, ev_size, ev_cells)
+        print '(a,i0,a,a)', 'iceberg_run: wrote ', ncalved, ' calved events to ', &
+            trim(out_nc)//'_calved.csv'
     end if
     if (ngr > 0) then
         call write_grounded_csv(trim(out_nc)//'_grounded.csv', ngr)
@@ -500,6 +515,20 @@ contains
         a%tcc = 0.5; a%msl = 101325.0; a%snowfall = 0.0
     end subroutine constant_atmos
 
+    subroutine write_calved_csv(path, n, tt, mm, ee, ss, cc)
+        character(len=*), intent(in) :: path
+        integer, intent(in) :: n
+        real(8), intent(in) :: tt(:), mm(:), ee(:), ss(:,:)
+        integer, intent(in) :: cc(:)
+        integer :: u, i
+        open (newunit=u, file=trim(path), status='replace', action='write')
+        write (u, '(a)') 'time_s,mass_kg,energy_J,size_x_m,size_y_m,size_z_m,cells'
+        do i = 1, n
+            write (u, '(7(es18.10,:,","))') tt(i), mm(i), ee(i), ss(1, i), ss(2, i), ss(3, i), real(cc(i), 8)
+        end do
+        close (u)
+    end subroutine write_calved_csv
+
     subroutine write_grounded_csv(path, n)
         character(len=*), intent(in) :: path
         integer, intent(in) :: n
@@ -567,15 +596,20 @@ contains
         character(len=*), intent(in) :: path
         integer, intent(in) :: n
         integer :: u, i
-        real(8) :: emelt, latent, residual, emelt0, latent0, b0
+        real(8) :: emelt, latent, residual, emelt0, latent0, b0, mass_resid
+        real(8) :: cal_sens, flush_sens, surf_lat, cal_sens0, flush_sens0, surf_lat0
         open (newunit=u, file=trim(path), status='replace', action='write')
         write (u, '(a)') 'time_s,sensible_energy_J,flushed_energy_J,' // &
             'boundary_submerged_J,boundary_air_J,boundary_test_J,' // &
-            'cum_melt_mass_kg,cum_flush_mass_kg,latent_melt_J,melt_sensible_J,' // &
-            'residual_J,residual_pct_latent,implied_melt_temperature_C'
+            'cum_melt_mass_kg,cum_flush_mass_kg,latent_melt_J,melt_sensible_J,calved_energy_J,' // &
+            'calved_sensible_J,flush_sensible_J,surface_latent_J,calved_mass_kg,' // &
+            'mass_residual_kg,residual_J,residual_pct_latent,implied_melt_temperature_C'
         emelt0 = rvb(1) + rvlat(1) + rvs(1)
         latent0 = real(LATENT_HEAT, 8)*emelt0
         b0 = rbsub(1) + rbair(1) + rbtest(1)
+        cal_sens0 = rcalved_energy(1) - real(LATENT_HEAT, 8)*rcalved_mass(1)
+        flush_sens0 = rflush(1) - real(LATENT_HEAT, 8)*rvf(1)
+        surf_lat0 = real(LATENT_HEAT, 8)*rvs(1)
         do i = 1, n
             emelt = rvb(i) + rvlat(i) + rvs(i)
             latent = real(LATENT_HEAT, 8)*emelt
@@ -585,12 +619,19 @@ contains
             !   dE_sens + L*dm_melt + dE_flush = dQ_sub + dQ_air + L*dm_melt.
             ! After cancellation the residual measures the unaccounted sensible
             ! enthalpy of the melted mass (and numerical closure error).
-            residual = (renergy(i) - renergy(1)) + (rflush(i) - rflush(1)) + &
-                       (rmeltsens(i) - rmeltsens(1)) - &
+            cal_sens = rcalved_energy(i) - real(LATENT_HEAT, 8)*rcalved_mass(i)
+            flush_sens = rflush(i) - real(LATENT_HEAT, 8)*rvf(i)
+            surf_lat = real(LATENT_HEAT, 8)*rvs(i)
+            residual = (renergy(i) - renergy(1)) + (cal_sens - cal_sens0) + &
+                       (flush_sens - flush_sens0) + (rmeltsens(i) - rmeltsens(1)) + &
+                       (surf_lat - surf_lat0) - &
                        ((rbsub(i) + rbair(i) + rbtest(i)) - b0)
-            write (u, '(13(es18.10,:,","))') rt(i), renergy(i), rflush(i), &
+            mass_resid = (rmass(1) - rmass(i)) - ((emelt - emelt0) + (rvf(i) - rvf(1)) + &
+                         (rcalved_mass(i) - rcalved_mass(1)))
+            write (u, '(19(es18.10,:,","))') rt(i), renergy(i), rflush(i), &
                 rbsub(i), rbair(i), rbtest(i), emelt, rvf(i), latent, rmeltsens(i), &
-                residual, 100.0d0*residual/max(abs(latent - latent0), 1.0d-30), &
+                rcalved_energy(i), cal_sens, flush_sens, surf_lat, rcalved_mass(i), &
+                mass_resid, residual, 100.0d0*residual/max(abs(latent - latent0), 1.0d-30), &
                 residual/max(real(C_ICE, 8)*(emelt - emelt0), 1.0d-30)
         end do
         close (u)
@@ -598,7 +639,7 @@ contains
     end subroutine write_energy_csv
 
     subroutine write_nc(path, n, tt, la, lo, ma, dr, ti, mw, wml, vol, awet, sic, &
-                        bl, ll, sl, vl, wl, en, fl, fr, vb, vv, vs, vf, td, sd, uu, vv2, at, au, av, pm, pv, pd, pf, cgv, resv, grnd)
+                        bl, ll, sl, vl, wl, en, fl, fr, vb, vv, vs, vf, td, sd, uu, vv2, at, au, av, pm, pv, pd, pf, cgv, resv, grnd, calm, cale, caln)
         character(len=*), intent(in) :: path
         integer, intent(in) :: n
         real(8), intent(in) :: tt(:), la(:), lo(:), ma(:), dr(:), ti(:), mw(:), wml(:)
@@ -607,8 +648,9 @@ contains
         real(8), intent(in) :: td(:), sd(:), uu(:), vv2(:), at(:), au(:), av(:)
         real(8), intent(in) :: pm(:), pv(:), pd(:), pf(:), cgv(:), resv(:)
         integer, intent(in) :: grnd(:)
+        real(8), intent(in) :: calm(:), cale(:), caln(:)
         integer :: ncid, dimid, st
-        integer :: v(37)
+        integer :: v(40)
         st = nf90_create(trim(path), nf90_clobber, ncid)
         if (st /= nf90_noerr) then
             print *, 'ERROR: cannot create ', trim(path), ': ', nf90_strerror(st)
@@ -652,6 +694,9 @@ contains
         st = nf90_def_var(ncid, 'cg_iters', nf90_double, (/dimid/), v(35))
         st = nf90_def_var(ncid, 'cg_resid', nf90_double, (/dimid/), v(36))
         st = nf90_def_var(ncid, 'grounded', nf90_int, (/dimid/), v(37))
+        st = nf90_def_var(ncid, 'calved_mass', nf90_double, (/dimid/), v(38))
+        st = nf90_def_var(ncid, 'calved_energy', nf90_double, (/dimid/), v(39))
+        st = nf90_def_var(ncid, 'calved_events', nf90_double, (/dimid/), v(40))
         st = nf90_enddef(ncid)
         st = nf90_put_var(ncid, v(1), tt(1:n))
         st = nf90_put_var(ncid, v(2), la(1:n))
@@ -690,6 +735,9 @@ contains
         st = nf90_put_var(ncid, v(35), cgv(1:n))
         st = nf90_put_var(ncid, v(36), resv(1:n))
         st = nf90_put_var(ncid, v(37), grnd(1:n))
+        st = nf90_put_var(ncid, v(38), calm(1:n))
+        st = nf90_put_var(ncid, v(39), cale(1:n))
+        st = nf90_put_var(ncid, v(40), caln(1:n))
         st = nf90_close(ncid)
     end subroutine write_nc
 

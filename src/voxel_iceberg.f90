@@ -33,10 +33,13 @@ module voxel_iceberg
     public :: voxel_iceberg_get_boundary_energy, voxel_iceberg_get_melt_sensible_energy
     public :: voxel_iceberg_get_thermal_fields
     public :: voxel_iceberg_get_top_height, voxel_iceberg_get_cumulative_losses
+    public :: voxel_iceberg_get_calved, voxel_iceberg_get_calved_events
+    public :: voxel_iceberg_set_connectivity_hours, voxel_iceberg_remove_calved
     public :: voxel_iceberg_set_c_ice, voxel_iceberg_compact_vertical
 
     real(8), parameter :: EPS_PHI = 1.0d-12
     real(8), save :: c_ice_override = real(C_ICE, 8)
+    real(8), save :: vox_connectivity_hours = 1.0d0
     real(8), parameter :: DEFAULT_PHI_MIN = 0.01d0
     logical, save :: dbg_melt = .false., dbg_checked = .false., dbg_face_done = .false., dbg_total_done = .false.
 
@@ -46,6 +49,7 @@ module voxel_iceberg
         real(8) :: phi_min = DEFAULT_PHI_MIN
         real(8), allocatable :: T(:,:,:)
         real(8), allocatable :: phi(:,:,:)
+        logical, allocatable :: main_mask(:,:,:)
         logical, allocatable :: submerged_mask(:,:,:)
         logical, allocatable :: exposed_mask(:,:,:)
         ! Empty cells connected to the exterior (6-neighbour flood fill).
@@ -93,6 +97,17 @@ module voxel_iceberg
         real(8) :: cum_boundary_air_energy = 0.0_8
         real(8) :: cum_boundary_test_energy = 0.0_8
         real(8) :: cum_melt_sensible_energy = 0.0_8
+        real(8) :: cum_calved_mass = 0.0_8
+        real(8) :: cum_calved_energy = 0.0_8
+        integer :: calved_events = 0
+        integer :: step_count = 0
+        real(8) :: sim_time = 0.0_8
+        real(8) :: connectivity_hours = 1.0_8
+        real(8) :: calved_event_time(1000) = 0.0_8
+        real(8) :: calved_event_mass(1000) = 0.0_8
+        real(8) :: calved_event_energy(1000) = 0.0_8
+        real(8) :: calved_event_size(3,1000) = 0.0_8
+        integer :: calved_event_cells(1000) = 0
         real(8) :: clamp_melt_mass = 0.0_8
         real(8) :: cum_basal_mass = 0.0_8
         real(8) :: cum_lateral_mass = 0.0_8
@@ -111,6 +126,11 @@ contains
         real(8), intent(in) :: value
         if (value > 0.0_8) c_ice_override = value
     end subroutine voxel_iceberg_set_c_ice
+
+    subroutine voxel_iceberg_set_connectivity_hours(value)
+        real(8), intent(in) :: value
+        if (value > 0.0_8) vox_connectivity_hours = min(value, 6.0_8)
+    end subroutine voxel_iceberg_set_connectivity_hours
 
     subroutine voxel_iceberg_init(vox, nx, ny, nz, dx, dy, dz, T_init, phi_init, &
                                   phi_min, scheme, theta, cg_tol, cg_maxit, melt_cap, &
@@ -136,12 +156,14 @@ contains
         if (present(test_dir_T_b)) vox%test_dir_T_b = test_dir_T_b
 
         allocate (vox%T(nx, ny, nz), vox%phi(nx, ny, nz))
+        allocate (vox%main_mask(nx, ny, nz))
         allocate (vox%submerged_mask(nx, ny, nz), vox%exposed_mask(nx, ny, nz))
         allocate (vox%open_mask(nx, ny, nz), vox%open_face(nx, ny, nz, 6))
         allocate (vox%tb_face(nx, ny, nz, 6))
         allocate (vox%sb_face(nx, ny, nz, 6), vox%sb_vox(nx, ny, nz))
         vox%T = T_init
         vox%phi = min(max(phi_init, 0.0_8), 1.0_8)
+        vox%main_mask = vox%phi > EPS_PHI
         vox%open_mask = .false.; vox%open_face = .false.; vox%tb_face = 0.0_8
         vox%sb_face = 0.0_8; vox%sb_vox = 0.0_8
         vox%rannacher_left = 0
@@ -151,6 +173,12 @@ contains
         vox%cum_boundary_sub_energy = 0.0_8; vox%cum_boundary_air_energy = 0.0_8
         vox%cum_boundary_test_energy = 0.0_8
         vox%cum_melt_sensible_energy = 0.0_8
+        vox%cum_calved_mass = 0.0_8; vox%cum_calved_energy = 0.0_8
+        vox%calved_events = 0; vox%step_count = 0; vox%sim_time = 0.0_8
+        vox%calved_event_time = 0.0_8; vox%calved_event_mass = 0.0_8
+        vox%calved_event_energy = 0.0_8; vox%calved_event_size = 0.0_8
+        vox%calved_event_cells = 0
+        vox%connectivity_hours = vox_connectivity_hours
         vox%cum_basal_mass = 0.0_8; vox%cum_lateral_mass = 0.0_8
         vox%cum_surface_mass = 0.0_8; vox%cum_flush_mass = 0.0_8
         call voxel_iceberg_compute_state(vox)
@@ -161,20 +189,24 @@ contains
         type(voxel_iceberg_type), intent(inout) :: vox
         integer :: i, j, k
         real(8) :: cell_vol, solid_vol, v_sub, zw, cnt_wl, s_area, e_area, solid_top, bottom_height
+        real(8) :: main_mass
 
         cell_vol = vox%dx*vox%dy*vox%dz
-        vox%total_mass = 0.0_8; solid_vol = 0.0_8
+        vox%total_mass = 0.0_8; main_mass = 0.0_8; solid_vol = 0.0_8
         do k = 1, vox%nz
             do j = 1, vox%ny
                 do i = 1, vox%nx
                     if (vox%phi(i, j, k) > EPS_PHI) then
                         vox%total_mass = vox%total_mass + vox%phi(i, j, k)*real(RHO_ICE, 8)*cell_vol
+                    end if
+                    if (vox%phi(i, j, k) > EPS_PHI .and. main_cell(vox, i, j, k)) then
+                        main_mass = main_mass + vox%phi(i, j, k)*real(RHO_ICE, 8)*cell_vol
                         solid_vol = solid_vol + cell_vol
                     end if
                 end do
             end do
         end do
-        if (vox%total_mass <= 0.0_8 .or. solid_vol <= 0.0_8) then
+        if (main_mass <= 0.0_8 .or. solid_vol <= 0.0_8) then
             vox%draft = 0.0_8; vox%waterline_height = 0.0_8
             vox%top_height = 0.0_8; vox%freeboard = 0.0_8
             vox%waterline_area = 0.0_8; vox%submerged_area = 0.0_8; vox%exposed_area = 0.0_8
@@ -183,7 +215,7 @@ contains
             if (allocated(vox%open_face)) vox%open_face = .false.
             return
         end if
-        v_sub = vox%total_mass/real(RHO_WATER, 8)
+        v_sub = main_mass/real(RHO_WATER, 8)
         zw = solid_height_for_submerged_vol(vox, v_sub, cell_vol)
         vox%waterline_height = min(zw, vox%dz*real(vox%nz, 8))
         ! Actual upper and lower solid surfaces.
@@ -192,9 +224,7 @@ contains
         do k = 1, vox%nz
             do j = 1, vox%ny
                 do i = 1, vox%nx
-                    if (vox%phi(i, j, k) <= EPS_PHI) cycle
-                    ! phi is an ice volume fraction, not a vertical height;
-                    ! the cell top remains k*dz while any ice remains in it.
+                    if (vox%phi(i, j, k) <= EPS_PHI .or. .not. main_cell(vox, i, j, k)) cycle
                     solid_top = max(solid_top, real(k, 8)*vox%dz)
                     bottom_height = min(bottom_height, real(k - 1, 8)*vox%dz)
                 end do
@@ -208,7 +238,7 @@ contains
         do k = 1, vox%nz
             do j = 1, vox%ny
                 do i = 1, vox%nx
-                    if (vox%phi(i, j, k) <= EPS_PHI) then
+                    if (vox%phi(i, j, k) <= EPS_PHI .or. .not. main_cell(vox, i, j, k)) then
                         vox%submerged_mask(i, j, k) = .false.; vox%exposed_mask(i, j, k) = .false.
                     else if ((real(k, 8) - 0.5_8)*vox%dz < vox%waterline_height) then
                         vox%submerged_mask(i, j, k) = .true.; vox%exposed_mask(i, j, k) = .false.
@@ -226,7 +256,7 @@ contains
                 real(k, 8)*vox%dz > vox%waterline_height) then
                 do j = 1, vox%ny
                     do i = 1, vox%nx
-                        if (vox%phi(i, j, k) > EPS_PHI) cnt_wl = cnt_wl + 1.0_8
+                        if (vox%phi(i, j, k) > EPS_PHI .and. main_cell(vox, i, j, k)) cnt_wl = cnt_wl + 1.0_8
                     end do
                 end do
             end if
@@ -238,7 +268,7 @@ contains
         do k = 1, vox%nz
             do j = 1, vox%ny
                 do i = 1, vox%nx
-                    if (vox%phi(i, j, k) <= EPS_PHI) cycle
+                    if (vox%phi(i, j, k) <= EPS_PHI .or. .not. main_cell(vox, i, j, k)) cycle
                     if (vox%submerged_mask(i, j, k)) then
                         s_area = s_area + boundary_face_area(vox, i, j, k)
                     else
@@ -250,6 +280,128 @@ contains
         vox%submerged_area = s_area
         vox%exposed_area = e_area
     end subroutine voxel_iceberg_compute_state
+
+    pure logical function main_cell(vox, i, j, k)
+        type(voxel_iceberg_type), intent(in) :: vox
+        integer, intent(in) :: i, j, k
+        if (.not. allocated(vox%main_mask)) then
+            main_cell = .true.
+        else
+            main_cell = vox%main_mask(i, j, k)
+        end if
+    end function main_cell
+
+    ! ==========================================================================
+    ! Stage 12.19: remove solid components not connected to the main body.
+    ! Components are 6-face connected cells with phi > phi_min. The largest
+    ! component is the main body; all other components are recorded as calved
+    ! mass/energy, then removed from T/phi. The check is performed every
+    ! connectivity_hours (<= 6 h) of model time.
+    ! ==========================================================================
+    subroutine voxel_iceberg_remove_calved(vox, dt)
+        type(voxel_iceberg_type), intent(inout) :: vox
+        real(8), intent(in) :: dt
+        integer :: stride, ncomp, i, j, k, d, ii, jj, kk, head, tail, ncell, main_idx, c
+        integer, allocatable :: lab(:,:,:), q(:,:)
+        real(8), allocatable :: comp_mass(:), comp_energy(:)
+        integer, allocatable :: comp_cells(:), bbox(:,:)
+        integer :: di(6), dj(6), dk(6)
+        real(8) :: V, mass, energy, ph, tt, c8, lf8
+        if (.not. allocated(vox%phi)) return
+        if (.not. allocated(vox%main_mask)) allocate (vox%main_mask(vox%nx, vox%ny, vox%nz))
+        stride = max(1, nint(vox%connectivity_hours*3600.0_8/max(dt, 1.0_8)))
+        if (mod(vox%step_count, stride) /= 0) return
+
+        V = vox%dx*vox%dy*vox%dz
+        c8 = c_ice_override; lf8 = real(LATENT_HEAT, 8)
+        di = (/ 1, -1, 0, 0, 0, 0 /); dj = (/ 0, 0, 1, -1, 0, 0 /); dk = (/ 0, 0, 0, 0, 1, -1 /)
+        allocate (lab(vox%nx, vox%ny, vox%nz)); lab = 0
+        ncell = vox%nx*vox%ny*vox%nz
+        allocate (q(3, ncell))
+        allocate (comp_mass(1000), comp_energy(1000), comp_cells(1000), bbox(6, 1000))
+        comp_mass = 0.0_8; comp_energy = 0.0_8; comp_cells = 0; bbox = 0
+        ncomp = 0
+        do k = 1, vox%nz
+            do j = 1, vox%ny
+                do i = 1, vox%nx
+                    if (vox%phi(i, j, k) <= vox%phi_min .or. lab(i, j, k) > 0) cycle
+                    ncomp = ncomp + 1
+                    if (ncomp > 1000) then
+                        print *, 'WARNING: calved component count exceeded 1000; extra ignored'
+                        exit
+                    end if
+                    lab(i, j, k) = ncomp
+                    q(:, 1) = (/ i, j, k /)
+                    head = 1; tail = 1
+                    bbox(:, ncomp) = (/ i, i, j, j, k, k /)
+                    do while (head <= tail)
+                        ii = q(1, head); jj = q(2, head); kk = q(3, head)
+                        ph = vox%phi(ii, jj, kk); tt = vox%T(ii, jj, kk)
+                        mass = ph*real(RHO_ICE, 8)*V
+                        energy = ph*V*real(RHO_ICE, 8)*(c8*(0.0_8 - tt) + lf8)
+                        comp_mass(ncomp) = comp_mass(ncomp) + mass
+                        comp_energy(ncomp) = comp_energy(ncomp) + energy
+                        comp_cells(ncomp) = comp_cells(ncomp) + 1
+                        bbox(1, ncomp) = min(bbox(1, ncomp), ii); bbox(2, ncomp) = max(bbox(2, ncomp), ii)
+                        bbox(3, ncomp) = min(bbox(3, ncomp), jj); bbox(4, ncomp) = max(bbox(4, ncomp), jj)
+                        bbox(5, ncomp) = min(bbox(5, ncomp), kk); bbox(6, ncomp) = max(bbox(6, ncomp), kk)
+                        do d = 1, 6
+                            ii = q(1, head) + di(d); jj = q(2, head) + dj(d); kk = q(3, head) + dk(d)
+                            if (ii < 1 .or. ii > vox%nx .or. jj < 1 .or. jj > vox%ny .or. &
+                                kk < 1 .or. kk > vox%nz) cycle
+                            if (vox%phi(ii, jj, kk) <= vox%phi_min .or. lab(ii, jj, kk) > 0) cycle
+                            lab(ii, jj, kk) = ncomp
+                            tail = tail + 1
+                            q(1, tail) = ii; q(2, tail) = jj; q(3, tail) = kk
+                        end do
+                        head = head + 1
+                    end do
+                end do
+            end do
+        end do
+        if (ncomp == 0) then
+            vox%main_mask = .false.
+            deallocate (lab, q, comp_mass, comp_energy, comp_cells, bbox)
+            return
+        end if
+        main_idx = 1
+        do c = 2, ncomp
+            if (comp_mass(c) > comp_mass(main_idx)) main_idx = c
+        end do
+        vox%main_mask = (lab == main_idx)
+        if (ncomp > 1) then
+            do c = 1, ncomp
+                if (c == main_idx) cycle
+                vox%cum_calved_mass = vox%cum_calved_mass + comp_mass(c)
+                vox%cum_calved_energy = vox%cum_calved_energy + comp_energy(c)
+                if (vox%calved_events < 1000) then
+                    vox%calved_events = vox%calved_events + 1
+                    vox%calved_event_time(vox%calved_events) = vox%sim_time
+                    vox%calved_event_mass(vox%calved_events) = comp_mass(c)
+                    vox%calved_event_energy(vox%calved_events) = comp_energy(c)
+                    vox%calved_event_cells(vox%calved_events) = comp_cells(c)
+                    vox%calved_event_size(1, vox%calved_events) = real(bbox(2, c) - bbox(1, c) + 1, 8)*vox%dx
+                    vox%calved_event_size(2, vox%calved_events) = real(bbox(4, c) - bbox(3, c) + 1, 8)*vox%dy
+                    vox%calved_event_size(3, vox%calved_events) = real(bbox(6, c) - bbox(5, c) + 1, 8)*vox%dz
+                    print '(a,es12.4,a,es12.4,a,3f8.1,a,i0)', 'CALVED: t=', vox%sim_time, &
+                        ' mass=', comp_mass(c), ' size=', vox%calved_event_size(1, vox%calved_events), &
+                        vox%calved_event_size(2, vox%calved_events), vox%calved_event_size(3, vox%calved_events), &
+                        ' cells=', comp_cells(c)
+                end if
+                do k = 1, vox%nz
+                    do j = 1, vox%ny
+                        do i = 1, vox%nx
+                            if (lab(i, j, k) == c) then
+                                vox%phi(i, j, k) = 0.0_8
+                                vox%T(i, j, k) = 0.0_8
+                            end if
+                        end do
+                    end do
+                end do
+            end do
+        end if
+        deallocate (lab, q, comp_mass, comp_energy, comp_cells, bbox)
+    end subroutine voxel_iceberg_remove_calved
 
     ! ==========================================================================
     ! Classify empty cells connected to the exterior (six-neighbour BFS), then
@@ -448,6 +600,8 @@ contains
             end block
         end if
         if (.not. allocated(vox%T)) return
+        vox%step_count = vox%step_count + 1
+        vox%sim_time = vox%sim_time + dt
         rho8 = real(RHO_ICE, 8); c8 = c_ice_override; k8 = real(K_ICE, 8); lf8 = real(LATENT_HEAT, 8)
         V = vox%dx*vox%dy*vox%dz
         call voxel_iceberg_compute_state(vox)
@@ -557,6 +711,7 @@ contains
         end do
         if (removed > 0) vox%rannacher_left = 2
         if (vox%rannacher_left > 0 .and. removed == 0) vox%rannacher_left = max(0, vox%rannacher_left - 1)
+        call voxel_iceberg_remove_calved(vox, dt)
         call voxel_iceberg_compact_vertical(vox)
 
         ! (7) пересчёт
@@ -662,6 +817,8 @@ contains
             end block
         end if
         if (.not. allocated(vox%T)) return
+        vox%step_count = vox%step_count + 1
+        vox%sim_time = vox%sim_time + dt
         rho8 = real(RHO_ICE, 8); c8 = c_ice_override; k8 = real(K_ICE, 8); lf8 = real(LATENT_HEAT, 8)
         V = vox%dx*vox%dy*vox%dz
         call voxel_iceberg_compute_state(vox)
@@ -839,6 +996,7 @@ contains
         end do
         if (removed > 0) vox%rannacher_left = 2
         if (vox%rannacher_left > 0 .and. removed == 0) vox%rannacher_left = max(0, vox%rannacher_left - 1)
+        call voxel_iceberg_remove_calved(vox, dt)
         call voxel_iceberg_compact_vertical(vox)
 
         vox%basal_melt_rate = basal_melt
@@ -895,6 +1053,7 @@ contains
             vox%T(:, :, k) = 0.0_8
             vox%phi(:, :, k) = 0.0_8
         end do
+        if (allocated(vox%main_mask)) vox%main_mask = vox%phi > EPS_PHI
         deallocate (Ttmp, phitmp)
         vox%rannacher_left = max(vox%rannacher_left, 2)
         call voxel_iceberg_compute_state(vox)
@@ -1207,6 +1366,26 @@ contains
         allocate (sb(vox%nx, vox%ny, vox%nz))
         T = vox%T; phi = vox%phi; sb = vox%sb_vox
     end subroutine voxel_iceberg_get_thermal_fields
+
+    subroutine voxel_iceberg_get_calved(vox, mass, energy, n_events)
+        type(voxel_iceberg_type), intent(in) :: vox
+        real(8), intent(out) :: mass, energy
+        integer, intent(out) :: n_events
+        mass = vox%cum_calved_mass; energy = vox%cum_calved_energy; n_events = vox%calved_events
+    end subroutine voxel_iceberg_get_calved
+
+    subroutine voxel_iceberg_get_calved_events(vox, n, time, mass, energy, size, cells)
+        type(voxel_iceberg_type), intent(in) :: vox
+        integer, intent(out) :: n
+        real(8), allocatable, intent(out) :: time(:), mass(:), energy(:), size(:,:)
+        integer, allocatable, intent(out) :: cells(:)
+        n = min(vox%calved_events, 1000)
+        allocate (time(n), mass(n), energy(n), size(3, n), cells(n))
+        if (n == 0) return
+        time = vox%calved_event_time(1:n); mass = vox%calved_event_mass(1:n)
+        energy = vox%calved_event_energy(1:n); size = vox%calved_event_size(:, 1:n)
+        cells = vox%calved_event_cells(1:n)
+    end subroutine voxel_iceberg_get_calved_events
 
     subroutine voxel_iceberg_get_energy(vox, sensible, flushed)
         type(voxel_iceberg_type), intent(in) :: vox

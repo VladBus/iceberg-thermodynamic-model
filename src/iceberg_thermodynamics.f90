@@ -47,7 +47,7 @@ module iceberg_thermodynamics
                              voxel_iceberg_get_thermal_fields, voxel_iceberg_get_calved, &
                              voxel_iceberg_get_calved_events, &
                              voxel_iceberg_get_solver, voxel_iceberg_set_c_ice, &
-                             voxel_iceberg_set_connectivity_hours
+                             voxel_iceberg_set_connectivity_hours, voxel_iceberg_set_phi_conn
     use param, only: nat
     use wave_forcing, only: wave_erosion_enabled, get_wave_forcing, hs_to_sea_state, &
                             bigg_wave_melt, wave_forcing_epoch
@@ -1399,7 +1399,7 @@ contains
         character(len=64) :: ev, sch
         integer :: nx, ny, nz, scheme, cg_maxit
         real(8) :: dx, dy, dz, t_init, phi_init, phi_min, theta, cg_tol, melt_cap
-        real(8) :: connectivity_hours
+        real(8) :: connectivity_hours, phi_conn
 
         if (vox_checked) return
         vox_checked = .true.
@@ -1434,6 +1434,9 @@ contains
         connectivity_hours = 1.0d0
         call env_real('VOXEL_CONNECTIVITY_HOURS', connectivity_hours)
         call voxel_iceberg_set_connectivity_hours(connectivity_hours)
+        phi_conn = 0.3d0
+        call env_real('VOXEL_PHI_CONN', phi_conn)
+        call voxel_iceberg_set_phi_conn(phi_conn)
         vox_nx = nx; vox_ny = ny; vox_nz = nz
         vox_dx = dx; vox_dy = dy; vox_dz = dz
         vox_t_init = t_init; vox_phi_init = phi_init; vox_phi_min = phi_min
@@ -1443,8 +1446,8 @@ contains
         call get_environment_variable('VOXEL_DEBUG_MELT', ev)
         vox_dbg = (trim(ev) == 'true' .or. trim(ev) == 'TRUE' .or. trim(ev) == '1')
         vox_ready = .false.
-        print '(a,3i4,a,3f6.1,a,i0,a,f4.2)', ' VOXEL core ON: grid', nx, ny, nz, &
-            ' dx', dx, dy, dz, ' scheme', scheme, ' theta', theta
+        print '(a,3i4,a,3f6.1,a,i0,a,f4.2,a,f5.2)', ' VOXEL core ON: grid', nx, ny, nz, &
+            ' dx', dx, dy, dz, ' scheme', scheme, ' theta', theta, ' phi_conn', phi_conn
     end subroutine voxel_model_configure
 
     ! ========================================================================

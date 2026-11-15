@@ -5,7 +5,8 @@ program test_voxel_calved
     use voxel_iceberg, only: voxel_iceberg_type, voxel_iceberg_init, &
                              voxel_iceberg_compute_state, voxel_iceberg_remove_calved, &
                              voxel_iceberg_get_mass, voxel_iceberg_get_draft, &
-                             voxel_iceberg_get_freeboard, voxel_iceberg_get_calved
+                             voxel_iceberg_get_freeboard, voxel_iceberg_get_calved, &
+                             voxel_iceberg_set_phi_conn
     use iceberg_types, only: RHO_ICE, C_ICE, LATENT_HEAT
     implicit none
 
@@ -43,6 +44,20 @@ program test_voxel_calved
     if (nev /= 1) nerr = nerr + 1
     if (abs(calved_e - eexp) > 1.0d-6*eexp) nerr = nerr + 1
     if (draft <= 0.0d0 .or. free <= 0.0d0) nerr = nerr + 1
+    if (any(vox%phi(:, :, 8:9) > 0.0d0)) nerr = nerr + 1
+
+    ! Stage 12.20: a low-phi bridge must not keep a high-phi plate attached.
+    call voxel_iceberg_init(vox, 10, 10, 10, 1.0d0, 1.0d0, 1.0d0, -5.0d0, 1.0d0)
+    vox%phi = 0.0d0; vox%T = -5.0d0
+    vox%phi(:, :, 1:5) = 1.0d0
+    vox%phi(:, :, 8:9) = 1.0d0
+    vox%phi(5, 5, 6:7) = 0.2d0   ! sub-threshold bridge
+    call voxel_iceberg_set_phi_conn(0.3d0)
+    vox%main_mask = vox%phi > 1.0d-12
+    vox%step_count = 1; vox%connectivity_hours = 1.0d0
+    call voxel_iceberg_remove_calved(vox, 3600.0d0)
+    call voxel_iceberg_get_calved(vox, calved, calved_e, nev)
+    if (abs(calved - 2.0d0*100.0d0*real(RHO_ICE, 8)) > 1.0d-6*calved) nerr = nerr + 1
     if (any(vox%phi(:, :, 8:9) > 0.0d0)) nerr = nerr + 1
 
     if (nerr == 0) then

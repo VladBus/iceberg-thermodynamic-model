@@ -34,12 +34,13 @@ module voxel_iceberg
     public :: voxel_iceberg_get_thermal_fields
     public :: voxel_iceberg_get_top_height, voxel_iceberg_get_cumulative_losses
     public :: voxel_iceberg_get_calved, voxel_iceberg_get_calved_events
-    public :: voxel_iceberg_set_connectivity_hours, voxel_iceberg_remove_calved
+    public :: voxel_iceberg_set_connectivity_hours, voxel_iceberg_set_phi_conn, voxel_iceberg_remove_calved
     public :: voxel_iceberg_set_c_ice, voxel_iceberg_compact_vertical
 
     real(8), parameter :: EPS_PHI = 1.0d-12
     real(8), save :: c_ice_override = real(C_ICE, 8)
     real(8), save :: vox_connectivity_hours = 1.0d0
+    real(8), save :: vox_phi_conn = 0.3d0
     real(8), parameter :: DEFAULT_PHI_MIN = 0.01d0
     logical, save :: dbg_melt = .false., dbg_checked = .false., dbg_face_done = .false., dbg_total_done = .false.
 
@@ -47,6 +48,7 @@ module voxel_iceberg
         integer :: nx = 0, ny = 0, nz = 0
         real(8) :: dx = 0.0_8, dy = 0.0_8, dz = 0.0_8
         real(8) :: phi_min = DEFAULT_PHI_MIN
+        real(8) :: phi_conn = 0.3d0
         real(8), allocatable :: T(:,:,:)
         real(8), allocatable :: phi(:,:,:)
         logical, allocatable :: main_mask(:,:,:)
@@ -132,6 +134,11 @@ contains
         if (value > 0.0_8) vox_connectivity_hours = min(value, 6.0_8)
     end subroutine voxel_iceberg_set_connectivity_hours
 
+    subroutine voxel_iceberg_set_phi_conn(value)
+        real(8), intent(in) :: value
+        if (value > 0.0_8 .and. value <= 1.0_8) vox_phi_conn = value
+    end subroutine voxel_iceberg_set_phi_conn
+
     subroutine voxel_iceberg_init(vox, nx, ny, nz, dx, dy, dz, T_init, phi_init, &
                                   phi_min, scheme, theta, cg_tol, cg_maxit, melt_cap, &
                                   test_dir_face_a, test_dir_face_b, test_dir_T_a, test_dir_T_b)
@@ -145,6 +152,7 @@ contains
         vox%nx = nx; vox%ny = ny; vox%nz = nz
         vox%dx = dx; vox%dy = dy; vox%dz = dz
         vox%phi_min = DEFAULT_PHI_MIN; if (present(phi_min)) vox%phi_min = phi_min
+        vox%phi_conn = vox_phi_conn
         if (present(scheme)) vox%scheme = scheme
         if (present(theta)) vox%theta = theta
         if (present(cg_tol)) vox%cg_tol = cg_tol
@@ -324,7 +332,7 @@ contains
         do k = 1, vox%nz
             do j = 1, vox%ny
                 do i = 1, vox%nx
-                    if (vox%phi(i, j, k) <= vox%phi_min .or. lab(i, j, k) > 0) cycle
+                    if (vox%phi(i, j, k) < vox%phi_conn .or. lab(i, j, k) > 0) cycle
                     ncomp = ncomp + 1
                     if (ncomp > 1000) then
                         print *, 'WARNING: calved component count exceeded 1000; extra ignored'
@@ -349,7 +357,7 @@ contains
                             ii = q(1, head) + di(d); jj = q(2, head) + dj(d); kk = q(3, head) + dk(d)
                             if (ii < 1 .or. ii > vox%nx .or. jj < 1 .or. jj > vox%ny .or. &
                                 kk < 1 .or. kk > vox%nz) cycle
-                            if (vox%phi(ii, jj, kk) <= vox%phi_min .or. lab(ii, jj, kk) > 0) cycle
+                            if (vox%phi(ii, jj, kk) < vox%phi_conn .or. lab(ii, jj, kk) > 0) cycle
                             lab(ii, jj, kk) = ncomp
                             tail = tail + 1
                             q(1, tail) = ii; q(2, tail) = jj; q(3, tail) = kk
@@ -368,7 +376,11 @@ contains
         do c = 2, ncomp
             if (comp_mass(c) > comp_mass(main_idx)) main_idx = c
         end do
-        vox%main_mask = (lab == main_idx)
+        vox%main_mask = .true.
+        do c = 1, ncomp
+            if (c == main_idx) cycle
+            vox%main_mask = vox%main_mask .and. (lab /= c)
+        end do
         if (ncomp > 1) then
             do c = 1, ncomp
                 if (c == main_idx) cycle

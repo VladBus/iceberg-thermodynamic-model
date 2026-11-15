@@ -1203,6 +1203,23 @@ remains unchanged until the production-default decision in 11.7F.
 - **Docs:** `docs/wiki/stages/stage12/stage12.19_calved_geometry_reference_runs.md`,
   `KNOWN_ISSUES.md` Q-29.
 
+## D-81. VOXEL_PHI_CONN defaults to 0.3 (Stage 12.20, 2026-11-15)
+
+- **Status:** ACTIVE.
+- **Decision:** six-face connectivity uses voxels with `phi >= VOXEL_PHI_CONN`; default `0.3`. The largest connected component is the main body; other high-phi components are calved. `VOXEL_PHI_CONN=0.01` reproduces the Stage 12.19 behavior.
+- **Why:** `0.01` allowed 1 % ice to act as a structural bridge. At 0.3 the calved test passes and no early/t50 physics changes.
+- **Evidence:** `test_voxel_calved` low-phi bridge case; controls FJL2 2020/2024; `stage12.20_connectivity_scan.csv`.
+- **Limits:** threshold is grid/interval dependent; low-phi fringe is retained because it belongs to the main body; a horizontal high-phi overhang remains a known model limitation.
+- **Docs:** `docs/wiki/stages/stage12/stage12.20_phi_conn_and_start_selection.md`.
+
+## D-82. No support/overhang criterion; primary metrics are t50 and t90 (Stage 12.20, 2026-11-15)
+
+- **Status:** ACTIVE (scope decision).
+- **Decision:** do not add a mechanical bending/overhang criterion. The FJL2 2024 plate is connected through `phi≈1` cells and is accepted as a known limitation. Use t50 and t90 as primary lifetime metrics; report t99 only with the caveat. Remove W/H and Weeks–Mellor from figures because the overhang corrupts overall dimensions.
+- **Why:** no defensible bending-strength parameters; the plate does not affect t50 or the thermal/Stefan block, and only changes FJL2 2020 t99 by ~1 d.
+- **Limits:** overhang and capsize are not modeled; detached pieces are not tracked.
+- **Docs:** `docs/wiki/stages/stage12/stage12.20_phi_conn_and_start_selection.md`, `KNOWN_ISSUES.md`.
+
 ## How to add decisions
 
 A new decision is appended with an ID, stage, status, and links to reports.

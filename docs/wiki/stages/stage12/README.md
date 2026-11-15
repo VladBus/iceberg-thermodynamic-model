@@ -37,6 +37,7 @@ Stage 12.9b thesis writing is the active workstream.
 | 12.17 | [`stage12.17_final_runs_and_figures.md`](stage12.17_final_runs_and_figures.md) | Literature form/skin drag, stable semi-implicit drag, final 100^3 2020/2024 runs and thesis figures |
 | 12.18 | [`stage12.18_final_runs_and_figures.md`](stage12.18_final_runs_and_figures.md) | 12-run 50 m final matrix, grounded-in-place mode, corrected 3D/GIF/map figures |
 | 12.19 | [`stage12.19_calved_geometry_reference_runs.md`](stage12.19_calved_geometry_reference_runs.md) | Connected-component calving, main-body hydrostatics/energy closure, Stage 2 figures, offline drift/melt maps, six 100³ 2020 references |
+| 12.20 | [`stage12.20_phi_conn_and_start_selection.md`](stage12.20_phi_conn_and_start_selection.md) | `phi_conn=0.3`, 50³ controls, Svalbard negative start result, six 100³ 2020/2024 references with snapshots and full figure set |
 
 The 12.8 drift and lifetime results are lower bounds from monthly GLORYS and
 constant-atmosphere fallbacks; they are not daily-forcing validation. No stage
@@ -49,6 +50,7 @@ report currently claims quantitative daily-forcing performance.
 - `evidence/stage12.17/` — drag test log, Ca/Cw sensitivity, 30-day site screening, run estimate and final-run summary (Stage 12.17).
 - `evidence/stage12.18/` — 12-run summary, site manifest, grounded-event example, drift test and run estimate (Stage 12.18).
 - `evidence/stage12.19/` — Stage 2 fixed-case checks, Stage 3 diagnostics, Stage 4 selection/screening and six-run summary (Stage 12.19).
+- `figures/stage12.20/final/` — six 100³ runs, two 50³ controls, 3D snapshots, profiles, time series, GIFs, tracks, common map/curves/table (Stage 12.20).
 - `figures/enderlin23/` — plots from Stage 12.7a.
 - `figures/barents2020/` — plots from Stage 12.8.
 - `figures/voxel_demo/` — spatial fields and diagnostics from Stage 12.10.
@@ -65,6 +67,16 @@ report currently claims quantitative daily-forcing performance.
   records, not active work plans.
 
 ## Current status
+
+**12.20 status (COMPLETE, with limitations):** `VOXEL_PHI_CONN=0.3` is the
+default. Six 100³ 2020/2024 references with 10-day snapshots were produced:
+FJL_A 2020 (323.8 d, melted), NZ_A 2020 (78.7 d, strict), NZ_B 2020 (161.0 d,
+grounded), FJL_A 2024 (117.5 d, strict), NZ_A 2024 (197.1 d, grounded) and
+NZ_B 2024 fallback (38.2 d, strict). Svalbard has no valid 100³ start in
+5–25°E: shelf grounding or strict-ocean; this is a negative result, not
+substituted. The FJL2 2024 horizontal overhang is accepted as a known
+limitation (D-82); t50/t90 are primary metrics. See
+[`stage12.20_phi_conn_and_start_selection.md`](stage12.20_phi_conn_and_start_selection.md).
 
 Stage 12.9 separates into two workstreams:
 

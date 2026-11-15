@@ -3,7 +3,7 @@
 **Date:** 2026-11-14
 **Current repository stage:** **Stage 11 — FROZEN** research artifact (D-51,
 tag `stage11-final-frozen`); **Stage 12 — active**, using offline/prescribed
-reanalysis forcing for the voxel iceberg. Stage 12.18 is the latest completed 50 m matrix; Stage 12.19 adds calved-component geometry, corrected energy diagnostics, offline maps, and six 100³ 2020 references. 12.9a daily-forcing acquisition is complete (24/24 months), while 12.9b thesis writing is GO with fallback labeling.
+reanalysis forcing for the voxel iceberg. Stage 12.18 is the latest completed 50 m matrix; Stage 12.19 adds calved-component geometry, corrected energy diagnostics, offline maps, and six 100³ 2020 references; Stage 12.20 sets `VOXEL_PHI_CONN=0.3`, completes six 100³ 2020/2024 references with snapshots, and records the Svalbard no-start/overhang limitations. 12.9a daily-forcing acquisition is complete (24/24 months), while 12.9b thesis writing is GO with fallback labeling.
 The Stage 11 prognostic ocean is **not production-validated**; its N², tide, and
 long-run limitations remain as recorded in
 `../wiki/stages/stage11/STAGE11_FREEZE.md` and `../../KNOWN_ISSUES.md`.
@@ -57,6 +57,8 @@ validation index identify current work status.
 **Stage 11.1 report:** `docs/wiki/stages/stage11/stage11.1_ocean_stability_seasonal_initial_conditions.md`
 
 **Stage 12.19 calved geometry and reference runs (2026-11-14):** when the voxel model is active, six-face connectivity at `phi > phi_min` identifies the largest solid component as the main body; disconnected pieces are removed and logged as calved mass/energy/events. Main-body draft/freeboard and hydrostatics use the retained mask, eliminating the old plate-bearing waterline (FJL2 2020 day-270 draft 41.07/0.93 m -> 25.35/10.65 m). The 50³ control closes mass to `-1.29e-8 m0`, and the corrected energy ledger uses sensible-only calved/flush enthalpy plus surface latent heat: final residual `+0.0195%` (N=1h) / `+0.0166%` (N=6h), maximum `0.514%`. This is diagnostic closure, not state-level energy conservation. Stage 2 figures use three 50³ cases; Stage 3 drift and stationary melt are offline diagnostics; Stage 4 contains six 100³ 2020 free-drift references with five documented start replacements after 60-day screening. Report: `docs/wiki/stages/stage12/stage12.19_calved_geometry_reference_runs.md`.
+
+**Stage 12.20 phi_conn and final 100³ references (2026-11-16):** six-face connectivity uses `VOXEL_PHI_CONN=0.3`; low-phi bridges no longer define load-bearing contact. FJL2 2024's top plate remains one high-phi component (even at `phi_conn=0.99`), so it is accepted as a horizontal-overhang limitation; support/bending parameters are not available. t50/t90 are primary metrics and W/H/Weeks–Mellor are omitted. The 50³ controls show FJL2 2024 unchanged from 12.19 and FJL2 2020 changed only in the tail. Six 100³ 2020/2024 free-drift references with 10-day snapshots were completed; FJL_A 2020 melted at 323.8 d, NZ_A 2020 stopped strict-ocean at 78.7 d, NZ_B 2020 grounded at 161.0 d, FJL_A 2024 stopped strict-ocean at 117.5 d, NZ_A 2024 grounded at 197.1 d, and NZ_B 2024's last fallback stopped strict-ocean at 38.2 d. No valid Svalbard 100³ start exists in 5–25E within the screening budget. Report: `docs/wiki/stages/stage12/stage12.20_phi_conn_and_start_selection.md`.
 
 ## Classification
 

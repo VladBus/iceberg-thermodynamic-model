@@ -122,9 +122,9 @@ The final set therefore uses the nearest verified free-drift starts, recorded in
 | FJL_A | FJL | FJL1/FJL2 | 323.9 | 99.999 | 135.5 | 285.9 | 2773 | 569 | melted |
 | NZ_A | NZ | NZ1 | 78.7 | 42.52 | — | — | 1182 | 330 | strict ocean |
 | NZ_B | NZ | NZ2 | 161.0 | 60.53 | 122.2 | — | 1828 | 222 | grounded |
-| D2 | SV-east | SV1 | 135.6 | 99.999 | 30.8 | 94.9 | 1976 | 540 | melted |
-| D4 | SV-north | SV2 | 136.1 | 99.999 | 40.6 | 101.3 | 1849 | 591 | melted |
-| D5 | Barents | — | 187.1 | 99.999 | 43.6 | 168.1 | 2134 | 489 | melted |
+| Barents-1 (D2) | Barents | SV1 | 135.6 | 99.999 | 30.8 | 94.9 | 1976 | 540 | melted |
+| Barents-2 (D4) | Barents | SV2 | 136.1 | 99.999 | 40.6 | 101.3 | 1849 | 591 | melted |
+| Barents-3 (D5) | Barents | — | 187.1 | 99.999 | 43.6 | 168.1 | 2134 | 489 | melted |
 
 All runs used 100³/1 m, 2020 daily GLORYS+ERA5, `--strict-ocean
 --stop-on-grounding`, `dt=3600 s`, and no grounded-in-place mode. They are

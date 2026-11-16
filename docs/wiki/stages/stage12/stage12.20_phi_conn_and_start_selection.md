@@ -91,7 +91,11 @@ kept out of those mixed figures and are summarised separately in
 
 No capsize/roll; no solar radiation; waves off; no sea ice; no support/overhang
 or calving mechanics beyond disconnected high-phi components; detached pieces
-are not tracked (lifetime is the main body). Drift is not observationally
+are not tracked (lifetime is the main body). The final free-drift set uses
+terminal grounding/strict-ocean stops. `--grounded-in-place` exists but is a
+separate stranded-melt sensitivity: it holds the body at the grounding site,
+continues thermodynamics and may refloat after melt, but does not resolve contact
+mechanics and is not part of the paired free-drift set. Drift is not observationally
 validated. 100³ resolution remains unresolved (`p=0.711`, 3.75% error against
 the Richardson limit). Enderlin current-code median ratio 0.540, Spearman 0.16
 with a size trend; start selection was done in the model because offline drift

@@ -96,6 +96,7 @@ def snapshot_matrix(tag,root,out,target=32,L=100.0):
             axes3(ax,nx,ny,nz,L)
             ax.set_xlabel("x, м",fontsize=6); ax.set_ylabel("y, м",fontsize=6); ax.set_zlabel("z, м",fontsize=6)
             ax.tick_params(labelsize=6)
+            ax.set_title(f"{int(round(t/86400))} сут · {100*m/m0:.1f}%",fontsize=8)
     for r,(cmap,lab,norm) in enumerate([("Blues","phi, доли ед.",colors.Normalize(0,1)),("YlOrRd","T, °C",colors.Normalize(-10,0)),("Greens","S_B, ‰",colors.Normalize(0,35))]):
         cax=fig.add_axes([.92,.70-.29*r,.012,.20]); fig.colorbar(cm.ScalarMappable(norm=norm,cmap=cmap),cax=cax).set_label(lab)
     fig.subplots_adjust(left=.10,right=.88,top=.94,bottom=.05)
@@ -220,7 +221,7 @@ def make_track(tag,root,out,static):
         speed=np.hypot(ds.u.values,ds.v.values)[last] if "u" in ds else np.zeros_like(t)
         wind=np.hypot(ds.air_u10.values,ds.air_v10.values)[last] if "air_u10" in ds else np.zeros_like(t)
     with xr.open_dataset(static) as st: dep=st.deptho.values; glat=st.latitude.values; glon=st.longitude.values
-    fig=plt.figure(figsize=(9,7)); gs=fig.add_gridspec(2,1,height_ratios=[3,1],hspace=.32)
+    fig=plt.figure(figsize=(10,8)); gs=fig.add_gridspec(2,1,height_ratios=[4.2,1.1],hspace=.22)
     ax=fig.add_subplot(gs[0]); z=np.ma.masked_invalid(dep)
     ax.pcolormesh(glon,glat,z,shading="auto",cmap="Blues_r",alpha=.55)
     ax.contour(glon,glat,np.nan_to_num(dep,nan=0),levels=[0.5],colors="k",linewidths=.5)
@@ -233,7 +234,7 @@ def make_track(tag,root,out,static):
     label_idx=sorted(set([0,max(0,len(day)//3),max(0,2*len(day)//3),len(day)-1]))
     for kk,k in enumerate(label_idx):
         ax.annotate(f"{int(day[k])}",(lon[k],lat[k]),xytext=(3,3),textcoords="offset points",fontsize=7)
-    ax.set_xlim(lon.min()-.5,lon.max()+.5); ax.set_ylim(lat.min()-.35,lat.max()+.35)
+    ax.set_xlim(lon.min()-.55,lon.max()+.55); ax.set_ylim(lat.min()-.4,lat.max()+.4); ax.set_aspect("auto")
     ax.set_xlabel("долгота"); ax.set_ylabel("широта")
     ax.legend(fontsize=7,loc="lower left"); ax.grid(alpha=.2); ax.set_aspect(1/np.cos(np.deg2rad(np.mean(lat))))
     cb=fig.colorbar(sc,ax=ax,label="сутки",shrink=.8); ax.tick_params(labelsize=7)
@@ -244,7 +245,7 @@ def make_track(tag,root,out,static):
     ax2.set_xlabel("сутки"); ax2.set_ylabel("м/с"); ax2.grid(alpha=.2); ax2.legend(fontsize=7)
     for i in range(1,len(day)):
         if g[i] or g[i-1]: ax2.axvspan(day[i-1],day[i],color="0.6",alpha=.15,lw=0)
-    fig.subplots_adjust(left=.12,right=.95,bottom=.10,top=.92)
+    fig.subplots_adjust(left=.09,right=.96,bottom=.08,top=.95)
     fig.savefig(out,dpi=180); check_png(out); plt.close(fig); print(out)
 
 def main_all():

@@ -104,28 +104,28 @@ def snapshot_matrix(tag,root,out,target=32,L=100.0):
     print(out)
 
 def profiles(tag,root,out):
-    fs=snaps(root); days=(0,30,90,180,270,350); cols=plt.cm.viridis(np.linspace(.05,.95,len(days)))
-    fig,ax=plt.subplots(1,3,figsize=(15,4.8))
+    fs=snaps(root); last=day_of(fs[-1]); days=[]
+    for target in np.linspace(0,last,5):
+        d=day_of(nearest(fs,target))
+        if d not in days: days.append(d)
+    cols=plt.cm.viridis(np.linspace(.05,.95,len(days)))
+    fig,ax=plt.subplots(1,2,figsize=(12,5.2))
+    zmax=1.0
     for c,d in zip(cols,days):
         p,T,S,x,y,z,m,t=load(nearest(fs,d)); sol=p>0.01
+        zmax=float(z[-1])
         tz=np.array([np.nanmean(T[k][sol[k]]) if sol[k].any() else np.nan for k in range(p.shape[0])])
         pz=np.where(p.sum((1,2))>0,p.mean((1,2)),np.nan)
-        psum=p.sum((1,2)); k=int(np.argmax(psum))
-        cols=p[k].sum(0)
-        tx=(T[k]*p[k]).sum(0)/np.maximum(cols,1e-6); tx[cols<=0.01]=np.nan
-        ax[0].plot(tz,z,color=c,label=f"{int(round(t/86400))} d"); ax[1].plot(pz,z,color=c); ax[2].plot(x,tx,color=c)
-        kappa=K_ICE/(RHO_ICE*C_ICE); tt=max(t,1.0)
-        ax[2].plot(x, -1.8 + (-10.0+1.8)*erf(x/(2*np.sqrt(kappa*tt))), color=c, ls="--", lw=.7)
+        lab=f"{int(round(t/86400))} сут"
+        ax[0].plot(tz,z,color=c,label=lab)
+        ax[1].plot(pz,z,color=c,label=lab)
     ax[0].set(xlabel="T, °C",ylabel="z, м"); ax[1].set(xlabel="phi, доли ед.",ylabel="z, м")
-    ax[0].set_ylim(0,50); ax[1].set_ylim(0,50)
-    ax[0].set_xticks([-20,-10,0]); ax[0].set_yticks([0,25,50])
-    ax[1].set_xticks([0,0.5,1]); ax[1].set_yticks([0,25,50])
-    ax[2].set(xlabel="x, м",ylabel="T, °C")
-    xmax=float(x[-1]); ax[2].set_xticks([0,xmax/2,xmax]); ax[2].set_yticks([-10,-5,0])
     for a in ax:
+        a.set_ylim(0,zmax); a.set_yticks(np.linspace(0,zmax,5))
         a.grid(alpha=.25); a.legend(fontsize=7)
-        a.tick_params(axis="x", pad=10, labelsize=7); a.tick_params(axis="y", pad=10, labelsize=7)
-    fig.subplots_adjust(left=.08,right=.92,bottom=.18,top=.94)
+        a.tick_params(axis="x",pad=10,labelsize=7); a.tick_params(axis="y",pad=10,labelsize=7)
+    ax[0].set_xlim(-12,0); ax[1].set_xlim(0,1)
+    fig.subplots_adjust(left=.10,right=.96,bottom=.16,top=.94,wspace=.28)
     fig.savefig(out,dpi=180); check_png(out); plt.close(fig); print(out)
 
 def series(tag,root,out):
@@ -143,19 +143,22 @@ def series(tag,root,out):
     ax[0,0].plot(df.day,100*(m0-df.mass)/m0,"k-"); ax[0,0].set(ylabel="потеря массы, % m₀")
     ax[0,1].plot(df.day,df.draft,label="осадка"); ax[0,1].plot(df.day,df.freeboard,label="надводный борт")
     ax[0,1].set(ylabel="м"); ax[0,1].legend(fontsize=7)
-    ax[1,0].plot(df.day,100*df["melt"]/m0,label="basal+lateral+surface")
-    ax[1,0].plot(df.day,100*df["flush"]/m0,label="flush")
-    ax[1,0].plot(df.day,100*df.calved/m0,label="calved")
-    ax[1,0].plot(df.day,100*(m0-df.mass)/m0,"k--",label="total")
-    ax[1,0].plot(df.day,100*df.resid/m0,"r-",label="residual")
+    ax[1,0].plot(df.day,100*df["melt"]/m0,label="таяние: дно+борт+верх")
+    ax[1,0].plot(df.day,100*df["flush"]/m0,label="сброс/вытеснение")
+    ax[1,0].plot(df.day,100*df.calved/m0,label="откол")
+    ax[1,0].plot(df.day,100*(m0-df.mass)/m0,"k--",label="суммарная потеря")
+    ax[1,0].plot(df.day,100*df.resid/m0,"r-",label="невязка")
     ax[1,0].set(ylabel="% m₀"); ax[1,0].legend(fontsize=6)
     calf=Path(root)/"run.nc_calved.csv"
     if calf.exists():
         cd=pd.read_csv(calf)
         for _,r in cd.iterrows():
             for a in (ax[0,0],ax[1,0]): a.axvline(r.time_s/86400,color="k",ls=":",lw=.7)
-    ax[1,1].plot(df.day,df.T_w,color="C3",label="T"); ax[1,1].set(ylabel="T, °C")
-    ax2=ax[1,1].twinx(); ax2.plot(df.day,1000*df.S_w,color="C0",label="S"); ax2.set_ylabel("S [g/kg]")
+    l1,=ax[1,1].plot(df.day,df.T_w,color="C3",label="T воды")
+    ax[1,1].set_ylabel("T, °C"); ax[1,1].yaxis.label.set_color("C3"); ax[1,1].tick_params(axis="y",colors="C3")
+    ax2=ax[1,1].twinx(); l2,=ax2.plot(df.day,1000*df.S_w,color="C0",label="S воды")
+    ax2.set_ylabel("S, ‰",color="C0"); ax2.tick_params(axis="y",colors="C0")
+    ax[1,1].legend([l1,l2],["T воды","S воды"],loc="best",fontsize=7)
     for a in ax.ravel():
         a.grid(alpha=.2); a.set_xlabel("сутки")
         g=df.grounded.values.astype(int); st=np.where((g==1)&np.r_[True,g[:-1]==0])[0]; en=np.where((g==1)&np.r_[g[1:]==0,True])[0]
@@ -165,7 +168,7 @@ def series(tag,root,out):
         aa.set_xlim(0, float(df.day.iloc[-1]))
         aa.set_xticks([0,100,200,300])
     ax[1,1].tick_params(axis="x", pad=5)
-    fig.subplots_adjust(left=.12,right=.92,bottom=.18,top=.80,wspace=.45,hspace=.50)
+    fig.subplots_adjust(left=.12,right=.90,bottom=.18,top=.94,wspace=.45,hspace=.50)
     fig.savefig(out,dpi=180); check_png(out); plt.close(fig); print(out)
 
 def main():

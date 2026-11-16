@@ -116,15 +116,16 @@ def profiles(tag,root,out):
         zmax=float(z[-1])
         tz=np.array([np.nanmean(T[k][sol[k]]) if sol[k].any() else np.nan for k in range(p.shape[0])])
         pz=np.where(p.sum((1,2))>0,p.mean((1,2)),np.nan)
+        depth=zmax-z
         lab=f"{int(round(t/86400))} сут"
-        ax[0].plot(tz,z,color=c,label=lab)
-        ax[1].plot(pz,z,color=c,label=lab)
-    ax[0].set(xlabel="T, °C",ylabel="z, м"); ax[1].set(xlabel="phi, доли ед.",ylabel="z, м")
+        ax[0].plot(tz,depth,color=c,label=lab)
+        ax[1].plot(pz,depth,color=c,label=lab)
+    ax[0].set(xlabel="T, °C",ylabel="глубина, м"); ax[1].set(xlabel="phi, доли ед.",ylabel="глубина, м")
     for a in ax:
-        a.set_ylim(0,zmax); a.set_yticks(np.linspace(0,zmax,5))
+        a.set_ylim(zmax,0); a.set_yticks(np.linspace(0,zmax,5))
         a.grid(alpha=.25); a.legend(fontsize=7)
         a.tick_params(axis="x",pad=10,labelsize=7); a.tick_params(axis="y",pad=10,labelsize=7)
-    ax[0].set_xlim(-12,0); ax[1].set_xlim(0,1)
+    ax[0].set_xlim(0,-30); ax[0].set_xticks([0,-5,-10,-15,-20,-25,-30]); ax[1].set_xlim(0,1)
     fig.subplots_adjust(left=.10,right=.96,bottom=.16,top=.94,wspace=.28)
     fig.savefig(out,dpi=180); check_png(out); plt.close(fig); print(out)
 

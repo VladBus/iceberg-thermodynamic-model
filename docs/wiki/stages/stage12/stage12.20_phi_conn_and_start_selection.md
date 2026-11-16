@@ -84,7 +84,9 @@ with `T(z)` and `phi(z)` at five actual snapshot dates, `time_series.png`,
 last frame, fixed size/colorbars). The full-width mid-depth `T(x)` transect is
 omitted: with `kappa ~ 1.1e-6 m2/s` the one-year thermal skin is only ~6 m, so a
 100 m transect is visually empty in the interior; `T(z)`/`phi(z)` carry the
-useful profile information. `time_series.png` uses Russian labels and separate
+useful profile information. Profiles use oceanographic depth (0 m at the top,
+increasing downward) and the observed `T` range `0…−30 °C`; the old `−12 °C`
+limit was clipping cold ice. `time_series.png` uses Russian labels and separate
 red/blue axes for water `T` and `S` at draft. Common `map_2020_2024.png`, `mass_curves.png` and
 `summary.csv` contain only the six coastal 100³ runs. The two 50 m controls are
 kept out of those mixed figures and are summarised separately in

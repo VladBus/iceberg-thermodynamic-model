@@ -27,7 +27,7 @@ in `KNOWN_ISSUES.md`; the documentation map is `docs/README.md`.
   sensible-only calved/flush energy closure, the Stage 2 figure set, offline
   drift/melt diagnostics, and six 100^3 2020 references with documented start
   replacements. Stage 12.20 fixes `VOXEL_PHI_CONN=0.3`, runs 50 m controls and
-  twelve 100^3 2020/2024 references (six coastal, six Barents open-water) with 10-day snapshots, records the Svalbard
+  six coastal 100^3 2020/2024 references with 10-day snapshots, records the Svalbard
   no-valid-start result, and produces the final thesis figure set. Stage 12.9b
   thesis writing is the active workstream. See
   `docs/validation/INDEX.md` and `docs/references/reanalysis_data_plan.md`.

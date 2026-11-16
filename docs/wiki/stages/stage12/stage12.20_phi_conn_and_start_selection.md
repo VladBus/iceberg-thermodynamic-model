@@ -2,8 +2,8 @@
 
 **Date:** 2026-11-16
 **Status:** COMPLETE with documented limitations
-**Scope:** connectivity threshold, final 100³ 2020/2024 references with 10-day
-snapshots, figures, Svalbard negative result and thesis limitations.
+**Scope:** connectivity threshold, six final coastal 100³ 2020/2024 references
+with 10-day snapshots, figures, Svalbard negative result and thesis limitations.
 
 ## 1. Physics decisions
 
@@ -65,18 +65,12 @@ every 10 d.
 | coastal | FJL_A_2024 | FJL | 2024 | 80.5N 45E | 117.5 | 67.32% | 61.0 | — | — | 0 | 1351 | strict ocean |
 | coastal | NZ_A_2024 | NZ | 2024 | 75N 53.583E | 197.1 | 87.24% | 32.9 | — | — | 0 | 2086 | grounded; fallback |
 | coastal | NZ_B_2024 | NZ | 2024 | 73.083N 59.167E | 38.2 | 84.14% | — | — | — | 0 | 417 | strict ocean; fallback |
-| open water | Barents_1_2020 | Barents | 2020 | 76N 40E | 135.6 | 99.999% | 30.8 | 67.6 | 94.9 | 0 | 1976 | melted |
-| open water | Barents_2_2020 | Barents | 2020 | 77N 40E | 136.1 | 99.999% | 40.6 | 74.7 | 101.3 | 0 | 1849 | melted |
-| open water | Barents_3_2020 | Barents | 2020 | 75N 45E | 187.0 | 99.999% | 43.6 | 119.7 | 168.1 | 1.045 Mt | 2155 | melted |
-| open water | Barents_1_2024 | Barents | 2024 | 76N 40E | 205.4 | 99.999% | 27.8 | 108.2 | 175.4 | 0.496 Mt | 2130 | melted |
-| open water | Barents_2_2024 | Barents | 2024 | 77N 40E | 197.4 | 99.999% | 36.7 | 123.8 | 161.0 | 0.053 Mt | 2215 | melted |
-| open water | Barents_3_2024 | Barents | 2024 | 75N 45E | 365.0 | 99.999% | 34.7 | 126.8 | 188.1 | 0.796 Mt | 2122 | end of forcing |
+
 
 NZ_B_2024 stopped before 60 d after two fallbacks; no further substitute was
-used. The six open-water Barents runs all survive to melt-out/end-of-forcing;
-Barents_3_2024 reaches 365 d. D2/D4/D5 from 12.19 are
-**Barents-1/Barents-2/Barents-3** in the documentation: central-Barents
-open-water points at ~40E, not Svalbard.
+used. Six auxiliary Barents open-water runs (Barents-1/2/3 x 2020/2024) were
+explored but are deliberately excluded from this final coastal set: they do not
+answer the coastal reference question and would mix two populations in one map.
 
 ## 6. Figures
 
@@ -84,7 +78,7 @@ open-water points at ~40E, not Svalbard.
 (with erf overlay), `time_series.png` with no W/H or track inset, `track.png`,
 and `evolution_phi.gif`/`evolution_T.gif` (400 ms frames, 1500 ms last frame,
 fixed size/colorbars). Common `map_2020_2024.png`, `mass_curves.png` and
-`summary.csv` contain only the 12 final 100³ runs. The two 50 m controls are
+`summary.csv` contain only the six coastal 100³ runs. The two 50 m controls are
 kept out of those mixed figures and are summarised separately in
 `controls_50m.png`; their per-run figures remain in `CTRL_FJL2_2020/` and
 `CTRL_FJL2_2024/`. GIFs use `run.nc_snap_*.nc`.
@@ -103,8 +97,8 @@ uses 0.5 m currents, not the 88 m draft. No Svalbard 100³ reference exists.
 
 Strict build RC 0; `fpm test` RC 0 (`STOP 0`), drift 9/9; layout checks in
 `python/tests/test_stage12_20_figures.py` 3/3; docs links 286 checked,
-0 broken; `git diff --check` clean. The 14 T GIFs have fixed 520x480 frames,
->=5 frames and non-empty warm-colour pixels; the 12-row summary excludes the
+0 broken; `git diff --check` clean. The eight T GIFs (six coastal plus two controls) have fixed 580x520 frames,
+>=5 frames and non-empty warm-colour pixels; the six-row summary excludes the
 two 50 m controls. Data are under `data/validation/stage12.20/` and not in git.
 
 ## Appendix A — raw diagnostics (2026-11-16)

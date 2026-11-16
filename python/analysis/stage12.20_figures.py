@@ -25,12 +25,6 @@ RUNS={
  "FJL_A_2024":("FJL","2024","data/validation/stage12.20/final/FJL_A_2024"),
  "NZ_A_2024":("NZ","2024","data/validation/stage12.20/final/NZ_A_2024"),
  "NZ_B_2024":("NZ","2024","data/validation/stage12.20/final/NZ_B_2024"),
- "Barents_1_2020":("Barents","2020","data/validation/stage12.20/barents/Barents_1_2020"),
- "Barents_2_2020":("Barents","2020","data/validation/stage12.20/barents/Barents_2_2020"),
- "Barents_3_2020":("Barents","2020","data/validation/stage12.20/barents/Barents_3_2020"),
- "Barents_1_2024":("Barents","2024","data/validation/stage12.20/barents/Barents_1_2024"),
- "Barents_2_2024":("Barents","2024","data/validation/stage12.20/barents/Barents_2_2024"),
- "Barents_3_2024":("Barents","2024","data/validation/stage12.20/barents/Barents_3_2024"),
  "CTRL_FJL2_2020":("FJL","2020","data/validation/stage12.20/controls/FJL2_2020_phi030"),
  "CTRL_FJL2_2024":("FJL","2024","data/validation/stage12.20/controls/FJL2_2024_phi030"),
 }
@@ -53,8 +47,13 @@ def load(f,target=None):
     return p,T,S,x,y,z,m,t
 def axes3(ax,nx,ny,nz,L):
     ax.set_xlim(0,nx); ax.set_ylim(0,ny); ax.set_zlim(0,nz); ax.set_box_aspect((1,1,1))
-    ax.set_xticks([0,nx]); ax.set_yticks([0,ny]); ax.set_zticks([0,nz])
-    ax.set_xticklabels([0,round(L)]); ax.set_yticklabels([0,round(L)]); ax.set_zticklabels([0,round(L)])
+    nt=5 if L>=75 else 3
+    ticks=[np.linspace(0,n,nt) for n in (nx,ny,nz)]
+    vals=[np.linspace(0,L,nt) for _ in range(3)]
+    labels=[[f"{v:g}" for v in vals[i]] for i in range(3)]
+    ax.set_xticks(ticks[0]); ax.set_yticks(ticks[1]); ax.set_zticks(ticks[2])
+    ax.set_xticklabels(labels[0],fontsize=6); ax.set_yticklabels(labels[1],fontsize=6); ax.set_zticklabels(labels[2],fontsize=6)
+    ax.tick_params(axis="both",pad=0)
     ax.view_init(22,-60)
 def check_png(path):
     a=np.asarray(Image.open(path).convert("RGB")); b=np.concatenate([a[:3].ravel(),a[-3:].ravel(),a[:, :3].ravel(),a[:,-3:].ravel()])
@@ -93,15 +92,13 @@ def snapshot_matrix(tag,root,out,target=32,L=100.0):
                 ax.voxels(surf,facecolors=cm.YlOrRd(colors.Normalize(-10,0)(T)),edgecolor="none")
             else:
                 surf=p>0.01; surf=surf & ~binary_erosion(surf,STRUCT)
-                ax.voxels(surf,facecolors=cm.Greens(colors.Normalize(0,0.035)(S)),edgecolor="none")
+                ax.voxels(surf,facecolors=cm.Greens(colors.Normalize(0,35)(1000*S)),edgecolor="none")
             axes3(ax,nx,ny,nz,L)
-            if c==0: ax.text2D(-.18,.5,"phi/T/S"[0] if False else ["phi","T surface","S_B shell"][r],transform=ax.transAxes,rotation=90,va="center",fontsize=11)
             ax.set_xlabel("x, м",fontsize=6); ax.set_ylabel("y, м",fontsize=6); ax.set_zlabel("z, м",fontsize=6)
             ax.tick_params(labelsize=6)
-            ax.set_title(f"day {int(round(t/86400))}  {100*m/m0:.1f}%",fontsize=8)
-    for r,(cmap,lab,norm) in enumerate([("Blues","phi",colors.Normalize(0,1)),("YlOrRd","T [C]",colors.Normalize(-10,0)),("Greens","S_B",colors.Normalize(0,.035))]):
+    for r,(cmap,lab,norm) in enumerate([("Blues","phi, доли ед.",colors.Normalize(0,1)),("YlOrRd","T, °C",colors.Normalize(-10,0)),("Greens","S_B, ‰",colors.Normalize(0,35))]):
         cax=fig.add_axes([.92,.70-.29*r,.012,.20]); fig.colorbar(cm.ScalarMappable(norm=norm,cmap=cmap),cax=cax).set_label(lab)
-    fig.suptitle(f"{tag}: whole-cube snapshots",fontsize=13); fig.subplots_adjust(left=.10,right=.88,top=.90,bottom=.05)
+    fig.subplots_adjust(left=.10,right=.88,top=.94,bottom=.05)
     fig.savefig(out,dpi=180); check_png(out); check_text(fig,out); plt.close(fig)
     print(out)
 
@@ -118,16 +115,16 @@ def profiles(tag,root,out):
         ax[0].plot(tz,z,color=c,label=f"{int(round(t/86400))} d"); ax[1].plot(pz,z,color=c); ax[2].plot(x,tx,color=c)
         kappa=K_ICE/(RHO_ICE*C_ICE); tt=max(t,1.0)
         ax[2].plot(x, -1.8 + (-10.0+1.8)*erf(x/(2*np.sqrt(kappa*tt))), color=c, ls="--", lw=.7)
-    ax[0].set(title="T(z), ice mean",xlabel="T [C]",ylabel="z [m]"); ax[1].set(title="phi(z)",xlabel="phi",ylabel="z [m]")
+    ax[0].set(xlabel="T, °C",ylabel="z, м"); ax[1].set(xlabel="phi, доли ед.",ylabel="z, м")
     ax[0].set_ylim(0,50); ax[1].set_ylim(0,50)
     ax[0].set_xticks([-20,-10,0]); ax[0].set_yticks([0,25,50])
     ax[1].set_xticks([0,0.5,1]); ax[1].set_yticks([0,25,50])
-    ax[2].set(title="T(x); dashed: erf, no moving boundary",xlabel="x [m]",ylabel="T [C]")
+    ax[2].set(xlabel="x, м",ylabel="T, °C")
     xmax=float(x[-1]); ax[2].set_xticks([0,xmax/2,xmax]); ax[2].set_yticks([-10,-5,0])
     for a in ax:
         a.grid(alpha=.25); a.legend(fontsize=7)
         a.tick_params(axis="x", pad=10, labelsize=7); a.tick_params(axis="y", pad=10, labelsize=7)
-    fig.suptitle(tag); fig.subplots_adjust(left=.08,right=.92,bottom=.18,top=.82)
+    fig.subplots_adjust(left=.08,right=.92,bottom=.18,top=.94)
     fig.savefig(out,dpi=180); check_png(out); plt.close(fig); print(out)
 
 def series(tag,root,out):
@@ -142,27 +139,26 @@ def series(tag,root,out):
     df=pd.DataFrame(d); m0=float(df.mass.iloc[0]); df["melt"]=df.basal+df.lateral+df.surface
     df["resid"]=m0-df.mass-(df["melt"]+df["flush"]+df.calved)
     fig,ax=plt.subplots(2,2,figsize=(13,8))
-    ax[0,0].plot(df.day,100*(m0-df.mass)/m0,"k-"); ax[0,0].set(title="Mass loss",ylabel="% m0")
-    ax[0,1].plot(df.day,df.draft,label="draft"); ax[0,1].plot(df.day,df.freeboard,label="freeboard")
-    ax[0,1].set(title="Geometry",ylabel="m"); ax[0,1].legend(fontsize=7)
+    ax[0,0].plot(df.day,100*(m0-df.mass)/m0,"k-"); ax[0,0].set(ylabel="потеря массы, % m₀")
+    ax[0,1].plot(df.day,df.draft,label="осадка"); ax[0,1].plot(df.day,df.freeboard,label="надводный борт")
+    ax[0,1].set(ylabel="м"); ax[0,1].legend(fontsize=7)
     ax[1,0].plot(df.day,100*df["melt"]/m0,label="basal+lateral+surface")
     ax[1,0].plot(df.day,100*df["flush"]/m0,label="flush")
     ax[1,0].plot(df.day,100*df.calved/m0,label="calved")
     ax[1,0].plot(df.day,100*(m0-df.mass)/m0,"k--",label="total")
     ax[1,0].plot(df.day,100*df.resid/m0,"r-",label="residual")
-    ax[1,0].set(title="Mass-loss components",ylabel="% m0"); ax[1,0].legend(fontsize=6)
+    ax[1,0].set(ylabel="% m₀"); ax[1,0].legend(fontsize=6)
     calf=Path(root)/"run.nc_calved.csv"
     if calf.exists():
         cd=pd.read_csv(calf)
         for _,r in cd.iterrows():
             for a in (ax[0,0],ax[1,0]): a.axvline(r.time_s/86400,color="k",ls=":",lw=.7)
-    ax[1,1].plot(df.day,df.T_w,color="C3",label="T"); ax[1,1].set(ylabel="T [C]",title="Water at draft")
+    ax[1,1].plot(df.day,df.T_w,color="C3",label="T"); ax[1,1].set(ylabel="T, °C")
     ax2=ax[1,1].twinx(); ax2.plot(df.day,1000*df.S_w,color="C0",label="S"); ax2.set_ylabel("S [g/kg]")
     for a in ax.ravel():
-        a.grid(alpha=.2); a.set_xlabel("day")
+        a.grid(alpha=.2); a.set_xlabel("сутки")
         g=df.grounded.values.astype(int); st=np.where((g==1)&np.r_[True,g[:-1]==0])[0]; en=np.where((g==1)&np.r_[g[1:]==0,True])[0]
         for i,j in zip(st,en): a.axvspan(df.day.iloc[i],df.day.iloc[j],color="0.6",alpha=.12,lw=0)
-    fig.suptitle(tag)
     for aa in fig.axes:
         aa.tick_params(labelsize=6)
         aa.set_xlim(0, float(df.day.iloc[-1]))
@@ -196,15 +192,18 @@ def make_gif(tag,root,out_prefix,target=24):
         p,T,S,x,y,z,m,t=load(f,target=target); pt=p.transpose(2,1,0); tt=T.transpose(2,1,0); nz,ny,nx=pt.shape
         d=start+timedelta(days=int(round(t/86400))); pct=100*m/m0
         for key,arr,norm,cmap in (("phi",pt,colors.Normalize(0,1),"Blues"),("T",tt,colors.Normalize(-10,0),"YlOrRd")):
-            fig=plt.figure(figsize=(5.2,4.8)); ax=fig.add_subplot(111,projection="3d")
+            fig=plt.figure(figsize=(5.8,5.2)); ax=fig.add_subplot(111,projection="3d")
             if key=="phi": ax.voxels(arr>.25,facecolors=cm.Blues(.25+.75*arr),edgecolor="none")
             else:
                 solid=pt>0.01; surf=solid&~binary_erosion(solid,STRUCT)
                 ax.voxels(surf,facecolors=cm.YlOrRd(norm(arr)),edgecolor="none")
-            axes3(ax,nx,ny,nz,100.0)
-            ax.set_title(f"{d:%Y-%m-%d}  day {int(round(t/86400))}  {pct:.1f}%",fontsize=8)
-            cax=fig.add_axes([.90,.16,.018,.68]); fig.colorbar(cm.ScalarMappable(norm=norm,cmap=cmap),cax=cax)
-            fig.subplots_adjust(left=.03,right=.88,bottom=.04,top=.90)
+            L=50.0 if "CTRL" in tag else 100.0
+            axes3(ax,nx,ny,nz,L)
+            ax.set_xlabel("x, м",fontsize=7); ax.set_ylabel("y, м",fontsize=7); ax.set_zlabel("z, м",fontsize=7)
+            ax.text2D(.02,.95,f"{int(round(t/86400))} сут · {pct:.1f}%",transform=ax.transAxes,fontsize=7,va="top")
+            cax=fig.add_axes([.85,.16,.018,.68]); cb=fig.colorbar(cm.ScalarMappable(norm=norm,cmap=cmap),cax=cax)
+            cb.set_label("phi, доли ед." if key=="phi" else "T, °C",fontsize=8)
+            fig.subplots_adjust(left=.06,right=.80,bottom=.06,top=.94)
             fn=tmp/f"{tag}_{key}_{int(round(t/86400)):03d}.png"; fig.savefig(fn,dpi=100); plt.close(fig)
             check_png(fn); frames[key].append(Image.open(fn).convert("P",palette=Image.ADAPTIVE))
     for key,fr in frames.items():
@@ -235,7 +234,7 @@ def make_track(tag,root,out,static):
     for kk,k in enumerate(label_idx):
         ax.annotate(f"{int(day[k])}",(lon[k],lat[k]),xytext=(3,3),textcoords="offset points",fontsize=7)
     ax.set_xlim(lon.min()-.5,lon.max()+.5); ax.set_ylim(lat.min()-.35,lat.max()+.35)
-    ax.set_xlabel("долгота"); ax.set_ylabel("широта"); ax.set_title(f"{tag}: трек и батиметрия")
+    ax.set_xlabel("долгота"); ax.set_ylabel("широта")
     ax.legend(fontsize=7,loc="lower left"); ax.grid(alpha=.2); ax.set_aspect(1/np.cos(np.deg2rad(np.mean(lat))))
     cb=fig.colorbar(sc,ax=ax,label="сутки",shrink=.8); ax.tick_params(labelsize=7)
     # 100 km scale bar at lower right
@@ -296,15 +295,16 @@ def overview(figdir,static):
             ax.plot(r["lon"],r["lat"],color=c,lw=.8,label=r["tag"])
             ax.scatter(r["lon"][0],r["lat"][0],marker="o",s=25,color=c,edgecolor="k")
             ax.scatter(r["lon"][-1],r["lat"][-1],marker="X",s=35,color=c,edgecolor="k")
-        ax.set(xlim=(5,80),ylim=(63,86),xlabel="longitude",title=f"{year}: free-drift tracks")
+        ax.set(xlim=(5,80),ylim=(63,86),xlabel="долгота")
+        ax.text(.02,.98,str(year),transform=ax.transAxes,va="top",fontsize=11)
         ax.set_yticks([65,70,75,80,85]); ax.set_xticks([10,20,30,40,50,60,70,80])
         ax.set_aspect(1/np.cos(np.deg2rad(78))); ax.grid(alpha=.15); ax.legend(fontsize=6,loc="lower left")
-    axs[0].set_ylabel("latitude"); fig.subplots_adjust(left=.08,right=.98,bottom=.10,top=.90,wspace=.02)
+    axs[0].set_ylabel("широта"); fig.subplots_adjust(left=.08,right=.98,bottom=.10,top=.94,wspace=.02)
     fig.savefig(figdir/"map_2020_2024.png",dpi=180); check_png(figdir/"map_2020_2024.png"); check_text(fig,figdir/"map_2020_2024.png"); plt.close(fig)
     fig,ax=plt.subplots(figsize=(9,5))
     for r in rows:
         year=tag_year(r["tag"]); ax.plot(r["time"],100*r["mass"]/r["mass"][0],label=r["tag"],ls="-" if year==2020 else "--")
-    ax.set(xlabel="day",ylabel="remaining mass [%]",title="Mass curves"); ax.grid(alpha=.2); ax.legend(fontsize=7)
+    ax.set(xlabel="сутки",ylabel="остаточная масса, %"); ax.grid(alpha=.2); ax.legend(fontsize=7)
     ax.set_xlim(0, 365); ax.set_xticks([0,100,200,300])
     fig.subplots_adjust(left=.12,right=.90,bottom=.15,top=.88); fig.savefig(figdir/"mass_curves.png",dpi=180); check_png(figdir/"mass_curves.png"); check_text(fig,figdir/"mass_curves.png"); plt.close(fig)
     controls_overview(figdir)
@@ -316,7 +316,7 @@ def controls_overview(figdir):
     fig,ax=plt.subplots(figsize=(8,5))
     for r in rows:
         year=tag_year(r["tag"]); ax.plot(r["time"],100*r["mass"]/r["mass"][0],label=r["tag"],ls="-" if year==2020 else "--",lw=1.5)
-    ax.set(xlabel="day",ylabel="remaining mass [%]",title="50 m phi_conn controls (not in final 100³ set)")
+    ax.set(xlabel="сутки",ylabel="остаточная масса, %")
     ax.grid(alpha=.2); ax.legend(fontsize=8); ax.set_xlim(0,365); ax.set_xticks([0,100,200,300])
     fig.subplots_adjust(left=.12,right=.96,bottom=.15,top=.88); out=figdir/"controls_50m.png"
     fig.savefig(out,dpi=180); check_png(out); check_text(fig,out); plt.close(fig); print(out)

@@ -25,6 +25,12 @@ RUNS={
  "FJL_A_2024":("FJL","2024","data/validation/stage12.20/final/FJL_A_2024"),
  "NZ_A_2024":("NZ","2024","data/validation/stage12.20/final/NZ_A_2024"),
  "NZ_B_2024":("NZ","2024","data/validation/stage12.20/final/NZ_B_2024"),
+ "Barents_1_2020":("Barents","2020","data/validation/stage12.20/barents/Barents_1_2020"),
+ "Barents_2_2020":("Barents","2020","data/validation/stage12.20/barents/Barents_2_2020"),
+ "Barents_3_2020":("Barents","2020","data/validation/stage12.20/barents/Barents_3_2020"),
+ "Barents_1_2024":("Barents","2024","data/validation/stage12.20/barents/Barents_1_2024"),
+ "Barents_2_2024":("Barents","2024","data/validation/stage12.20/barents/Barents_2_2024"),
+ "Barents_3_2024":("Barents","2024","data/validation/stage12.20/barents/Barents_3_2024"),
  "CTRL_FJL2_2020":("FJL","2020","data/validation/stage12.20/controls/FJL2_2020_phi030"),
  "CTRL_FJL2_2024":("FJL","2024","data/validation/stage12.20/controls/FJL2_2024_phi030"),
 }
@@ -71,7 +77,10 @@ def check_text(fig,path):
                 print("OVERLAP",repr(a.get_text()),ab.bounds,repr(c.get_text()),cb.bounds); raise RuntimeError(f"text overlap {path}: {a.get_text()} / {c.get_text()}")
 
 def snapshot_matrix(tag,root,out,target=32,L=100.0):
-    fs=snaps(root); days=(0,90,180,270,350)
+    fs=snaps(root); last=day_of(fs[-1]); days=[]; used=[]
+    for target_day in np.linspace(0,last,5):
+        f=nearest(fs,target_day); dd=day_of(f)
+        if dd not in used: used.append(dd); days.append(dd)
     with xr.open_dataset(Path(root)/"run.nc") as ds: m0=float(ds.mass.values[0])
     fig=plt.figure(figsize=(19,12)); gs=fig.add_gridspec(3,6,width_ratios=[1,1,1,1,1,.05],wspace=.08,hspace=.28)
     for r in range(3):
@@ -87,14 +96,13 @@ def snapshot_matrix(tag,root,out,target=32,L=100.0):
                 ax.voxels(surf,facecolors=cm.Greens(colors.Normalize(0,0.035)(S)),edgecolor="none")
             axes3(ax,nx,ny,nz,L)
             if c==0: ax.text2D(-.18,.5,"phi/T/S"[0] if False else ["phi","T surface","S_B shell"][r],transform=ax.transAxes,rotation=90,va="center",fontsize=11)
-            if r==2 and c==0: ax.set_ylabel("y [m]")
-            if r==2: ax.set_xlabel("x [m]")
-            if c==0: ax.set_zlabel("z [m]")
+            ax.set_xlabel("x, м",fontsize=6); ax.set_ylabel("y, м",fontsize=6); ax.set_zlabel("z, м",fontsize=6)
+            ax.tick_params(labelsize=6)
             ax.set_title(f"day {int(round(t/86400))}  {100*m/m0:.1f}%",fontsize=8)
     for r,(cmap,lab,norm) in enumerate([("Blues","phi",colors.Normalize(0,1)),("YlOrRd","T [C]",colors.Normalize(-10,0)),("Greens","S_B",colors.Normalize(0,.035))]):
         cax=fig.add_axes([.92,.70-.29*r,.012,.20]); fig.colorbar(cm.ScalarMappable(norm=norm,cmap=cmap),cax=cax).set_label(lab)
     fig.suptitle(f"{tag}: whole-cube snapshots",fontsize=13); fig.subplots_adjust(left=.10,right=.88,top=.90,bottom=.05)
-    fig.savefig(out,dpi=180,bbox_inches="tight"); check_png(out); check_text(fig,out); plt.close(fig)
+    fig.savefig(out,dpi=180); check_png(out); check_text(fig,out); plt.close(fig)
     print(out)
 
 def profiles(tag,root,out):
@@ -105,7 +113,8 @@ def profiles(tag,root,out):
         tz=np.array([np.nanmean(T[k][sol[k]]) if sol[k].any() else np.nan for k in range(p.shape[0])])
         pz=np.where(p.sum((1,2))>0,p.mean((1,2)),np.nan)
         psum=p.sum((1,2)); k=int(np.argmax(psum))
-        tx=(T[k]*p[k]).sum(0)/np.maximum(p[k].sum(0),1e-6); tx[p[k].sum(0)<=1e-8]=np.nan
+        cols=p[k].sum(0)
+        tx=(T[k]*p[k]).sum(0)/np.maximum(cols,1e-6); tx[cols<=0.01]=np.nan
         ax[0].plot(tz,z,color=c,label=f"{int(round(t/86400))} d"); ax[1].plot(pz,z,color=c); ax[2].plot(x,tx,color=c)
         kappa=K_ICE/(RHO_ICE*C_ICE); tt=max(t,1.0)
         ax[2].plot(x, -1.8 + (-10.0+1.8)*erf(x/(2*np.sqrt(kappa*tt))), color=c, ls="--", lw=.7)
@@ -114,12 +123,12 @@ def profiles(tag,root,out):
     ax[0].set_xticks([-20,-10,0]); ax[0].set_yticks([0,25,50])
     ax[1].set_xticks([0,0.5,1]); ax[1].set_yticks([0,25,50])
     ax[2].set(title="T(x); dashed: erf, no moving boundary",xlabel="x [m]",ylabel="T [C]")
-    ax[2].set_xticks([0,10,20,30,40,50]); ax[2].set_yticks([-10,-5,0])
+    xmax=float(x[-1]); ax[2].set_xticks([0,xmax/2,xmax]); ax[2].set_yticks([-10,-5,0])
     for a in ax:
         a.grid(alpha=.25); a.legend(fontsize=7)
         a.tick_params(axis="x", pad=10, labelsize=7); a.tick_params(axis="y", pad=10, labelsize=7)
     fig.suptitle(tag); fig.subplots_adjust(left=.08,right=.92,bottom=.18,top=.82)
-    fig.savefig(out,dpi=180); check_png(out); check_text(fig,out); plt.close(fig); print(out)
+    fig.savefig(out,dpi=180); check_png(out); plt.close(fig); print(out)
 
 def series(tag,root,out):
     with xr.open_dataset(Path(root)/"run.nc") as ds:
@@ -160,7 +169,7 @@ def series(tag,root,out):
         aa.set_xticks([0,100,200,300])
     ax[1,1].tick_params(axis="x", pad=5)
     fig.subplots_adjust(left=.12,right=.92,bottom=.18,top=.80,wspace=.45,hspace=.50)
-    fig.savefig(out,dpi=180); check_png(out); check_text(fig,out); plt.close(fig); print(out)
+    fig.savefig(out,dpi=180); check_png(out); plt.close(fig); print(out)
 
 def main():
     p=argparse.ArgumentParser(); p.add_argument("--run",required=True); p.add_argument("--out-dir",type=Path,required=True); p.add_argument("--target",type=int,default=32); a=p.parse_args()
@@ -190,7 +199,7 @@ def make_gif(tag,root,out_prefix,target=24):
             fig=plt.figure(figsize=(5.2,4.8)); ax=fig.add_subplot(111,projection="3d")
             if key=="phi": ax.voxels(arr>.25,facecolors=cm.Blues(.25+.75*arr),edgecolor="none")
             else:
-                solid=arr>0.01; surf=solid&~binary_erosion(solid,STRUCT)
+                solid=pt>0.01; surf=solid&~binary_erosion(solid,STRUCT)
                 ax.voxels(surf,facecolors=cm.YlOrRd(norm(arr)),edgecolor="none")
             axes3(ax,nx,ny,nz,100.0)
             ax.set_title(f"{d:%Y-%m-%d}  day {int(round(t/86400))}  {pct:.1f}%",fontsize=8)
@@ -206,23 +215,38 @@ def make_gif(tag,root,out_prefix,target=24):
 def make_track(tag,root,out,static):
     with xr.open_dataset(Path(root)/"run.nc") as ds:
         t=np.asarray(ds.time.values,float)/86400.; day=np.floor(t+1e-9).astype(int)
-        last=np.r_[np.where(np.diff(day))[0],len(day)-1]
+        last=np.r_[np.where(np.diff(day))[0],len(day)-1]; day=day[last]; t=t[last]
         lat=ds.latitude.values[last]; lon=ds.longitude.values[last]; g=ds.grounded.values[last]
-    fig=plt.figure(figsize=(8,7)); ax=fig.add_axes([.16,.10,.72,.80])
-    for i in range(1,len(lat)):
-        ax.plot(lon[i-1:i+1],lat[i-1:i+1],color="C3" if (g[i] or g[i-1]) else "k",
-                ls="--" if (g[i] or g[i-1]) else "-",lw=.8)
+        u=np.asarray(ds.ocean_u_draft.values,float)[last]; v=np.asarray(ds.ocean_v_draft.values,float)[last]
+        speed=np.hypot(ds.u.values,ds.v.values)[last] if "u" in ds else np.zeros_like(t)
+        wind=np.hypot(ds.air_u10.values,ds.air_v10.values)[last] if "air_u10" in ds else np.zeros_like(t)
+    with xr.open_dataset(static) as st: dep=st.deptho.values; glat=st.latitude.values; glon=st.longitude.values
+    fig=plt.figure(figsize=(9,7)); gs=fig.add_gridspec(2,1,height_ratios=[3,1],hspace=.32)
+    ax=fig.add_subplot(gs[0]); z=np.ma.masked_invalid(dep)
+    ax.pcolormesh(glon,glat,z,shading="auto",cmap="Blues_r",alpha=.55)
+    ax.contour(glon,glat,np.nan_to_num(dep,nan=0),levels=[0.5],colors="k",linewidths=.5)
+    sc=ax.scatter(lon,lat,c=day,cmap="viridis",s=10,zorder=3)
+    ax.plot(lon,lat,"k-",lw=.5,alpha=.5)
     ax.scatter(lon[0],lat[0],marker="o",c="C2",s=50,label="start",zorder=4)
     ax.scatter(lon[-1],lat[-1],marker="X",c="k",s=60,label="end",zorder=4)
-    ax.set_xlim(lon.min()-.15,lon.max()+.15); ax.set_ylim(lat.min()-.08,lat.max()+.08)
-    ax.set_yticks([lat.min()+.1, (lat.min()+lat.max())/2, lat.max()-.1])
-    ax.set_xticks([lon.min()+.1, (lon.min()+lon.max())/2, lon.max()-.1])
-    ax.set_xlabel("longitude"); ax.set_ylabel("latitude"); ax.set_title(f"{tag} track"); ax.legend(fontsize=8)
-    ax.grid(alpha=.2); ax.set_aspect(1/np.cos(np.deg2rad(np.mean(lat))))
-    ax.tick_params(axis="y", pad=14, labelsize=7); ax.tick_params(axis="x", pad=12, labelsize=7)
-    ins=fig.add_axes([.60,.60,.30,.28]); ins.plot(lon,lat,"k-",lw=.4); ins.scatter(lon[0],lat[0],c="C2",s=12); ins.scatter(lon[-1],lat[-1],c="k",marker="X",s=15)
-    ins.set_axis_off()
-    fig.savefig(out,dpi=180); check_png(out); check_text(fig,out); plt.close(fig); print(out)
+    if np.any(g>0):
+        ax.scatter(lon[g>0],lat[g>0],marker="x",c="C3",s=18,label="grounded",zorder=5)
+    label_idx=sorted(set([0,max(0,len(day)//3),max(0,2*len(day)//3),len(day)-1]))
+    for kk,k in enumerate(label_idx):
+        ax.annotate(f"{int(day[k])}",(lon[k],lat[k]),xytext=(3,3),textcoords="offset points",fontsize=7)
+    ax.set_xlim(lon.min()-.5,lon.max()+.5); ax.set_ylim(lat.min()-.35,lat.max()+.35)
+    ax.set_xlabel("долгота"); ax.set_ylabel("широта"); ax.set_title(f"{tag}: трек и батиметрия")
+    ax.legend(fontsize=7,loc="lower left"); ax.grid(alpha=.2); ax.set_aspect(1/np.cos(np.deg2rad(np.mean(lat))))
+    cb=fig.colorbar(sc,ax=ax,label="сутки",shrink=.8); ax.tick_params(labelsize=7)
+    # 100 km scale bar at lower right
+    x0=lon.max()-.5; y0=lat.min()-.25; dlon=100/(111*np.cos(np.deg2rad(np.mean(lat))))
+    ax.plot([x0-dlon,x0],[y0,y0],"k-",lw=3); ax.text(x0-dlon/2,y0+.08,"100 км",ha="center",fontsize=7)
+    ax2=fig.add_subplot(gs[1]); ax2.plot(day,speed,label="айсберг"); ax2.plot(day,np.hypot(u,v),label="течение"); ax2.plot(day,wind,label="ветер",alpha=.7)
+    ax2.set_xlabel("сутки"); ax2.set_ylabel("м/с"); ax2.grid(alpha=.2); ax2.legend(fontsize=7)
+    for i in range(1,len(day)):
+        if g[i] or g[i-1]: ax2.axvspan(day[i-1],day[i],color="0.6",alpha=.15,lw=0)
+    fig.subplots_adjust(left=.12,right=.95,bottom=.10,top=.92)
+    fig.savefig(out,dpi=180); check_png(out); plt.close(fig); print(out)
 
 def main_all():
     p=argparse.ArgumentParser(); p.add_argument("--fig-dir",type=Path,default=Path("docs/wiki/stages/stage12/figures/stage12.20/final")); p.add_argument("--smoke",action="store_true"); a=p.parse_args()
@@ -231,12 +255,15 @@ def main_all():
         if not snaps(root): continue
         d=a.fig_dir/tag; d.mkdir(parents=True,exist_ok=True)
         L=50.0 if "CTRL" in tag else 100.0
-        snapshot_matrix(tag,root,d/"snapshots_3d.png",32,L)
+        snapshot_matrix(tag,root,d/"snapshots_3d.png",24,L)
         profiles(tag,root,d/"profiles.png")
         series(tag,root,d/"time_series.png")
         make_gif(tag,root,d/"evolution")
         make_track(tag,root,d/"track.png","data/input/static/glorys_static_barents.nc")
     overview(a.fig_dir,"data/input/static/glorys_static_barents.nc")
+
+def tag_year(tag):
+    return 2024 if tag.endswith("2024") or "_2024" in tag else 2020
 
 def run_stats(root, tag):
     p=Path(root)/"run.nc"
@@ -256,7 +283,7 @@ def run_stats(root, tag):
             "calved_kg":cal,"path_km":path/1000,"status":status,"lat":lat,"lon":lon,"mass":m,"time":t}
 
 def overview(figdir,static):
-    rows=[r for tag in RUNS if (r:=run_stats(RUNS[tag][2],tag))]
+    rows=[r for tag in RUNS if not tag.startswith("CTRL") and (r:=run_stats(RUNS[tag][2],tag))]
     if not rows: return
     df=pd.DataFrame([{k:v for k,v in r.items() if k not in ("lat","lon","mass","time")} for r in rows])
     df.to_csv(figdir/"summary.csv",index=False)
@@ -272,11 +299,24 @@ def overview(figdir,static):
         ax.set(xlim=(5,80),ylim=(63,86),xlabel="longitude",title=f"{year}: free-drift tracks")
         ax.set_yticks([65,70,75,80,85]); ax.set_xticks([10,20,30,40,50,60,70,80])
         ax.set_aspect(1/np.cos(np.deg2rad(78))); ax.grid(alpha=.15); ax.legend(fontsize=6,loc="lower left")
-    axs[0].set_ylabel("latitude"); fig.subplots_adjust(left=.08,right=.98,bottom=.10,top=.90,wspace=.10)
+    axs[0].set_ylabel("latitude"); fig.subplots_adjust(left=.08,right=.98,bottom=.10,top=.90,wspace=.02)
     fig.savefig(figdir/"map_2020_2024.png",dpi=180); check_png(figdir/"map_2020_2024.png"); check_text(fig,figdir/"map_2020_2024.png"); plt.close(fig)
     fig,ax=plt.subplots(figsize=(9,5))
-    for r in rows: ax.plot(r["time"],100*r["mass"]/r["mass"][0],label=r["tag"])
+    for r in rows:
+        year=tag_year(r["tag"]); ax.plot(r["time"],100*r["mass"]/r["mass"][0],label=r["tag"],ls="-" if year==2020 else "--")
     ax.set(xlabel="day",ylabel="remaining mass [%]",title="Mass curves"); ax.grid(alpha=.2); ax.legend(fontsize=7)
     ax.set_xlim(0, 365); ax.set_xticks([0,100,200,300])
     fig.subplots_adjust(left=.12,right=.90,bottom=.15,top=.88); fig.savefig(figdir/"mass_curves.png",dpi=180); check_png(figdir/"mass_curves.png"); check_text(fig,figdir/"mass_curves.png"); plt.close(fig)
+    controls_overview(figdir)
     print(figdir/"map_2020_2024.png"); print(figdir/"summary.csv")
+
+def controls_overview(figdir):
+    rows=[r for tag in RUNS if tag.startswith("CTRL") and (r:=run_stats(RUNS[tag][2],tag))]
+    if not rows: return
+    fig,ax=plt.subplots(figsize=(8,5))
+    for r in rows:
+        year=tag_year(r["tag"]); ax.plot(r["time"],100*r["mass"]/r["mass"][0],label=r["tag"],ls="-" if year==2020 else "--",lw=1.5)
+    ax.set(xlabel="day",ylabel="remaining mass [%]",title="50 m phi_conn controls (not in final 100³ set)")
+    ax.grid(alpha=.2); ax.legend(fontsize=8); ax.set_xlim(0,365); ax.set_xticks([0,100,200,300])
+    fig.subplots_adjust(left=.12,right=.96,bottom=.15,top=.88); out=figdir/"controls_50m.png"
+    fig.savefig(out,dpi=180); check_png(out); check_text(fig,out); plt.close(fig); print(out)

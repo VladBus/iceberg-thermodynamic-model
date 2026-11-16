@@ -23,6 +23,16 @@ class Stage1220Layout(unittest.TestCase):
             a.save(p, save_all=True, append_images=[b], duration=100, loop=0, optimize=False); self.assertEqual(S.check_gif(p), 2)
             self.assertTrue(S.check_gif(p) >= 2)
 
+    def test_axes3_ticks(self):
+        import matplotlib; matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+        fig = plt.figure(); ax = fig.add_subplot(111, projection="3d")
+        S.axes3(ax, 24, 24, 24, 100.0)
+        self.assertEqual(len(ax.get_xticks()), 5)
+        ax.clear(); S.axes3(ax, 24, 24, 24, 50.0)
+        self.assertEqual(len(ax.get_xticks()), 3)
+        plt.close(fig)
+
     def test_simple_text_figure(self):
         import matplotlib; matplotlib.use("Agg")
         import matplotlib.pyplot as plt

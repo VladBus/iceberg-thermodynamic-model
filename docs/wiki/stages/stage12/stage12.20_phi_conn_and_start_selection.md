@@ -1,7 +1,7 @@
 # Stage 12.20 — phi_conn, final 100³ references and thesis figures
 
 **Date:** 2026-11-16
-**Status:** COMPLETE with documented limitations
+**Status:** CLOSED 2026-11-17 after final cosmetic pass; documented limitations remain
 **Scope:** connectivity threshold, six final coastal 100³ 2020/2024 references at
 identical start points in both years, with 10-day snapshots, figures, Svalbard
 negative result and thesis limitations.
@@ -149,3 +149,19 @@ CTRL_FJL2_2020 is grounded (`grounded=1`) at all four times.
 ### A4. NZ_A 2024 first 40 days
 
 Mean water T at draft 0.788 °C (range −1.04…2.25 °C); mean drift speed 0.098 m/s (max 0.684 m/s). Cumulative losses: basal 119.9 Mt, lateral 397.1 Mt, flush 4.6 Mt. Lateral melt dominates (~76%); the 56% loss is consistent with warm water plus fast drift, not a numerical artefact.
+
+## Appendix B — Barents open-water auxiliary runs
+
+These six 100³ runs were exploratory open-water checks, not part of the final
+coastal six. They are retained as a separate result table because they show the
+complete melt-out cycle; their figures were removed from `final/`. Data remain
+local under `data/validation/stage12.20/barents/`, not in git.
+
+| Case | Days | Mass loss | t50 | t90 | t99 | Path km | Stop |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| Barents_1_2020 | 135.6 | 99.999% | 30.8 | 67.6 | 94.9 | 1976 | melted |
+| Barents_2_2020 | 136.1 | 99.999% | 40.6 | 74.7 | 101.3 | 1849 | melted |
+| Barents_3_2020 | 187.0 | 99.999% | 43.6 | 119.7 | 168.1 | 2155 | melted |
+| Barents_1_2024 | 205.4 | 99.999% | 27.8 | 108.2 | 175.4 | 2130 | melted |
+| Barents_2_2024 | 197.4 | 99.999% | 36.7 | 123.8 | 161.0 | 2215 | melted |
+| Barents_3_2024 | 365.0 | 99.999% | 34.7 | 126.8 | 188.1 | 2122 | end of forcing |

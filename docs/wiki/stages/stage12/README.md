@@ -68,7 +68,7 @@ report currently claims quantitative daily-forcing performance.
 
 ## Current status
 
-**12.20 status (COMPLETE, with limitations):** `VOXEL_PHI_CONN=0.3` is the
+**12.20 status (CLOSED 2026-11-17, with limitations):** `VOXEL_PHI_CONN=0.3` is the
 default. Six coastal 100³ 2020/2024 references with 10-day snapshots were produced:
 FJL_A 2020 (323.8 d, melted), NZ_A 2020 (63.1 d, strict), NZ_B 2020 (161.0 d,
 grounded), FJL_A 2024 (117.5 d, strict), NZ_A 2024 (197.1 d, grounded) and

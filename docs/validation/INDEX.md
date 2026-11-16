@@ -5,7 +5,7 @@ not a permanent report archive. Completed reports and their retained evidence
 belong in `docs/wiki/stages/<stage>/`; obsolete working plans belong in
 `docs/archive/`.
 
-## Stage 12.20 status (COMPLETE, with limitations)
+## Stage 12.20 status (CLOSED 2026-11-17, with limitations)
 
 `VOXEL_PHI_CONN=0.3` is implemented. Six coastal 100³ 2020/2024 references with 10-day snapshots and the final
 figure set are complete; six auxiliary Barents open-water runs were excluded. Svalbard has no valid 100³

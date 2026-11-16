@@ -15,6 +15,7 @@ from scipy.special import erf
 import matplotlib; matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib import cm, colors
+from matplotlib.lines import Line2D
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 
 RHO_ICE=916.7; K_ICE=2.1; C_ICE=2009.0; STRUCT=generate_binary_structure(3,1)
@@ -86,7 +87,7 @@ def snapshot_matrix(tag,root,out,target=32,L=100.0):
         for c,d in enumerate(days):
             ax=fig.add_subplot(gs[r,c],projection="3d"); f=nearest(fs,d); p,T,S,x,y,z,m,t=load(f,target)
             p=p.transpose(2,1,0); T=T.transpose(2,1,0); S=S.transpose(2,1,0); nz,ny,nx=p.shape
-            if r==0: ax.voxels(p>.25,facecolors=cm.Blues(.25+.75*p),edgecolor="none")
+            if r==0: ax.voxels(p>0.01,facecolors=cm.Blues(.25+.75*p),edgecolor="none")
             elif r==1:
                 surf=p>0.01; surf=surf & ~binary_erosion(surf,STRUCT)
                 ax.voxels(surf,facecolors=cm.YlOrRd(colors.Normalize(-10,0)(T)),edgecolor="none")
@@ -94,10 +95,10 @@ def snapshot_matrix(tag,root,out,target=32,L=100.0):
                 surf=p>0.01; surf=surf & ~binary_erosion(surf,STRUCT)
                 ax.voxels(surf,facecolors=cm.Greens(colors.Normalize(0,35)(1000*S)),edgecolor="none")
             axes3(ax,nx,ny,nz,L)
-            ax.set_xlabel("x, м",fontsize=6); ax.set_ylabel("y, м",fontsize=6); ax.set_zlabel("z, м",fontsize=6)
+            ax.set_xlabel("x, м",fontsize=7); ax.set_ylabel("y, м",fontsize=7); ax.set_zlabel("z, м",fontsize=10,labelpad=8)
             ax.tick_params(labelsize=6)
             ax.set_title(f"{int(round(t/86400))} сут · {100*m/m0:.1f}%",fontsize=8)
-    for r,(cmap,lab,norm) in enumerate([("Blues","phi, доли ед.",colors.Normalize(0,1)),("YlOrRd","T, °C",colors.Normalize(-10,0)),("Greens","S_B, ‰",colors.Normalize(0,35))]):
+    for r,(cmap,lab,norm) in enumerate([("Blues","φ, доли ед.",colors.Normalize(0,1)),("YlOrRd","T, °C",colors.Normalize(-10,0)),("Greens","S_B, ‰",colors.Normalize(0,35))]):
         cax=fig.add_axes([.92,.70-.29*r,.012,.20]); fig.colorbar(cm.ScalarMappable(norm=norm,cmap=cmap),cax=cax).set_label(lab)
     fig.subplots_adjust(left=.10,right=.88,top=.94,bottom=.05)
     fig.savefig(out,dpi=180); check_png(out); check_text(fig,out); plt.close(fig)
@@ -122,10 +123,10 @@ def profiles(tag,root,out):
         ax[1].plot(pz,depth,color=c,label=lab)
     ax[0].set(xlabel="T, °C",ylabel="глубина, м"); ax[1].set(xlabel="phi, доли ед.",ylabel="глубина, м")
     for a in ax:
-        a.set_ylim(zmax,0); a.set_yticks(np.linspace(0,zmax,5))
+        a.set_ylim(zmax,0); a.set_yticks(np.arange(0,zmax+1,20))
         a.grid(alpha=.25); a.legend(fontsize=7)
         a.tick_params(axis="x",pad=10,labelsize=7); a.tick_params(axis="y",pad=10,labelsize=7)
-    ax[0].set_xlim(0,-30); ax[0].set_xticks([0,-5,-10,-15,-20,-25,-30]); ax[1].set_xlim(0,1)
+    ax[0].set_xlim(-20,2); ax[0].set_xticks([-20,-15,-10,-5,0]); ax[1].set_xlim(0,1)
     fig.subplots_adjust(left=.10,right=.96,bottom=.16,top=.94,wspace=.28)
     fig.savefig(out,dpi=180); check_png(out); plt.close(fig); print(out)
 
@@ -141,15 +142,17 @@ def series(tag,root,out):
     df=pd.DataFrame(d); m0=float(df.mass.iloc[0]); df["melt"]=df.basal+df.lateral+df.surface
     df["resid"]=m0-df.mass-(df["melt"]+df["flush"]+df.calved)
     fig,ax=plt.subplots(2,2,figsize=(13,8))
+    for aa,letter in zip(ax.ravel(),("(а)","(б)","(в)","(г)")):
+        aa.text(.02,.96,letter,transform=aa.transAxes,va="top",fontsize=10,fontweight="bold")
     ax[0,0].plot(df.day,100*(m0-df.mass)/m0,"k-"); ax[0,0].set(ylabel="потеря массы, % m₀")
     ax[0,1].plot(df.day,df.draft,label="осадка"); ax[0,1].plot(df.day,df.freeboard,label="надводный борт")
-    ax[0,1].set(ylabel="м"); ax[0,1].legend(fontsize=7)
+    ax[0,1].set(ylabel="м"); ax[0,1].legend(fontsize=8)
     ax[1,0].plot(df.day,100*df["melt"]/m0,label="таяние: дно+борт+верх")
     ax[1,0].plot(df.day,100*df["flush"]/m0,label="сброс/вытеснение")
     ax[1,0].plot(df.day,100*df.calved/m0,label="откол")
     ax[1,0].plot(df.day,100*(m0-df.mass)/m0,"k--",label="суммарная потеря")
     ax[1,0].plot(df.day,100*df.resid/m0,"r-",label="невязка")
-    ax[1,0].set(ylabel="% m₀"); ax[1,0].legend(fontsize=6)
+    ax[1,0].set(ylabel="% m₀"); ax[1,0].legend(fontsize=7)
     calf=Path(root)/"run.nc_calved.csv"
     if calf.exists():
         cd=pd.read_csv(calf)
@@ -159,17 +162,19 @@ def series(tag,root,out):
     ax[1,1].set_ylabel("T, °C"); ax[1,1].yaxis.label.set_color("C3"); ax[1,1].tick_params(axis="y",colors="C3")
     ax2=ax[1,1].twinx(); l2,=ax2.plot(df.day,1000*df.S_w,color="C0",label="S воды")
     ax2.set_ylabel("S, ‰",color="C0"); ax2.tick_params(axis="y",colors="C0")
-    ax[1,1].legend([l1,l2],["T воды","S воды"],loc="best",fontsize=7)
+    ax[1,1].legend([l1,l2],["T воды","S воды"],loc="best",fontsize=8)
+    ax2.tick_params(labelsize=9)
     for a in ax.ravel():
         a.grid(alpha=.2); a.set_xlabel("сутки")
         g=df.grounded.values.astype(int); st=np.where((g==1)&np.r_[True,g[:-1]==0])[0]; en=np.where((g==1)&np.r_[g[1:]==0,True])[0]
         for i,j in zip(st,en): a.axvspan(df.day.iloc[i],df.day.iloc[j],color="0.6",alpha=.12,lw=0)
     for aa in fig.axes:
-        aa.tick_params(labelsize=6)
+        aa.tick_params(labelsize=9)
+        aa.set_xlabel("сутки",fontsize=9)
         aa.set_xlim(0, float(df.day.iloc[-1]))
         aa.set_xticks([0,100,200,300])
     ax[1,1].tick_params(axis="x", pad=5)
-    fig.subplots_adjust(left=.12,right=.90,bottom=.18,top=.94,wspace=.45,hspace=.50)
+    fig.subplots_adjust(left=.10,right=.91,bottom=.10,top=.96,wspace=.32,hspace=.32)
     fig.savefig(out,dpi=180); check_png(out); plt.close(fig); print(out)
 
 def main():
@@ -231,25 +236,30 @@ def make_track(tag,root,out,static):
     ax.contour(glon,glat,np.nan_to_num(dep,nan=0),levels=[0.5],colors="k",linewidths=.5)
     sc=ax.scatter(lon,lat,c=day,cmap="viridis",s=10,zorder=3)
     ax.plot(lon,lat,"k-",lw=.5,alpha=.5)
-    ax.scatter(lon[0],lat[0],marker="o",c="C2",s=50,label="start",zorder=4)
-    ax.scatter(lon[-1],lat[-1],marker="X",c="k",s=60,label="end",zorder=4)
+    ax.scatter(lon[0],lat[0],marker="o",c="C2",s=50,label="старт",zorder=4)
+    ax.scatter(lon[-1],lat[-1],marker="X",c="k",s=60,label="конец",zorder=4)
     if np.any(g>0):
-        ax.scatter(lon[g>0],lat[g>0],marker="x",c="C3",s=18,label="grounded",zorder=5)
+        ax.scatter(lon[g>0],lat[g>0],marker="x",c="C3",s=18,label="посадка на мель",zorder=5)
     label_idx=sorted(set([0,max(0,len(day)//3),max(0,2*len(day)//3),len(day)-1]))
     for kk,k in enumerate(label_idx):
         ax.annotate(f"{int(day[k])}",(lon[k],lat[k]),xytext=(3,3),textcoords="offset points",fontsize=7)
     ax.set_xlim(lon.min()-.55,lon.max()+.55); ax.set_ylim(lat.min()-.4,lat.max()+.4); ax.set_aspect("auto")
     ax.set_xlabel("долгота"); ax.set_ylabel("широта")
-    ax.legend(fontsize=7,loc="lower left"); ax.grid(alpha=.2); ax.set_aspect(1/np.cos(np.deg2rad(np.mean(lat))))
-    cb=fig.colorbar(sc,ax=ax,label="сутки",shrink=.8); ax.tick_params(labelsize=7)
+    ax.legend(fontsize=7,loc="lower left"); ax.grid(alpha=.2)
+    cb=fig.colorbar(sc,ax=ax,label="сутки",shrink=.8); ax.tick_params(labelsize=8)
     # 100 km scale bar at lower right
     x0=lon.max()-.5; y0=lat.min()-.25; dlon=100/(111*np.cos(np.deg2rad(np.mean(lat))))
     ax.plot([x0-dlon,x0],[y0,y0],"k-",lw=3); ax.text(x0-dlon/2,y0+.08,"100 км",ha="center",fontsize=7)
-    ax2=fig.add_subplot(gs[1]); ax2.plot(day,speed,label="айсберг"); ax2.plot(day,np.hypot(u,v),label="течение"); ax2.plot(day,wind,label="ветер",alpha=.7)
-    ax2.set_xlabel("сутки"); ax2.set_ylabel("м/с"); ax2.grid(alpha=.2); ax2.legend(fontsize=7)
+    ax2=fig.add_subplot(gs[1])
+    l1,=ax2.plot(day,speed,label="айсберг",color="C0")
+    l2,=ax2.plot(day,np.hypot(u,v),label="течение",color="C1")
+    ax2.set_xlabel("сутки"); ax2.set_ylabel("скорость, м/с"); ax2.grid(alpha=.2)
+    ax3=ax2.twinx(); l3,=ax3.plot(day,wind,label="ветер",color="0.55",alpha=.55)
+    ax3.set_ylabel("ветер, м/с",color="0.45"); ax3.tick_params(axis="y",colors="0.45",labelsize=8)
+    ax2.legend([l1,l2,l3],["айсберг","течение","ветер"],fontsize=7,loc="upper left")
     for i in range(1,len(day)):
         if g[i] or g[i-1]: ax2.axvspan(day[i-1],day[i],color="0.6",alpha=.15,lw=0)
-    fig.subplots_adjust(left=.09,right=.96,bottom=.08,top=.95)
+    fig.subplots_adjust(left=.08,right=.90,bottom=.08,top=.95)
     fig.savefig(out,dpi=180); check_png(out); plt.close(fig); print(out)
 
 def main_all():
@@ -292,19 +302,32 @@ def overview(figdir,static):
     df=pd.DataFrame([{k:v for k,v in r.items() if k not in ("lat","lon","mass","time")} for r in rows])
     df.to_csv(figdir/"summary.csv",index=False)
     with xr.open_dataset(static) as st: dep=st.deptho.values; glat=st.latitude.values; glon=st.longitude.values
-    fig,axs=plt.subplots(1,2,figsize=(14,6)); colors=plt.cm.tab10(np.linspace(0,1,len(rows)))
+    fig,axs=plt.subplots(1,2,figsize=(14,6),sharey=True); colors=plt.cm.tab10(np.linspace(0,1,len(rows)))
+    def stop_style(status):
+        if "MELTED" in status: return "*","таяние",85
+        if "GROUNDED" in status: return "X","посадка на мель",55
+        if "STRICT" in status: return "^","строгий океан",55
+        return "s","конец",45
     for ax,year in zip(axs,(2020,2024)):
         ax.pcolormesh(glon,glat,np.ma.masked_invalid(dep),shading="auto",cmap="Blues_r",alpha=.5)
         for r,c in zip(rows,colors):
             if RUNS[r["tag"]][1]!=str(year): continue
-            ax.plot(r["lon"],r["lat"],color=c,lw=.8,label=r["tag"])
-            ax.scatter(r["lon"][0],r["lat"][0],marker="o",s=25,color=c,edgecolor="k")
-            ax.scatter(r["lon"][-1],r["lat"][-1],marker="X",s=35,color=c,edgecolor="k")
+            ax.plot(r["lon"],r["lat"],color=c,lw=.9,label=r["tag"])
+            ax.scatter(r["lon"][0],r["lat"][0],marker="o",s=32,color=c,edgecolor="k",zorder=4)
+            marker,_,size=stop_style(r["status"])
+            ax.scatter(r["lon"][-1],r["lat"][-1],marker=marker,s=size,color=c,edgecolor="k",linewidths=.7,zorder=5)
         ax.set(xlim=(5,80),ylim=(63,86),xlabel="долгота")
         ax.text(.02,.98,str(year),transform=ax.transAxes,va="top",fontsize=11)
         ax.set_yticks([65,70,75,80,85]); ax.set_xticks([10,20,30,40,50,60,70,80])
-        ax.set_aspect(1/np.cos(np.deg2rad(78))); ax.grid(alpha=.15); ax.legend(fontsize=6,loc="lower left")
-    axs[0].set_ylabel("широта"); fig.subplots_adjust(left=.08,right=.98,bottom=.10,top=.94,wspace=.02)
+        ax.grid(alpha=.15)
+    handles,labels=axs[0].get_legend_handles_labels()
+    handles += [Line2D([0],[0],marker="o",linestyle="none",markerfacecolor="k",markeredgecolor="k",markersize=6,label="старт"),
+                Line2D([0],[0],marker="*",linestyle="none",markerfacecolor="k",markeredgecolor="k",markersize=8,label="таяние"),
+                Line2D([0],[0],marker="X",linestyle="none",markerfacecolor="k",markeredgecolor="k",markersize=7,label="посадка на мель"),
+                Line2D([0],[0],marker="^",linestyle="none",markerfacecolor="k",markeredgecolor="k",markersize=7,label="строгий океан")]
+    labels += ["старт","таяние","посадка на мель","строгий океан"]
+    axs[0].legend(handles,labels,fontsize=7,loc="lower left",framealpha=.95)
+    axs[0].set_ylabel("широта"); fig.subplots_adjust(left=.07,right=.98,bottom=.09,top=.94,wspace=.04)
     fig.savefig(figdir/"map_2020_2024.png",dpi=180); check_png(figdir/"map_2020_2024.png"); check_text(fig,figdir/"map_2020_2024.png"); plt.close(fig)
     fig,ax=plt.subplots(figsize=(9,5))
     for r in rows:

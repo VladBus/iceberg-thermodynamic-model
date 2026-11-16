@@ -57,18 +57,26 @@ All runs: 100³/1 m, free drift, `--strict-ocean --stop-on-grounding`, no
 grounded-in-place, `VOXEL_PHI_CONN=0.3`, `VOXEL_CONNECTIVITY_HOURS=6`, snapshots
 every 10 d.
 
-| Name | Source | Year | Start | Days | Mass loss | t50 | t90 | t99 | Calved | Path km | Stop / replacement |
-| --- | --- | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
-| FJL_A_2020 | FJL | 2020 | 80.5N 45E | 323.8 | 99.999% | 135.5 | 224.2 | 285.9 | 0.104 Mt | 2772 | melted |
-| NZ_A_2020 | NZ | 2020 | 75.5N 57E | 78.7 | 42.52% | — | — | — | 0 | 1182 | strict ocean |
-| NZ_B_2020 | NZ | 2020 | 78N 55E | 161.0 | 60.53% | 122.2 | — | — | 0 | 1828 | grounded |
-| FJL_A_2024 | FJL | 2024 | 80.5N 45E | 117.5 | 67.32% | 61.0 | — | — | 0 | 1351 | strict ocean |
-| NZ_A_2024 | NZ | 2024 | 75N 53.583E | 197.1 | 87.24% | 32.9 | — | — | 0 | 2086 | grounded; fallback |
-| NZ_B_2024 | NZ | 2024 | 73.083N 59.167E | 38.2 | 84.14% | — | — | — | 0 | 417 | strict ocean; fallback |
+| Set | Name | Source | Year | Start | Days | Mass loss | t50 | t90 | t99 | Calved | Path km | Stop / replacement |
+| --- | --- | --- | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| coastal | FJL_A_2020 | FJL | 2020 | 80.5N 45E | 323.8 | 99.999% | 135.5 | 224.2 | 285.9 | 0.104 Mt | 2772 | melted |
+| coastal | NZ_A_2020 | NZ | 2020 | 75.5N 57E | 78.7 | 42.52% | — | — | — | 0 | 1182 | strict ocean |
+| coastal | NZ_B_2020 | NZ | 2020 | 78N 55E | 161.0 | 60.53% | 122.2 | — | — | 0 | 1828 | grounded |
+| coastal | FJL_A_2024 | FJL | 2024 | 80.5N 45E | 117.5 | 67.32% | 61.0 | — | — | 0 | 1351 | strict ocean |
+| coastal | NZ_A_2024 | NZ | 2024 | 75N 53.583E | 197.1 | 87.24% | 32.9 | — | — | 0 | 2086 | grounded; fallback |
+| coastal | NZ_B_2024 | NZ | 2024 | 73.083N 59.167E | 38.2 | 84.14% | — | — | — | 0 | 417 | strict ocean; fallback |
+| open water | Barents_1_2020 | Barents | 2020 | 76N 40E | 135.6 | 99.999% | 30.8 | 67.6 | 94.9 | 0 | 1976 | melted |
+| open water | Barents_2_2020 | Barents | 2020 | 77N 40E | 136.1 | 99.999% | 40.6 | 74.7 | 101.3 | 0 | 1849 | melted |
+| open water | Barents_3_2020 | Barents | 2020 | 75N 45E | 187.0 | 99.999% | 43.6 | 119.7 | 168.1 | 1.045 Mt | 2155 | melted |
+| open water | Barents_1_2024 | Barents | 2024 | 76N 40E | 205.4 | 99.999% | 27.8 | 108.2 | 175.4 | 0.496 Mt | 2130 | melted |
+| open water | Barents_2_2024 | Barents | 2024 | 77N 40E | 197.4 | 99.999% | 36.7 | 123.8 | 161.0 | 0.053 Mt | 2215 | melted |
+| open water | Barents_3_2024 | Barents | 2024 | 75N 45E | 365.0 | 99.999% | 34.7 | 126.8 | 188.1 | 0.796 Mt | 2122 | end of forcing |
 
 NZ_B_2024 stopped before 60 d after two fallbacks; no further substitute was
-used. D2/D4/D5 from 12.19 are **Barents-1/Barents-2/Barents-3** in the
-documentation: central-Barents open-water extras at ~40E, not Svalbard.
+used. The six open-water Barents runs all survive to melt-out/end-of-forcing;
+Barents_3_2024 reaches 365 d. D2/D4/D5 from 12.19 are
+**Barents-1/Barents-2/Barents-3** in the documentation: central-Barents
+open-water points at ~40E, not Svalbard.
 
 ## 6. Figures
 
@@ -76,7 +84,10 @@ documentation: central-Barents open-water extras at ~40E, not Svalbard.
 (with erf overlay), `time_series.png` with no W/H or track inset, `track.png`,
 and `evolution_phi.gif`/`evolution_T.gif` (400 ms frames, 1500 ms last frame,
 fixed size/colorbars). Common `map_2020_2024.png`, `mass_curves.png` and
-`summary.csv` are at the top level. GIFs use `run.nc_snap_*.nc`.
+`summary.csv` contain only the 12 final 100³ runs. The two 50 m controls are
+kept out of those mixed figures and are summarised separately in
+`controls_50m.png`; their per-run figures remain in `CTRL_FJL2_2020/` and
+`CTRL_FJL2_2024/`. GIFs use `run.nc_snap_*.nc`.
 
 ## 7. Limitations for the thesis
 
@@ -90,7 +101,43 @@ uses 0.5 m currents, not the 88 m draft. No Svalbard 100³ reference exists.
 
 ## 8. Verification
 
-Strict build RC 0; `fpm test` 83 `STOP 0`, drift 9/9; layout checks in
-`python/tests/test_stage12_20_figures.py`; docs links and `git diff --check`
-checked before the figure commit. Data are under `data/validation/stage12.20/`
-and not in git.
+Strict build RC 0; `fpm test` RC 0 (`STOP 0`), drift 9/9; layout checks in
+`python/tests/test_stage12_20_figures.py` 3/3; docs links 286 checked,
+0 broken; `git diff --check` clean. The 14 T GIFs have fixed 520x480 frames,
+>=5 frames and non-empty warm-colour pixels; the 12-row summary excludes the
+two 50 m controls. Data are under `data/validation/stage12.20/` and not in git.
+
+## Appendix A — raw diagnostics (2026-11-16)
+
+### A1. T(x) from raw snapshots
+
+CTRL_FJL2_2020 day 30, x=0..15, y=mid, z=mid:
+`[-1.633, -4.211, -7.910, -9.137, -9.635, -9.851, -9.945, -9.981, -9.994, -9.998, -10, -10, -10, -10, -10, -10]`.
+The 10–15 m core is −10 ± 0.0004 °C, inside the required ±0.05. NZ_B_2024 day 30 has the same core. Raw T never falls below the initial −10 °C at the boundary. The −12…−15 values seen in `profiles.png` are therefore a plotting/aggregation bug, not a model defect: use only columns with `phi > phi_min`, no low-phi water columns.
+
+### A2. Draft/freeboard vs visible main body
+
+CTRL_FJL2_2020 is grounded (`grounded=1`) at all four times.
+
+| Day | h(phi>0.01) | h(phi>0.3) | draft | freeboard | draft+free | ratio |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 230 | 45 | 40 | 24.03 | 20.97 | 45.0 | 0.534 |
+| 260 | 38 | 37 | 25.14 | 12.86 | 38.0 | 0.662 |
+| 280 | 36 | 19 | 9.21 | 26.79 | 36.0 | 0.256 |
+| 350 | 34 | 17 | 10.52 | 23.48 | 34.0 | 0.310 |
+
+`draft+freeboard` equals the height at `phi>0.01`, not the high-phi visible core. The waterline uses all remaining solid cells, so low-phi fringe is counted as main body; the ratio is not hydrostatic because the body is grounded. No floating-body waterline defect is demonstrated by these numbers. Figures must not compare the high-phi silhouette with draft/freeboard without noting the low-phi fringe and grounding.
+
+### A3. Stop causes
+
+| Case | Stop position | GLORYS depth at nearest cell | Nearest valid cell | Cause |
+| --- | --- | ---: | ---: | --- |
+| NZ_A 2020 | 76.995N 67.911E | 8.7 m | 0 km | shallow/no valid water; strict stop |
+| NZ_B 2020 | 76.511N 61.572E | 103.9 m | 0 km | IBCAO bank; grounded |
+| FJL_A 2024 | 80.191N 32.010E | 7.0 m | 0 km | shallow bank, not data boundary (GLORYS lat 63–86, lon 5–80) |
+| NZ_A 2024 | 74.873N 55.784E | 88.2 m | 0 km | depth ≈ draft; grounded |
+| NZ_B 2024 | 73.908N 57.820E | 11.9 m | 0 km | shallow; strict stop |
+
+### A4. NZ_A 2024 first 40 days
+
+Mean water T at draft 0.788 °C (range −1.04…2.25 °C); mean drift speed 0.098 m/s (max 0.684 m/s). Cumulative losses: basal 119.9 Mt, lateral 397.1 Mt, flush 4.6 Mt. Lateral melt dominates (~76%); the 56% loss is consistent with warm water plus fast drift, not a numerical artefact.

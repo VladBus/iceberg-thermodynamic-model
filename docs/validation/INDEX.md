@@ -7,8 +7,8 @@ belong in `docs/wiki/stages/<stage>/`; obsolete working plans belong in
 
 ## Stage 12.20 status (COMPLETE, with limitations)
 
-`VOXEL_PHI_CONN=0.3` is implemented. Six 100³ 2020/2024 references with 10-day
-snapshots and the final figure set are complete. Svalbard has no valid 100³
+`VOXEL_PHI_CONN=0.3` is implemented. Twelve 100³ 2020/2024 references (six coastal, six Barents open-water) with
+10-day snapshots and the final figure set are complete. Svalbard has no valid 100³
 start in 5–25°E (shelf grounding or strict-ocean); this is reported as a
 negative result. The FJL2 2024 horizontal overhang remains a known limitation
 (D-82). See

@@ -70,9 +70,10 @@ report currently claims quantitative daily-forcing performance.
 
 **12.20 status (COMPLETE, with limitations):** `VOXEL_PHI_CONN=0.3` is the
 default. Six coastal 100³ 2020/2024 references with 10-day snapshots were produced:
-FJL_A 2020 (323.8 d, melted), NZ_A 2020 (78.7 d, strict), NZ_B 2020 (161.0 d,
+FJL_A 2020 (323.8 d, melted), NZ_A 2020 (63.1 d, strict), NZ_B 2020 (161.0 d,
 grounded), FJL_A 2024 (117.5 d, strict), NZ_A 2024 (197.1 d, grounded) and
-NZ_B 2024 fallback (38.2 d, strict). Six exploratory Barents open-water runs
+NZ_B 2024 (49.8 d, strict). All three points are identical in both years:
+80.5N 45E, 75N 53.583E and 78N 55E. Six exploratory Barents open-water runs
 were excluded from the final coastal set. Svalbard has no valid 100³ start in
 5–25°E: shelf grounding or strict-ocean; this is a negative result, not
 substituted. The FJL2 2024 horizontal overhang is accepted as a known

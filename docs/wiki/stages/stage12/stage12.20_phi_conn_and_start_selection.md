@@ -2,8 +2,9 @@
 
 **Date:** 2026-11-16
 **Status:** COMPLETE with documented limitations
-**Scope:** connectivity threshold, six final coastal 100³ 2020/2024 references
-with 10-day snapshots, figures, Svalbard negative result and thesis limitations.
+**Scope:** connectivity threshold, six final coastal 100³ 2020/2024 references at
+identical start points in both years, with 10-day snapshots, figures, Svalbard
+negative result and thesis limitations.
 
 ## 1. Physics decisions
 
@@ -60,17 +61,20 @@ every 10 d.
 | Set | Name | Source | Year | Start | Days | Mass loss | t50 | t90 | t99 | Calved | Path km | Stop / replacement |
 | --- | --- | --- | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
 | coastal | FJL_A_2020 | FJL | 2020 | 80.5N 45E | 323.8 | 99.999% | 135.5 | 224.2 | 285.9 | 0.104 Mt | 2772 | melted |
-| coastal | NZ_A_2020 | NZ | 2020 | 75.5N 57E | 78.7 | 42.52% | — | — | — | 0 | 1182 | strict ocean |
+| coastal | NZ_A_2020 | NZ | 2020 | 75N 53.583E | 63.1 | 54.65% | 46.8 | — | — | 0 | 1173 | strict ocean |
 | coastal | NZ_B_2020 | NZ | 2020 | 78N 55E | 161.0 | 60.53% | 122.2 | — | — | 0 | 1828 | grounded |
 | coastal | FJL_A_2024 | FJL | 2024 | 80.5N 45E | 117.5 | 67.32% | 61.0 | — | — | 0 | 1351 | strict ocean |
-| coastal | NZ_A_2024 | NZ | 2024 | 75N 53.583E | 197.1 | 87.24% | 32.9 | — | — | 0 | 2086 | grounded; fallback |
-| coastal | NZ_B_2024 | NZ | 2024 | 73.083N 59.167E | 38.2 | 84.14% | — | — | — | 0 | 417 | strict ocean; fallback |
+| coastal | NZ_A_2024 | NZ | 2024 | 75N 53.583E | 197.1 | 87.24% | 32.9 | — | — | 0 | 2086 | grounded |
+| coastal | NZ_B_2024 | NZ | 2024 | 78N 55E | 49.8 | 30.63% | — | — | — | 0 | 769 | strict ocean |
 
 
-NZ_B_2024 stopped before 60 d after two fallbacks; no further substitute was
-used. Six auxiliary Barents open-water runs (Barents-1/2/3 x 2020/2024) were
-explored but are deliberately excluded from this final coastal set: they do not
-answer the coastal reference question and would mix two populations in one map.
+All three points are now identical in both years: FJL 80.5N 45E, NZ-A
+75N 53.583E and NZ-B 78N 55E. The 2020 NZ-A was rerun at the 2024 NZ-A point
+(63.1 d, strict stop); the 2024 NZ-B is the same 78N 55E point as 2020 (49.8 d,
+strict stop). No Kara point and no year-specific replacement remain. Six
+auxiliary Barents open-water runs (Barents-1/2/3 x 2020/2024) were explored but
+are deliberately excluded from this final coastal set: they do not answer the
+coastal reference question and would mix two populations in one map.
 
 ## 6. Figures
 
@@ -126,11 +130,11 @@ CTRL_FJL2_2020 is grounded (`grounded=1`) at all four times.
 
 | Case | Stop position | GLORYS depth at nearest cell | Nearest valid cell | Cause |
 | --- | --- | ---: | ---: | --- |
-| NZ_A 2020 | 76.995N 67.911E | 8.7 m | 0 km | shallow/no valid water; strict stop |
+| NZ_A 2020 | 76.9998N 68.4625E | 47.6 m | 0 km | no primary ocean profile; strict stop |
 | NZ_B 2020 | 76.511N 61.572E | 103.9 m | 0 km | IBCAO bank; grounded |
 | FJL_A 2024 | 80.191N 32.010E | 7.0 m | 0 km | shallow bank, not data boundary (GLORYS lat 63–86, lon 5–80) |
 | NZ_A 2024 | 74.873N 55.784E | 88.2 m | 0 km | depth ≈ draft; grounded |
-| NZ_B 2024 | 73.908N 57.820E | 11.9 m | 0 km | shallow; strict stop |
+| NZ_B 2024 | 80.4659N 49.6589E | 71.0 m | 0 km | no primary ocean profile; strict stop |
 
 ### A4. NZ_A 2024 first 40 days
 

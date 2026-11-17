@@ -28,11 +28,11 @@ DATA = ROOT / "data/input/reanalysis"
 STATIC = ROOT / "data/input/static/glorys_static_barents.nc"
 YEARS = (2020, 2024)
 SEASONS = {"annual": (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12),
-           "DJF": (12, 1, 2), "JJA": (6, 7, 8)}
+           "winter": (1, 2, 3), "summer": (7, 8, 9)}
 REGIONS = {
     "BARENTS": (63.0, 86.0, 5.0, 80.0),
     # track envelope plus 2.5 deg, see manifest
-    "FJL": (72.5, 85.0, 25.0, 48.0),
+    "FJL": (74.0, 83.5, 25.0, 68.0),
     "NZ": (71.0, 83.0, 40.0, 71.0),
 }
 RUNS = {
@@ -48,14 +48,14 @@ POINTS = {"FJL_A": (80.5, 45.0), "NZ_A": (75.0, 53.583),
 LABELS = {
     "en": dict(longitude="longitude", latitude="latitude", depth="depth [m]",
                days="days", year="Year", season="Season", annual="Annual",
-               djf="cold (Jan+Feb+Dec)", jja="JJA", temperature="T [°C]", salinity="S [psu]",
+               winter="Winter (Jan–Mar)", summer="Summer (Jul–Sep)", temperature="T [°C]", salinity="S [psu]",
                speed="speed [m s$^{-1}$]", u="u [m s$^{-1}$]", v="v [m s$^{-1}$]",
                ice="sea-ice concentration", start="start", end="end",
                melt="melt-out", grounded="grounding", strict="strict ocean limit",
                t50="t50", region="Region", depth_km="Depth [m]"),
     "ru": dict(longitude="долгота", latitude="широта", depth="глубина [м]",
                days="сутки", year="Год", season="Сезон", annual="Год",
-               djf="холодный (янв+фев+дек)", jja="Лето", temperature="T [°C]", salinity="S [psu]",
+               winter="Зима (янв–мар)", summer="Лето (июл–сен)", temperature="T [°C]", salinity="S [psu]",
                speed="скорость [м/с]", u="u [м/с]", v="v [м/с]",
                ice="концентрация льда", start="старт", end="конец",
                melt="таяние", grounded="посадка", strict="strict ocean",
@@ -73,6 +73,15 @@ def set_lang(lang):
     global LANG
     LANG = lang
 
+
+
+def ocean_mask_on(lat, lon):
+    with xr.open_dataset(STATIC) as ds:
+        glat = ds.latitude.values; glon = ds.longitude.values
+        dep = ds.deptho.values
+    ii = np.array([int(np.argmin(abs(glat - x))) for x in lat])
+    jj = np.array([int(np.argmin(abs(glon - x))) for x in lon])
+    return (dep[np.ix_(ii, jj)] > 0)
 
 def glorys_path(year, month):
     return DATA / "glorys" / str(year) / f"glorys12_barents_{year}_{month:02d}.nc"
@@ -102,7 +111,7 @@ def check_text(fig, path):
     r = fig.canvas.get_renderer()
     W, H = fig.canvas.get_width_height()
     for t in fig.findobj(matplotlib.text.Text):
-        if not t.get_visible() or not t.get_text().strip():
+        if not t.get_visible() or not t.get_text().strip() or t.get_clip_on():
             continue
         b = t.get_window_extent(renderer=r)
         if b.x0 < -40 or b.y0 < -40 or b.x1 > W + 40 or b.y1 > H + 40:
@@ -137,48 +146,74 @@ def manifest_add(file, variable, source, period, level, aggregation, region):
 
 def panel(ax, letter, x=.02, y=.96):
     ax.text(x, y, f"({letter})", transform=ax.transAxes, va="top",
-            fontsize=8, fontweight="bold", zorder=10)
+            fontsize=8, fontweight="bold", zorder=10,
+            bbox=dict(fc="white", ec="none", alpha=.78, pad=.4))
 
 
 def scale_bar(ax, lon0, lat0, length_km=100):
     dlon = length_km / (111.0 * np.cos(np.deg2rad(lat0)))
     ax.plot([lon0 - dlon, lon0], [lat0, lat0], color="k", lw=2)
-    ax.text(lon0 - dlon / 2, lat0 + 0.35, f"{length_km} km", ha="center", fontsize=8)
+    ax.text(lon0 - dlon / 2, lat0 + 0.22, f"{length_km:g} km", ha="center", fontsize=8)
 
+
+
+def flow_vectors(u, v, lat):
+    """Keep geographic arrow direction while preserving the speed magnitude."""
+    sp = np.hypot(u, v)
+    coslat = np.cos(np.deg2rad(lat))
+    ux = u / np.maximum(sp, 1e-12)
+    vy = (v / np.maximum(sp, 1e-12)) / np.maximum(coslat, 1e-3)
+    norm = np.hypot(ux, vy)
+    ux = ux / np.maximum(norm, 1e-12) * sp
+    vy = vy / np.maximum(norm, 1e-12) * sp
+    return np.where(sp >= .05, ux, np.nan), np.where(sp >= .05, vy, np.nan)
 
 def bathymetry(ax, lon, lat, depth):
     z = np.ma.masked_invalid(depth)
     ax.pcolormesh(lon, lat, np.ma.masked_where(z <= 0, z), shading="auto",
-                  cmap="Blues_r", alpha=.22)
-    ax.contour(lon, lat, np.nan_to_num(depth, nan=0.0),
-               levels=[100, 200, 500, 1000], colors="0.35", linewidths=.35)
+                  cmap="Blues_r", alpha=.16)
+    c100 = ax.contour(lon, lat, np.nan_to_num(depth, nan=0.0),
+                      levels=[100], colors="0.25", linestyles="dashed", linewidths=.5)
+    c500 = ax.contour(lon, lat, np.nan_to_num(depth, nan=0.0),
+                      levels=[500], colors="0.25", linestyles="solid", linewidths=.8)
+    for t in ax.clabel(c100, fmt="%d m", fontsize=6, inline=True):
+        t.set_clip_on(True); t.set_clip_path(ax.patch)
+    for t in ax.clabel(c500, fmt="%d m", fontsize=6, inline=True):
+        t.set_clip_on(True); t.set_clip_path(ax.patch)
 
 
-def tracks(ax, region, only=None):
-    x0, x1, y0, y1 = region[2], region[3], region[0], region[1]
-    cmap = plt.cm.tab10(np.linspace(0, 1, len(RUNS)))
-    for c, (tag, (_, _, path)) in zip(cmap, RUNS.items()):
-        if only and RUNS[tag][0] != only:
-            continue
+def tracks(ax, region, year):
+    colors = {"FJL_A": "#1b9e77", "NZ_A": "#d95f02", "NZ_B": "#7570b3"}
+    for tag, (source, yr, path) in RUNS.items():
+        if str(year) != str(yr): continue
+        base = tag.rsplit("_", 1)[0]
+        color = colors.get(base, "k")
+        style = "-" if int(year) == 2020 else "--"
         with xr.open_dataset(path) as ds:
             lon = ds.longitude.values; lat = ds.latitude.values
-        ax.plot(lon, lat, color=c, lw=.7, alpha=.9)
-        ax.scatter(lon[0], lat[0], marker="o", s=20, color=c, edgecolor="k", zorder=5)
-        ax.scatter(lon[-1], lat[-1], marker="X", s=28, color=c, edgecolor="k", zorder=5)
+        ax.plot(lon, lat, color="white", lw=2.0, zorder=4)
+        ax.plot(lon, lat, color=color, lw=.85, ls=style, zorder=5)
+        ax.scatter(lon[0], lat[0], marker="o", s=24, color=color,
+                   edgecolor="white", linewidth=.7, zorder=6)
+        status_path = Path(path).parent / "status.log"
+        st = status_path.read_text() if status_path.exists() else ""
+        marker = "*" if "MELTED" in st else ("X" if "GROUNDED" in st else ("^" if "STRICT" in st else "X"))
+        ax.scatter(lon[-1], lat[-1], marker=marker, s=35, color=color,
+                   edgecolor="white", linewidth=.7, zorder=6)
 
 
 def region_axes(ax, region, coastline=True):
     x0, x1, y0, y1 = region[2], region[3], region[0], region[1]
     ax.set_xlim(x0, x1); ax.set_ylim(y0, y1)
     ax.set_xlabel(L("longitude")); ax.set_ylabel(L("latitude"))
-    ax.set_facecolor("white"); ax.grid(alpha=.18)
+    ax.set_facecolor("#d9d9d9"); ax.grid(alpha=.18)
     ax.tick_params(labelsize=8)
     if coastline:
         with xr.open_dataset(STATIC) as ds:
             depth = ds.deptho.values; lon = ds.longitude.values; lat = ds.latitude.values
         bathymetry(ax, lon, lat, depth)
         scale_bar(ax, x1 - .04 * (x1 - x0), y0 + .04 * (y1 - y0),
-                  100.0 if max(x1 - x0, y1 - y0) > 15 else 50.0)
+                  500.0 if (x1 - x0) > 60 else 100.0)
 
 
 def field_stats(field, lon, lat, stride=8):
@@ -238,7 +273,7 @@ def block_a(lang):
         for depth in ("05", "100"):
             for region_name, region in REGIONS.items():
                 fig, axs = plt.subplots(3, 2, figsize=(7.1, 8.6), squeeze=False)
-                for r, season in enumerate(("annual", "DJF", "JJA")):
+                for r, season in enumerate(("annual", "winter", "summer")):
                     for c, year in enumerate(YEARS):
                         ax = axs[r, c]
                         if var == "speed":
@@ -248,35 +283,60 @@ def block_a(lang):
                         else:
                             val = season_mean(fields, year, var, depth, season)
                         region_axes(ax, region)
+                        ext = "both"
                         if var == "speed":
-                            cmap = "viridis"; vmin, vmax = 0, 1.0; lab = L("speed")
+                            cmap = "viridis"; vmin, vmax = 0, .5; lab = L("speed"); ext = "max"
                         elif var == "thetao":
-                            cmap = "RdYlBu_r"; vmin, vmax = -2.1, 20.0; lab = L("temperature")
+                            cmap = "RdYlBu_r"; vmin, vmax = -2, 12 if depth == "05" else 8
+                            lab = L("temperature"); ext = "max"
                         else:
-                            cmap = "Greens"; vmin, vmax = 0, 37.0; lab = L("salinity")
+                            cmap = "Greens"
+                            vmin, vmax = (31, 35.5) if depth == "05" else (34, 35.3)
+                            lab = L("salinity")
                         m = ax.pcolormesh(lon, lat, np.ma.masked_invalid(val),
                                           shading="auto", cmap=cmap, vmin=vmin, vmax=vmax)
                         if var == "speed":
-                            step = 18
-                            ax.quiver(lon[::step], lat[::step], u[::step, ::step],
-                                      v[::step, ::step], color="white", scale=3,
-                                      width=.0025, alpha=.9)
+                            nvec = 12 if region_name == "BARENTS" else 14
+                            ii = np.linspace(0, len(lat)-1, nvec).astype(int)
+                            jj = np.linspace(0, len(lon)-1, nvec).astype(int)
+                            yy, xx = np.meshgrid(lat[ii], lon[jj], indexing="ij")
+                            uu = u[np.ix_(ii, jj)]; vv = v[np.ix_(ii, jj)]
+                            uu, vv = flow_vectors(uu, vv, yy)
+                            q = ax.quiver(xx, yy, uu, vv,
+                                          color="white", scale=2.0, width=.0025, alpha=.95)
+                            if r == 0 and c == 0:
+                                ax.quiverkey(q, X=.55, Y=.04, U=.2, label="0.2 m s$^{-1}$",
+                                             labelpos="E", fontproperties={"size": 7},
+                                             labelcolor="k")
                         if c > 0:
                             ax.set_ylabel(""); ax.tick_params(labelleft=False)
                         if r < 2: ax.set_xlabel("")
                         if region_name != "BARENTS":
-                            tracks(ax, region)
+                            tracks(ax, region, year)
                         panel(ax, "abcdef"[r * 2 + c])
                         ax.text(.98, .98, f"{year} · {L(season)}", transform=ax.transAxes,
                                 ha="right", va="top", fontsize=8,
                                 bbox=dict(fc="white", ec="none", alpha=.7))
                 fig.subplots_adjust(left=.08, right=.82, bottom=.05, top=.97, wspace=.05, hspace=.10)
-                cax = fig.add_axes([.86, .22, .022, .56]); cb = fig.colorbar(m, cax=cax)
-                cb.set_label(lab)
+                cax = fig.add_axes([.86, .22, .022, .56])
+                cb = fig.colorbar(m, cax=cax, extend=ext); cb.set_label(lab)
+                axs[0, 0].text(.02, .02, "100 m isobath (≈ 88 m draft)\n500 m isobath",
+                               transform=axs[0, 0].transAxes, fontsize=6.5, va="bottom",
+                               bbox=dict(fc="white", ec="none", alpha=.8))
+                if region_name != "BARENTS":
+                    from matplotlib.lines import Line2D
+                    hh = []
+                    for tag, (_, yr, _) in RUNS.items():
+                        base = tag.rsplit("_", 1)[0]
+                        hh.append(Line2D([0], [0], color={"FJL_A":"#1b9e77","NZ_A":"#d95f02","NZ_B":"#7570b3"}.get(base,"k"),
+                                         ls="-" if int(yr)==2020 else "--", lw=1.0, label=tag))
+                    fig.legend(handles=hh, loc="lower center", ncol=3, fontsize=6,
+                               frameon=False, bbox_to_anchor=(.5, .005))
+                    fig.subplots_adjust(bottom=.12)
                 out = root / f"A_{var}_{depth}m_{region_name}"
                 save_fig(fig, out)
                 rows = []
-                for season in ("annual", "DJF", "JJA"):
+                for season in ("annual", "winter", "summer"):
                     for year in YEARS:
                         if var == "speed":
                             u = season_mean(fields, year, "uo", depth, season)
@@ -291,20 +351,22 @@ def block_a(lang):
                 manifest_add(out.with_suffix(".png"), var,
                              "GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311",
                              "2020, 2024", f"{depth} m (native level)",
-                             "annual / cold (Jan+Feb+Dec) / JJA; monthly means day-weighted", region_name)
+                             "annual / Winter (Jan–Mar) / Summer (Jul–Sep); monthly means day-weighted", region_name)
 
     if ("2020", "siconc", "05") in fields or (2020, "siconc", "05") in fields:
         for region_name, region in REGIONS.items():
             fig, axs = plt.subplots(3, 2, figsize=(7.1, 8.6), squeeze=False)
             m = None
-            for r, season in enumerate(("annual", "DJF", "JJA")):
+            for r, season in enumerate(("annual", "winter", "summer")):
                 for c, year in enumerate(YEARS):
                     ax = axs[r, c]; region_axes(ax, region)
                     val = season_mean(fields, year, "siconc", "05", season)
+                    val = np.where(deptho > 0, np.nan_to_num(val, nan=0.0), np.nan)
                     m = ax.pcolormesh(lon, lat, np.ma.masked_invalid(val), shading="auto",
                                       cmap="Blues", vmin=0, vmax=1)
                     if c > 0: ax.set_ylabel(""); ax.tick_params(labelleft=False)
                     if r < 2: ax.set_xlabel("")
+                    if region_name != "BARENTS": tracks(ax, region, year)
                     panel(ax, "abcdef"[r * 2 + c])
                     ax.text(.98, .98, f"{year} · {L(season)}", transform=ax.transAxes,
                             ha="right", va="top", fontsize=8,
@@ -312,11 +374,23 @@ def block_a(lang):
             fig.subplots_adjust(left=.08, right=.82, bottom=.05, top=.97, wspace=.05, hspace=.10)
             cax = fig.add_axes([.86, .22, .022, .56]); cb = fig.colorbar(m, cax=cax)
             cb.set_label(L("ice"))
+            axs[0, 0].text(.02, .02, "100 m isobath (≈ 88 m draft)\n500 m isobath",
+                           transform=axs[0, 0].transAxes, fontsize=6.5, va="bottom",
+                           bbox=dict(fc="white", ec="none", alpha=.8))
+            if region_name != "BARENTS":
+                hh = []
+                for tag, (_, yr, _) in RUNS.items():
+                    base = tag.rsplit("_", 1)[0]
+                    hh.append(Line2D([0], [0], color={"FJL_A":"#1b9e77","NZ_A":"#d95f02","NZ_B":"#7570b3"}.get(base,"k"),
+                                     ls="-" if int(yr)==2020 else "--", lw=1.0, label=tag))
+                fig.legend(handles=hh, loc="lower center", ncol=3, fontsize=6,
+                           frameon=False, bbox_to_anchor=(.5, .005))
+                fig.subplots_adjust(bottom=.12)
             out = root / f"A_siconc_{region_name}"
             save_fig(fig, out)
             manifest_add(out.with_suffix(".png"), "siconc",
                          "GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311",
-                         "2020, 2024", "surface", "annual / DJF / JJA", region_name)
+                         "2020, 2024", "surface", "annual / Winter / Summer", region_name)
 
 
 # --- Block B -----------------------------------------------------------------
@@ -379,7 +453,7 @@ def block_b(lang):
     set_lang(lang)
     root = ensure_dirs("B")
     for which, xlabel in (("meridional", "latitude [°N]"), ("zonal", "longitude [°E]")):
-        for var, cmap, clim, lab in (("thetao", "RdYlBu_r", (-2, 10), L("temperature")),
+        for var, cmap, clim, lab in (("thetao", "RdYlBu_r", (-2, 8), L("temperature")),
                                      ("so", "Greens", (30, 36), L("salinity"))):
             fig, axs = plt.subplots(2, 2, figsize=(7.1, 6.2))
             rows = []
@@ -392,18 +466,23 @@ def block_b(lang):
                     ax.contour(x, z, np.nan_to_num(val, nan=clim[0]),
                                levels=[0.0], colors="k", linewidths=.6)
                 ax.set_ylim(500, 0); ax.set_xlabel(xlabel); ax.set_ylabel(L("depth"))
+                ax.set_facecolor("#d9d9d9")
                 if r in (1, 3): ax.set_ylabel(""); ax.tick_params(labelleft=False)
                 ax.grid(alpha=.15); ax.tick_params(labelsize=8)
                 panel(ax, "abcd"[r])
-                ax.text(.98, .98, f"{year}-{month:02d}", transform=ax.transAxes,
-                        ha="right", va="top", fontsize=8)
+                ax.text(.02, .03, f"{year}-{month:02d}", transform=ax.transAxes,
+                        ha="left", va="bottom", fontsize=8,
+                        bbox=dict(fc="white", ec="none", alpha=.9))
                 rows.append(pd.DataFrame({"x": np.repeat(x, len(z)),
                                           "depth": np.tile(z, len(x)),
                                           "value": np.asarray(val).T.ravel(),
                                           "year": year, "month": month}))
             fig.subplots_adjust(left=.09, right=.82, bottom=.10, top=.96, wspace=.18, hspace=.20)
-            cax = fig.add_axes([.86, .25, .022, .50]); cb = fig.colorbar(m, cax=cax)
+            cax = fig.add_axes([.86, .25, .022, .50])
+            cb = fig.colorbar(m, cax=cax, extend="max" if var == "thetao" else "both")
             cb.set_label(lab)
+            if var == "thetao":
+                fig.text(.12, .02, "0 °C isotherm", fontsize=7)
             out = root / f"B1_{which}_{var}"
             save_fig(fig, out)
             pd.concat(rows).to_csv(out.with_suffix(".csv"), index=False)
@@ -415,50 +494,66 @@ def block_b(lang):
     # B2 profiles at starts
     for point, (la, lo) in POINTS.items():
         profiles = {}
-        for season in ("DJF", "JJA"):
-            for year in YEARS:
+        samples = {}
+        for year in YEARS:
+            # Select one wet column per point/year and reuse it for both seasons.
+            with xr.open_dataset(glorys_path(year, 1)) as ds:
+                ii, jj, latw, lonw = nearest_wet(ds, la, lo)
+                samples[year] = (latw, lonw, float(ds.depth.values[-1]))
+            for season in ("winter", "summer"):
                 vals = []
                 for m in SEASONS[season]:
                     with xr.open_dataset(glorys_path(year, m)) as ds:
-                        ii,jj,latw,lonw = nearest_wet(ds, la, lo)
                         t = ds.thetao.isel(latitude=ii, longitude=jj)
-                        s = ds["so"].isel(latitude=ii, longitude=jj)
+                        so = ds["so"].isel(latitude=ii, longitude=jj)
                         z = t.depth.values; keep = z <= 300.0
                         vals.append((t.isel(depth=np.where(keep)[0]).mean("time").values,
-                                     s.isel(depth=np.where(keep)[0]).mean("time").values))
+                                     so.isel(depth=np.where(keep)[0]).mean("time").values))
                 w = np.asarray([month_days(year, m) for m in SEASONS[season]], float)
-                profiles[(year, season)] = (z[keep], np.average([v[0] for v in vals], axis=0, weights=w),
+                profiles[(year, season)] = (z[keep],
+                                            np.average([v[0] for v in vals], axis=0, weights=w),
                                             np.average([v[1] for v in vals], axis=0, weights=w))
         fig, axs = plt.subplots(2, 3, figsize=(7.1, 6.4), sharey=True)
         for r, year in enumerate(YEARS):
             for c, kind in enumerate(("T", "S", "sigma")):
                 ax = axs[r, c]
-                for season, color in (("DJF", "C0"), ("JJA", "C3")):
+                for season, color in (("winter", "C0"), ("summer", "C3")):
                     z, t, s = profiles[(year, season)]
                     if kind == "T": y = t; lab = L("temperature")
                     elif kind == "S": y = s; lab = L("salinity")
-                    else: y = sigma0(t, s); lab = "sigma$_0$ [kg m$^{-3}$]"
+                    else: y = sigma0(t, s); lab = "σ₀ [kg m$^{-3}$]"
                     ax.plot(y, z, color=color, label=L(season))
                 ax.set_ylim(300, 0); ax.set_xlabel(lab); ax.grid(alpha=.2)
                 ax.xaxis.set_major_locator(plt.MaxNLocator(3))
                 if c == 0: ax.set_ylabel(L("depth"))
-                if r == 1 and c == 0: ax.legend(fontsize=8, loc="lower right")
+        # Shared x range in each S/sigma column across 2020 and 2024.
+        for c in (1, 2):
+            lo_x = min(axs[r, c].get_xlim()[0] for r in range(2))
+            hi_x = max(axs[r, c].get_xlim()[1] for r in range(2))
+            for r in range(2): axs[r, c].set_xlim(lo_x, hi_x)
         for i, ax in enumerate(axs.ravel()): panel(ax, "abcdef"[i])
         fig.text(.025, .72, "2020", rotation=90, va="center", ha="center", fontsize=9)
         fig.text(.025, .25, "2024", rotation=90, va="center", ha="center", fontsize=9)
-        fig.subplots_adjust(left=.16, right=.88, bottom=.12, top=.96, wspace=.24, hspace=.25)
+        handles, labels = axs[0, 0].get_legend_handles_labels()
+        fig.legend(handles, labels, loc="lower center", ncol=2, fontsize=8, frameon=False)
+        fig.subplots_adjust(left=.16, right=.88, bottom=.19, top=.96, wspace=.24, hspace=.25)
         out = root / f"B2_profile_{point}"
         save_fig(fig, out)
         rows = []
         for (year, season), (z, t, s) in profiles.items():
             for zz, tt, ss in zip(z, t, s):
                 rows.append(dict(year=year, season=season, depth=zz, T=tt, S=ss,
-                                 sigma0=float(sigma0(tt, ss))))
+                                 sigma0=float(sigma0(tt, ss)),
+                                 sample_latitude=samples[year][0], sample_longitude=samples[year][1]))
         pd.DataFrame(rows).to_csv(out.with_suffix(".csv"), index=False)
+        pd.DataFrame([dict(year=y, latitude=s[0], longitude=s[1], depth=s[2])
+                      for y, s in samples.items()]).to_csv(root / f"B2_sample_{point}.csv", index=False)
         manifest_add(out.with_suffix(".png"), "thetao, so, sigma0",
                      "GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311",
-                     "cold (Jan+Feb+Dec)/JJA 2020, 2024", "0–300 m native levels",
-                     "monthly mean profiles", point)
+                     "Winter/Summer 2020, 2024",
+                     "0–300 m; nearest wet column " + "; ".join(
+                         f"{y}: {v[0]:.4f}N {v[1]:.4f}E" for y, v in samples.items()),
+                     "monthly mean profiles; fixed wet column per year", point)
 
     # B3 Barents mean profiles / percentiles
     print("B3 start", flush=True)
@@ -564,7 +659,7 @@ def block_v(lang):
     pd.concat(frames).to_csv(root / "V1_all.csv", index=False)
 
     for name, ccols, cheads in (
-        ("atmosphere", ["t2m", "wind", "msl"], ["T$_{2m}$ [°C]", "wind [m s$^{-1}$]", "MSL [hPa]"]),
+        ("atmosphere", ["t2m", "wind", "msl"], ["T$_{2m}$ [°C]", "wind [m s$^{-1}$]", "sea-level pressure [hPa]"]),
         ("ocean", ["Tw", "Sw", "current"], ["T water [°C]", "S water [psu]", "current [m s$^{-1}$]"]),
     ):
         fig, axs = plt.subplots(6, 3, figsize=(7.1, 10.5), sharex="col", squeeze=False)
@@ -577,7 +672,7 @@ def block_v(lang):
                 if c == 0: ax.set_ylabel(tag, fontsize=8)
                 if r == 5: ax.set_xlabel(L("days"), fontsize=8)
                 panel(ax, "abcdefghijklmnopqr"[r * 3 + c])
-        fig.subplots_adjust(left=.17, right=.94, bottom=.08, top=.93, wspace=.24, hspace=.14)
+        fig.subplots_adjust(left=.17, right=.90, bottom=.08, top=.93, wspace=.35, hspace=.14)
         out = root / f"V1_track_forcing_{name}"
         save_fig(fig, out)
         manifest_add(out.with_suffix(".png"), ",".join(ccols),
@@ -598,8 +693,9 @@ def block_v(lang):
             with xr.open_dataset(era5_path(year, m)) as e:
                 # cos(latitude) area weights; ERA5 latitude is descending
                 w = np.cos(np.deg2rad(e.latitude))
-                t2 = float(e.t2m.weighted(w).mean()) - 273.15
-                wind = float(np.hypot(e.u10, e.v10).weighted(w).mean())
+                mask = ocean_mask_on(e.latitude.values, e.longitude.values)
+                t2 = float(e.t2m.where(mask).weighted(w).mean()) - 273.15
+                wind = float(np.hypot(e.u10, e.v10).where(mask).weighted(w).mean())
             with xr.open_dataset(glorys_path(year, m)) as o:
                 w = np.cos(np.deg2rad(o.latitude))
                 T = float(o.thetao.isel(depth=0).weighted(w).mean())
@@ -617,49 +713,79 @@ def block_v(lang):
                     fontsize=8)
             panel(ax, "abcdef"[r * 2 + c])
             if r == 2: ax.set_xlabel("month")
+            ax.set_xticks(range(1, 13))
+            ax.set_xticklabels(list("JFMAMJJASOND"), fontsize=8)
+    # shared y limits for each variable row
+    for r in range(3):
+        lo = min(axs[r, c].get_ylim()[0] for c in range(2))
+        hi = max(axs[r, c].get_ylim()[1] for c in range(2))
+        for c in range(2): axs[r, c].set_ylim(lo, hi)
     fig.subplots_adjust(left=.12, right=.92, bottom=.15, top=.96, wspace=.32, hspace=.28)
     out = root / "V2_BARENTS_annual_cycle"
     save_fig(fig, out)
     for year in YEARS: years[year].to_csv(root / f"V2_{year}.csv", index=False)
     manifest_add(out.with_suffix(".png"), "t2m,wind,thetao", "ERA5; GLORYS12",
-                 "2020, 2024", "2 m/10 m/surface", "monthly area mean", "BARENTS")
+                 "2020, 2024", "2 m/10 m/surface", "monthly ocean-cell area mean, 63–86N 5–80E", "BARENTS")
 
     # V3 maps mean wind and Tair winter/summer
-    for var, cmap, clim, lab in (("wind", "viridis", (0, 18), "wind [m s$^{-1}$]"),
-                                 ("t2m", "RdYlBu_r", (-30, 18), "T$_{2m}$ [°C]")):
+    for var, cmap, clim, lab in (("wind", "viridis", (2, 12), "wind [m s$^{-1}$]"),
+                                 ("t2m", "RdYlBu_r", (-30, 12), "T$_{2m}$ [°C]")):
         fig, axs = plt.subplots(2, 2, figsize=(7.1, 6.2))
         vrows = []
-        for i, (season, year) in enumerate((("DJF", 2020), ("JJA", 2020),
-                                            ("DJF", 2024), ("JJA", 2024))):
+        for i, (season, year) in enumerate((("winter", 2020), ("summer", 2020),
+                                            ("winter", 2024), ("summer", 2024))):
             ax = axs.ravel()[i]
-            vals = []
+            vals = []; uvals = []; vvals = []
             for m in SEASONS[season]:
                 with xr.open_dataset(era5_path(year, m)) as e:
                     lon = e.longitude.values; lat = e.latitude.values
                     w = np.cos(np.deg2rad(e.latitude))
                     if var == "wind":
                         vals.append(np.hypot(e.u10, e.v10).weighted(w).mean("time").values)
+                        uvals.append(e.u10.weighted(w).mean("time").values)
+                        vvals.append(e.v10.weighted(w).mean("time").values)
                     else:
                         vals.append((e.t2m.weighted(w).mean("time") - 273.15).values)
             ww = np.asarray([month_days(year, m) for m in SEASONS[season]], float)
             v = np.average(np.stack(vals), axis=0, weights=ww)
             mesh = ax.pcolormesh(lon, lat, v, shading="auto", cmap=cmap, vmin=clim[0], vmax=clim[1])
+            if var == "wind":
+                step_lat = max(1, len(lat)//12); step_lon = max(1, len(lon)//12)
+                yy, xx = np.meshgrid(lat[::step_lat], lon[::step_lon], indexing="ij")
+                uu = np.average(np.stack(uvals), axis=0, weights=ww)[::step_lat, ::step_lon]
+                vv = np.average(np.stack(vvals), axis=0, weights=ww)[::step_lat, ::step_lon]
+                uu, vv = flow_vectors(uu, vv, yy)
+                q = ax.quiver(xx, yy, uu, vv, color="k", scale=18,
+                              width=.002, alpha=.8)
+                if i == 0:
+                    ax.quiverkey(q, X=.18, Y=.04, U=5.0, label="5 m s$^{-1}$", labelpos="E",
+                                 fontproperties={"size": 7}, labelcolor="k")
             for la, lo, vv in field_stats(v, lon, lat):
                 vrows.append(dict(year=year, season=season, latitude=la, longitude=lo, value=vv))
             ax.set_xlim(5, 80); ax.set_ylim(63, 86); ax.set_xlabel(L("longitude"))
             ax.set_ylabel(L("latitude")); ax.tick_params(labelsize=8); ax.grid(alpha=.15)
+            ax.set_facecolor("#d9d9d9")
+            with xr.open_dataset(STATIC) as st:
+                glon = st.longitude.values; glat = st.latitude.values; gdep = st.deptho.values
+            ax.contour(glon, glat, np.nan_to_num(gdep, nan=0.0), levels=[0.5],
+                       colors="0.25", linewidths=.4)
+            ax.contour(glon, glat, np.nan_to_num(gdep, nan=0.0), levels=[100],
+                       colors="0.25", linestyles="dashed", linewidths=.4)
+            ax.contour(glon, glat, np.nan_to_num(gdep, nan=0.0), levels=[500],
+                       colors="0.25", linestyles="solid", linewidths=.7)
+            scale_bar(ax, 78, 64.5, 500.0)
             if i % 2:
                 ax.set_ylabel(""); ax.tick_params(labelleft=False)
             panel(ax, "abcd"[i]); ax.text(.98, .98, f"{year} · {L(season)}",
                                           transform=ax.transAxes, ha="right", va="top",
                                           fontsize=8, bbox=dict(fc="white", ec="none", alpha=.7))
         fig.subplots_adjust(left=.08, right=.82, bottom=.15, top=.96, wspace=.15, hspace=.20)
-        cax = fig.add_axes([.86, .28, .022, .44]); cb = fig.colorbar(mesh, cax=cax); cb.set_label(lab)
+        cax = fig.add_axes([.86, .28, .022, .44]); cb = fig.colorbar(mesh, cax=cax, extend="max" if var == "wind" else "both"); cb.set_label(lab)
         out = root / f"V3_{var}_BARENTS"
         save_fig(fig, out)
         pd.DataFrame(vrows).to_csv(out.with_suffix(".csv"), index=False)
         manifest_add(out.with_suffix(".png"), var, "ERA5",
-                     "2020, 2024", "2 m/10 m", "cold (Jan+Feb+Dec)/JJA mean", "BARENTS")
+                     "2020, 2024", "2 m/10 m", "Winter/Summer mean", "BARENTS")
 
 
 # --- Block G -----------------------------------------------------------------
@@ -677,8 +803,8 @@ def block_g(lang):
     if not frames:
         raise RuntimeError("run V first: V1 CSVs are required for block G")
     df = pd.concat(frames, ignore_index=True)
-    specs = [("Tw", "T water [°C]"), ("current", "current [m s$^{-1}$]"),
-             ("wind", "wind [m s$^{-1}$]")]
+    specs = [("Tw", "T water 0.5 m [°C]"), ("current", "current 0.5 m [m s$^{-1}$]"),
+             ("wind", "wind 10 m [m s$^{-1}$]")]
     fig, axs = plt.subplots(3, 2, figsize=(7.1, 6.4), squeeze=False)
     for r, (col, lab) in enumerate(specs):
         allv = pd.concat([df.loc[df.year == year, col] for year in YEARS]).dropna()
@@ -686,17 +812,24 @@ def block_g(lang):
         for c, year in enumerate(YEARS):
             ax = axs[r, c]
             v = df.loc[df.year == year, col].dropna()
-            ax.hist(v, bins=bins, color="C0", alpha=.8)
-            ax.set_xlabel(lab); ax.set_ylabel("count"); ax.grid(alpha=.2)
+            ax.hist(v, bins=bins, color="C0", alpha=.8,
+                    weights=np.full(len(v), 100.0/len(v)))
+            ax.set_xlabel(lab); ax.set_ylabel("frequency [%]"); ax.grid(alpha=.2)
             ax.tick_params(labelsize=8)
             panel(ax, "abcdef"[r * 2 + c])
             ax.text(.98, .95, str(year), transform=ax.transAxes, ha="right", va="top",
                     fontsize=8)
+            ax.text(.98, .88, f"N={len(v)}", transform=ax.transAxes, ha="right", va="top",
+                    fontsize=7)
+    for r in range(3):
+        lo = min(axs[r, c].get_ylim()[0] for c in range(2))
+        hi = max(axs[r, c].get_ylim()[1] for c in range(2))
+        for c in range(2): axs[r, c].set_ylim(lo, hi)
     fig.subplots_adjust(left=.14, right=.94, bottom=.16, top=.96, wspace=.30, hspace=.38)
     out = root / "G1_track_histograms"
     save_fig(fig, out)
     manifest_add(out.with_suffix(".png"), "Tw,current,wind", "V1 track samples",
-                 "2020, 2024", "surface", "histogram over track points", "BARENTS")
+                 "2020, 2024", "water/current 0.5 m; wind 10 m", "relative frequency over track points", "BARENTS")
 
     rows = []
     for year in YEARS:

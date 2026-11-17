@@ -23,6 +23,11 @@ class Stage1220Layout(unittest.TestCase):
             a.save(p, save_all=True, append_images=[b], duration=100, loop=0, optimize=False); self.assertEqual(S.check_gif(p), 2)
             self.assertTrue(S.check_gif(p) >= 2)
 
+    def test_english_labels(self):
+        self.assertEqual(S.LABELS["days"], "days")
+        self.assertEqual(S.LABELS["grounding"], "grounding")
+        self.assertEqual(S.LABELS["melt_out"], "melt-out")
+
     def test_axes3_ticks(self):
         import matplotlib; matplotlib.use("Agg")
         import matplotlib.pyplot as plt

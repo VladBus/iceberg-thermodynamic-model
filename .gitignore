@@ -345,3 +345,7 @@ data/input/generated/
 !data/input/static/
 !data/input/static/*.nc
 !data/input/observations
+
+# Stage 12.21 publication PDFs are archived, not versioned
+docs/wiki/stages/stage12/figures/stage12.21/**/*.pdf
+data/validation/stage12.21/journal_pdf_vectors.zip

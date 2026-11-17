@@ -107,3 +107,38 @@ are fields, not area means, so no area weighting is applied to the plotted field
   and PNG width.  Text-overlap and colorbar placement remain manual visual
   checks from the contact sheets.
 - The audit changes were committed separately after the visual review.
+
+
+## 6. Stage 12.21b corrections
+
+- **12.20 track speed:** the lower panel now uses displacement between adjacent daily
+  track records divided by elapsed seconds, not the missing `ds.u/ds.v` columns.
+  FJL_A_2020 mean is 0.100 m s⁻¹, matching 2771.7 km in 323.8 d.
+- **Daily displacement audit:** `figures/stage12.20/final/track_speed_summary.csv`
+  records maximum daily displacement, mean speed and any >100 km/day intervals.
+  All eight runs have maximum daily displacement below 100 km/day; no gap-induced
+  line break was needed. See the per-run `track_speed_audit.csv`.
+- **12.20 labels:** water salinity is `psu`; ice fraction is `φ`; panel letters
+  are outside the data areas.
+- **12.21 maps:** land is `#d9d9d9`; sea ice is zero-filled over the GLORYS ocean
+  mask; 100/500 m isobaths are shown with a common key; current and wind vectors
+  have a single reference arrow; FJL bounds are 25–68°E, 74–83.5°N.
+- **12.21 sections/profiles:** B1 T is −2…8 °C with an `extend` arrow, year labels
+  are lower-left, and land is grey. B2 fixes one wet column per point/year and
+  records its latitude/longitude/depth in the CSV and manifest.
+- **12.21 V/G:** V1 has separate atmosphere/ocean matrices and wider spacing; V2
+  uses ocean-only area means and shared row axes; V3 has wind vectors, isobaths,
+  and the required scales; G1 uses relative frequency, common bins and N values.
+- **PDF policy:** PDFs are ignored in git and archived in
+  `data/validation/stage12.21/journal_pdf_vectors.zip`; only PNG/CSV remain in
+  the repository figure tree. The figure directory is 59 MB after removing
+  tracked PDFs; the PDF archive is 19 MB.
+
+### Remaining limitations
+
+- The B2 wet column is fixed per point/year, but the vertical mask still removes
+  individual depth cells; no interpolation is used.
+- A map CSVs are decimated by stride 8; the plotted field uses all grid cells.
+- Automated checks cover text outside, white borders, output existence and PNG
+  width. Text-overlap/colorbar placement is checked visually with contact sheets.
+- No model runs, downloads, NetCDF changes or Fortran edits were made.

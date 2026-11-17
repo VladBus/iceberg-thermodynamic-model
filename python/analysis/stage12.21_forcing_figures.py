@@ -755,7 +755,7 @@ def block_v(lang):
                 uu = np.average(np.stack(uvals), axis=0, weights=ww)[::step_lat, ::step_lon]
                 vv = np.average(np.stack(vvals), axis=0, weights=ww)[::step_lat, ::step_lon]
                 uu, vv = flow_vectors(uu, vv, yy)
-                q = ax.quiver(xx, yy, uu, vv, color="k", scale=18,
+                q = ax.quiver(xx, yy, uu, vv, color="k", scale=50,
                               width=.002, alpha=.8)
                 if i == 0:
                     ax.quiverkey(q, X=.18, Y=.04, U=5.0, label="5 m s$^{-1}$", labelpos="E",

@@ -23,7 +23,7 @@ LABELS = {
     "days": "days", "start": "start", "end": "end", "grounding": "grounding",
     "melt_out": "melt-out", "strict": "strict ocean", "draft": "draft",
     "freeboard": "freeboard", "residual": "residual", "temperature": "T [°C]",
-    "salinity": "S_B [‰]", "ice": "phi, fraction", "longitude": "longitude",
+    "salinity": "S_B [‰]", "ice": "φ, fraction", "longitude": "longitude",
     "latitude": "latitude",
 }
 RUNS={
@@ -128,7 +128,7 @@ def profiles(tag,root,out):
         lab=f"{int(round(t/86400))} days"
         ax[0].plot(tz,depth,color=c,label=lab)
         ax[1].plot(pz,depth,color=c,label=lab)
-    ax[0].set(xlabel="T, °C",ylabel="depth, m"); ax[1].set(xlabel="phi, fraction",ylabel="depth, m")
+    ax[0].set(xlabel="T, °C",ylabel="depth, m"); ax[1].set(xlabel="φ, fraction",ylabel="depth, m")
     for a in ax:
         a.set_ylim(zmax,0); a.set_yticks(np.arange(0,zmax+1,20))
         a.grid(alpha=.25); a.legend(fontsize=7)
@@ -150,7 +150,7 @@ def series(tag,root,out):
     df["resid"]=m0-df.mass-(df["melt"]+df["flush"]+df.calved)
     fig,ax=plt.subplots(2,2,figsize=(13,8))
     for aa,letter in zip(ax.ravel(),("(a)","(b)","(c)","(d)")):
-        aa.text(.02,.96,letter,transform=aa.transAxes,va="top",fontsize=10,fontweight="bold")
+        aa.text(0.0,1.01,letter,transform=aa.transAxes,va="bottom",fontsize=10,fontweight="bold")
     ax[0,0].plot(df.day,100*(m0-df.mass)/m0,"k-"); ax[0,0].set(ylabel="mass loss, % m₀")
     ax[0,1].plot(df.day,df.draft,label="draft"); ax[0,1].plot(df.day,df.freeboard,label="freeboard")
     ax[0,1].set(ylabel="m"); ax[0,1].legend(fontsize=8)
@@ -168,7 +168,7 @@ def series(tag,root,out):
     l1,=ax[1,1].plot(df.day,df.T_w,color="C3",label="water T")
     ax[1,1].set_ylabel("T, °C"); ax[1,1].yaxis.label.set_color("C3"); ax[1,1].tick_params(axis="y",colors="C3")
     ax2=ax[1,1].twinx(); l2,=ax2.plot(df.day,1000*df.S_w,color="C0",label="water S")
-    ax2.set_ylabel("S, ‰",color="C0"); ax2.tick_params(axis="y",colors="C0")
+    ax2.set_ylabel("S, psu",color="C0"); ax2.tick_params(axis="y",colors="C0")
     ax[1,1].legend([l1,l2],["water T","water S"],loc="best",fontsize=8)
     ax2.tick_params(labelsize=9)
     for a in ax.ravel():
@@ -219,7 +219,7 @@ def make_gif(tag,root,out_prefix,target=24):
             ax.set_xlabel("x, m",fontsize=7); ax.set_ylabel("y, m",fontsize=7); ax.set_zlabel("z, m",fontsize=7)
             ax.text2D(.02,.95,f"{int(round(t/86400))} days · {pct:.1f}%",transform=ax.transAxes,fontsize=7,va="top")
             cax=fig.add_axes([.85,.16,.018,.68]); cb=fig.colorbar(cm.ScalarMappable(norm=norm,cmap=cmap),cax=cax)
-            cb.set_label("phi, fraction" if key=="phi" else "T, °C",fontsize=8)
+            cb.set_label("φ, fraction" if key=="phi" else "T, °C",fontsize=8)
             fig.subplots_adjust(left=.06,right=.80,bottom=.06,top=.94)
             fn=tmp/f"{tag}_{key}_{int(round(t/86400)):03d}.png"; fig.savefig(fn,dpi=100); plt.close(fig)
             check_png(fn); frames[key].append(Image.open(fn).convert("P",palette=Image.ADAPTIVE))
@@ -234,15 +234,39 @@ def make_track(tag,root,out,static):
         last=np.r_[np.where(np.diff(day))[0],len(day)-1]; day=day[last]; t=t[last]
         lat=ds.latitude.values[last]; lon=ds.longitude.values[last]; g=ds.grounded.values[last]
         u=np.asarray(ds.ocean_u_draft.values,float)[last]; v=np.asarray(ds.ocean_v_draft.values,float)[last]
-        speed=np.hypot(ds.u.values,ds.v.values)[last] if "u" in ds else np.zeros_like(t)
         wind=np.hypot(ds.air_u10.values,ds.air_v10.values)[last] if "air_u10" in ds else np.zeros_like(t)
+        # Displacement speed from the track itself; t is in days.
+        dlat=np.deg2rad(np.diff(lat)); dlon=np.deg2rad(np.diff(lon))
+        dist=np.hypot(dlat*6371000.0, dlon*6371000.0*np.cos(np.deg2rad((lat[1:]+lat[:-1])/2)))
+        dt=np.maximum(np.diff(t)*86400.0,1.0)
+        speed_step=dist/dt
+        speed=np.r_[speed_step[0],speed_step]
+        gap=dist>100000.0
+        speed_plot=speed.copy()
+        speed_plot[1:][gap]=np.nan
+        # write the displacement audit next to the track
+        audit=pd.DataFrame(dict(run=[tag]*len(dist), start_day=day[:-1], end_day=day[1:],
+                                distance_km=dist/1000.0, speed_m_s=speed_step,
+                                gap_over_100km=gap))
+        audit.to_csv(out.parent/"track_speed_audit.csv", index=False)
     with xr.open_dataset(static) as st: dep=st.deptho.values; glat=st.latitude.values; glon=st.longitude.values
     fig=plt.figure(figsize=(10,8)); gs=fig.add_gridspec(2,1,height_ratios=[4.2,1.1],hspace=.22)
     ax=fig.add_subplot(gs[0]); z=np.ma.masked_invalid(dep)
     ax.pcolormesh(glon,glat,z,shading="auto",cmap="Blues_r",alpha=.55)
-    ax.contour(glon,glat,np.nan_to_num(dep,nan=0),levels=[0.5],colors="k",linewidths=.5)
+    ax.contour(glon,glat,np.nan_to_num(dep,nan=0),levels=[0.5],colors="0.25",linewidths=.35)
+    c100=ax.contour(glon,glat,np.nan_to_num(dep,nan=0),levels=[100],colors="0.25",linestyles="dashed",linewidths=.45)
+    c500=ax.contour(glon,glat,np.nan_to_num(dep,nan=0),levels=[500],colors="0.25",linewidths=.75)
+    ax.clabel(c100,fmt="%d m",fontsize=6,inline=True)
+    ax.clabel(c500,fmt="%d m",fontsize=6,inline=True)
+    ax.text(.55,.02,"100 m isobath (≈ 88 m draft)\n500 m isobath",transform=ax.transAxes,
+            fontsize=6,va="bottom",ha="center",bbox=dict(fc="white",ec="none",alpha=.8))
     sc=ax.scatter(lon,lat,c=day,cmap="viridis",s=10,zorder=3)
-    ax.plot(lon,lat,"k-",lw=.5,alpha=.5)
+    start=0
+    for i in range(1,len(lon)):
+        if (not np.isfinite(speed_plot[i])) or i==len(lon)-1:
+            end=i+1 if i==len(lon)-1 else i
+            if end>start+1: ax.plot(lon[start:end],lat[start:end],"k-",lw=.5,alpha=.5)
+            start=i
     ax.scatter(lon[0],lat[0],marker="o",c="C2",s=50,label="start",zorder=4)
     ax.scatter(lon[-1],lat[-1],marker="X",c="k",s=60,label="end",zorder=4)
     if np.any(g>0):
@@ -258,7 +282,7 @@ def make_track(tag,root,out,static):
     x0=lon.max()-.5; y0=lat.min()-.25; dlon=100/(111*np.cos(np.deg2rad(np.mean(lat))))
     ax.plot([x0-dlon,x0],[y0,y0],"k-",lw=3); ax.text(x0-dlon/2,y0+.08,"100 km",ha="center",fontsize=7)
     ax2=fig.add_subplot(gs[1])
-    l1,=ax2.plot(day,speed,label="iceberg",color="C0")
+    l1,=ax2.plot(day,speed_plot,label="iceberg",color="C0")
     l2,=ax2.plot(day,np.hypot(u,v),label="current",color="C1")
     ax2.set_xlabel("days"); ax2.set_ylabel("speed, m s$^{-1}$"); ax2.grid(alpha=.2)
     ax3=ax2.twinx(); l3,=ax3.plot(day,wind,label="wind",color="0.55",alpha=.55)
@@ -317,6 +341,10 @@ def overview(figdir,static):
         return "s","end",45
     for ax,year in zip(axs,(2020,2024)):
         ax.pcolormesh(glon,glat,np.ma.masked_invalid(dep),shading="auto",cmap="Blues_r",alpha=.5)
+        c100=ax.contour(glon,glat,np.nan_to_num(dep,nan=0),levels=[100],colors="0.25",linestyles="dashed",linewidths=.45)
+        c500=ax.contour(glon,glat,np.nan_to_num(dep,nan=0),levels=[500],colors="0.25",linewidths=.75)
+        # labels on the 100/500 m isobaths are supplied by the common key; automatic
+        # labels can collide at the two-panel scale.
         for r,c in zip(rows,colors):
             if RUNS[r["tag"]][1]!=str(year): continue
             ax.plot(r["lon"],r["lat"],color=c,lw=.9,label=r["tag"])
@@ -334,6 +362,8 @@ def overview(figdir,static):
                 Line2D([0],[0],marker="^",linestyle="none",markerfacecolor="k",markeredgecolor="k",markersize=7,label="strict ocean")]
     labels += ["start","melt-out","grounding","strict ocean"]
     axs[0].legend(handles,labels,fontsize=7,loc="lower left",framealpha=.95)
+    axs[0].text(.98,.02,"100 m isobath (≈ 88 m draft)\n500 m isobath",transform=axs[0].transAxes,
+                fontsize=6,va="bottom",ha="right",bbox=dict(fc="white",ec="none",alpha=.8))
     axs[0].set_ylabel("latitude"); fig.subplots_adjust(left=.07,right=.98,bottom=.09,top=.94,wspace=.04)
     fig.savefig(figdir/"map_2020_2024.png",dpi=180); check_png(figdir/"map_2020_2024.png"); check_text(fig,figdir/"map_2020_2024.png"); plt.close(fig)
     fig,ax=plt.subplots(figsize=(9,5))

@@ -165,3 +165,12 @@ local under `data/validation/stage12.20/barents/`, not in git.
 | Barents_1_2024 | 205.4 | 99.999% | 27.8 | 108.2 | 175.4 | 2130 | melted |
 | Barents_2_2024 | 197.4 | 99.999% | 36.7 | 123.8 | 161.0 | 2215 | melted |
 | Barents_3_2024 | 365.0 | 99.999% | 34.7 | 126.8 | 188.1 | 2122 | end of forcing |
+
+## Appendix C — track speed audit (12.21b)
+
+The lower `track.png` panel now derives iceberg speed from adjacent daily
+positions and elapsed time.  FJL_A_2020 gives a mean of `0.0997 m s⁻¹`, matching
+the 2771.7 km / 323.8 d path.  Maximum daily displacement and any >100 km/day
+intervals are listed in `figures/stage12.20/final/track_speed_summary.csv` and
+the per-run `track_speed_audit.csv`.  All eight runs have maximum daily
+displacement below 100 km/day, so no gap-induced line break was required.

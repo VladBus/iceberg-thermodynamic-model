@@ -4,7 +4,7 @@ Stage 12 is the current scientific stage. This directory stores completed
 stage reports and their evidence; it is not the working directory for unfinished
 tasks. Stage 12.9a acquisition, Stage 12.10 voxel thermodynamics, the Stage 12.11/12.12/12.13 audits, the Stage 12.14 100^3 audit, the Stage 12.15 current-code Enderlin/drift-map rerun, the Stage 12.16 drift/ensemble/layer-drag/energy audit, the Stage 12.17 drag correction/final-run audit, the Stage 12.18 50 m grounded-in-place final-run audit, and the Stage 12.19 calved-geometry/energy/reference-run audit are complete;
 the acquisition manifests remain in `docs/validation/` as canonical provenance.
-Stage 12.9b thesis writing is the active workstream.
+Stage 12.21 forcing/region figures are complete. Stage 12.9b thesis writing is the active workstream.
 
 > **Path note:** older planning notes in this directory preserve their original
 > wording and paths. Use this README and `docs/validation/INDEX.md` for current
@@ -38,6 +38,7 @@ Stage 12.9b thesis writing is the active workstream.
 | 12.18 | [`stage12.18_final_runs_and_figures.md`](stage12.18_final_runs_and_figures.md) | 12-run 50 m final matrix, grounded-in-place mode, corrected 3D/GIF/map figures |
 | 12.19 | [`stage12.19_calved_geometry_reference_runs.md`](stage12.19_calved_geometry_reference_runs.md) | Connected-component calving, main-body hydrostatics/energy closure, Stage 2 figures, offline drift/melt maps, six 100³ 2020 references |
 | 12.20 | [`stage12.20_phi_conn_and_start_selection.md`](stage12.20_phi_conn_and_start_selection.md) | `phi_conn=0.3`, 50³ controls, Svalbard negative start result, six coastal 100³ 2020/2024 references with snapshots and full figure set |
+| 12.21 | [`stage12.21_forcing_figures.md`](stage12.21_forcing_figures.md) | English forcing/region figures from existing ERA5/GLORYS12; no model runs |
 
 The 12.8 drift and lifetime results are lower bounds from monthly GLORYS and
 constant-atmosphere fallbacks; they are not daily-forcing validation. No stage

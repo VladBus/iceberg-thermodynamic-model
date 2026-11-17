@@ -1,4 +1,13 @@
 file,variable,source,period,level,aggregation,region
+docs/wiki/stages/stage12/figures/stage12.21/A/A_siconc_BARENTS.png,siconc,GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,"2020, 2024",surface,annual / DJF / JJA,BARENTS
+docs/wiki/stages/stage12/figures/stage12.21/A/A_siconc_FJL.png,siconc,GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,"2020, 2024",surface,annual / DJF / JJA,FJL
+docs/wiki/stages/stage12/figures/stage12.21/A/A_siconc_NZ.png,siconc,GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,"2020, 2024",surface,annual / DJF / JJA,NZ
+docs/wiki/stages/stage12/figures/stage12.21/A/A_so_05m_BARENTS.png,so,GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,"2020, 2024",05 m (native level),annual / DJF / JJA monthly-mean composite,BARENTS
+docs/wiki/stages/stage12/figures/stage12.21/A/A_so_05m_FJL.png,so,GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,"2020, 2024",05 m (native level),annual / DJF / JJA monthly-mean composite,FJL
+docs/wiki/stages/stage12/figures/stage12.21/A/A_so_05m_NZ.png,so,GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,"2020, 2024",05 m (native level),annual / DJF / JJA monthly-mean composite,NZ
+docs/wiki/stages/stage12/figures/stage12.21/A/A_so_100m_BARENTS.png,so,GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,"2020, 2024",100 m (native level),annual / DJF / JJA monthly-mean composite,BARENTS
+docs/wiki/stages/stage12/figures/stage12.21/A/A_so_100m_FJL.png,so,GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,"2020, 2024",100 m (native level),annual / DJF / JJA monthly-mean composite,FJL
+docs/wiki/stages/stage12/figures/stage12.21/A/A_so_100m_NZ.png,so,GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,"2020, 2024",100 m (native level),annual / DJF / JJA monthly-mean composite,NZ
 docs/wiki/stages/stage12/figures/stage12.21/A/A_speed_05m_BARENTS.png,speed,GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,"2020, 2024",05 m (native level),annual / DJF / JJA monthly-mean composite,BARENTS
 docs/wiki/stages/stage12/figures/stage12.21/A/A_speed_05m_FJL.png,speed,GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,"2020, 2024",05 m (native level),annual / DJF / JJA monthly-mean composite,FJL
 docs/wiki/stages/stage12/figures/stage12.21/A/A_speed_05m_NZ.png,speed,GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,"2020, 2024",05 m (native level),annual / DJF / JJA monthly-mean composite,NZ
@@ -11,85 +20,18 @@ docs/wiki/stages/stage12/figures/stage12.21/A/A_thetao_05m_NZ.png,thetao,GLORYS1
 docs/wiki/stages/stage12/figures/stage12.21/A/A_thetao_100m_BARENTS.png,thetao,GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,"2020, 2024",100 m (native level),annual / DJF / JJA monthly-mean composite,BARENTS
 docs/wiki/stages/stage12/figures/stage12.21/A/A_thetao_100m_FJL.png,thetao,GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,"2020, 2024",100 m (native level),annual / DJF / JJA monthly-mean composite,FJL
 docs/wiki/stages/stage12/figures/stage12.21/A/A_thetao_100m_NZ.png,thetao,GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,"2020, 2024",100 m (native level),annual / DJF / JJA monthly-mean composite,NZ
-docs/wiki/stages/stage12/figures/stage12.21/A/A_so_05m_BARENTS.png,so,GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,"2020, 2024",05 m (native level),annual / DJF / JJA monthly-mean composite,BARENTS
-docs/wiki/stages/stage12/figures/stage12.21/A/A_so_05m_FJL.png,so,GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,"2020, 2024",05 m (native level),annual / DJF / JJA monthly-mean composite,FJL
-docs/wiki/stages/stage12/figures/stage12.21/A/A_so_05m_NZ.png,so,GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,"2020, 2024",05 m (native level),annual / DJF / JJA monthly-mean composite,NZ
-docs/wiki/stages/stage12/figures/stage12.21/A/A_so_100m_BARENTS.png,so,GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,"2020, 2024",100 m (native level),annual / DJF / JJA monthly-mean composite,BARENTS
-docs/wiki/stages/stage12/figures/stage12.21/A/A_so_100m_FJL.png,so,GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,"2020, 2024",100 m (native level),annual / DJF / JJA monthly-mean composite,FJL
-docs/wiki/stages/stage12/figures/stage12.21/A/A_so_100m_NZ.png,so,GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,"2020, 2024",100 m (native level),annual / DJF / JJA monthly-mean composite,NZ
-docs/wiki/stages/stage12/figures/stage12.21/A/A_siconc_BARENTS.png,siconc,GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,"2020, 2024",surface,annual / DJF / JJA,BARENTS
-docs/wiki/stages/stage12/figures/stage12.21/A/A_siconc_FJL.png,siconc,GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,"2020, 2024",surface,annual / DJF / JJA,FJL
-docs/wiki/stages/stage12/figures/stage12.21/A/A_siconc_NZ.png,siconc,GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,"2020, 2024",surface,annual / DJF / JJA,NZ
-docs/wiki/stages/stage12/figures/stage12.21/A/A_speed_05m_BARENTS.png,speed,GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,"2020, 2024",05 m (native level),annual / DJF / JJA monthly-mean composite,BARENTS
-docs/wiki/stages/stage12/figures/stage12.21/A/A_speed_05m_FJL.png,speed,GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,"2020, 2024",05 m (native level),annual / DJF / JJA monthly-mean composite,FJL
-docs/wiki/stages/stage12/figures/stage12.21/A/A_speed_05m_NZ.png,speed,GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,"2020, 2024",05 m (native level),annual / DJF / JJA monthly-mean composite,NZ
-docs/wiki/stages/stage12/figures/stage12.21/A/A_speed_100m_BARENTS.png,speed,GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,"2020, 2024",100 m (native level),annual / DJF / JJA monthly-mean composite,BARENTS
-docs/wiki/stages/stage12/figures/stage12.21/A/A_speed_100m_FJL.png,speed,GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,"2020, 2024",100 m (native level),annual / DJF / JJA monthly-mean composite,FJL
-docs/wiki/stages/stage12/figures/stage12.21/A/A_speed_100m_NZ.png,speed,GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,"2020, 2024",100 m (native level),annual / DJF / JJA monthly-mean composite,NZ
-docs/wiki/stages/stage12/figures/stage12.21/A/A_thetao_05m_BARENTS.png,thetao,GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,"2020, 2024",05 m (native level),annual / DJF / JJA monthly-mean composite,BARENTS
-docs/wiki/stages/stage12/figures/stage12.21/A/A_thetao_05m_FJL.png,thetao,GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,"2020, 2024",05 m (native level),annual / DJF / JJA monthly-mean composite,FJL
-docs/wiki/stages/stage12/figures/stage12.21/A/A_thetao_05m_NZ.png,thetao,GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,"2020, 2024",05 m (native level),annual / DJF / JJA monthly-mean composite,NZ
-docs/wiki/stages/stage12/figures/stage12.21/A/A_thetao_100m_BARENTS.png,thetao,GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,"2020, 2024",100 m (native level),annual / DJF / JJA monthly-mean composite,BARENTS
-docs/wiki/stages/stage12/figures/stage12.21/A/A_thetao_100m_FJL.png,thetao,GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,"2020, 2024",100 m (native level),annual / DJF / JJA monthly-mean composite,FJL
-docs/wiki/stages/stage12/figures/stage12.21/A/A_thetao_100m_NZ.png,thetao,GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,"2020, 2024",100 m (native level),annual / DJF / JJA monthly-mean composite,NZ
-docs/wiki/stages/stage12/figures/stage12.21/A/A_so_05m_BARENTS.png,so,GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,"2020, 2024",05 m (native level),annual / DJF / JJA monthly-mean composite,BARENTS
-docs/wiki/stages/stage12/figures/stage12.21/A/A_so_05m_FJL.png,so,GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,"2020, 2024",05 m (native level),annual / DJF / JJA monthly-mean composite,FJL
-docs/wiki/stages/stage12/figures/stage12.21/A/A_so_05m_NZ.png,so,GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,"2020, 2024",05 m (native level),annual / DJF / JJA monthly-mean composite,NZ
-docs/wiki/stages/stage12/figures/stage12.21/A/A_so_100m_BARENTS.png,so,GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,"2020, 2024",100 m (native level),annual / DJF / JJA monthly-mean composite,BARENTS
-docs/wiki/stages/stage12/figures/stage12.21/A/A_so_100m_FJL.png,so,GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,"2020, 2024",100 m (native level),annual / DJF / JJA monthly-mean composite,FJL
-docs/wiki/stages/stage12/figures/stage12.21/A/A_so_100m_NZ.png,so,GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,"2020, 2024",100 m (native level),annual / DJF / JJA monthly-mean composite,NZ
-docs/wiki/stages/stage12/figures/stage12.21/A/A_siconc_BARENTS.png,siconc,GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,"2020, 2024",surface,annual / DJF / JJA,BARENTS
-docs/wiki/stages/stage12/figures/stage12.21/A/A_siconc_FJL.png,siconc,GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,"2020, 2024",surface,annual / DJF / JJA,FJL
-docs/wiki/stages/stage12/figures/stage12.21/A/A_siconc_NZ.png,siconc,GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,"2020, 2024",surface,annual / DJF / JJA,NZ
-docs/wiki/stages/stage12/figures/stage12.21/B/B1_meridional_thetao.png,thetao,GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,January and July 2020/2024,native levels 0–500 m,monthly mean; no vertical interpolation,BARENTS
 docs/wiki/stages/stage12/figures/stage12.21/B/B1_meridional_so.png,so,GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,January and July 2020/2024,native levels 0–500 m,monthly mean; no vertical interpolation,BARENTS
-docs/wiki/stages/stage12/figures/stage12.21/B/B1_zonal_thetao.png,thetao,GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,January and July 2020/2024,native levels 0–500 m,monthly mean; no vertical interpolation,BARENTS
+docs/wiki/stages/stage12/figures/stage12.21/B/B1_meridional_thetao.png,thetao,GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,January and July 2020/2024,native levels 0–500 m,monthly mean; no vertical interpolation,BARENTS
 docs/wiki/stages/stage12/figures/stage12.21/B/B1_zonal_so.png,so,GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,January and July 2020/2024,native levels 0–500 m,monthly mean; no vertical interpolation,BARENTS
+docs/wiki/stages/stage12/figures/stage12.21/B/B1_zonal_thetao.png,thetao,GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,January and July 2020/2024,native levels 0–500 m,monthly mean; no vertical interpolation,BARENTS
+docs/wiki/stages/stage12/figures/stage12.21/B/B2_profile_Barents_1.png,"thetao, so, sigma0",GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,"DJF/JJA 2020, 2024",0–300 m native levels,monthly mean profiles,Barents_1
 docs/wiki/stages/stage12/figures/stage12.21/B/B2_profile_FJL_A.png,"thetao, so, sigma0",GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,"DJF/JJA 2020, 2024",0–300 m native levels,monthly mean profiles,FJL_A
 docs/wiki/stages/stage12/figures/stage12.21/B/B2_profile_NZ_A.png,"thetao, so, sigma0",GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,"DJF/JJA 2020, 2024",0–300 m native levels,monthly mean profiles,NZ_A
 docs/wiki/stages/stage12/figures/stage12.21/B/B2_profile_NZ_B.png,"thetao, so, sigma0",GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,"DJF/JJA 2020, 2024",0–300 m native levels,monthly mean profiles,NZ_B
-docs/wiki/stages/stage12/figures/stage12.21/B/B2_profile_Barents_1.png,"thetao, so, sigma0",GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,"DJF/JJA 2020, 2024",0–300 m native levels,monthly mean profiles,Barents_1
-docs/wiki/stages/stage12/figures/stage12.21/B/B1_meridional_thetao.png,thetao,GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,January and July 2020/2024,native levels 0–500 m,monthly mean; no vertical interpolation,BARENTS
-docs/wiki/stages/stage12/figures/stage12.21/B/B1_meridional_so.png,so,GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,January and July 2020/2024,native levels 0–500 m,monthly mean; no vertical interpolation,BARENTS
-docs/wiki/stages/stage12/figures/stage12.21/B/B1_zonal_thetao.png,thetao,GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,January and July 2020/2024,native levels 0–500 m,monthly mean; no vertical interpolation,BARENTS
-docs/wiki/stages/stage12/figures/stage12.21/B/B1_zonal_so.png,so,GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,January and July 2020/2024,native levels 0–500 m,monthly mean; no vertical interpolation,BARENTS
-docs/wiki/stages/stage12/figures/stage12.21/B/B2_profile_FJL_A.png,"thetao, so, sigma0",GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,"DJF/JJA 2020, 2024",0–300 m native levels,monthly mean profiles,FJL_A
-docs/wiki/stages/stage12/figures/stage12.21/B/B2_profile_NZ_A.png,"thetao, so, sigma0",GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,"DJF/JJA 2020, 2024",0–300 m native levels,monthly mean profiles,NZ_A
-docs/wiki/stages/stage12/figures/stage12.21/B/B2_profile_NZ_B.png,"thetao, so, sigma0",GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,"DJF/JJA 2020, 2024",0–300 m native levels,monthly mean profiles,NZ_B
-docs/wiki/stages/stage12/figures/stage12.21/B/B2_profile_Barents_1.png,"thetao, so, sigma0",GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,"DJF/JJA 2020, 2024",0–300 m native levels,monthly mean profiles,Barents_1
-docs/wiki/stages/stage12/figures/stage12.21/B/B1_meridional_thetao.png,thetao,GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,January and July 2020/2024,native levels 0–500 m,monthly mean; no vertical interpolation,BARENTS
-docs/wiki/stages/stage12/figures/stage12.21/B/B1_meridional_so.png,so,GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,January and July 2020/2024,native levels 0–500 m,monthly mean; no vertical interpolation,BARENTS
-docs/wiki/stages/stage12/figures/stage12.21/B/B1_zonal_thetao.png,thetao,GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,January and July 2020/2024,native levels 0–500 m,monthly mean; no vertical interpolation,BARENTS
-docs/wiki/stages/stage12/figures/stage12.21/B/B1_zonal_so.png,so,GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,January and July 2020/2024,native levels 0–500 m,monthly mean; no vertical interpolation,BARENTS
-docs/wiki/stages/stage12/figures/stage12.21/B/B2_profile_FJL_A.png,"thetao, so, sigma0",GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,"DJF/JJA 2020, 2024",0–300 m native levels,monthly mean profiles,FJL_A
-docs/wiki/stages/stage12/figures/stage12.21/B/B2_profile_NZ_A.png,"thetao, so, sigma0",GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,"DJF/JJA 2020, 2024",0–300 m native levels,monthly mean profiles,NZ_A
-docs/wiki/stages/stage12/figures/stage12.21/B/B2_profile_NZ_B.png,"thetao, so, sigma0",GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,"DJF/JJA 2020, 2024",0–300 m native levels,monthly mean profiles,NZ_B
-docs/wiki/stages/stage12/figures/stage12.21/B/B2_profile_Barents_1.png,"thetao, so, sigma0",GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,"DJF/JJA 2020, 2024",0–300 m native levels,monthly mean profiles,Barents_1
-docs/wiki/stages/stage12/figures/stage12.21/B/B1_meridional_thetao.png,thetao,GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,January and July 2020/2024,native levels 0–500 m,monthly mean; no vertical interpolation,BARENTS
-docs/wiki/stages/stage12/figures/stage12.21/B/B1_meridional_so.png,so,GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,January and July 2020/2024,native levels 0–500 m,monthly mean; no vertical interpolation,BARENTS
-docs/wiki/stages/stage12/figures/stage12.21/B/B1_zonal_thetao.png,thetao,GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,January and July 2020/2024,native levels 0–500 m,monthly mean; no vertical interpolation,BARENTS
-docs/wiki/stages/stage12/figures/stage12.21/B/B1_zonal_so.png,so,GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,January and July 2020/2024,native levels 0–500 m,monthly mean; no vertical interpolation,BARENTS
-docs/wiki/stages/stage12/figures/stage12.21/B/B2_profile_FJL_A.png,"thetao, so, sigma0",GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,"DJF/JJA 2020, 2024",0–300 m native levels,monthly mean profiles,FJL_A
-docs/wiki/stages/stage12/figures/stage12.21/B/B2_profile_NZ_A.png,"thetao, so, sigma0",GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,"DJF/JJA 2020, 2024",0–300 m native levels,monthly mean profiles,NZ_A
-docs/wiki/stages/stage12/figures/stage12.21/B/B2_profile_NZ_B.png,"thetao, so, sigma0",GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,"DJF/JJA 2020, 2024",0–300 m native levels,monthly mean profiles,NZ_B
-docs/wiki/stages/stage12/figures/stage12.21/B/B2_profile_Barents_1.png,"thetao, so, sigma0",GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,"DJF/JJA 2020, 2024",0–300 m native levels,monthly mean profiles,Barents_1
-docs/wiki/stages/stage12/figures/stage12.21/B/B1_meridional_thetao.png,thetao,GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,January and July 2020/2024,native levels 0–500 m,monthly mean; no vertical interpolation,BARENTS
-docs/wiki/stages/stage12/figures/stage12.21/B/B1_meridional_so.png,so,GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,January and July 2020/2024,native levels 0–500 m,monthly mean; no vertical interpolation,BARENTS
-docs/wiki/stages/stage12/figures/stage12.21/B/B1_zonal_thetao.png,thetao,GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,January and July 2020/2024,native levels 0–500 m,monthly mean; no vertical interpolation,BARENTS
-docs/wiki/stages/stage12/figures/stage12.21/B/B1_zonal_so.png,so,GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,January and July 2020/2024,native levels 0–500 m,monthly mean; no vertical interpolation,BARENTS
-docs/wiki/stages/stage12/figures/stage12.21/B/B2_profile_FJL_A.png,"thetao, so, sigma0",GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,"DJF/JJA 2020, 2024",0–300 m native levels,monthly mean profiles,FJL_A
-docs/wiki/stages/stage12/figures/stage12.21/B/B2_profile_NZ_A.png,"thetao, so, sigma0",GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,"DJF/JJA 2020, 2024",0–300 m native levels,monthly mean profiles,NZ_A
-docs/wiki/stages/stage12/figures/stage12.21/B/B2_profile_NZ_B.png,"thetao, so, sigma0",GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,"DJF/JJA 2020, 2024",0–300 m native levels,monthly mean profiles,NZ_B
-docs/wiki/stages/stage12/figures/stage12.21/B/B2_profile_Barents_1.png,"thetao, so, sigma0",GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,"DJF/JJA 2020, 2024",0–300 m native levels,monthly mean profiles,Barents_1
-docs/wiki/stages/stage12/figures/stage12.21/B/B3_BARENTS_thetao.png,thetao,GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,"2020, 2024",0–300 m native levels,annual mean and 10–90 percentiles over BARENTS,BARENTS
 docs/wiki/stages/stage12/figures/stage12.21/B/B3_BARENTS_so.png,so,GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,"2020, 2024",0–300 m native levels,annual mean and 10–90 percentiles over BARENTS,BARENTS
+docs/wiki/stages/stage12/figures/stage12.21/B/B3_BARENTS_thetao.png,thetao,GLORYS12 GLOBAL_MULTIYEAR_PHY_001_030 202311,"2020, 2024",0–300 m native levels,annual mean and 10–90 percentiles over BARENTS,BARENTS
+docs/wiki/stages/stage12/figures/stage12.21/G/G1_track_histograms.png,"Tw,current,wind",V1 track samples,"2020, 2024",surface,histogram over track points,BARENTS
 docs/wiki/stages/stage12/figures/stage12.21/V/V1_track_forcing.png,"t2m,u10,v10,msl,thetao,so,uo,vo",ERA5 daily; GLORYS12 monthly surface,along 2020/2024 runs,2 m/10 m/surface 0.494 m,nearest track sample,BARENTS
 docs/wiki/stages/stage12/figures/stage12.21/V/V2_BARENTS_annual_cycle.png,"t2m,wind,thetao",ERA5; GLORYS12,"2020, 2024",2 m/10 m/surface,monthly area mean,BARENTS
-docs/wiki/stages/stage12/figures/stage12.21/V/V1_track_forcing.png,"t2m,u10,v10,msl,thetao,so,uo,vo",ERA5 daily; GLORYS12 monthly surface,along 2020/2024 runs,2 m/10 m/surface 0.494 m,nearest track sample,BARENTS
-docs/wiki/stages/stage12/figures/stage12.21/V/V2_BARENTS_annual_cycle.png,"t2m,wind,thetao",ERA5; GLORYS12,"2020, 2024",2 m/10 m/surface,monthly area mean,BARENTS
-docs/wiki/stages/stage12/figures/stage12.21/V/V1_track_forcing.png,"t2m,u10,v10,msl,thetao,so,uo,vo",ERA5 daily; GLORYS12 monthly surface,along 2020/2024 runs,2 m/10 m/surface 0.494 m,nearest track sample,BARENTS
-docs/wiki/stages/stage12/figures/stage12.21/V/V2_BARENTS_annual_cycle.png,"t2m,wind,thetao",ERA5; GLORYS12,"2020, 2024",2 m/10 m/surface,monthly area mean,BARENTS
-docs/wiki/stages/stage12/figures/stage12.21/V/V3_wind_BARENTS.png,wind,ERA5,"2020, 2024",2 m/10 m,DJF/JJA mean,BARENTS
 docs/wiki/stages/stage12/figures/stage12.21/V/V3_t2m_BARENTS.png,t2m,ERA5,"2020, 2024",2 m/10 m,DJF/JJA mean,BARENTS
-docs/wiki/stages/stage12/figures/stage12.21/G/G1_track_histograms.png,"Tw,current,wind",V1 track samples,"2020, 2024",surface,histogram over track points,BARENTS
-docs/wiki/stages/stage12/figures/stage12.21/G/G1_track_histograms.png,"Tw,current,wind",V1 track samples,"2020, 2024",surface,histogram over track points,BARENTS
+docs/wiki/stages/stage12/figures/stage12.21/V/V3_wind_BARENTS.png,wind,ERA5,"2020, 2024",2 m/10 m,DJF/JJA mean,BARENTS

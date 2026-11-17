@@ -14,7 +14,7 @@ negative result. The FJL2 2024 horizontal overhang remains a known limitation
 (D-82). See
 [`stage12.20_phi_conn_and_start_selection.md`](../wiki/stages/stage12/stage12.20_phi_conn_and_start_selection.md).
 
-## Stage 12.21 status (COMPLETE)
+## Stage 12.21 status (COMPLETE; layout audit done)
 
 English forcing/region figures from existing ERA5/GLORYS12 are complete; no
 model runs, waves, normals, stations or interannual differences. See

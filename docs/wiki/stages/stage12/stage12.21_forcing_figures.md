@@ -40,7 +40,8 @@ The six 12.20 tracks are read explicitly from
   the project's UNESCO EOS-80 density at p=0.  10 PNG/PDF figures.
 - **V:** ERA5/GLORYS12 forcing along the six 12.20 tracks (T2m, wind, MSL,
   surface water T/S/current), the BARENTS annual cycle, and winter/summer maps
-  of mean wind and T2m.  4 PNG/PDF figures.
+  of mean wind and T2m.  V1 is split into separate atmosphere and ocean 6×3
+  matrices because the old 6×6 matrix was not readable.  5 PNG/PDF figures.
 - **G:** histograms over track samples and a descriptive statistics table
   (CSV + LaTeX tabular).  1 figure + table.
 
@@ -66,3 +67,43 @@ inside the vector file to keep the files usable.
 `figures/stage12.21/A`, `B`, `V`, `G`; Block 0 in
 `figures/stage12.20/final` with Russian copies in `final/ru/`.  The manifest is
 the source of truth for file/field/level provenance.
+
+
+## 5. Visual audit and corrections
+
+Contact sheets for A, B, V and G were inspected.  Defects found and corrected:
+
+| Figure group | Defect | Correction |
+| --- | --- | --- |
+| A maps | Colorbar was drawn over the right panels; right column repeated y labels; scales clipped T/S/current extremes; vectors were nearly invisible | Dedicated outside cax, shared labels, masks, visible scales (T −2.1…20 °C, S 0…37 psu, speed 0…1 m s⁻¹), white vectors |
+| B1 sections | Colorbar overlapped panel b/d; sections extended beyond the requested 70–82°N and 15–65°E ranges; T scale clipped 9.5 °C | Outside cax; exact section windows; T −2…10 °C; no vertical interpolation |
+| B2 profiles | No 2020/2024 row labels; S/σθ tick labels touched; margins clipped x labels | Year labels, MaxNLocator(3), wider margins, shared depth axis |
+| B3 profiles | Unweighted monthly means and equal-cell percentiles | Month-day and cos(latitude) weights in mean and 10–90 percentiles |
+| V1 forcing | 6 × 6 matrix was unreadably dense | Split into two 6 × 3 figures: atmosphere and ocean |
+| V2 annual cycle | Year annotation sat on the wind/T curves; equal-cell area mean | Year moved to clear corner; cos(latitude) area weighting |
+| V3 maps | Colorbar over panels; T2m limit clipped 16.7 °C; right y labels | Outside cax; T2m −30…18 °C; single left latitude scale |
+| G histograms | 2020/2024 used different bin edges | Shared bin edges per variable |
+| All | `save_fig()` only checked the border | Added text-boundary check and PNG/PDF existence/size checks |
+
+### Seasonal convention
+
+Conventional meteorological DJF (previous December + January + February) cannot
+be formed for 2020/2024 because December 2019/2023 is outside the acquired
+period.  Panels are therefore labelled **cold (Jan+Feb+Dec)** and use January,
+February and December of the same calendar year.  This is not claimed to be
+conventional DJF.
+
+Monthly mean fields are weighted by the number of days in each month.  Regional
+area means and the B3 percentiles use `cos(latitude)` cell weights.  The A maps
+are fields, not area means, so no area weighting is applied to the plotted field.
+
+### Remaining limitations
+
+- B2 uses the nearest wet GLORYS column; the selected column can change between
+  months and the monthly selected coordinates are not saved separately.
+- A map CSVs are decimated by stride 8 for repository size; the figures use the
+  full field.
+- Automated checks cover text outside the canvas, white borders, file presence
+  and PNG width.  Text-overlap and colorbar placement remain manual visual
+  checks from the contact sheets.
+- The audit changes were committed separately after the visual review.

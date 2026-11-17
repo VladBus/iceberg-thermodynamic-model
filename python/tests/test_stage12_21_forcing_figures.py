@@ -26,6 +26,19 @@ class Stage1221(unittest.TestCase):
             Image.new("RGB", (40, 30), "black").save(p)
             with self.assertRaises(RuntimeError): S.check_png(p)
 
+    def test_manifest_and_png_dimensions(self):
+        import pandas as pd
+        m = pd.read_csv(S.MANIFEST)
+        self.assertTrue({"file", "variable", "source", "period", "level", "aggregation", "region"}.issubset(m.columns))
+        for f in m.file:
+            self.assertTrue((S.ROOT / f).exists(), f)
+            self.assertGreater((S.ROOT / f).stat().st_size, 0, f)
+        for f in m.file:
+            p = S.ROOT / f
+            if p.suffix.lower() == ".png":
+                with Image.open(p) as im:
+                    self.assertGreaterEqual(im.size[0], 800)
+
     def test_regions(self):
         self.assertIn("BARENTS", S.REGIONS)
         self.assertEqual(len(S.RUNS), 6)

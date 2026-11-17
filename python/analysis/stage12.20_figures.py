@@ -16,6 +16,7 @@ import matplotlib; matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib import cm, colors
 from matplotlib.lines import Line2D
+from matplotlib.patches import Patch
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 
 RHO_ICE=916.7; K_ICE=2.1; C_ICE=2009.0; STRUCT=generate_binary_structure(3,1)
@@ -135,7 +136,7 @@ def profiles(tag,root,out):
         a.tick_params(axis="x",pad=10,labelsize=7); a.tick_params(axis="y",pad=10,labelsize=7)
     ax[0].set_xlim(-20,2); ax[0].set_xticks([-20,-15,-10,-5,0]); ax[1].set_xlim(0,1)
     fig.subplots_adjust(left=.10,right=.96,bottom=.16,top=.94,wspace=.28)
-    fig.savefig(out,dpi=180); check_png(out); plt.close(fig); print(out)
+    fig.savefig(out,dpi=180); check_png(out); check_text(fig,out); plt.close(fig); print(out)
 
 def series(tag,root,out):
     with xr.open_dataset(Path(root)/"run.nc") as ds:
@@ -235,6 +236,7 @@ def make_track(tag,root,out,static):
         lat=ds.latitude.values[last]; lon=ds.longitude.values[last]; g=ds.grounded.values[last]
         u=np.asarray(ds.ocean_u_draft.values,float)[last]; v=np.asarray(ds.ocean_v_draft.values,float)[last]
         wind=np.hypot(ds.air_u10.values,ds.air_v10.values)[last] if "air_u10" in ds else np.zeros_like(t)
+        mass=ds.mass.values[last]; mass_pct=100.0*mass/mass[0]
         # Displacement speed from the track itself; t is in days.
         dlat=np.deg2rad(np.diff(lat)); dlon=np.deg2rad(np.diff(lon))
         dist=np.hypot(dlat*6371000.0, dlon*6371000.0*np.cos(np.deg2rad((lat[1:]+lat[:-1])/2)))
@@ -244,6 +246,8 @@ def make_track(tag,root,out,static):
         gap=dist>100000.0
         speed_plot=speed.copy()
         speed_plot[1:][gap]=np.nan
+        if mass_pct[-1] < 1.0:
+            speed_plot[-1]=np.nan
         # write the displacement audit next to the track
         audit=pd.DataFrame(dict(run=[tag]*len(dist), start_day=day[:-1], end_day=day[1:],
                                 distance_km=dist/1000.0, speed_m_s=speed_step,
@@ -251,15 +255,11 @@ def make_track(tag,root,out,static):
         audit.to_csv(out.parent/"track_speed_audit.csv", index=False)
     with xr.open_dataset(static) as st: dep=st.deptho.values; glat=st.latitude.values; glon=st.longitude.values
     fig=plt.figure(figsize=(10,8)); gs=fig.add_gridspec(2,1,height_ratios=[4.2,1.1],hspace=.22)
-    ax=fig.add_subplot(gs[0]); z=np.ma.masked_invalid(dep)
-    ax.pcolormesh(glon,glat,z,shading="auto",cmap="Blues_r",alpha=.55)
+    ax=fig.add_subplot(gs[0]); z=np.ma.masked_invalid(dep); ax.set_facecolor("white")
+    ax.contourf(glon,glat,np.ma.masked_invalid(dep),levels=[0,100],colors=["#d9c7b8"],alpha=.55)
     ax.contour(glon,glat,np.nan_to_num(dep,nan=0),levels=[0.5],colors="0.25",linewidths=.35)
-    c100=ax.contour(glon,glat,np.nan_to_num(dep,nan=0),levels=[100],colors="0.25",linestyles="dashed",linewidths=.45)
-    c500=ax.contour(glon,glat,np.nan_to_num(dep,nan=0),levels=[500],colors="0.25",linewidths=.75)
-    ax.clabel(c100,fmt="%d m",fontsize=6,inline=True)
-    ax.clabel(c500,fmt="%d m",fontsize=6,inline=True)
-    ax.text(.55,.02,"100 m isobath (≈ 88 m draft)\n500 m isobath",transform=ax.transAxes,
-            fontsize=6,va="bottom",ha="center",bbox=dict(fc="white",ec="none",alpha=.8))
+    ax.contour(glon,glat,np.nan_to_num(dep,nan=0),levels=[100],colors="0.25",linestyles="dashed",linewidths=.55)
+    ax.contour(glon,glat,np.nan_to_num(dep,nan=0),levels=[500],colors="0.25",linestyles="solid",linewidths=.85)
     sc=ax.scatter(lon,lat,c=day,cmap="viridis",s=10,zorder=3)
     start=0
     for i in range(1,len(lon)):
@@ -276,7 +276,12 @@ def make_track(tag,root,out,static):
         ax.annotate(f"{int(day[k])}",(lon[k],lat[k]),xytext=(3,3),textcoords="offset points",fontsize=7)
     ax.set_xlim(lon.min()-.55,lon.max()+.55); ax.set_ylim(lat.min()-.4,lat.max()+.4); ax.set_aspect("auto")
     ax.set_xlabel("longitude"); ax.set_ylabel("latitude")
-    ax.legend(fontsize=7,loc="lower left"); ax.grid(alpha=.2)
+    handles, labels = ax.get_legend_handles_labels()
+    handles += [Patch(facecolor="#d9c7b8", alpha=.55, label="depth < 100 m (shoal; iceberg draft ≈ 88 m)"),
+                Line2D([0],[0],color="0.25",ls="--",lw=.7,label="100 m isobath"),
+                Line2D([0],[0],color="0.25",ls="-",lw=1.0,label="500 m isobath")]
+    labels += ["depth < 100 m (shoal; iceberg draft ≈ 88 m)", "100 m isobath", "500 m isobath"]
+    ax.legend(handles,labels,fontsize=6,loc="upper left",frameon=False); ax.grid(alpha=.2)
     cb=fig.colorbar(sc,ax=ax,label="days",shrink=.8); ax.tick_params(labelsize=8)
     # 100 km scale bar at lower right
     x0=lon.max()-.5; y0=lat.min()-.25; dlon=100/(111*np.cos(np.deg2rad(np.mean(lat))))
@@ -340,9 +345,10 @@ def overview(figdir,static):
         if "STRICT" in status: return "^","strict ocean",55
         return "s","end",45
     for ax,year in zip(axs,(2020,2024)):
-        ax.pcolormesh(glon,glat,np.ma.masked_invalid(dep),shading="auto",cmap="Blues_r",alpha=.5)
-        c100=ax.contour(glon,glat,np.nan_to_num(dep,nan=0),levels=[100],colors="0.25",linestyles="dashed",linewidths=.45)
-        c500=ax.contour(glon,glat,np.nan_to_num(dep,nan=0),levels=[500],colors="0.25",linewidths=.75)
+        ax.set_facecolor("white")
+        ax.contourf(glon,glat,np.ma.masked_invalid(dep),levels=[0,100],colors=["#d9c7b8"],alpha=.55)
+        ax.contour(glon,glat,np.nan_to_num(dep,nan=0),levels=[100],colors="0.25",linestyles="dashed",linewidths=.55)
+        ax.contour(glon,glat,np.nan_to_num(dep,nan=0),levels=[500],colors="0.25",linewidths=.85)
         # labels on the 100/500 m isobaths are supplied by the common key; automatic
         # labels can collide at the two-panel scale.
         for r,c in zip(rows,colors):
@@ -361,9 +367,11 @@ def overview(figdir,static):
                 Line2D([0],[0],marker="X",linestyle="none",markerfacecolor="k",markeredgecolor="k",markersize=7,label="grounding"),
                 Line2D([0],[0],marker="^",linestyle="none",markerfacecolor="k",markeredgecolor="k",markersize=7,label="strict ocean")]
     labels += ["start","melt-out","grounding","strict ocean"]
-    axs[0].legend(handles,labels,fontsize=7,loc="lower left",framealpha=.95)
-    axs[0].text(.98,.02,"100 m isobath (≈ 88 m draft)\n500 m isobath",transform=axs[0].transAxes,
-                fontsize=6,va="bottom",ha="right",bbox=dict(fc="white",ec="none",alpha=.8))
+    handles += [Patch(facecolor="#d9c7b8", alpha=.55, label="depth < 100 m (shoal; iceberg draft ≈ 88 m)"),
+                Line2D([0],[0],color="0.25",ls="--",lw=.7,label="100 m isobath"),
+                Line2D([0],[0],color="0.25",ls="-",lw=1.0,label="500 m isobath")]
+    labels += ["depth < 100 m (shoal; iceberg draft ≈ 88 m)", "100 m isobath", "500 m isobath"]
+    axs[0].legend(handles,labels,fontsize=6,loc="lower left",frameon=False)
     axs[0].set_ylabel("latitude"); fig.subplots_adjust(left=.07,right=.98,bottom=.09,top=.94,wspace=.04)
     fig.savefig(figdir/"map_2020_2024.png",dpi=180); check_png(figdir/"map_2020_2024.png"); check_text(fig,figdir/"map_2020_2024.png"); plt.close(fig)
     fig,ax=plt.subplots(figsize=(9,5))

@@ -46,5 +46,20 @@ class Stage1220Layout(unittest.TestCase):
             out = Path(d) / "simple.png"; fig.subplots_adjust(left=.25, right=.75, top=.75, bottom=.25)
             fig.savefig(out); S.check_png(out); S.check_text(fig, out); plt.close(fig)
 
+    def test_no_white_clabel_boxes(self):
+        src = (ROOT / "python/analysis/stage12.20_figures.py").read_text()
+        self.assertNotIn("clabel(", src)
+        self.assertNotIn('bbox=dict(fc="white"', src)
+
+    def test_text_outside_axes_rejected(self):
+        import matplotlib; matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+        with tempfile.TemporaryDirectory() as d:
+            fig, ax = plt.subplots(figsize=(3, 2)); ax.plot([0, 1], [0, 1])
+            ax.text(1.2, .5, "outside")
+            out = Path(d) / "bad.png"; fig.savefig(out)
+            with self.assertRaises(RuntimeError): S.check_text(fig, out)
+            plt.close(fig)
+
 
 if __name__ == "__main__": unittest.main()

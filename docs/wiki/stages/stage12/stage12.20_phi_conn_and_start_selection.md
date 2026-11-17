@@ -174,3 +174,17 @@ the 2771.7 km / 323.8 d path.  Maximum daily displacement and any >100 km/day
 intervals are listed in `figures/stage12.20/final/track_speed_summary.csv` and
 the per-run `track_speed_audit.csv`.  All eight runs have maximum daily
 displacement below 100 km/day, so no gap-induced line break was required.
+
+## Appendix D — track/map cosmetic pass (12.20c)
+
+Removed all inline isobath `clabel` calls from the track and summary maps; the
+white-framed/cropped contour-label artifact is therefore absent. Both maps now
+use a frame-free `Line2D`/`Patch` key (shoal fill, dashed 100 m, solid 500 m),
+with no white key box; the track key is in the upper-left and the 100 km scale
+bar remains lower-right. Shoal water (`depth < 100 m`) is a light grey-brown
+fill keyed as `depth < 100 m (shoal; iceberg draft ≈ 88 m)`; the 100 m line is
+thin dashed and the 500 m line solid. The bathymetric fill was removed from both
+maps because a separate depth colorbar could not fit without crowding; the
+white background and isobaths are retained. For FJL_A_2020 the final speed
+sample (`mass = 0.0012%`, day 323.8) is omitted from the speed panel because it
+is a residual-mass spike, not a physical drift speed; the track itself is kept.

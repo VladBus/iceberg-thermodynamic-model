@@ -6,6 +6,13 @@
 in the repository or under `/home/vlad`; the supplied PDF/TeX pair was used as
 the current-state substitute.  
 **Scope:** documentation only. Stage 12.22 made **no Fortran changes**.
+**Provenance:** Fortran/physics base is `cd33f0f` (Stage 12.20); `git diff
+cd33f0f..d7476bd -- src app` is empty. Validation-only commits are `18566e9`
+(original Stage 12.22), `d7476bd` (12.22a), and the local 12.22b correction;
+none changes Fortran. Stage 12.22a corrected only Python post-processing
+(`rho_ice` 916.7 → 910, reliability, Taylor/B3/B4 presentation); Stage 12.22b
+fixes whole-group B3 bootstrap, the B4 description, report/CSV consistency and
+artifact regeneration. Neither changes model physics.
 
 | Claim / item | Actual code | Action |
 | --- | --- | --- |
@@ -22,4 +29,21 @@ the current-state substitute.
 
 The PDF rendering was not rebuilt because no LaTeX engine (`xelatex`,
 `lualatex`, `pdflatex`, `tectonic`) is installed on this workstation. The source
-`.tex` is corrected; the supplied PDF remains the pre-audit rendering.
+`.tex` is corrected; the supplied PDF remains the pre-audit rendering and
+must not be treated as current.
+
+### Reproducible PDF build on WSL Ubuntu
+
+```bash
+sudo apt-get update
+sudo apt-get install -y texlive-xetex texlive-lang-cyrillic \
+  texlive-latex-extra texlive-fonts-recommended texlive-fonts-extra lmodern
+cd docs/references/Iceberg
+xelatex -interaction=nonstopmode -halt-on-error Iceberg_Model_Current_State.tex
+xelatex -interaction=nonstopmode -halt-on-error Iceberg_Model_Current_State.tex
+```
+
+The `.tex` uses `fontspec`, `polyglossia` (Russian), `amsmath`, `geometry`,
+`setspace`, `booktabs`, `longtable`, `array`, `titlesec`, `hyperref` and TeX Gyre
+fonts; the packages above cover them. The 12.22b commit is validation/docs-only
+and does not alter the model equations.

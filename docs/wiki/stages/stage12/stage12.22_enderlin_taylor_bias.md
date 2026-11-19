@@ -177,7 +177,8 @@ For rates `o_i`, `m_i`, sample standard deviations `s_o`, `s_m` (`ddof=1`):
   with the log10 analogue.
 
 95% CIs are percentile intervals from **5,000 cluster-bootstrap resamples of
-whole `independence_group`s**, fixed seed `122022`. WAIS and individual sites
+whole `independence_group`s**, fixed seed `122022`. The CSV files in
+`evidence/stage12.22/` are the machine source of truth for the numbers below. WAIS and individual sites
 contain one cluster, so their intervals are marked unavailable rather than
 invented. The Taylor X/Y bars are **marginal** intervals, not a joint 95%
 region.
@@ -194,8 +195,8 @@ region.
 | SD log10(model/obs) | — | 0.4509 [0.3836, 0.4766] |
 | MAE [m/day] | 0.02864 [0.01844, 0.03468] | — |
 | RMSE [m/day] | 0.03982 [0.02866, 0.04592] | — |
-| MAE log10 | — | 0.4000 [0.3086, 0.4404] |
-| RMSE log10 | — | 0.4998 [0.3858, 0.5460] |
+| MAE log10 | — | 0.3987 [0.3085, 0.4385] |
+| RMSE log10 | — | 0.4984 [0.3855, 0.5442] |
 | Pearson | 0.0422 [−0.3007, 0.3944] | 0.1543 [−0.2713, 0.6282] |
 | Spearman | 0.1565 [−0.2740, 0.6268] | 0.1565 [−0.2740, 0.6268] |
 | Kendall | 0.1171 [−0.1859, 0.4330] | 0.1171 [−0.1859, 0.4330] |
@@ -228,12 +229,14 @@ PNGs: `docs/wiki/stages/stage12/figures/stage12.22/`. PDF vectors:
   markers; N/median/r/Spearman with cluster CIs.
 - **B2** log10 ratio histogram, ECDF, median and CI, WAP/WAIS boxplots; no
   panel titles, panel letters only.
-- **B3** global binned median log10 ratio versus ΔT, size, duration and region;
-  whole-group cluster bootstrap; no CI when a bin has fewer than two groups.
-  Individual icebergs and binned medians are distinguished. The Y label is
-  individual `log10(model/observed)`.
-- **B4** descriptive group means for seven independence groups; no unsupported
-  confidence intervals; no title.
+- **B3** global binned median log10 ratio versus ΔT, size, duration and region.
+  Bin edges are fixed once on the original sample; each bootstrap replicate
+  resamples whole `independence_group`s from the full group set, includes all
+  their rows, and only then selects rows in the bin. No CI is drawn when a bin
+  has fewer than two source groups. Individual icebergs and binned medians are
+  distinguished. The Y label is individual `log10(model/observed)`.
+- **B4** descriptive observed and modeled mean submarine melt for seven
+  independence groups; **no confidence intervals** and no title.
 - **L1 skipped**: the basal/lateral literature tables contain lab, Sermilik,
   regional-maximum and synthesis values with no matched model forcing/geometry.
   A like-for-like comparison would be artificial; no new runs were made.
@@ -334,11 +337,11 @@ Implemented, disabled and future processes remain separated in the source.
 
 ## 9. Verification
 
-- `python -m unittest discover -s python/tests -v`: **25 tests passed**.
+- `python -m unittest discover -s python/tests -v`: **30 tests passed**.
 - `python scripts/check_docs_links.py`: 67 files, 290 links, 0 broken.
 - `git diff --check`: clean after the final formatting pass.
 - `figures_manifest.csv`: six PNG files, six PDF entries.
 - `data/validation/stage12.22/journal_pdf_vectors.zip`: six PDF vectors.
 - Visual inspection: six PNG files; no figure titles; Taylor negatives and
-  reliability lines visible; B3/B4 uncertainty presentation corrected.
+  reliability lines visible; B3 whole-group CIs and B4 descriptive means only.
 - No `fpm` run, no `iceberg_run`, no Fortran/model/constant change.

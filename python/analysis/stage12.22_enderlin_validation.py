@@ -348,36 +348,77 @@ def plot_taylor(stats_by, space, out_stem):
     return out_stem
 
 
-def bias_bins(ax, x, y, groups, color, label):
-    """Binned medians with a *cluster* bootstrap over independence_group.
+def cluster_replicate_indices(groups, rng):
+    """Indices of a whole-group bootstrap replicate.
 
-    The resampling unit is a whole group, not an individual iceberg.  If a bin
-    contains fewer than two groups, no confidence interval is drawn.
+    Every selected group contributes *all* of its rows, including rows that
+    belong to other B3 bins.  A group selected more than once contributes its
+    rows once per selection (standard cluster bootstrap).
     """
-    tmp = pd.DataFrame({"x": x, "y": y, "group": groups})
-    try:
-        tmp["bin"] = pd.qcut(tmp.x, 4, duplicates="drop")
-    except ValueError:
-        return
-    rng = np.random.default_rng(SEED + 101)
-    for _, g in tmp.groupby("bin", observed=True):
-        if len(g) < 3:
+    groups = np.asarray(groups, dtype=object)
+    uniq = np.array(sorted(set(groups.tolist())), dtype=object)
+    by_group = {g: np.where(groups == g)[0] for g in uniq}
+    picked = rng.choice(uniq, size=len(uniq), replace=True)
+    return np.concatenate([by_group[g] for g in picked]), picked
+
+
+def cluster_bin_medians(x, y, groups, nboot=NBOOT, seed=SEED + 101):
+    """Binned medians with whole-group bootstrap CIs.
+
+    Bin edges are fixed once on the original sample.  A bootstrap replicate
+    first resamples whole independence groups from the full group set, then
+    selects rows in the requested bin.  A bin with fewer than two source groups
+    gets no CI.  Empty replicate bins are skipped.
+    """
+    x = np.asarray(x, float); y = np.asarray(y, float)
+    groups = np.asarray(groups, dtype=object)
+    bins = pd.qcut(pd.Series(x), 4, duplicates="drop")
+    rng = np.random.default_rng(seed)
+    rows = []
+    categories = bins.cat.categories if hasattr(bins, "cat") else bins.dtype.categories
+    for b in categories:
+        in_bin = (bins == b).to_numpy()
+        if not in_bin.any():
             continue
-        xc = g.x.median(); yc = g.y.median()
-        ug = sorted(g.group.unique().tolist())
+        xb = x[in_bin]; yb = y[in_bin]; gb = groups[in_bin]
+        ug = sorted(set(gb.tolist()))
+        med = float(np.median(yb))
+        rec = {"bin_left": float(b.left), "bin_right": float(b.right),
+               "n": int(len(yb)), "n_groups": int(len(ug)),
+               "median": med, "ci_low": np.nan, "ci_high": np.nan,
+               "ci_status": "single_cluster" if len(ug) < 2 else "ok"}
         if len(ug) >= 2:
             draws = []
-            for _ in range(1000):
-                pick = rng.choice(ug, size=len(ug), replace=True)
-                vals = np.concatenate([g.loc[g.group == gg, "y"].values for gg in pick])
-                draws.append(np.median(vals))
-            lo, hi = np.percentile(draws, [2.5, 97.5])
-            ax.errorbar([xc], [yc], yerr=[[max(0, yc - lo)], [max(0, hi - yc)]],
+            for _ in range(nboot):
+                idx, _ = cluster_replicate_indices(groups, rng)
+                bmask = (x[idx] > b.left) & (x[idx] <= b.right)
+                if not bmask.any():
+                    continue
+                draws.append(float(np.median(y[idx][bmask])))
+            if draws:
+                rec["ci_low"], rec["ci_high"] = [float(v) for v in
+                                                  np.percentile(draws, [2.5, 97.5])]
+            else:
+                rec["ci_status"] = "empty_replicates"
+        rows.append(rec)
+    return pd.DataFrame(rows)
+
+
+def bias_bins(ax, x, y, groups, color, label):
+    """Plot binned medians; CIs use whole independence groups."""
+    res = cluster_bin_medians(x, y, groups)
+    for _, r in res.iterrows():
+        xc = .5 * (r.bin_left + r.bin_right)
+        if np.isfinite(r.ci_low) and np.isfinite(r.ci_high):
+            ax.errorbar([xc], [r["median"]],
+                        yerr=[[max(0, r["median"] - r.ci_low)],
+                              [max(0, r.ci_high - r["median"])]],
                         fmt="o-", color=color, lw=1, ms=4, capsize=2)
         else:
-            ax.plot([xc], [yc], "o", color=color, ms=4)
+            ax.plot([xc], [r["median"]], "o", color=color, ms=4)
     if label is not None:
         ax.plot([], [], "o-", color=color, lw=1, label=label)
+    return res
 
 
 def save_fig(fig, stem):
@@ -510,7 +551,7 @@ def make_figures(d, stats_by, overall):
         ("B1", "log-log model/observation scatter", FIG / "B1_scatter_loglog.png"),
         ("B2", "model/observation ratio distribution and ECDF", FIG / "B2_ratio_distribution.png"),
         ("B3", "bias versus forcing, size, duration and region", FIG / "B3_bias_diagnostics.png"),
-        ("B4", "independence-group means with 95% CI of mean", FIG / "B4_group_means.png"),
+        ("B4", "Descriptive observed and modeled mean submarine melt by independence group (no CI)", FIG / "B4_group_means.png"),
     ]
     man = pd.DataFrame([{
         "figure": k, "description": desc, "n_cases": int(overall["n"]),

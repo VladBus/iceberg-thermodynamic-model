@@ -89,6 +89,37 @@ class Stage1222Metrics(unittest.TestCase):
         s, _, _, _ = S.base_stats(obs, obs[::-1], np.full(4, .1))
         self.assertLess(s["pearson_log10"], 0.0)
 
+    def test_b3_cluster_replicate_keeps_whole_groups(self):
+        groups = np.array(["A", "A", "B", "B", "C", "C"], dtype=object)
+        rng = np.random.default_rng(7)
+        idx, picked = S.cluster_replicate_indices(groups, rng)
+        for g in set(picked.tolist()):
+            original = np.where(groups == g)[0]
+            self.assertTrue(set(original.tolist()).issubset(set(idx.tolist())))
+            # The number of copies must be a positive multiple of the group size.
+            self.assertEqual(int(np.sum(groups[idx] == g)) % len(original), 0)
+
+    def test_b3_single_group_has_no_ci(self):
+        x = np.arange(8, dtype=float)
+        y = np.linspace(-.3, .3, 8)
+        groups = np.array(["one"] * 8, dtype=object)
+        r = S.cluster_bin_medians(x, y, groups, nboot=20, seed=3)
+        self.assertFalse(r.empty)
+        self.assertTrue((r.ci_status == "single_cluster").all())
+        self.assertTrue(r.ci_low.isna().all() and r.ci_high.isna().all())
+
+    def test_b3_bootstrap_is_reproducible_and_finite(self):
+        x = np.arange(12, dtype=float)
+        y = np.linspace(-.5, .8, 12)
+        groups = np.array(["A", "A", "A", "B", "B", "B", "C", "C", "C", "D", "D", "D"],
+                          dtype=object)
+        a = S.cluster_bin_medians(x, y, groups, nboot=50, seed=11)
+        b = S.cluster_bin_medians(x, y, groups, nboot=50, seed=11)
+        pd.testing.assert_frame_equal(a, b)
+        self.assertTrue(np.isfinite(a["median"]).all())
+        ci = a[a.ci_status == "ok"]
+        self.assertTrue(np.isfinite(ci[["ci_low", "ci_high"]].to_numpy()).all())
+
     def test_no_titles_in_script(self):
         src = (ROOT / "python/analysis/stage12.22_enderlin_validation.py").read_text()
         self.assertNotIn(".set_title", src)
@@ -135,6 +166,38 @@ class Stage1222Artifacts(unittest.TestCase):
         wais = r[(r.stratum == "WAIS") & (r.metric == "bias")].iloc[0]
         self.assertEqual(wais.ci_status, "single_cluster")
         self.assertTrue(np.isnan(float(wais.ci_low)))
+
+    def test_b4_manifest_is_descriptive_only(self):
+        man = pd.read_csv(FIG / "figures_manifest.csv")
+        b4 = man[man.figure == "B4"].iloc[0]
+        self.assertNotIn("95%", b4.description)
+        self.assertNotIn("CI of mean", b4.description)
+        src = (ROOT / "python/analysis/stage12.22_enderlin_validation.py").read_text()
+        self.assertNotIn("independence-group means with 95% CI", src)
+        self.assertNotIn("95% CI of mean", src)
+        report = (ROOT / "docs/wiki/stages/stage12/stage12.22_enderlin_taylor_bias.md").read_text()
+        self.assertIn("no confidence intervals", report)
+
+    def test_report_key_metrics_match_csv(self):
+        m = pd.read_csv(EVID / "metrics.csv")
+        report = (ROOT / "docs/wiki/stages/stage12/stage12.22_enderlin_taylor_bias.md").read_text()
+
+        def value(metric, space):
+            return float(m[(m.metric == metric) & (m.space == space)].iloc[0].value)
+
+        def pair(metric, space, nd=4):
+            q = m[(m.metric == metric) & (m.space == space)].iloc[0]
+            return f"{value(metric, space):.{nd}f} [{q.ci_low:.{nd}f}, {q.ci_high:.{nd}f}]"
+
+        self.assertIn("0.5437 [0.4551, 1.0209]", report)
+        self.assertIn("−0.02177 [−0.02950, −0.00756]", report)
+        self.assertIn("0.3987 [0.3085, 0.4385]", report)
+        self.assertIn("0.4984 [0.3855, 0.5442]", report)
+        self.assertAlmostEqual(value("mae_log10", "log10"), 0.3986538265374345, places=12)
+        self.assertAlmostEqual(value("rmse_log10", "log10"), 0.4983920757976483, places=12)
+        # The report's formatted log10 rows must be the CSV-rounded values.
+        self.assertIn(pair("mae_log10", "log10"), report)
+        self.assertIn(pair("rmse_log10", "log10"), report)
 
     def test_report_reflects_density_and_reliability(self):
         text = (ROOT / "docs/wiki/stages/stage12/stage12.22_enderlin_taylor_bias.md").read_text()

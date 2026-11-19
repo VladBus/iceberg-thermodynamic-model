@@ -1,0 +1,28 @@
+{
+  "observations_total_rows": 743,
+  "observations_independent_true": 743,
+  "hindcast_cases": 190,
+  "independent_groups": 7,
+  "regions": {
+    "WAP": 125,
+    "WAIS": 65
+  },
+  "sites": {
+    "TG": 65,
+    "CG": 42,
+    "SG": 35,
+    "HG": 21,
+    "WG": 14,
+    "LG": 9,
+    "BG": 4
+  },
+  "early_stop_cases": 0,
+  "final_mass_pct_min": 53.309948746459476,
+  "final_mass_pct_max": 99.7404047350659,
+  "delta_t_min": 0.24341932317,
+  "delta_t_max": 3.5249409988,
+  "metric_definition": "observed: volume_change_rate/submerged_area [m/day]; model: (basal+lateral+wave)/rho_ice/(mean_wet_area*seconds)*86400 [m/day]",
+  "bootstrap_replicates": 5000,
+  "noise_mc_replicates": 5000,
+  "seed": 122022
+}

@@ -1,0 +1,7 @@
+figure,description,n_cases,n_groups,png,pdf,source,space
+T1,"Taylor diagram, log10 submarine melt",190,7,docs/wiki/stages/stage12/figures/stage12.22/T1_taylor_log10.png,journal_pdf_vectors.zip::T1_taylor_log10.pdf,Stage 12.15 Enderlin23 hindcast; observed Enderlin23 per-iceberg table,log10
+T2,"Taylor diagram, linear submarine melt",190,7,docs/wiki/stages/stage12/figures/stage12.22/T2_taylor_linear.png,journal_pdf_vectors.zip::T2_taylor_linear.pdf,Stage 12.15 Enderlin23 hindcast; observed Enderlin23 per-iceberg table,linear
+B1,log-log model/observation scatter,190,7,docs/wiki/stages/stage12/figures/stage12.22/B1_scatter_loglog.png,journal_pdf_vectors.zip::B1_scatter_loglog.pdf,Stage 12.15 Enderlin23 hindcast; observed Enderlin23 per-iceberg table,mixed
+B2,model/observation ratio distribution and ECDF,190,7,docs/wiki/stages/stage12/figures/stage12.22/B2_ratio_distribution.png,journal_pdf_vectors.zip::B2_ratio_distribution.pdf,Stage 12.15 Enderlin23 hindcast; observed Enderlin23 per-iceberg table,mixed
+B3,"bias versus forcing, size, duration and region",190,7,docs/wiki/stages/stage12/figures/stage12.22/B3_bias_diagnostics.png,journal_pdf_vectors.zip::B3_bias_diagnostics.pdf,Stage 12.15 Enderlin23 hindcast; observed Enderlin23 per-iceberg table,mixed
+B4,independence-group means with 95% CI of mean,190,7,docs/wiki/stages/stage12/figures/stage12.22/B4_group_means.png,journal_pdf_vectors.zip::B4_group_means.pdf,Stage 12.15 Enderlin23 hindcast; observed Enderlin23 per-iceberg table,mixed

@@ -34,7 +34,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-RHO_ICE = 916.7  # kg m-3, model constant
+RHO_ICE = 910.0  # kg m-3, must match src/iceberg_types.f90
 
 
 def args() -> argparse.Namespace:

@@ -1,268 +1,319 @@
 # Stage 12.22 — Enderlin23 Taylor diagrams and bias diagnostics
 
-**Date:** 2026-11-18  
-**Status:** COMPLETE (validation only; no calibration, no model runs)  
-**Scope:** Existing Stage 12.15 Enderlin23 hindcast, re-analysed at the
-independent-case level. The model, its constants, and its numerical schemes
-were not changed.
+**Date:** 2026-11-19 (corrective audit; original report 2026-11-18)
+
+**Status:** COMPLETE after corrective audit (validation only; no calibration, no model runs, no Fortran changes)
+**Scope:** existing Stage 12.15 Enderlin23 prescribed-trajectory hindcast.
+
+This revision fixes the density conversion, the observation-reliability
+definition, the Taylor axes and negative-correlation display, B3's bootstrap
+unit, B4's unsupported intervals, and titles/annotations. It also records the
+model-document audit. The original Stage 12.15 result files were not overwritten.
 
 ## Stage 0 — reconnaissance (answers first)
 
 ### 1. Where are the Enderlin23 model results?
 
-The analysed results are:
-
 - `data/validation/stage12.15/enderlin_current2/enderlin23_hindcast_results.csv`
-  (190 rows) — per-case observed and modeled submarine melt rates.
-- Individual time-series inputs:
-  `data/validation/stage12.15/enderlin_current2/<case_id>_voxel.nc` (190
-  files; `mass`, `draft`, `ocean_T_draft`, `ocean_S_draft`, etc.).
-- Trajectory/initial-state manifest:
-  `data/validation/stage12.15/enderlin_trajectory_manifest.csv` (190 rows).
+  — 190 per-case rows, including component mass losses, mean wetted area,
+  duration, and the legacy `modeled_melt_rate_voxel`.
+- `data/validation/stage12.15/enderlin_current2/<case_id>_voxel.nc` — 190
+  per-case time series (`mass`, `draft`, `ocean_T_draft`, etc.).
+- `data/validation/stage12.15/enderlin_trajectory_manifest.csv` — 190
+  initial states/trajectories.
 
-Coverage is 190 cases: 125 WAP and 65 WAIS. The grid is the **8³ test grid
-(12.5 m voxels)**, not 100³/1 m. The model is the current Stage 12.15
-voxel/CN configuration (`VOXEL_ENABLED=true`, prescribed trajectory); wave
-erosion is OFF. The result CSV was written on 2026-11-11 on the current-code
-Stage 12.15 branch. The committed analysis is `92bcf8c` (2026-11-12); the
-exact executable/build hash is not embedded in the CSV, so this is documented
-provenance rather than a bit-reproducible binary record.
+The grid is the **8³ / 12.5 m test grid**, not 100³/1 m. The run uses the
+voxel/CN core (`VOXEL_ENABLED=true`) with prescribed trajectory; wave erosion is
+OFF. The result CSV was written on 2026-11-11 on the current-code Stage 12.15
+branch. The committed analysis is `92bcf8c`; the exact executable/build hash
+is not embedded in the CSV, so this is documented provenance, not a
+bit-reproducible binary record. Ocean forcing is the locally staged GLORYS12
+0.083° daily product `GLOBAL_MULTIYEAR_PHY_001_030` (202311 native-S3
+acquisition), seven site files, 32.2 MB total.
 
-The ocean forcing is the locally staged **GLORYS12 0.083° daily** product
-`GLOBAL_MULTIYEAR_PHY_001_030` (202311 native-S3 acquisition), seven site
-files, 32.2 MB total. There is **no Antarctic ERA5 atmosphere** in this run;
-the atmosphere is the documented constant/cold boundary condition. Surface and
-vapour losses are reported separately and are excluded from the validation
-quantity.
-
-The per-case CSV does contain a model melt-rate column:
-`modeled_melt_rate_voxel` [m/day], plus the component mass losses and mean
-wetted area.
+The per-case CSV contains the model melt-rate column, but the validation rate
+is **not** copied from it: see §1 of the corrective changes.
 
 ### 2. How was each case initialized?
 
 - Rectangular-prism initial shape.
-- `L = W = √surface_area`; `H = volume_i / surface_area` for 141 cases.
-- For 49 CG cases where raw `volume_i` is inconsistent with
-  `surface_area`/`draft`, `H = draft·ρ_w/ρ_i` (documented Stage 12.7a
-  `H0_rule`; not a new choice).
-- Initial ice temperature `T_ice = −10 °C` (documented assumption, not
-  observed).
-- The observed start/end positions are linearly interpolated daily; dynamics
-  are disabled in prescribed-trajectory mode. GLORYS12 T/S/u/v are interpolated
-  to the iceberg draft, time, and prescribed position; the nearest wet cell
-  within 0.5° is used at land/NaN ice-front cells.
-- No calving, wave erosion, sea-ice drag, or tides.
+- `L = W = √surface_area`; `H = volume_i/surface_area` for 141 cases.
+- For 49 CG cases with inconsistent `volume_i`/`surface_area`/`draft`,
+  `H = draft·ρw/ρi` (documented Stage 12.7a `H0_rule`).
+- Initial ice temperature `T_ice = −10 °C`.
+- Observed start/end positions are linearly interpolated daily; dynamics are
+  disabled in prescribed-trajectory mode.
+- GLORYS12 T/S/u/v are interpolated to the observed position, draft, and time;
+  the nearest wet cell within 0.5° is used at land/NaN ice-front cells.
+- No ERA5 Antarctic atmosphere is staged; a constant atmospheric boundary is
+  used. Surface and vapour losses are excluded from the validation quantity.
+- No calving, waves, sea-ice drag, or tides.
 
-### 3. Are the observed and modeled quantities the same?
+### 3. Are observed and modeled quantities the same?
 
-Yes, after applying the metric definitions below.
+All 743 observation rows have `melt_definition = SUBMARINE_TOTAL`. The observed
+rate is exactly
 
-- All 743 observation rows have `melt_definition = SUBMARINE_TOTAL`.
-- Observed rate is exactly
-  `melt_rate = volume_change_rate / submerged_area` [m/day]. This was checked
-  row-by-row (maximum relative discrepancy `7.1e-14`).
-- Observed 1σ uncertainty is
-  `σ_obs = |volume_change_uncert| / submerged_area` [m/day]. The file has no
-  negative uncertainties in the 190-case set. Median `σ_obs` is
-  `0.00714 m/day` (25.9% of the median observed rate).
-- Model rate is
-  `(basal + lateral + wave) / ρ_ice / (mean_wet_area × duration) × 86400`
-  [m/day]. `ρ_ice = 916.7 kg m⁻³`; `wave = 0` in these runs. Surface and
-  vapour mass losses are excluded, matching `SUBMARINE_TOTAL`. The stored
-  column reproduces from the component masses to machine precision.
-- This is a **mass- loss / mean-wetted-area** rate, not a point melt rate and
-  not a side-only rate. No definition correction was needed; only the metric
-  analysis was added.
+`melt_rate = volume_change_rate / submerged_area` [m/day].
+
+This was checked row-by-row (maximum relative discrepancy `7.1e-14`). The 1σ
+uncertainty is
+
+`σ_obs = |volume_change_uncert| / submerged_area` [m/day].
+
+`volume_change_rate` and `volume_change_uncert` are already daily rates, so no
+additional interval division is applied. Median `σ_obs` is `0.00714 m/day`
+(25.9% of the median observed rate).
+
+The model rate is
+
+`(basal + lateral + wave) / ρ_ice / (mean_wet_area × duration) × 86400`
+[m/day],
+
+with `ρ_ice = 910.0 kg m⁻³` (matching `src/iceberg_types.f90`), `wave = 0`, and
+surface/vapour losses excluded. It is a mass-loss / mean-wetted-area rate, not a
+point melt rate and not side-only. The component masses are total kg over the
+case; the duration is seconds.
 
 ### 4. Which cases ended early?
 
 None. All 190 rows have `status=OK`; no grounding or out-of-domain stop is
-recorded in this prescribed run. Final model mass is 53.3–99.7% of initial
-mass; no case reaches the 1% mass threshold. The metric therefore uses the
-full observed interval for every case. This is a property of the prescribed
-hindcast, not evidence that grounding is absent in free-drift runs.
+recorded in this prescribed hindcast. Final model mass is **53.3–99.7%** of
+initial mass; no case reaches the 1% threshold. The metric uses the full
+observed interval for every case.
 
 ### 5. Is temperature forcing available per case?
 
-Yes. `mean_delta_t_voxel = T_w − T_f` at the draft is stored for every case
-(mean 2.03 °C; range 0.243–3.525 °C). The per-step `ocean_T_draft`,
-`ocean_S_draft`, and `T_ice` are also in the 190 NetCDF files, so the forcing
-can be reconstructed without new GLORYS extraction. The analysis uses the
-stored mean; no new forcing was generated.
+Yes. `mean_delta_t_voxel = T_w − T_f` at the draft is stored for every case:
+mean **2.03 °C**, range **0.243–3.525 °C**. Per-step `ocean_T_draft`,
+`ocean_S_draft`, and `T_ice` are also in the 190 NetCDF files. The analysis uses
+the stored mean; no new GLORYS extraction was needed.
 
 ### Missing / caveats in the input
 
 - The observation table has **743** rows with `independent_case=True`; the
   **190** cases are the Stage 12.15 duration-filtered hindcast subset
   (`time_separation_days ≤ 120`). There are no model runs for the other 553
-  observations, so this report does not claim them as matched cases.
+  observations, so they are not matched cases.
 - The exact model binary commit is not encoded in the result file.
-- Only seven `independence_group` values exist after the 190-case filter.
-  WAIS is one group; all WAP sites are separate groups. Cluster CIs for
-  single-group strata cannot be estimated.
-- There is no per-case observed `T_w`, velocity, or ice temperature; the
-  forcing is model/reanalysis, not in-situ.
+- Only seven `independence_group` values remain after the 190-case filter.
+  WAIS has one group; every individual site is one group.
+- No per-case observed `T_w`, velocity, or ice temperature exists; forcing is
+  model/reanalysis, not in-situ.
 
-## 1. Matched table
+## 1. Corrective changes
+
+### 1.1 Density
+
+The existing Stage 12.15 `modeled_melt_rate_voxel` used `ρ_ice = 916.7`.
+Fortran uses **910.0**. The validation rate is now recomputed from the component
+mass losses with 910.0:
+
+`model_rate = (basal + lateral + wave) / (910.0 × mean_a_wet × seconds) × 86400`.
+
+`modeled_melt_rate_voxel` is retained only as provenance
+(`model_rate_legacy_9167` in `matched_cases.csv`). `python/validation/enderlin23_hindcast.py`
+now also uses 910.0 for future Enderlin runs.
+
+Checks against the expected conversion:
+
+| Quantity | Old 916.7 | Corrected 910.0 |
+| --- | ---: | ---: |
+| Median model/obs | 0.5397 | **0.5437** |
+| Bias [m/day] | −0.02193 | **−0.02177** |
+
+### 1.2 Observation reliability / noise ceiling
+
+The former Monte Carlo function added noise to the already noisy observations
+and reported their correlation with the original. That is a stability check, not
+a classical reliability ceiling, and it was mislabeled. It is replaced by the
+analytic reliability estimate
+
+- linear: `r_rel = sqrt(max(0, 1 − mean(σ_obs²)/var(obs)))`;
+- log10: `σ_log = σ_obs/(obs·ln 10)`, then the same expression on `log10(obs)`.
+
+The sample variance uses `ddof=1`. The estimate assumes independent additive
+Gaussian errors with the supplied 1σ values and **no correlated or
+representative error**. It is a reliability ceiling under those assumptions,
+not a strict upper bound for a real model. It is drawn on Taylor diagrams as a
+constant-angle line `θ = arccos(r_rel)`, not as a constant-radius arc.
+
+### 1.3 Figures
+
+All six figures have no overall or panel titles; the names belong in the text
+captions. The corrected Taylor diagrams show negative correlations, use one
+radial σ label instead of duplicated X/Y labels, show marginal 95% cluster
+bootstrap intervals, and label the reliability line correctly. B3 uses a
+cluster bootstrap over whole `independence_group`s; a bin with fewer than two
+groups gets no CI. B4 shows descriptive group means only, without fabricated
+confidence intervals. B1/B2 retain axes, units, statistics, ratio lines/ECDF,
+and panel letters only.
+
+## 2. Matched table
 
 `docs/wiki/stages/stage12/evidence/stage12.22/matched_cases.csv` contains one
-row per case with:
+row per case:
 
-`case_id`, `site`, `region`, `independence_group`, observed rate and
-uncertainty [m/day], model rate [m/day], duration [d], `surface_area` [m²],
-`draft` [m], `delta_t` [°C], `final_mass_pct`, and `early_stop`.
+`case_id`, `site`, `region`, `independence_group`, `obs_rate`,
+`obs_unc`, `model_rate`, `model_rate_legacy_9167`, `duration_days`,
+`surface_area`, `draft`, `delta_t`, `final_mass_pct`, `early_stop`.
 
-All rates are m/day. The 190-case table has no missing model or observation
-rates. No calibration or model rerun was performed. The previous full 190-case
-hindcast wall time was 992 s (≈5.2 s/case); no new run was justified.
+All rates are m/day. There are 190 rows and no missing model/observation rates.
+No calibration or model rerun was performed. The previous full 190-case run
+took 992 s (≈5.2 s/case); no new run was justified.
 
-## 2. Metrics
+## 3. Metrics
 
-For rates `o_i` and `m_i`, with `s_o` and `s_m` the sample standard
-deviations (`ddof=1`):
+For rates `o_i`, `m_i`, sample standard deviations `s_o`, `s_m` (`ddof=1`):
 
-- `bias = mean(m_i − o_i)`
-- `median ratio = median(m_i/o_i)`
-- `mean log10 ratio = mean(log10(m_i/o_i))`
-- `sd log10 ratio = sd(log10(m_i/o_i))`
-- `MAE = mean|m_i − o_i|`; `RMSE = sqrt(mean((m_i − o_i)²))`
-- `MAE_log10`, `RMSE_log10` use `log10` rates.
-- Pearson, Spearman, and Kendall are computed on raw rates; `Pearson_log10`
-  uses `log10` rates.
-- `σ_model/σ_obs = s_m/s_o`
-- `CRMSE/σ_obs = sqrt(mean[((m_i − mean m) − (o_i − mean o))²])/s_o`
-- The log-space analogs use `log10` rates.
+- `bias = mean(m_i − o_i)`;
+- `median ratio = median(m_i/o_i)`;
+- `mean log10 ratio = mean(log10(m_i/o_i))`;
+- `sd log10 ratio = sd(log10(m_i/o_i))`;
+- `MAE`, `RMSE` in linear and log10 space;
+- Pearson linear/log10, Spearman, Kendall;
+- `σ_model/σ_obs = s_m/s_o`;
+- `CRMSE/σ_obs = sqrt(mean[((m_i − mean m) − (o_i − mean o))²])/s_o`,
+  with the log10 analogue.
 
-The **95% confidence intervals** are percentile intervals from a **cluster
-bootstrap over `independence_group`** (5,000 draws, replacement, fixed seed
-`122022`). This preserves within-group dependence but gives only seven
-clusters overall and six for WAP; WAIS and every individual site have a single
-cluster, so their interval is reported as unavailable rather than fabricated.
+95% CIs are percentile intervals from **5,000 cluster-bootstrap resamples of
+whole `independence_group`s**, fixed seed `122022`. WAIS and individual sites
+contain one cluster, so their intervals are marked unavailable rather than
+invented. The Taylor X/Y bars are **marginal** intervals, not a joint 95%
+region.
 
-The **observation-noise ceiling** is a Monte Carlo expectation: independently
-perturb each observation by `N(0, σ_obs_i)`, recompute the correlation with the
-unperturbed observations, and average 5,000 draws. It assumes independent
-Gaussian 1σ errors, no correlated systematic error, and no error in the model
-forcing. It is an optimistic ceiling for any model, not a model score.
-
-### Overall metrics
+### Overall
 
 | Metric | Linear | log10 |
 | --- | ---: | ---: |
-| N / independence groups | 190 / 7 | 190 / 7 |
-| Median observed / model [m/day] | 0.0383 / 0.0210 | — |
-| Bias (mean model − obs) [m/day] | −0.0219 [−0.0297, −0.0078] | — |
-| Median model/obs ratio | 0.540 [0.452, 1.013] | 0.540 [0.452, 1.013] |
-| Mean log10(model/obs) | — | −0.218 [−0.321, 0.003] |
-| SD log10(model/obs) | — | 0.451 [0.384, 0.477] |
-| MAE [m/day] | 0.0287 [0.0184, 0.0348] | — |
-| RMSE [m/day] | 0.0399 [0.0287, 0.0460] | — |
-| MAE log10 | — | 0.400 [0.309, 0.440] |
-| RMSE log10 | — | 0.500 [0.386, 0.546] |
-| Pearson | 0.042 [−0.301, 0.394] | 0.154 [−0.271, 0.628] |
-| Spearman | 0.156 [−0.274, 0.627] | 0.156 [−0.274, 0.627] |
-| Kendall | 0.117 [−0.186, 0.433] | 0.117 [−0.186, 0.433] |
-| σ_model/σ_obs | 0.412 [0.202, 0.695] | 0.585 [0.386, 0.837] |
-| CRMSE/σ_obs | 1.062 [0.933, 1.237] | 1.075 [0.792, 1.392] |
-| Observation-noise ceiling (r) | 0.941 | 0.558 |
+| N / groups | 190 / 7 | 190 / 7 |
+| Median observed / model [m/day] | 0.0383 / 0.0211 | — |
+| Bias [m/day] | −0.02177 [−0.02950, −0.00756] | — |
+| Median model/obs ratio | 0.5437 [0.4551, 1.0209] | 0.5437 [0.4551, 1.0209] |
+| Mean log10(model/obs) | — | −0.2148 [−0.3181, 0.0065] |
+| SD log10(model/obs) | — | 0.4509 [0.3836, 0.4766] |
+| MAE [m/day] | 0.02864 [0.01844, 0.03468] | — |
+| RMSE [m/day] | 0.03982 [0.02866, 0.04592] | — |
+| MAE log10 | — | 0.4000 [0.3086, 0.4404] |
+| RMSE log10 | — | 0.4998 [0.3858, 0.5460] |
+| Pearson | 0.0422 [−0.3007, 0.3944] | 0.1543 [−0.2713, 0.6282] |
+| Spearman | 0.1565 [−0.2740, 0.6268] | 0.1565 [−0.2740, 0.6268] |
+| Kendall | 0.1171 [−0.1859, 0.4330] | 0.1171 [−0.1859, 0.4330] |
+| σ_model/σ_obs | 0.4146 [0.2030, 0.6999] | 0.5849 [0.3865, 0.8367] |
+| CRMSE/σ_obs | 1.0634 [0.9329, 1.2393] | 1.0750 [0.7916, 1.3920] |
+| Reliability ceiling r | 0.9328 | 0.8843 |
 
 ### Regions
 
-| Stratum | N | groups | median ratio | mean log10 ratio | Pearson log10 | σ ratio log10 | noise ceiling log10 |
+| Stratum | N | groups | median ratio | mean log10 ratio | Pearson log10 | σ ratio log10 | reliability log10 |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| WAP | 125 | 6 | 0.650 [0.464, 1.258] | −0.136 [−0.263, 0.145] | 0.336 [−0.320, 0.708] | 0.513 [0.353, 0.713] | 0.561 |
-| WAIS | 65 | 1 | 0.446 (no cluster CI) | −0.375 (no cluster CI) | −0.199 (no cluster CI) | 0.703 (no cluster CI) | 0.791 |
+| WAP | 125 | 6 | 0.6543 [0.4671, 1.2671] | −0.1331 [−0.2593, 0.1486] | 0.3357 [−0.3204, 0.7079] | 0.5130 [0.3533, 0.7128] | 0.8889 |
+| WAIS | 65 | 1 | 0.4497 (no cluster CI) | −0.3718 (no cluster CI) | −0.1988 (no cluster CI) | 0.7026 (no cluster CI) | 0.8645 |
 
-Site table (n ≥ 8) is in
+The site table (n ≥ 8) is in
 `docs/wiki/stages/stage12/evidence/stage12.22/metrics_by_region.csv`.
-The sites are BG n=4, CG n=42, HG n=21, LG n=9, SG n=35, TG n=65, WG n=14;
-BG is reported but excluded from the site Taylor points because n<8.
+BG (n=4) is reported but excluded from Taylor points due to the eight-point cap.
 
-## 3. Figures
+## 4. Figures
 
-All figures are PNG in
-`docs/wiki/stages/stage12/figures/stage12.22/`; the six matching vector PDFs
-are in `data/validation/stage12.22/journal_pdf_vectors.zip` (outside git).
-The manifest is `figures_manifest.csv`.
+PNGs: `docs/wiki/stages/stage12/figures/stage12.22/`. PDF vectors:
+`data/validation/stage12.22/journal_pdf_vectors.zip` (outside git). Manifest:
+`figures_manifest.csv`.
 
-- **T1** Taylor diagram, log10 rates: observed on the axis; All, WAP, WAIS,
-  CG, HG, SG, TG and WG (8 points, cap respected); normalized σ radius, r arcs,
-  normalized CRMSE contours, observation-noise arc, and bootstrap crosses.
-  WAIS and single-site points have no cluster CI.
-- **T2** the same Taylor construction on linear rates. The noise ceiling is
-  0.941 in linear space, versus 0.558 for log10.
-- **B1** log-log scatter with 1:1, factor-2/factor-10 guides, region colour,
-  uncertainty-scaled markers, N, median ratio, Pearson(log10), and Spearman
-  with cluster CIs.
-- **B2** histogram and ECDF of log10(model/obs), zero and median lines, median
-  ratio with CI, and WAP/WAIS boxplots.
-- **B3** median log10 ratio versus thermal forcing, size (`√surface_area`),
-  duration, and region; binned medians have 95% bootstrap bars.
-- **B4** independence-group mean observed and model rates, with 95% CI of the
-  mean. This reduces individual-iceberg noise but does not create new
-  independent groups.
-- **L1 is intentionally omitted.** The Stage 10.8.2 basal/lateral literature
-  tables contain lab, Sermilik, regional-maximum and synthesis-derived values;
-  there are no matched model runs at their forcing/geometry, and no new runs
-  were allowed. A like-for-like L1 comparison would conflate model and
-  observation conditions, so it is not drawn.
+- **T1** Taylor, log10: 8 points (All, WAP, WAIS, CG, HG, SG, TG, WG); negative
+  correlations displayed; normalized σ radial scale; r labels include negative
+  values; CRMSE contours; constant-angle reliability line; marginal cluster CIs.
+- **T2** same in linear space; reliability ceiling 0.9328.
+- **B1** log-log scatter; 1:1, ×2, ×10; region colour; uncertainty-scaled
+  markers; N/median/r/Spearman with cluster CIs.
+- **B2** log10 ratio histogram, ECDF, median and CI, WAP/WAIS boxplots; no
+  panel titles, panel letters only.
+- **B3** global binned median log10 ratio versus ΔT, size, duration and region;
+  whole-group cluster bootstrap; no CI when a bin has fewer than two groups.
+  Individual icebergs and binned medians are distinguished. The Y label is
+  individual `log10(model/observed)`.
+- **B4** descriptive group means for seven independence groups; no unsupported
+  confidence intervals; no title.
+- **L1 skipped**: the basal/lateral literature tables contain lab, Sermilik,
+  regional-maximum and synthesis values with no matched model forcing/geometry.
+  A like-for-like comparison would be artificial; no new runs were made.
 
-## 4. Results and interpretation
+## 5. Results
 
-**Good.** The model median is a factor 1.85 below the observed median, but it
-is not a gross order-of-magnitude failure: the median ratio is 0.540 and the
-bias is only −0.0219 m/day. The median-ratio confidence interval is wide
-(0.452–1.013) because group-level resampling sees only seven clusters.
+**Good.** The model median is factor 1.84 below the observed median, but not an
+order-of-magnitude failure: median ratio **0.5437**, bias **−0.02177 m/day**.
+The observed and modeled distributions overlap substantially.
 
-**Bad.** The model is too smooth: `σ_model/σ_obs = 0.412` in linear space
-(0.585 in log10), while `CRMSE/σ_obs ≈ 1.06–1.07`. Pearson(log10) is 0.154
-(CI includes zero); Spearman is 0.156 (CI −0.274 to 0.627). The model does not
-reproduce the observed rank ordering at a useful confidence level.
+**Bad.** The model is too smooth: `σ_model/σ_obs = 0.4146` linear and
+**0.5849** log10, while normalized CRMSE is **1.063–1.075**. Pearson log10 is
+**0.154** (CI includes zero) and Spearman is **0.156** (CI −0.274 to 0.627).
+The model does not reproduce observed rank ordering at useful confidence.
 
-**Where it is systematically biased.** The median log10 ratio is +0.118 for
-the smallest size quartile (`√A ≤ 170 m`) and −0.290, −0.385, and −0.399 for
-the next three quartiles. This is a clear size-dependent under-melt, not a
-uniform multiplicative offset. By region, WAP has median ratio 0.650 and log
-mean −0.136; WAIS has median 0.446 and log mean −0.375. The WAIS result is one
-cluster, so its CI cannot be separated from site-level dependence. Thermal
-forcing does not produce a monotonic binned bias (−0.421, −0.186, −0.206,
-−0.279 across quartiles), so a simple “more ΔT → more melt” correction would
-not explain the residual.
+**Size dependence.** Median log10 ratio is **+0.121** for the smallest size
+quartile (`√A ≤ 170 m`) and **−0.287, −0.382, −0.396** for the next three
+quartiles. This is a clear size-dependent under-melt, not a uniform offset.
+WAP median ratio is **0.654**; WAIS **0.450**, but WAIS is one cluster.
 
-**Against the noise ceiling.** The observed-noise ceiling is 0.558 in log10:
-if the quoted 1σ errors were the only error source, a perfect model could
-still correlate at most about 0.56 with this observed vector. The model's
-0.154 is below that ceiling, so observation noise alone does not explain the
-low rank correlation; however, the ceiling calculation assumes independent
-Gaussian errors and does not include correlated representation error.
+**Thermal forcing.** Binned median log10 ratio is **−0.418, −0.183, −0.203,
+−0.276** across ΔT quartiles; it is not monotonic. A simple “more ΔT → more
+melt” correction would not explain the residual.
 
-**What not to do.** Do not tune `K_T`, `K_S`, `γ_free`, or `melt_cap` to these
-plots. The size-dependent residual, the 8³/12.5 m grid, the prescribed
-trajectory, and the constant atmosphere are structural limitations. A future
-physics study should test a mechanism (for example low-flow/forced-convection
-partition, size-resolved lateral area, or subgrid melt distribution) against
-these diagnostics; this stage is a validation baseline only.
+**Reliability.** The independence-error reliability ceiling is **0.884** in
+log10; its assumptions are stated above. The model's 0.154 is below it, so
+independent observation noise alone does not explain the weak rank correlation,
+but correlated/representative error remains unquantified.
 
-## 5. Limitations
+**What to investigate.** Structural limitations and mechanisms: 8³/12.5 m grid,
+prescribed trajectory, prism initialization, large-iceberg geometry, forcing
+representation, and regional/heat-transfer differences. Do **not** calibrate
+`K_T`, `K_S`, `γ_free`, or `melt_cap` to these plots.
 
-1. Antarctic (WAP/WAIS), not the Barents Sea; no Barents inference.
+## 6. Model-document audit
+
+The requested `Моделирование_термодинамики_айсбергов.docx` was **not present**
+in the repository or under `/home/vlad`. The supplied current-state PDF and its
+TeX source (`docs/references/Iceberg/Iceberg_Model_Current_State.{pdf,tex}`)
+were audited instead; the detailed table is
+`docs/references/Iceberg/Iceberg_Model_Current_State_12.22_AUDIT.md`. No
+LaTeX/docx toolchain is installed, so the `.tex` source was corrected but the
+supplied PDF was not rebuilt.
+
+Corrections made to the `.tex` source:
+
+- ice density is stated as **910 kg/m³** (already correct);
+- connectivity period is now default **1 h**, configurable with
+  `VOXEL_CONNECTIVITY_HOURS`, maximum 6 h; Stage 12.20 used 6 h;
+- software grid default is distinguished from the scientific **100³/1 m**
+  configuration and the Enderlin **8³/12.5 m** test grid;
+- PCG maximum is corrected from a fixed 1000 to the actual default
+  `10·Nx·Ny·Nz` (`ICEBERG_CG_MAXIT` override);
+- the autonomous-air path (`autonomous_air=.true.` in the voxel step) is
+  explicit;
+- Stage 12.22 is explicitly stated to have made **no Fortran changes**.
+
+The audited parameters are: `VOXEL_PHI_CONN=0.3`, `VOXEL_MELT_CAP=0.20`,
+`ICEBERG_THETA=0.5`, `ICEBERG_CG_TOL=1e-10`.
+The step order in the document matches the code: interface, CN, clamp,
+boundary melt/cap, flush/connectivity, compaction, dynamics, ledger.
+Implemented, disabled and future processes remain separated in the source.
+
+## 7. Limitations
+
+1. Antarctic WAP/WAIS, not the Barents Sea.
 2. 8³/12.5 m test grid; not resolution-converged.
-3. Rectangular prism voxel body versus a real irregular iceberg.
-4. Prescribed observed trajectory, so drift and grounding feedback are not
-   tested.
-5. Only 190 of 743 Enderlin observations have a model counterpart; the 190
-   are the ≤120-day hindcast subset, not a new independence flag.
-6. Seven independence groups; WAIS and all site-level subsets contain one
-   cluster, so their cluster CIs are not estimable.
+3. Prismatic/voxel initialization versus real irregular geometry.
+4. Prescribed observed trajectory; drift/grounding feedback not tested.
+5. Only 190 of 743 observations have model counterparts; the 190 are the
+   ≤120-day subset.
+6. Seven independence groups; WAIS and all sites have one cluster, so no
+   cluster CI for them.
 7. Observation uncertainty is treated as independent 1σ Gaussian; correlated
-   systematic error would reduce the noise ceiling.
-8. No wave erosion, no Antarctic ERA5 atmosphere, no calving, no tides; surface
-   and vapour losses are excluded by the `SUBMARINE_TOTAL` definition.
-9. The exact model binary commit is not embedded in the result CSV.
-10. No matched literature analog exists, so L1 is skipped rather than forced.
+   systematic error is unquantified.
+8. No waves, Antarctic ERA5, calving, or tides; surface/vapour excluded.
+9. Exact model binary commit not embedded in the result CSV.
+10. No matched literature analog; L1 omitted.
 
-## 6. Files
+## 8. Files
 
 - `docs/wiki/stages/stage12/evidence/stage12.22/matched_cases.csv`
 - `docs/wiki/stages/stage12/evidence/stage12.22/metrics.csv`
@@ -277,4 +328,17 @@ these diagnostics; this stage is a validation baseline only.
 - `docs/wiki/stages/stage12/figures/stage12.22/figures_manifest.csv`
 - `python/analysis/stage12.22_enderlin_validation.py`
 - `python/tests/test_stage12_22_enderlin.py`
+- `docs/references/Iceberg/Iceberg_Model_Current_State.tex`
+- `docs/references/Iceberg/Iceberg_Model_Current_State_12.22_AUDIT.md`
 - `data/validation/stage12.22/journal_pdf_vectors.zip` (outside git)
+
+## 9. Verification
+
+- `python -m unittest discover -s python/tests -v`: **25 tests passed**.
+- `python scripts/check_docs_links.py`: 67 files, 290 links, 0 broken.
+- `git diff --check`: clean after the final formatting pass.
+- `figures_manifest.csv`: six PNG files, six PDF entries.
+- `data/validation/stage12.22/journal_pdf_vectors.zip`: six PDF vectors.
+- Visual inspection: six PNG files; no figure titles; Taylor negatives and
+  reliability lines visible; B3/B4 uncertainty presentation corrected.
+- No `fpm` run, no `iceberg_run`, no Fortran/model/constant change.

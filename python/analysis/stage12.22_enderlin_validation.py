@@ -44,13 +44,25 @@ PDF = ROOT / "data/validation/stage12.22/pdf"
 ARCHIVE = ROOT / "data/validation/stage12.22/journal_pdf_vectors.zip"
 SEED = 122022
 NBOOT = 5000
-NMC = 5000
-RHO_ICE = 916.7
+RHO_ICE = 910.0  # must match src/iceberg_types.f90
 REGIONS = ("WAP", "WAIS")
 SITE_LABEL = {"BG": "BG", "CG": "CG", "HG": "HG", "LG": "LG",
               "SG": "SG", "TG": "TG", "WG": "WG"}
 # All cases + two regions + five largest sites = 8 Taylor points.
 TAYLOR_KEYS = ("All", "WAP", "WAIS", "CG", "HG", "SG", "TG", "WG")
+
+
+def submarine_rate(basal, lateral, wave, mean_wet_area, seconds, rho=RHO_ICE):
+    """Submarine melt rate [m/day] from total component masses [kg]."""
+    return (np.asarray(basal, float) + np.asarray(lateral, float) + np.asarray(wave, float)) / float(rho) / (
+        np.asarray(mean_wet_area, float) * np.asarray(seconds, float)) * 86400.0
+
+
+def taylor_xy(r, sigma_ratio):
+    """Cartesian Taylor coordinates: sigma*r, sigma*sqrt(1-r^2)."""
+    r = np.clip(np.asarray(r, float), -1.0, 1.0)
+    s = np.asarray(sigma_ratio, float)
+    return s * r, s * np.sqrt(np.maximum(0.0, 1.0 - r * r))
 
 
 def ensure_dirs():
@@ -83,10 +95,14 @@ def load_data():
     d["obs_rate"] = d.melt_rate.astype(float)
     d["obs_unc"] = d.volume_change_uncert.abs() / d.submerged_area
     d["obs_rate_check"] = d.volume_change_rate / d.submerged_area
-    d["model_rate"] = d.modeled_melt_rate_voxel.astype(float)
-    d["model_rate_check"] = (d.mass_loss_basal_voxel + d.mass_loss_lateral_voxel
-                             + d.mass_loss_wave_voxel) / RHO_ICE / (
-                                 d.mean_a_wet_voxel * d.seconds_voxel) * 86400.0
+    # Recompute from the mass-loss components with the Fortran density.
+    # The old modeled_melt_rate_voxel column used 916.7 kg/m3 and is retained
+    # only as provenance; it is not the validation value.
+    d["model_rate_legacy_9167"] = d.modeled_melt_rate_voxel.astype(float)
+    d["model_rate"] = submarine_rate(d.mass_loss_basal_voxel, d.mass_loss_lateral_voxel,
+                                     d.mass_loss_wave_voxel, d.mean_a_wet_voxel,
+                                     d.seconds_voxel)
+    d["model_rate_check"] = d.model_rate
     d["ratio"] = d.model_rate / d.obs_rate
     d["log10_ratio"] = np.log10(d.ratio)
     d["delta_t"] = d.mean_delta_t_voxel.astype(float)
@@ -150,19 +166,30 @@ def base_stats(o, m, sig):
     return out, o, m, sig
 
 
-def noise_ceiling(o, sig, log10_space, seed, n=NMC):
-    rng = np.random.default_rng(seed)
-    z = []
-    for _ in range(n):
-        op = o + sig * rng.standard_normal(len(o))
-        if log10_space:
-            op = np.maximum(op, 1e-12)
-            a, b = np.log10(o), np.log10(op)
-        else:
-            a, b = o, op
-        if np.std(a) > 0 and np.std(b) > 0:
-            z.append(float(np.corrcoef(a, b)[0, 1]))
-    return float(np.nanmean(z)) if z else np.nan
+def noise_ceiling(o, sig, log10_space):
+    """Reliability ceiling from independent additive observation errors.
+
+    This is *not* a strict upper bound for a real model: it assumes
+    independent Gaussian errors with the supplied 1-sigma magnitudes and no
+    correlated/representativeness error.  It answers how much of the observed
+    variance is reproducible in principle under those assumptions.
+
+    linear: sqrt(max(0, 1 - mean(sigma**2) / var(obs)))
+    log10:  sigma_log = sigma/(obs*ln(10)), then the same formula on log10(obs).
+    """
+    o = np.asarray(o, float); sig = np.asarray(sig, float)
+    good = np.isfinite(o) & np.isfinite(sig) & (o > 0)
+    o, sig = o[good], sig[good]
+    if len(o) < 3:
+        return np.nan
+    if log10_space:
+        x = np.log10(o); sx = sig / (o * np.log(10.0))
+    else:
+        x = o; sx = sig
+    v = float(np.var(x, ddof=1))
+    if not np.isfinite(v) or v <= 0:
+        return np.nan
+    return float(np.sqrt(max(0.0, 1.0 - float(np.mean(sx * sx)) / v)))
 
 
 def bootstrap_stats(o, m, sig, groups, seed, nboot=NBOOT):
@@ -210,8 +237,8 @@ def compute_stratum(name, d, seed):
     if b.get("n", 0) < 3:
         b["stratum"] = name; b["ci_status"] = "insufficient"; return b
     b.update(bootstrap_stats(o, m, sig, d.independence_group.values, seed))
-    b["noise_ceiling_linear"] = noise_ceiling(o, sig, False, seed + 11)
-    b["noise_ceiling_log10"] = noise_ceiling(o, sig, True, seed + 17)
+    b["noise_ceiling_linear"] = noise_ceiling(o, sig, False)
+    b["noise_ceiling_log10"] = noise_ceiling(o, sig, True)
     b["stratum"] = name
     return b
 
@@ -242,7 +269,7 @@ def long_rows(name, s):
         rows.append({"stratum": name, "space": space, "n": s.get("n"),
                      "n_groups": s.get("n_groups"), "metric": "noise_ceiling",
                      "value": s.get(key), "ci_low": np.nan, "ci_high": np.nan,
-                     "ci_status": "monte_carlo"})
+                     "ci_status": "analytic_reliability"})
     return rows
 
 
@@ -261,7 +288,7 @@ def plot_taylor(stats_by, space, out_stem):
             ax.text(sr * np.cos(1.45), sr * np.sin(1.45), f"{sr:g}", color="0.45",
                     fontsize=6.5, ha="center", va="center")
     # correlation rays and labels on the outer arc
-    for rr in (0, .2, .4, .6, .8, .9, .95, 1.0):
+    for rr in (-.8, -.6, -.4, -.2, 0, .2, .4, .6, .8, .9, 1.0):
         ang = np.arccos(np.clip(rr, -1, 1))
         ax.plot([0, maxr * np.cos(ang)], [0, maxr * np.sin(ang)], color="0.92", lw=.5, zorder=0)
         ax.text(maxr * 1.04 * np.cos(ang), maxr * 1.04 * np.sin(ang), f"{rr:g}",
@@ -281,7 +308,7 @@ def plot_taylor(stats_by, space, out_stem):
         if not s or not np.isfinite(s.get(rkey, np.nan)) or not np.isfinite(s.get(skey, np.nan)):
             continue
         sn = s[skey]; r = np.clip(s[rkey], -1, 1)
-        x = sn * r; y = sn * np.sqrt(max(0.0, 1.0 - r * r))
+        x, y = taylor_xy(r, sn)
         ax.scatter([x], [y], s=55, marker=markers[i % len(markers)], color=colors[i],
                    edgecolor="white", linewidth=.5, zorder=5)
         tkey = "taylor_log" if space == "log10" else "taylor_linear"
@@ -296,19 +323,22 @@ def plot_taylor(stats_by, space, out_stem):
                               markersize=6, label=f"{key} (n={s.get('n')})"))
     # observed point on the axis
     ax.scatter([1], [0], marker="*", s=180, color="k", zorder=6, label="Observed")
-    # noise-ceiling arc: expected correlation with perturbed observations
+    # Reliability ceiling: a constant-correlation ray, not a constant-radius arc.
     nc = stats_by["All"].get("noise_ceiling_log10" if space == "log10" else "noise_ceiling_linear", np.nan)
     if np.isfinite(nc):
-        a0 = np.arccos(np.clip(nc, 0, 1))
-        aa = np.linspace(0, a0, 100)
-        ax.plot(maxr * .98 * np.cos(aa), maxr * .98 * np.sin(aa), "k--", lw=.9, zorder=2)
-        ax.text(maxr * .72, maxr * .74, f"noise ceiling r={nc:.2f}", fontsize=6.5,
-                rotation=32, ha="center", va="center")
-    ax.set_xlim(-.12 * maxr, maxr * 1.1); ax.set_ylim(-.02, maxr * 1.1)
-    ax.set_xlabel("normalized standard deviation  σ$_{model}$/σ$_{obs}$", fontsize=9)
-    ax.set_ylabel("normalized standard deviation  σ$_{model}$/σ$_{obs}$", fontsize=9)
-    ax.set_title(f"Taylor diagram — {'log10' if space == 'log10' else 'linear'} submarine melt rate",
-                 fontsize=10)
+        ang = np.arccos(np.clip(nc, -1, 1))
+        ax.plot([0, maxr * 1.02 * np.cos(ang)], [0, maxr * 1.02 * np.sin(ang)],
+                "k--", lw=.9, zorder=2)
+        ax.text(maxr * .50, maxr * .50, f"reliability r={nc:.2f}", fontsize=6.5,
+                rotation=np.degrees(ang), ha="center", va="center")
+    ax.set_xlim(-maxr * 1.05, maxr * 1.05); ax.set_ylim(-.02, maxr * 1.1)
+    # Taylor coordinates are sigma*cos(theta), sigma*sin(theta); do not duplicate
+    # the radial sigma label on both Cartesian axes.
+    ax.set_xlabel("")
+    ax.set_ylabel("")
+    ax.text(maxr * .98, .06, "σ$_{model}$/σ$_{obs}$", fontsize=7, ha="right",
+            va="bottom")
+    ax.text(-maxr * 1.00, .06, "marginal 95% CI", fontsize=6.2, ha="left", va="bottom")
     ax.grid(False)
     ax.legend(handles=handles + [Line2D([0], [0], marker="*", color="none", markerfacecolor="k",
                                          markersize=10, label="Observed")],
@@ -318,8 +348,13 @@ def plot_taylor(stats_by, space, out_stem):
     return out_stem
 
 
-def bias_bins(ax, x, y, color, label):
-    tmp = pd.DataFrame({"x": x, "y": y})
+def bias_bins(ax, x, y, groups, color, label):
+    """Binned medians with a *cluster* bootstrap over independence_group.
+
+    The resampling unit is a whole group, not an individual iceberg.  If a bin
+    contains fewer than two groups, no confidence interval is drawn.
+    """
+    tmp = pd.DataFrame({"x": x, "y": y, "group": groups})
     try:
         tmp["bin"] = pd.qcut(tmp.x, 4, duplicates="drop")
     except ValueError:
@@ -329,21 +364,30 @@ def bias_bins(ax, x, y, color, label):
         if len(g) < 3:
             continue
         xc = g.x.median(); yc = g.y.median()
-        bs = [np.median(rng.choice(g.y.values, len(g), replace=True)) for _ in range(1000)]
-        lo, hi = np.percentile(bs, [2.5, 97.5])
-        ax.errorbar([xc], [yc], yerr=[[max(0, yc - lo)], [max(0, hi - yc)]],
-                    fmt="o-", color=color, lw=1, ms=4, capsize=2, label=label if _ is None else None)
-    ax.plot([], [], "o-", color=color, lw=1, label=label)
+        ug = sorted(g.group.unique().tolist())
+        if len(ug) >= 2:
+            draws = []
+            for _ in range(1000):
+                pick = rng.choice(ug, size=len(ug), replace=True)
+                vals = np.concatenate([g.loc[g.group == gg, "y"].values for gg in pick])
+                draws.append(np.median(vals))
+            lo, hi = np.percentile(draws, [2.5, 97.5])
+            ax.errorbar([xc], [yc], yerr=[[max(0, yc - lo)], [max(0, hi - yc)]],
+                        fmt="o-", color=color, lw=1, ms=4, capsize=2)
+        else:
+            ax.plot([xc], [yc], "o", color=color, ms=4)
+    if label is not None:
+        ax.plot([], [], "o-", color=color, lw=1, label=label)
 
 
 def save_fig(fig, stem):
     stem = Path(stem)
     stem.parent.mkdir(parents=True, exist_ok=True)
     fig.canvas.draw()
-    fig.savefig(stem.with_suffix(".png"), dpi=300, facecolor="white")
+    fig.savefig(stem.with_suffix(".png"), dpi=300, facecolor="white", bbox_inches="tight")
     # Vector PDFs are written outside git; the archive is created below.
     PDF.mkdir(parents=True, exist_ok=True)
-    fig.savefig(PDF / (stem.stem + ".pdf"), dpi=300, facecolor="white")
+    fig.savefig(PDF / (stem.stem + ".pdf"), dpi=300, facecolor="white", bbox_inches="tight")
     for coll in fig.findobj(matplotlib.collections.Collection):
         coll.set_rasterized(True)
     plt.close(fig)
@@ -375,7 +419,6 @@ def make_figures(d, stats_by, overall):
     ax.set_xlim(lim); ax.set_ylim(lim)
     ax.set_xlabel("Observed submarine melt [m d$^{-1}$]")
     ax.set_ylabel("Modeled submarine melt [m d$^{-1}$]")
-    ax.set_title("Enderlin23: model vs observations")
     ax.grid(alpha=.2, which="both")
     ci_status = overall.get("ci_status")
     text = (f"N = {overall['n']}\nmedian ratio = {overall['median_ratio']:.3f}"
@@ -396,8 +439,8 @@ def make_figures(d, stats_by, overall):
     axs[0].axvline(0, color="k", lw=1)
     axs[0].axvline(np.median(lr), color="C1", lw=1.3)
     axs[0].set_xlabel("log10(model/observed)"); axs[0].set_ylabel("count")
-    axs[0].set_title("(a) ratio distribution")
-    axs[0].text(.03, .96,
+    axs[0].text(.04, .92, "(a)", transform=axs[0].transAxes, fontsize=8, fontweight="bold")
+    axs[0].text(.03, .84,
                 f"median log10 = {np.median(lr):.3f}\n"
                 f"median ratio = {overall['median_ratio']:.3f} "
                 f"[{overall.get('ci_low_median_ratio', np.nan):.3f}, "
@@ -407,12 +450,12 @@ def make_figures(d, stats_by, overall):
     axs[1].step(x, y, where="post", color="C0", lw=1.3)
     axs[1].axvline(0, color="k", lw=1); axs[1].axvline(np.median(lr), color="C1", lw=1.1)
     axs[1].set_xlabel("log10(model/observed)"); axs[1].set_ylabel("ECDF")
-    axs[1].set_title("(b) cumulative distribution")
+    axs[1].text(.04, .92, "(b)", transform=axs[1].transAxes, fontsize=8, fontweight="bold")
     groups = [d.loc[d.region == r, "log10_ratio"].values for r in REGIONS]
     axs[2].boxplot(groups, tick_labels=list(REGIONS), widths=.5, patch_artist=True,
                    boxprops=dict(facecolor="0.85"), medianprops=dict(color="C1"))
     axs[2].axhline(0, color="k", lw=1)
-    axs[2].set_ylabel("log10(model/observed)"); axs[2].set_title("(c) by region")
+    axs[2].set_ylabel("log10(model/observed)"); axs[2].text(.04, .92, "(c)", transform=axs[2].transAxes, fontsize=8, fontweight="bold")
     axs[2].grid(alpha=.2, axis="y")
     fig.subplots_adjust(left=.07, right=.98, bottom=.14, top=.88, wspace=.30)
     save_fig(fig, FIG / "B2_ratio_distribution.png")
@@ -427,33 +470,35 @@ def make_figures(d, stats_by, overall):
             q = d[d.region == reg]
             ax.scatter(q[xcol], q.log10_ratio, s=13, alpha=.35,
                        color=reg_colors[reg], label=reg)
-            bias_bins(ax, q[xcol].values, q.log10_ratio.values, reg_colors[reg], reg)
+        bias_bins(ax, d[xcol].values, d.log10_ratio.values,
+                  d.independence_group.values, "0.25", None)
         ax.axhline(0, color="k", lw=.9)
-        ax.set_xlabel(lab); ax.set_ylabel("median log10(model/observed)")
-        ax.set_title(title, fontsize=9); ax.grid(alpha=.2)
+        ax.set_xlabel(lab); ax.set_ylabel("log10(model/observed)")
+        ax.text(.03, .94, title.split(" ")[0], transform=ax.transAxes, fontsize=8, fontweight="bold")
+        ax.grid(alpha=.2)
+    axs[0, 0].scatter([], [], s=12, color="0.45", alpha=.5, label="individual")
+    axs[0, 0].plot([], [], "o-", color="0.25", ms=4, label="binned median; 95% group CI")
+    axs[0, 0].legend(fontsize=6, frameon=False, loc="lower left")
     axs[1, 1].boxplot([d.loc[d.region == r, "log10_ratio"].values for r in REGIONS],
                       tick_labels=list(REGIONS), widths=.5, patch_artist=True,
                       boxprops=dict(facecolor="0.85"), medianprops=dict(color="C1"))
     axs[1, 1].axhline(0, color="k", lw=.9)
-    axs[1, 1].set_ylabel("log10(model/observed)"); axs[1, 1].set_title("(d) by region", fontsize=9)
+    axs[1, 1].set_ylabel("log10(model/observed)")
+    axs[1, 1].text(.03, .94, "(d)", transform=axs[1, 1].transAxes, fontsize=8, fontweight="bold")
     axs[1, 1].grid(alpha=.2, axis="y")
     fig.subplots_adjust(left=.09, right=.97, bottom=.10, top=.93, wspace=.28, hspace=.32)
     save_fig(fig, FIG / "B3_bias_diagnostics.png")
 
     # B4 group means
     g = d.groupby("independence_group").agg(
-        n=("case_id", "size"), obs=("obs_rate", "mean"), model_mean=("model_rate", "mean"),
-        obs_sem=("obs_rate", "sem"), model_sem=("model_rate", "sem")).reset_index()
+        n=("case_id", "size"), obs=("obs_rate", "mean"), model_mean=("model_rate", "mean")).reset_index()
     g["label"] = g.independence_group.str.replace("ENDERLIN23_", "", regex=False)
     x = np.arange(len(g)); w = .36
     fig, ax = plt.subplots(figsize=(9, 4.8))
-    ax.bar(x - w / 2, g.obs, w, yerr=1.96 * g.obs_sem, capsize=2,
-           label="observed", color="0.65")
-    ax.bar(x + w / 2, g.model_mean, w, yerr=1.96 * g.model_sem, capsize=2,
-           label="model", color="C0")
+    ax.bar(x - w / 2, g.obs, w, label="observed", color="0.65")
+    ax.bar(x + w / 2, g.model_mean, w, label="model", color="C0")
     ax.set_xticks(x); ax.set_xticklabels([f"{r}\n(n={n})" for r, n in zip(g.label, g.n)], fontsize=7)
     ax.set_ylabel("mean submarine melt [m d$^{-1}$]")
-    ax.set_title("Group means (independence_group; bars = 95% CI of mean)")
     ax.grid(alpha=.2, axis="y"); ax.legend(frameon=False)
     fig.subplots_adjust(left=.10, right=.98, bottom=.17, top=.90)
     save_fig(fig, FIG / "B4_group_means.png")
@@ -519,7 +564,7 @@ def main():
         "final_mass_pct_max": float(d.final_mass_pct.max()),
         "delta_t_min": float(d.delta_t.min()), "delta_t_max": float(d.delta_t.max()),
         "metric_definition": "observed: volume_change_rate/submerged_area [m/day]; model: (basal+lateral+wave)/rho_ice/(mean_wet_area*seconds)*86400 [m/day]",
-        "bootstrap_replicates": NBOOT, "noise_mc_replicates": NMC, "seed": SEED,
+        "bootstrap_replicates": NBOOT, "noise_method": "analytic reliability: 1 - mean(sigma^2)/var(obs); log10 sigma/(obs ln10)", "seed": SEED,
     }
     (EVID / "stage0_recon.json").write_text(json.dumps(stage0, indent=2) + "\n")
     print(json.dumps(stage0, indent=2))

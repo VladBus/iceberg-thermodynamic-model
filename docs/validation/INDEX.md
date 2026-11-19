@@ -26,7 +26,8 @@ model runs, waves, normals, stations or interannual differences. See
 Enderlin23 independent-case Taylor diagrams and bias diagnostics were completed
 from the existing Stage 12.15 hindcast; 190 cases, 7 independence groups, no
 model rerun, no calibration. The 190-case median model/observation ratio is
-0.540 and the log10 Pearson correlation is 0.154 (cluster 95% CI includes zero).
+0.5437 after the Stage 12.22a density correction (Fortran `rho_ice=910`), and the
+log10 Pearson correlation is 0.154 (cluster 95% CI includes zero).
 See
 [`stage12.22_enderlin_taylor_bias.md`](../wiki/stages/stage12/stage12.22_enderlin_taylor_bias.md).
 

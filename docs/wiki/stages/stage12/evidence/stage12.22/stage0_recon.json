@@ -23,6 +23,6 @@
   "delta_t_max": 3.5249409988,
   "metric_definition": "observed: volume_change_rate/submerged_area [m/day]; model: (basal+lateral+wave)/rho_ice/(mean_wet_area*seconds)*86400 [m/day]",
   "bootstrap_replicates": 5000,
-  "noise_mc_replicates": 5000,
+  "noise_method": "analytic reliability: 1 - mean(sigma^2)/var(obs); log10 sigma/(obs ln10)",
   "seed": 122022
 }

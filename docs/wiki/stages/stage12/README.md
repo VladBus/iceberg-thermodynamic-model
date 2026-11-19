@@ -39,7 +39,7 @@ Stage 12.21 forcing/region figures and Stage 12.22 Enderlin23 Taylor/bias valida
 | 12.19 | [`stage12.19_calved_geometry_reference_runs.md`](stage12.19_calved_geometry_reference_runs.md) | Connected-component calving, main-body hydrostatics/energy closure, Stage 2 figures, offline drift/melt maps, six 100³ 2020 references |
 | 12.20 | [`stage12.20_phi_conn_and_start_selection.md`](stage12.20_phi_conn_and_start_selection.md) | `phi_conn=0.3`, 50³ controls, Svalbard negative start result, six coastal 100³ 2020/2024 references with snapshots and full figure set |
 | 12.21 | [`stage12.21_forcing_figures.md`](stage12.21_forcing_figures.md) | English forcing/region figures from existing ERA5/GLORYS12; publication-layout audit complete; no model runs |
-| 12.22 | [`stage12.22_enderlin_taylor_bias.md`](stage12.22_enderlin_taylor_bias.md) | Enderlin23 independent-case Taylor/bias validation; 190 cases, 7 groups; median ratio 0.540; no calibration or model runs |
+| 12.22 | [`stage12.22_enderlin_taylor_bias.md`](stage12.22_enderlin_taylor_bias.md) | Enderlin23 independent-case Taylor/bias validation; 190 cases, 7 groups; median ratio 0.5437 after the 12.22a density correction; no calibration or model runs |
 
 The 12.8 drift and lifetime results are lower bounds from monthly GLORYS and
 constant-atmosphere fallbacks; they are not daily-forcing validation. No stage

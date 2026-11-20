@@ -7,10 +7,10 @@ in the repository or under `/home/vlad`; the supplied PDF/TeX pair was used as
 the current-state substitute.  
 **Scope:** documentation only. Stage 12.22 made **no Fortran changes**.
 **Provenance:** Fortran/physics base is `cd33f0f` (Stage 12.20); `git diff
-cd33f0f..d7476bd -- src app` is empty. Validation-only commits are `18566e9`
-(original Stage 12.22), `d7476bd` (12.22a), and the local 12.22b correction;
+cd33f0f..34e1f89 -- src app` is empty. Validation-only commits are `18566e9`
+(original Stage 12.22), `d7476bd` (12.22a), and `34e1f89` (12.22b);
 none changes Fortran. Stage 12.22a corrected only Python post-processing
-(`rho_ice` 916.7 → 910, reliability, Taylor/B3/B4 presentation); Stage 12.22b
+(`rho_ice` 916.7 → 910, reliability, Taylor/B3/B4 presentation); Stage 12.22b (`34e1f89`)
 fixes whole-group B3 bootstrap, the B4 description, report/CSV consistency and
 artifact regeneration. Neither changes model physics.
 
@@ -26,24 +26,33 @@ artifact regeneration. Neither changes model physics.
 | Step order | interface flux → CN thermal solve → phase clamp → boundary melt/cap → flush/connectivity/compaction → dynamics → ledger | Confirmed; document order matches the implementation. |
 | Atmosphere path | `voxel_model_step` passes `autonomous_air=.true.`; SW/LW/SH/LH are built from ERA5 or constant atmosphere; no double application of the bulk `Q_net` | Made explicit in the document. |
 | Implemented / disabled / future | waves implemented but OFF by default; sea-ice drag, capsize, tides, two-way coupling, and subgrid melt are not implemented; future directions are in §14 | Confirmed; no change to formulas. |
+| Monospace/Cyrillic | Courier New has no Cyrillic script coverage for polyglossia; Consolas has Cyrillic and is available on Windows | Build-required minimal change: Consolas is now the first `\setmonofont` choice, with the old fallback chain retained. |
 
-The PDF rendering was not rebuilt because no LaTeX engine (`xelatex`,
-`lualatex`, `pdflatex`, `tectonic`) is installed on this workstation. The source
-`.tex` is corrected; the supplied PDF remains the pre-audit rendering and
-must not be treated as current.
+## 12.22c build (current-state PDF)
 
-### Reproducible PDF build on WSL Ubuntu
+The current PDF **was rebuilt** from the corrected `.tex` with the existing
+Windows TeX Live 2026 installation:
 
-```bash
-sudo apt-get update
-sudo apt-get install -y texlive-xetex texlive-lang-cyrillic \
-  texlive-latex-extra texlive-fonts-recommended texlive-fonts-extra lmodern
-cd docs/references/Iceberg
-xelatex -interaction=nonstopmode -halt-on-error Iceberg_Model_Current_State.tex
-xelatex -interaction=nonstopmode -halt-on-error Iceberg_Model_Current_State.tex
-```
+- engine: `XeTeX 3.141592653-2.6-0.999998 (TeX Live 2026)`;
+- executable: `D:\texlive\2026\bin\windows\xelatex.exe`;
+- build directory: `/mnt/d/iceberg_tex_build_34e1f89`;
+- source SHA256: `d6eac75035ce2d1bd817123a66ca25daf42f9e397a639368b510f32bc769b0f2`;
+- PDF SHA256: `9134a75341d816a0c1b100240680822d9e79d0189478da9a9c5fd65afeea1ce9`;
+- result: 17 pages, 213 290 bytes, A4, PDF 1.7;
+- passes: first pass 16 pages with rerun warning; second pass 17 pages with
+  “Label(s) may have changed”; final stabilization pass 17 pages with no
+  undefined references, citations or labels. Only underfull horizontal boxes
+  remain (typographic warnings, not missing content).
+- fonts: Times New Roman, Consolas, CM math fonts; all embedded with Unicode
+  maps. Consolas is the first monospace choice because Courier New lacks
+  Cyrillic coverage for `polyglossia`; old fallback chain remains.
+- PDF inspection: `pdfinfo`, `pdffonts`, `pdftotext`, `pdftoppm` from TeX Live;
+  first pages, equations, long table, bibliography visually checked.
+- old PDF backup (outside git):
+  `/mnt/d/iceberg_tex_build_34e1f89/old_pre_12.22c.pdf`
+  (SHA256 `26cad14bf808a0b438e39366585f12d66fb209cdc16e3fbfa1a9232e814ab961`).
 
 The `.tex` uses `fontspec`, `polyglossia` (Russian), `amsmath`, `geometry`,
 `setspace`, `booktabs`, `longtable`, `array`, `titlesec`, `hyperref` and TeX Gyre
-fonts; the packages above cover them. The 12.22b commit is validation/docs-only
+fonts; all were present. The 12.22b commit (`34e1f89`) is validation/docs-only
 and does not alter the model equations.

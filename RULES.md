@@ -14,10 +14,10 @@ The main document on **how** the project is changed (what to do — in
 
 ## Resource discipline
 
-- The user's WSL2 instance has **8 GB allocated RAM** (user-reported on
-  2026-11-03; CPU allocation has not been measured). Run builds, full test
-  batteries, analyses, and data transfers one at a time; do not overlap
-  expensive jobs.
+- The user's WSL2 instance has **20 GB RAM, 8 GB swap, and 12 logical CPUs**
+  (Ryzen 7 8845HS; user-reported on 2026-11-20). Run builds, full test
+  batteries, analyses, and data transfers one at a time as a practical policy;
+  do not overlap expensive jobs.
 - Do not launch multiple downloads or broad recursive repository scans together.
   Use targeted commands and bounded output, and stop one heavy process before
   starting another.

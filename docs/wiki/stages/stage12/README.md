@@ -4,7 +4,7 @@ Stage 12 is the current scientific stage. This directory stores completed
 stage reports and their evidence; it is not the working directory for unfinished
 tasks. Stage 12.9a acquisition, Stage 12.10 voxel thermodynamics, the Stage 12.11/12.12/12.13 audits, the Stage 12.14 100^3 audit, the Stage 12.15 current-code Enderlin/drift-map rerun, the Stage 12.16 drift/ensemble/layer-drag/energy audit, the Stage 12.17 drag correction/final-run audit, the Stage 12.18 50 m grounded-in-place final-run audit, and the Stage 12.19 calved-geometry/energy/reference-run audit are complete;
 the acquisition manifests remain in `docs/validation/` as canonical provenance.
-Stage 12.21 forcing/region figures and Stage 12.22 Enderlin23 Taylor/bias validation are complete. Stage 12.9b thesis writing is the active workstream.
+Stage 12.21 forcing/region figures and Stage 12.22 Enderlin23 Taylor/bias validation are complete. Stage 12.22d (2026-11-20) closes the Stage 12 documentation set; active work is publication and the master's thesis (12.9b).
 
 > **Path note:** older planning notes in this directory preserve their original
 > wording and paths. Use this README and `docs/validation/INDEX.md` for current

@@ -35,10 +35,10 @@ under atmospheric, oceanic, bathymetric, and sea-ice forcing.
 
 ## 📑 Project status
 
-- **Current stage:** **Stage 11 FROZEN** as a research artifact; **Stage 12 active**, completed through Stage 12.8 validation, Stage 12.9a acquisition, Stage 12.10 voxel-boundary improvements, the Stage 12.11–12.14 audits, the Stage 12.15/12.16 Enderlin/drift/ensemble audits, the Stage 12.17 drag correction, the Stage 12.18 50 m grounded-in-place matrix, the Stage 12.19 calved-geometry/energy/reference-run audit and the Stage 12.20 phi_conn/final-reference/figure audit (voxel iceberg on GLORYS12 + ERA5, offline/one-way). Stage 12.9b thesis writing is GO with fallback labeling.
-- **Validation boundary:** Stage 12.8 used monthly-mean GLORYS and a constant atmosphere; its drift and lifetime are lower bounds, not daily-forcing validation. The Stage 11 ocean is not production-validated.
+- **Current stage:** **Stage 11 FROZEN** as a research artifact; **Stage 12 CLOSED** through the documentation closure 12.22d. Completed work includes Stage 12.8 validation, 12.9a acquisition, 12.10 voxel-boundary improvements, 12.11–12.20 audits and references, the Stage 12.21 forcing figure set, and Stage 12.22 Enderlin23 submarine-melt validation. The Stage 12.22 comparison is validation only, without calibration; its 8³/12.5 m, prescribed-trajectory, seven-group setup is not a production or full-resolution validation. Active work is publications and the master's thesis (12.9b).
+- **Validation boundary:** Stage 12.8 used monthly-mean GLORYS and a constant atmosphere; its drift and lifetime are lower bounds, not daily-forcing validation. Stage 12.22 compares 190 existing 8³ Enderlin cases against observations without claiming a validated or calibrated model. The Stage 11 ocean is not production-validated.
 - **Physics default:** EOS-80 (`EOS_MODE` unset); `EOS_MODE=LEGACY` is the historical fallback. See [`docs/model/model_physics_status.md`](docs/model/model_physics_status.md).
-- **Start here:** [`docs/README.md`](docs/README.md); active work: [`docs/validation/INDEX.md`](docs/validation/INDEX.md).
+- **Start here:** [`docs/README.md`](docs/README.md); closed-stage evidence: [`docs/wiki/INDEX.md`](docs/wiki/INDEX.md); active thesis work: [`docs/validation/INDEX.md`](docs/validation/INDEX.md).
 
 ## 🔧 Repository components
 

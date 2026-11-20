@@ -9,28 +9,14 @@ in `KNOWN_ISSUES.md`; the documentation map is `docs/README.md`.
 - **Stage 11 is frozen** as a research artifact. Do not present it as a
   production-validated prognostic ocean; see
   `docs/wiki/stages/stage11/STAGE11_FREEZE.md`.
-- **Stage 12 is active.** Stage 12.8's 24-run Barents matrix is the latest
-  completed published validation. Stage 12.9a daily-forcing acquisition is
-  complete (24/24 months for ERA5, GLORYS12, and WAM; 2026-11-07); do not start
-  additional downloads. Stage 12.10 voxel thermal-boundary improvements and 3D
-  output are complete (2026-11-08); Stage 12.11 final audit and
-  2020/2024 readiness check are complete, and Stage 12.12 recovered the 1 m
-  reference grid and audited geometry/voxel-prism consistency, with annual-quality
-  caveats. Stage 12.13 synchronized voxel/prism mass and draft/freeboard, added vertical
-  layer compaction, tested 70^3 convergence, and confirmed that no lower
-  resolution meets <1%. Stage 12.14 blocked the Enderlin rerun on missing
-  Antarctic site forcing, obtained p=0.711 (100^3 error 3.75%), and ran strict
-  100^3 2020/2024 experiments to 365.0 d of requested 366 d. Stage 12.15–12.18
-  added the current-code Enderlin/drift audit, layer drag and energy diagnostics,
-  the form/skin drag correction, and the 12-run 50 m grounded-in-place matrix.
-  Stage 12.19 adds connected-component calving with main-body hydrostatics,
-  sensible-only calved/flush energy closure, the Stage 2 figure set, offline
-  drift/melt diagnostics, and six 100^3 2020 references with documented start
-  replacements. Stage 12.20 fixes `VOXEL_PHI_CONN=0.3`, runs 50 m controls and
-  six coastal 100^3 2020/2024 references with 10-day snapshots, records the Svalbard
-  no-valid-start result, and produces the final thesis figure set. Stage 12.9b
-  thesis writing is the active workstream. See
-  `docs/validation/INDEX.md` and `docs/references/reanalysis_data_plan.md`.
+- **Stage 12 is CLOSED** through the documentation closure 12.22d. Stage 12.8
+  validation, 12.9a acquisition, 12.10 voxel improvements, 12.11–12.20 audits,
+  12.21 forcing figures, and 12.22 Enderlin23 submarine-melt validation are
+  complete. Stage 12.22 is validation only (no calibration): 190 existing
+  cases, 8³/12.5 m, prescribed trajectories, seven independence groups; it is
+  not a full-resolution or production validation. Active work is publications
+  and the master's thesis (12.9b). See `docs/wiki/INDEX.md` and
+  `docs/validation/INDEX.md`.
 - Check `docs/model/model_physics_status.md`, `docs/DECISIONS.md`, and
   `KNOWN_ISSUES.md` before making claims about physics, switches, or open issues.
 
@@ -98,13 +84,13 @@ contents. The detailed rules are in `RULES.md`; the map and read order are in
 
 ## Resource discipline
 
-The user's WSL2 instance currently has **8 GB allocated RAM** (user-reported on
-2026-11-03; CPU allocation is not measured). Run expensive builds, test
-batteries, analyses, and data transfers **sequentially**, not as parallel jobs.
-Do not launch multiple downloads or broad repository scans together. Prefer a
-targeted command and bounded output; stop a run before starting another if
-memory usage is uncertain. Do not start additional data downloads unless
-explicitly requested.
+The user's WSL2 instance has **20 GB RAM, 8 GB swap, and 12 logical CPUs**
+(Ryzen 7 8845HS; user-reported on 2026-11-20). Heavy builds, full test
+batteries, analyses, and data transfers are run **sequentially** as a practical
+resource policy, not because of an 8 GB RAM limit. Do not launch multiple
+downloads or broad repository scans together. Prefer targeted commands and
+bounded output; stop a run before starting another if memory usage is uncertain.
+Do not start additional data downloads unless explicitly requested.
 
 ## Build and test commands
 

@@ -28,17 +28,17 @@ artifact regeneration. Neither changes model physics.
 | Implemented / disabled / future | waves implemented but OFF by default; sea-ice drag, capsize, tides, two-way coupling, and subgrid melt are not implemented; future directions are in §14 | Confirmed; no change to formulas. |
 | Monospace/Cyrillic | Courier New has no Cyrillic script coverage for polyglossia; Consolas has Cyrillic and is available on Windows | Build-required minimal change: Consolas is now the first `\setmonofont` choice, with the old fallback chain retained. |
 
-## 12.22c build (current-state PDF)
+## 12.22d build (current-state PDF)
 
 The current PDF **was rebuilt** from the corrected `.tex` with the existing
 Windows TeX Live 2026 installation:
 
 - engine: `XeTeX 3.141592653-2.6-0.999998 (TeX Live 2026)`;
 - executable: `D:\texlive\2026\bin\windows\xelatex.exe`;
-- build directory: `/mnt/d/iceberg_tex_build_34e1f89`;
-- source SHA256: `d6eac75035ce2d1bd817123a66ca25daf42f9e397a639368b510f32bc769b0f2`;
-- PDF SHA256: `9134a75341d816a0c1b100240680822d9e79d0189478da9a9c5fd65afeea1ce9`;
-- result: 17 pages, 213 290 bytes, A4, PDF 1.7;
+- build directory: `/mnt/d/iceberg_tex_build_12.22d`;
+- source SHA256: `cb9de2dc0cfa28d1a4903efc66bd54a0b3b64b7cf5451694e4ac9c5ef2f70853`;
+- PDF SHA256: `1ed3631ad005e202070b9e148de448ee8e45f5651a4dd84ba3cea9d494b5e9bb`;
+- result: 17 pages, 213 828 bytes, A4, PDF 1.7;
 - passes: first pass 16 pages with rerun warning; second pass 17 pages with
   “Label(s) may have changed”; final stabilization pass 17 pages with no
   undefined references, citations or labels. Only underfull horizontal boxes
@@ -49,10 +49,11 @@ Windows TeX Live 2026 installation:
 - PDF inspection: `pdfinfo`, `pdffonts`, `pdftotext`, `pdftoppm` from TeX Live;
   first pages, equations, long table, bibliography visually checked.
 - old PDF backup (outside git):
-  `/mnt/d/iceberg_tex_build_34e1f89/old_pre_12.22c.pdf`
-  (SHA256 `26cad14bf808a0b438e39366585f12d66fb209cdc16e3fbfa1a9232e814ab961`).
+  `/mnt/d/iceberg_tex_build_12.22d/old_pre_12.22d.pdf`
+  (SHA256 `9134a75341d816a0c1b100240680822d9e79d0189478da9a9c5fd65afeea1ce9`).
 
 The `.tex` uses `fontspec`, `polyglossia` (Russian), `amsmath`, `geometry`,
 `setspace`, `booktabs`, `longtable`, `array`, `titlesec`, `hyperref` and TeX Gyre
 fonts; all were present. The 12.22b commit (`34e1f89`) is validation/docs-only
-and does not alter the model equations.
+and does not alter the model equations. Stage 12.22d is the documentation
+closure; it changes no Fortran and no numerical results.

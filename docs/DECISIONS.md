@@ -1220,6 +1220,14 @@ remains unchanged until the production-default decision in 11.7F.
 - **Limits:** overhang and capsize are not modeled; detached pieces are not tracked.
 - **Docs:** `docs/wiki/stages/stage12/stage12.20_phi_conn_and_start_selection.md`, `KNOWN_ISSUES.md`.
 
+## D-83. Enderlin23 comparison is validation only; rho_ice=910; observation reliability is analytic (Stage 12.22, 2026-11-19)
+
+- **Status:** ACTIVE.
+- **Decision:** compare the existing Stage 12.15 Enderlin23 hindcast with observations as a validation exercise, not a calibration target. Recompute the model submarine rate from component mass losses with the Fortran density `RHO_ICE=910.0`; retain the legacy 916.7 conversion only as provenance. Use cluster bootstrap over the seven `independence_group`s and report the analytic independence-error reliability ceiling (`sqrt(1 - mean(sigma^2)/var(obs))`, with the log10 transformation), not a strict state-error bound.
+- **Why:** the Enderlin23 table is indirect, area-averaged submarine melt; the model is an 8³/12.5 m prescribed-trajectory hindcast with a constant Antarctic atmosphere and no waves. The resulting median ratio is 0.5437 and rank correlation is weak; this is a validation baseline, not evidence of a calibrated model.
+- **Evidence:** `docs/wiki/stages/stage12/stage12.22_enderlin_taylor_bias.md`; `docs/wiki/stages/stage12/evidence/stage12.22/metrics.csv`; commits `18566e9` (original 12.22), `d7476bd` (12.22a), `34e1f89` (12.22b).
+- **Limits:** only 190 of 743 observations have model counterparts; seven independence groups; WAIS/site cluster CIs are unavailable; the 8³ grid and prism initialisation are not production validation. No physics or constants changed.
+
 ## How to add decisions
 
 A new decision is appended with an ID, stage, status, and links to reports.
